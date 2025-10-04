@@ -47,10 +47,6 @@ type DraggingState = {
   lastMousePos: Vec2D;
 } | null; // null means: not dragging
 
-type ResizingState = {
-  lastMousePos: Vec2D;
-} | null; // null means: not resizing
-
 type SelectingState = Rect2D | null;
 
 
@@ -76,7 +72,6 @@ const minStateSize = {x: 40, y: 40};
 export function VisualEditor() {
   const [state, setState] = useState<VisualEditorState>(onOffStateMachine);
   const [dragging, setDragging] = useState<DraggingState>(null);
-  const [resizing, setResizing] = useState<ResizingState>(null);
 
   const [mode, setMode] = useState<"state"|"transition"|"text">("state");
 
@@ -107,10 +102,13 @@ export function VisualEditor() {
     const currentPointer = {x: e.clientX, y: e.clientY};
 
     if (e.button === 1) {
-      // ignore selection, always insert rountangle
+      // ignore selection, middle mouse button always inserts
       setState(state => {
         const newID = state.nextID.toString();
-        setSelection([newID]);
+        setSelection([{uid: newID, parts: ["bottom", "right"]}]);
+        setDragging({
+          lastMousePos: currentPointer,
+        });
         return {
           ...state,
           rountangles: [...state.rountangles, {
@@ -122,9 +120,11 @@ export function VisualEditor() {
           nextID: state.nextID+1,
         };
       });
-      setResizing({lastMousePos: currentPointer});
+      return;
     }
-    else if (e.button === 0) {
+
+    if (e.button === 0) {
+      // left mouse button on a shape will drag that shape (and everything else that's selected). if the shape under the pointer was not in the selection then the selection is reset to contain only that shape.
       const uid = e.target?.dataset.uid;
       const parts: string[] = e.target?.dataset.parts?.split(' ') || [];
       if (uid) {
@@ -138,28 +138,20 @@ export function VisualEditor() {
         if (!allPartsInSelection) {
           setSelection([{uid, parts, kind: "dontcare"}]);
         }
-
-        // left mouse button: select and drag
-          setDragging({
-            lastMousePos: currentPointer,
-          });
-        // // right mouse button: select and resize
-        // else if (e.button === 2) {
-        //   setResizing({
-        //     lastMousePos: currentPointer,
-        //   });
-        // }
-      }
-      else {
-        setDragging(null);
-        setResizing(null);
-        setSelectingState({
-          topLeft: currentPointer,
-          size: {x: 0, y: 0},
+        setDragging({
+          lastMousePos: currentPointer,
         });
-        setSelection([]);
+        return;
       }
     }
+
+    // otherwise, just start making a selection
+    setDragging(null);
+    setSelectingState({
+      topLeft: currentPointer,
+      size: {x: 0, y: 0},
+    });
+    setSelection([]);
   };
 
   const onMouseMove = (e: MouseEvent) => {
@@ -195,31 +187,6 @@ export function VisualEditor() {
         return {lastMousePos: currentPointer};
       });
     }
-    else if (resizing) {
-      setResizing(prevResizeState => {
-        const pointerDelta = subtractV2D(currentPointer, prevResizeState!.lastMousePos);
-        const halfPointerDelta = scaleV2D(pointerDelta, 0.5);
-        setState(state => ({
-          ...state,
-          rountangles: state.rountangles.map(r => {
-            if (selection.includes(r.uid)) {
-              const newSize = addV2D(r.size, halfPointerDelta);
-              return {
-                ...r,
-                size: {
-                  x: Math.max(newSize.x, minStateSize.x),
-                  y: Math.max(newSize.y, minStateSize.y),
-                },
-              };
-            }
-            else {
-              return r; // no change
-            }
-          }),
-        }));
-        return {lastMousePos: currentPointer};
-      });
-    }
     else if (selectingState) {
       setSelectingState(ss => {
         const selectionSize = subtractV2D(currentPointer, ss!.topLeft);
@@ -233,7 +200,6 @@ export function VisualEditor() {
 
   const onMouseUp = (e: MouseEvent) => {
     setDragging(null);
-    setResizing(null);
     setSelectingState(ss => {
       if (ss) {
         // we were making a selection
@@ -263,17 +229,6 @@ export function VisualEditor() {
           uid,
           parts: [...parts],
         })));
-
-        // const selected = [
-        //   ...state.rountangles.filter(rountangle =>
-        //   isEntirelyWithin(rountangle, normalizedSS)),
-
-        //   ...state.arrows.filter(arrow => isEntirelyWithin({
-        //     topLeft: arrow.start,
-        //     size: subtractV2D(arrow.end, arrow.start),
-        //   }, normalizedSS)),
-        // ];
-        // setSelection(selected.map(r => r.uid));
       }
       return null; // no longer selecting
     });
@@ -290,7 +245,7 @@ export function VisualEditor() {
       setSelection(selection => {
         setState(state => ({
           ...state,
-          rountangles: state.rountangles.filter(r => !selection.includes(r.uid)),
+          rountangles: state.rountangles.filter(r => !selection.some(rs => rs.uid === r.uid)),
         }));
         return [];
       });
@@ -340,7 +295,7 @@ export function VisualEditor() {
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseup", onMouseUp);
     };
-  }, [selectingState, dragging, resizing]);
+  }, [selectingState, dragging]);
 
   return <svg width="100%" height="100%"
       className="svgCanvas"
@@ -383,7 +338,7 @@ export function VisualEditor() {
         Left mouse button: Select/Drag.
       </text>
       <text x={5} y={40}>
-        Right mouse button: Resize.
+        Right mouse button: Select only.
       </text>
       <text x={5} y={60}>
         Middle mouse button: Insert [S]tates / [T]ransitions / Te[X]t (current mode: {mode})</text>
