@@ -1,0 +1,89 @@
+.svgCanvas {
+  cursor: crosshair;
+}
+
+svg > text {
+  user-select: none;
+}
+
+.selecting {
+  fill: rgba(0, 0, 255, 0.2);
+  stroke-width: 1px;
+  stroke:black;
+  stroke-dasharray: 7 6;
+}
+
+.rountangle {
+  fill: rgba(255, 255, 255, 255);
+  /* fill: none; */
+  stroke: black;
+  stroke-width: 2px;
+}
+
+.rountangle:hover {
+  /* fill: lightgrey; */
+  /* stroke-width: 4px; */
+  cursor: grab;
+}
+
+.rountangle.dragging {
+  /* fill: lightgrey; */
+  /* stroke-width: 4px; */
+  cursor: grabbing;
+}
+
+/* .rountangle.selected {
+  fill: rgba(0, 0, 255, 0.2);
+  stroke: blue;
+  stroke-width: 4px;
+} */
+
+.lineHelper {
+  stroke: rgba(0, 0, 0, 0);
+  stroke-width: 16px;
+}
+.lineHelper:hover {
+  stroke: rgba(0, 255, 0, 0.2);
+  cursor: grab;
+}
+
+.circleHelper {
+  fill: rgba(0, 0, 0, 0);
+}
+.circleHelper:hover {
+  fill: rgba(0, 255, 0, 0.2);
+  cursor: grab;
+}
+
+.rountangle.or {
+  stroke-dasharray: 7 6;
+}
+
+.arrow {
+  stroke: black;
+  stroke-width: 2px;
+}
+
+/* .arrow.selected {
+  stroke: blue;
+  stroke-width: 4px;
+} */
+
+
+#arrowEnd {
+  fill: context-stroke;
+}
+
+.arrow:hover {
+  cursor: grab;
+}
+
+
+
+
+.selected {
+  fill: rgba(0, 0, 255, 0.2);
+  /* stroke-dasharray: 7 6; */
+  stroke: blue;
+  stroke-width: 4px;
+}
