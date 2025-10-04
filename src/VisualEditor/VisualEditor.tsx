@@ -85,16 +85,6 @@ export function VisualEditor() {
 
   const refSVG = useRef<SVGSVGElement>(null);
 
-  // useEffect(() => {
-  //   console.log('selection:', selection);
-  // }, [selection]);
-  // useEffect(() => {
-  //   console.log('state:', state);
-  // }, [state]);
-  // useEffect(() => {
-  //   console.log('selectingState:', selectingState);
-  // }, [selectingState]);
-
   useEffect(() => {
     const recoveredState = JSON.parse(window.localStorage.getItem("state") || "null") || emptyState;
     setState(recoveredState);
@@ -211,6 +201,13 @@ export function VisualEditor() {
         };
       });
     }
+
+    // sort: smaller rountangles are drawn on top
+    setState(state => ({
+      ...state,
+      rountangles: state.rountangles.toSorted((a,b) => area(b) - area(a)),
+    }));
+
   };
 
   const onMouseUp = (e: MouseEvent) => {
@@ -247,6 +244,7 @@ export function VisualEditor() {
       }
       return null; // no longer selecting
     });
+
     // sort: smaller rountangles are drawn on top
     setState(state => ({
       ...state,
