@@ -95,6 +95,21 @@ export function VisualEditor() {
   //   console.log('selectingState:', selectingState);
   // }, [selectingState]);
 
+  useEffect(() => {
+    const recoveredState = JSON.parse(window.localStorage.getItem("state") || "null") || emptyState;
+    setState(recoveredState);
+  }, []);
+
+  useEffect(() => {
+    // delay is necessary for 2 reasons:
+    //   1) it's a hack - prevents us from writing the initial state to localstorage (before having recovered the state that was in localstorage)
+    //   2) performance: only save when the user does nothing
+    const timeout = setTimeout(() => {
+      window.localStorage.setItem("state", JSON.stringify(state));
+      console.log('saved to localStorage');
+    }, 100);
+    return () => clearTimeout(timeout);
+  }, [state]);
 
 
   const onMouseDown: MouseEventHandler<SVGSVGElement> = (e) => {
@@ -368,7 +383,7 @@ export function RountangleSVG(props: {rountangle: Rountangle, dragging: boolean,
     <rect
       className={"rountangle"
         +(props.dragging?" dragging":"")
-        // +(props.selected.length===4?" selected":"")
+        +(props.selected.length===4?" selected":"")
         +((props.rountangle.kind==="or")?" or":"")}
       rx={20} ry={20}
       x={0}

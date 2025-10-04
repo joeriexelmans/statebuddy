@@ -32,11 +32,11 @@ svg > text {
   cursor: grabbing;
 }
 
-/* .rountangle.selected {
+.rountangle.selected {
   fill: rgba(0, 0, 255, 0.2);
-  stroke: blue;
-  stroke-width: 4px;
-} */
+  /* stroke: blue;
+  stroke-width: 4px; */
+}
 
 .lineHelper {
   stroke: rgba(0, 0, 0, 0);
@@ -81,7 +81,7 @@ svg > text {
 
 
 
-.selected {
+line.selected, circle.selected {
   fill: rgba(0, 0, 255, 0.2);
   /* stroke-dasharray: 7 6; */
   stroke: blue;
