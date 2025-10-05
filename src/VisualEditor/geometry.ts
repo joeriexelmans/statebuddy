@@ -75,12 +75,12 @@ export function transformRect(rect: Rect2D, parts: string[], delta: Vec2D): Rect
       y: parts.includes("top") ? rect.topLeft.y + delta.y : rect.topLeft.y,
     },
     size: {
-      x: Math.max(40, rect.size.x
+      x: /*Math.max(40,*/ rect.size.x
         + (parts.includes("right") ? delta.x : 0)
-        - (parts.includes("left")  ? delta.x : 0)),
-      y: Math.max(40, rect.size.y
+        - (parts.includes("left")  ? delta.x : 0),
+      y: /*Math.max(40,*/ rect.size.y
         + (parts.includes("bottom") ? delta.y : 0)
-        - (parts.includes("top")    ? delta.y : 0)),
+        - (parts.includes("top")    ? delta.y : 0),
     },
   };
 }

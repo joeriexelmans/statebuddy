@@ -1,5 +1,5 @@
-import { MouseEventHandler, useEffect, useRef, useState } from "react";
-import { Line2D, Rect2D, Vec2D, addV2D, area, isEntirelyWithin, normalizeRect, scaleV2D, subtractV2D, transformLine, transformRect } from "./geometry";
+import { Dispatch, MouseEventHandler, SetStateAction, useEffect, useRef, useState } from "react";
+import { Line2D, Rect2D, Vec2D, addV2D, area, isEntirelyWithin, normalizeRect, subtractV2D, transformLine, transformRect } from "./geometry";
 
 import "./VisualEditor.css";
 import { getBBoxInSvgCoords } from "./svg_helper";
@@ -65,7 +65,7 @@ type ArrowSelectable = {
   uid: string;
 }
 type TextSelectable = {
-  parts: "text";
+  parts: ["text"];
   uid: string;
 }
 type Selectable = RountangleSelectable | ArrowSelectable | TextSelectable;
@@ -73,8 +73,66 @@ type Selection = Selectable[];
 
 const minStateSize = {x: 40, y: 40};
 
+type HistoryState = {
+  current: VisualEditorState,
+  history: VisualEditorState[],
+  future: VisualEditorState[],
+}
+
+
+
 export function VisualEditor() {
-  const [state, setState] = useState<VisualEditorState>(onOffStateMachine);
+  const [historyState, setHistoryState] = useState<HistoryState>({current: emptyState, history: [], future: []});
+
+  const state = historyState.current;
+  const setState = (s: SetStateAction<VisualEditorState>) => {
+    setHistoryState(historyState => {
+      let newState;
+      if (typeof s === 'function') {
+        newState = s(historyState.current);
+      }
+      else {
+        newState = s;
+      }
+      return {
+        ...historyState,
+        current: newState,
+      };
+    });
+  }
+
+  function checkPoint() {
+    setHistoryState(historyState => ({
+      ...historyState,
+      history: [...historyState.history, historyState.current],
+      future: [],
+    }));
+  }
+  function undo() {
+    setHistoryState(historyState => {
+      if (historyState.history.length === 0) {
+        return historyState; // no change
+      }
+      return {
+        current: historyState.history.at(-1)!,
+        history: historyState.history.slice(0,-1),
+        future: [...historyState.future, historyState.current],
+      }
+    })
+  }
+  function redo() {
+    setHistoryState(historyState => {
+      if (historyState.future.length === 0) {
+        return historyState; // no change
+      }
+      return {
+        current: historyState.future.at(-1)!,
+        history: [...historyState.history, historyState.current],
+        future: historyState.future.slice(0,-1),
+      }
+    });
+  }
+
   const [dragging, setDragging] = useState<DraggingState>(null);
 
   const [mode, setMode] = useState<"state"|"transition"|"text">("state");
@@ -94,6 +152,10 @@ export function VisualEditor() {
     setState(recoveredState);
   }, []);
 
+  // useEffect(() => {
+  //   console.log(`history: ${history.length}, future: ${future.length}`);
+  // }, [editorState]);
+
   useEffect(() => {
     // delay is necessary for 2 reasons:
     //   1) it's a hack - prevents us from writing the initial state to localstorage (before having recovered the state that was in localstorage)
@@ -110,6 +172,7 @@ export function VisualEditor() {
     const currentPointer = {x: e.pageX, y: e.pageY};
 
     if (e.button === 1) {
+      checkPoint();
       // ignore selection, middle mouse button always inserts
       setState(state => {
         const newID = state.nextID.toString();
@@ -163,6 +226,8 @@ export function VisualEditor() {
       const uid = e.target?.dataset.uid;
       const parts: string[] = e.target?.dataset.parts?.split(' ') || [];
       if (uid) {
+        checkPoint();
+
         let allPartsInSelection = true;
         for (const part of parts) {
           if (!(selection.find(s => s.uid === uid)?.parts || []).includes(part)) {
@@ -192,47 +257,44 @@ export function VisualEditor() {
   const onMouseMove = (e: MouseEvent) => {
     const currentPointer = {x: e.pageX, y: e.pageY};
     if (dragging) {
-      setDragging(prevDragState => {
-        const pointerDelta = subtractV2D(currentPointer, dragging.lastMousePos);
-        const halfPointerDelta = scaleV2D(pointerDelta, 0.5);
-        setState(state => ({
-          ...state,
-          rountangles: state.rountangles.map(r => {
-            const parts = selection.find(selected => selected.uid === r.uid)?.parts || [];
-            if (parts.length === 0) {
-              return r;
-            }
-            return {
-              uid: r.uid,
-              kind: r.kind,
-              ...transformRect(r, parts, halfPointerDelta),
-            };
-          })
-          .toSorted((a,b) => area(b) - area(a)), // sort: smaller rountangles are drawn on top
-          arrows: state.arrows.map(a => {
-            const parts = selection.find(selected => selected.uid === a.uid)?.parts || [];
-            if (parts.length === 0) {
-              return a;
-            }
-            return {
-              uid: a.uid,
-              ...transformLine(a, parts, halfPointerDelta),
-            }
-          }),
-          texts: state.texts.map(t => {
-            const parts = selection.find(selected => selected.uid === t.uid)?.parts || [];
-            if (parts.length === 0) {
-              return t;
-            }
-            return {
-              uid: t.uid,
-              text: t.text,
-              topLeft: addV2D(t.topLeft, halfPointerDelta),
-            }
-          })
-        }));
-        return {lastMousePos: currentPointer};
-      });
+      const pointerDelta = subtractV2D(currentPointer, dragging.lastMousePos);
+      setState(state => ({
+        ...state,
+        rountangles: state.rountangles.map(r => {
+          const parts = selection.find(selected => selected.uid === r.uid)?.parts || [];
+          if (parts.length === 0) {
+            return r;
+          }
+          return {
+            uid: r.uid,
+            kind: r.kind,
+            ...transformRect(r, parts, pointerDelta),
+          };
+        })
+        .toSorted((a,b) => area(b) - area(a)), // sort: smaller rountangles are drawn on top
+        arrows: state.arrows.map(a => {
+          const parts = selection.find(selected => selected.uid === a.uid)?.parts || [];
+          if (parts.length === 0) {
+            return a;
+          }
+          return {
+            uid: a.uid,
+            ...transformLine(a, parts, pointerDelta),
+          }
+        }),
+        texts: state.texts.map(t => {
+          const parts = selection.find(selected => selected.uid === t.uid)?.parts || [];
+          if (parts.length === 0) {
+            return t;
+          }
+          return {
+            uid: t.uid,
+            text: t.text,
+            topLeft: addV2D(t.topLeft, pointerDelta),
+          }
+        }),
+      }));
+      setDragging({lastMousePos: currentPointer});
     }
     else if (selectingState) {
       setSelectingState(ss => {
@@ -246,53 +308,60 @@ export function VisualEditor() {
   };
 
   const onMouseUp = (e: MouseEvent) => {
-    setDragging(null);
-    setSelectingState(ss => {
-      if (ss) {
-        // we were making a selection
-        const normalizedSS = normalizeRect(ss);
-
-        const shapes = Array.from(refSVG.current?.querySelectorAll("rect, line, circle, text") || []) as SVGGraphicsElement[];
-
-        const shapesInSelection = shapes.filter(el => {
-          const bbox = getBBoxInSvgCoords(el, refSVG.current!);
-          return isEntirelyWithin(bbox, normalizedSS);
-        }).filter(el => !el.classList.contains("corner"));
-
-        const uidToParts = new Map();
-        for (const shape of shapesInSelection) {
-          const uid = shape.dataset.uid;
-          if (uid) {
-            const parts: Set<string> = uidToParts.get(uid) || new Set();
-            for (const part of shape.dataset.parts?.split(' ') || []) {
-              parts.add(part);
-            }
-            uidToParts.set(uid, parts);
+    if (dragging) {
+      setDragging(null);
+      // do not persist sizes smaller than 40x40
+      setState(state => {
+        return {
+          ...state,
+          rountangles: state.rountangles.map(r => ({
+            ...r,
+            size: rountangleMinSize(r.size),
+          })),
+        };
+      });
+    }
+    if (selectingState) {
+      // we were making a selection
+      const normalizedSS = normalizeRect(selectingState);
+      const shapes = Array.from(refSVG.current?.querySelectorAll("rect, line, circle, text") || []) as SVGGraphicsElement[];
+      const shapesInSelection = shapes.filter(el => {
+        const bbox = getBBoxInSvgCoords(el, refSVG.current!);
+        return isEntirelyWithin(bbox, normalizedSS);
+      }).filter(el => !el.classList.contains("corner"));
+      const uidToParts = new Map();
+      for (const shape of shapesInSelection) {
+        const uid = shape.dataset.uid;
+        if (uid) {
+          const parts: Set<string> = uidToParts.get(uid) || new Set();
+          for (const part of shape.dataset.parts?.split(' ') || []) {
+            parts.add(part);
           }
+          uidToParts.set(uid, parts);
         }
-
-        setSelection(() => [...uidToParts.entries()].map(([uid,parts]) => ({
-          kind: "rountangle",
-          uid,
-          parts: [...parts],
-        })));
       }
-      return null; // no longer selecting
-    });
+      setSelection(() => [...uidToParts.entries()].map(([uid,parts]) => ({
+        kind: "rountangle",
+        uid,
+        parts: [...parts],
+      })));
+      setSelectingState(null); // no longer making a selection
+    }
   };
 
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.key === "Delete") {
       // delete selection
-      setSelection(selection => {
+      if (selection.length > 0) {
+        checkPoint();
         setState(state => ({
           ...state,
           rountangles: state.rountangles.filter(r => !selection.some(rs => rs.uid === r.uid)),
           arrows: state.arrows.filter(a => !selection.some(as => as.uid === a.uid)),
           texts: state.texts.filter(t => !selection.some(ts => ts.uid === t.uid)),
         }));
-        return [];
-      });
+        setSelection([]);
+      }
     }
     if (e.key === "o") {
       // selected states become OR-states
@@ -325,6 +394,29 @@ export function VisualEditor() {
     }
     if (e.key === "x") {
       setMode("text");
+    }
+
+
+          if (e.key === "z") {
+        e.preventDefault();
+        undo();
+      }
+      if (e.key === "Z") {
+        e.preventDefault();
+        redo();
+      }
+
+    if (e.ctrlKey) {
+      if (e.key === "a") {
+        e.preventDefault();
+        setDragging(null);
+        // @ts-ignore
+        setSelection([
+          ...state.rountangles.map(r => ({uid: r.uid, parts: ["left", "top", "right", "bottom"]})),
+          ...state.arrows.map(a => ({uid: a.uid, parts: ["start", "end"]})),
+          ...state.texts.map(t => ({uid: t.uid, parts: ["text"]})),
+        ]);
+      }
     }
   };
 
@@ -435,8 +527,21 @@ export function VisualEditor() {
 const cornerOffset = 4;
 const cornerRadius = 16;
 
+function rountangleMinSize(size: Vec2D): Vec2D {
+  if (size.x >= 40 && size.y >= 40) {
+    return size;
+  }
+  return {
+    x: Math.max(40, size.x),
+    y: Math.max(40, size.y),
+  };
+}
+
 export function RountangleSVG(props: {rountangle: Rountangle, selected: string[]}) {
   const {topLeft, size, uid} = props.rountangle;
+  // always draw a rountangle with a minimum size
+  // during resizing, rountangle can be smaller than this size and even have a negative size, but we don't show it
+  const minSize = rountangleMinSize(size);
   return <g transform={`translate(${topLeft.x} ${topLeft.y})`}>
     <rect
       className={"rountangle"
@@ -445,8 +550,8 @@ export function RountangleSVG(props: {rountangle: Rountangle, selected: string[]
       rx={20} ry={20}
       x={0}
       y={0}
-      width={size.x}
-      height={size.y}
+      width={minSize.x}
+      height={minSize.y}
       data-uid={uid}
       data-parts="left top right bottom"
     />
@@ -455,7 +560,7 @@ export function RountangleSVG(props: {rountangle: Rountangle, selected: string[]
         +(props.selected.includes("top")?" selected":"")}
       x1={0}
       y1={0}
-      x2={size.x}
+      x2={minSize.x}
       y2={0}
       data-uid={uid}
       data-parts="top"
@@ -463,10 +568,10 @@ export function RountangleSVG(props: {rountangle: Rountangle, selected: string[]
     <line
       className={"lineHelper"
         +(props.selected.includes("right")?" selected":"")}
-      x1={size.x}
+      x1={minSize.x}
       y1={0}
-      x2={size.x}
-      y2={size.y}
+      x2={minSize.x}
+      y2={minSize.y}
       data-uid={uid}
       data-parts="right"
     />
@@ -474,9 +579,9 @@ export function RountangleSVG(props: {rountangle: Rountangle, selected: string[]
       className={"lineHelper"
         +(props.selected.includes("bottom")?" selected":"")}
       x1={0}
-      y1={size.y}
-      x2={size.x}
-      y2={size.y}
+      y1={minSize.y}
+      x2={minSize.x}
+      y2={minSize.y}
       data-uid={uid}
       data-parts="bottom"
     />
@@ -486,7 +591,7 @@ export function RountangleSVG(props: {rountangle: Rountangle, selected: string[]
       x1={0}
       y1={0}
       x2={0}
-      y2={size.y}
+      y2={minSize.y}
       data-uid={uid}
       data-parts="left"
     />
@@ -502,7 +607,7 @@ export function RountangleSVG(props: {rountangle: Rountangle, selected: string[]
 
     <circle
       className="circleHelper corner"
-      cx={size.x-cornerOffset}
+      cx={minSize.x-cornerOffset}
       cy={cornerOffset}
       r={cornerRadius}
       data-uid={uid}
@@ -511,8 +616,8 @@ export function RountangleSVG(props: {rountangle: Rountangle, selected: string[]
 
     <circle
       className="circleHelper corner"
-      cx={size.x-cornerOffset}
-      cy={size.y-cornerOffset}
+      cx={minSize.x-cornerOffset}
+      cy={minSize.y-cornerOffset}
       r={cornerRadius}
       data-uid={uid}
       data-parts="bottom right"
@@ -521,7 +626,7 @@ export function RountangleSVG(props: {rountangle: Rountangle, selected: string[]
     <circle
       className="circleHelper corner"
       cx={cornerOffset}
-      cy={size.y-cornerOffset}
+      cy={minSize.y-cornerOffset}
       r={cornerRadius}
       data-uid={uid}
       data-parts="bottom left"
