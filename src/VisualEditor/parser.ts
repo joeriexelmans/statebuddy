@@ -38,7 +38,6 @@ export function parseStatechart(state: VisualEditorState): [Statechart, [string,
     // iterate in reverse:
     for (let i=parentCandidates.length-1; i>=0; i--) {
       const candidate = parentCandidates[i];
-      console.log('candidate:', candidate, 'rt:', rt);
       if (candidate.uid === "root" || isEntirelyWithin(rt, candidate)) {
         // found our parent :)
         const parentState = uid2State.get(candidate.uid);
@@ -78,6 +77,22 @@ export function parseStatechart(state: VisualEditorState): [Statechart, [string,
     else {
       if (!tgtUID) {
         errorShapes.push([arr.uid, "Needs target"]);
+      }
+      else {
+        // add transition
+        const transition: Transition = {
+          uid: arr.uid,
+          src: uid2State.get(srcUID)!,
+          tgt: uid2State.get(tgtUID)!,
+          trigger: {
+            kind: "?",
+          },
+          guard: {},
+          actions: [],
+        };
+        const existingTransitions = transitions.get(srcUID) || [];
+        existingTransitions.push(transition);
+        transitions.set(srcUID, existingTransitions);
       }
     }
   }
