@@ -55,16 +55,20 @@ type RountanglePart = "left" | "top" | "right" | "bottom";
 type ArrowPart = "start" | "end";
 
 type RountangleSelectable = {
-  kind: "rountangle";
+  // kind: "rountangle";
   parts: RountanglePart[];
   uid: string;
 }
 type ArrowSelectable = {
-  kind: "arrow";
+  // kind: "arrow";
   parts: ArrowPart[];
   uid: string;
 }
-type Selectable = RountangleSelectable | ArrowSelectable;
+type TextSelectable = {
+  parts: "text";
+  uid: string;
+}
+type Selectable = RountangleSelectable | ArrowSelectable | TextSelectable;
 type Selection = Selectable[];
 
 const minStateSize = {x: 40, y: 40};
@@ -103,27 +107,53 @@ export function VisualEditor() {
 
 
   const onMouseDown: MouseEventHandler<SVGSVGElement> = (e) => {
-    console.log(e);
-    const currentPointer = {x: e.clientX, y: e.clientY};
+    const currentPointer = {x: e.pageX, y: e.pageY};
 
     if (e.button === 1) {
       // ignore selection, middle mouse button always inserts
       setState(state => {
         const newID = state.nextID.toString();
-        setSelection([{uid: newID, parts: ["bottom", "right"]}]);
-        setDragging({
-          lastMousePos: currentPointer,
-        });
-        return {
-          ...state,
-          rountangles: [...state.rountangles, {
-            uid: newID,
-            topLeft: currentPointer,
-            size: minStateSize,
-            kind: "and",
-          }],
-          nextID: state.nextID+1,
-        };
+        if (mode === "state") {
+          // insert rountangle
+          setSelection([{uid: newID, parts: ["bottom", "right"]}]);
+          return {
+            ...state,
+            rountangles: [...state.rountangles, {
+              uid: newID,
+              topLeft: currentPointer,
+              size: minStateSize,
+              kind: "and",
+            }],
+            nextID: state.nextID+1,
+          };
+        }
+        else if (mode === "transition") {
+          setSelection([{uid: newID, parts: ["end"]}]);
+          return {
+            ...state,
+            arrows: [...state.arrows, {
+              uid: newID,
+              start: currentPointer,
+              end: currentPointer,
+            }],
+            nextID: state.nextID+1,
+          }
+        }
+        else if (mode === "text") {
+          setSelection([{uid: newID, parts: ["text"]}]);
+          return {
+            ...state,
+            texts: [...state.texts, {
+              uid: newID,
+              text: "Double-click to edit text",
+              topLeft: currentPointer,
+            }],
+            nextID: state.nextID+1,
+          }
+        }
+      });
+      setDragging({
+        lastMousePos: currentPointer,
       });
       return;
     }
@@ -160,7 +190,7 @@ export function VisualEditor() {
   };
 
   const onMouseMove = (e: MouseEvent) => {
-    const currentPointer = {x: e.clientX, y: e.clientY};
+    const currentPointer = {x: e.pageX, y: e.pageY};
     if (dragging) {
       setDragging(prevDragState => {
         const pointerDelta = subtractV2D(currentPointer, dragging.lastMousePos);
@@ -177,7 +207,8 @@ export function VisualEditor() {
               kind: r.kind,
               ...transformRect(r, parts, halfPointerDelta),
             };
-          }),
+          })
+          .toSorted((a,b) => area(b) - area(a)), // sort: smaller rountangles are drawn on top
           arrows: state.arrows.map(a => {
             const parts = selection.find(selected => selected.uid === a.uid)?.parts || [];
             if (parts.length === 0) {
@@ -186,6 +217,17 @@ export function VisualEditor() {
             return {
               uid: a.uid,
               ...transformLine(a, parts, halfPointerDelta),
+            }
+          }),
+          texts: state.texts.map(t => {
+            const parts = selection.find(selected => selected.uid === t.uid)?.parts || [];
+            if (parts.length === 0) {
+              return t;
+            }
+            return {
+              uid: t.uid,
+              text: t.text,
+              topLeft: addV2D(t.topLeft, halfPointerDelta),
             }
           })
         }));
@@ -201,13 +243,6 @@ export function VisualEditor() {
         };
       });
     }
-
-    // sort: smaller rountangles are drawn on top
-    setState(state => ({
-      ...state,
-      rountangles: state.rountangles.toSorted((a,b) => area(b) - area(a)),
-    }));
-
   };
 
   const onMouseUp = (e: MouseEvent) => {
@@ -217,7 +252,7 @@ export function VisualEditor() {
         // we were making a selection
         const normalizedSS = normalizeRect(ss);
 
-        const shapes = Array.from(refSVG.current?.querySelectorAll("rect, line, circle") || []) as SVGGraphicsElement[];
+        const shapes = Array.from(refSVG.current?.querySelectorAll("rect, line, circle, text") || []) as SVGGraphicsElement[];
 
         const shapesInSelection = shapes.filter(el => {
           const bbox = getBBoxInSvgCoords(el, refSVG.current!);
@@ -244,12 +279,6 @@ export function VisualEditor() {
       }
       return null; // no longer selecting
     });
-
-    // sort: smaller rountangles are drawn on top
-    setState(state => ({
-      ...state,
-      rountangles: state.rountangles.toSorted((a,b) => area(b) - area(a)),
-    }));
   };
 
   const onKeyDown = (e: KeyboardEvent) => {
@@ -259,17 +288,18 @@ export function VisualEditor() {
         setState(state => ({
           ...state,
           rountangles: state.rountangles.filter(r => !selection.some(rs => rs.uid === r.uid)),
+          arrows: state.arrows.filter(a => !selection.some(as => as.uid === a.uid)),
+          texts: state.texts.filter(t => !selection.some(ts => ts.uid === t.uid)),
         }));
         return [];
       });
     }
     if (e.key === "o") {
-      console.log('turn selected states into OR-states...');
       // selected states become OR-states
       setSelection(selection => {
         setState(state => ({
           ...state,
-          rountangles: state.rountangles.map(r => selection.includes(r.uid) ? ({...r, kind: "or"}) : r),
+          rountangles: state.rountangles.map(r => selection.some(rs => rs.uid === r.uid) ? ({...r, kind: "or"}) : r),
         }));
         return selection;
       })
@@ -279,7 +309,7 @@ export function VisualEditor() {
       setSelection(selection => {
         setState(state => ({
           ...state,
-          rountangles: state.rountangles.map(r => selection.includes(r.uid) ? ({...r, kind: "and"}) : r),
+          rountangles: state.rountangles.map(r => selection.some(rs => rs.uid === r.uid) ? ({...r, kind: "and"}) : r),
         }));
         return selection;
       });
@@ -310,7 +340,7 @@ export function VisualEditor() {
     };
   }, [selectingState, dragging]);
 
-  return <svg width="100%" height="100%"
+  return <svg width="4000px" height="4000px"
       className="svgCanvas"
       onMouseDown={onMouseDown}
       onContextMenu={e => e.preventDefault()}
@@ -332,17 +362,47 @@ export function VisualEditor() {
     {state.rountangles.map(rountangle => <RountangleSVG
       key={rountangle.uid}
       rountangle={rountangle}
-      dragging={(dragging!==null) && selection.includes(rountangle.uid)}
       selected={selection.find(r => r.uid === rountangle.uid)?.parts || []}
       />)}
 
     {state.arrows.map(arrow => <ArrowSVG
       key={arrow.uid}
       arrow={arrow}
-      dragging={(dragging!==null) && selection.includes(arrow.uid)}
       selected={selection.find(a => a.uid === arrow.uid)?.parts || []}
       />
     )}
+
+    {state.texts.map(txt => <text
+      key={txt.uid}
+      className={selection.find(s => s.uid === txt.uid)?.parts?.length ? "selected":""}
+      x={txt.topLeft.x}
+      width={200}
+      height={40}
+      y={txt.topLeft.y}
+      data-uid={txt.uid}
+      data-parts="text"
+      onDoubleClick={() => {
+        const newText = prompt("", txt.text);
+        if (newText) {
+          setState(state => ({
+            ...state,
+            texts: state.texts.map(t => {
+              if (t.uid === txt.uid) {
+                return {
+                  ...txt,
+                  text: newText,
+                }
+              }
+              else {
+                return t;
+              }
+            }),
+          }));
+        }
+      }}
+    >
+      {txt.text}
+    </text>)}
 
     {selectingState && <Selecting {...selectingState} />}
 
@@ -375,12 +435,11 @@ export function VisualEditor() {
 const cornerOffset = 4;
 const cornerRadius = 16;
 
-export function RountangleSVG(props: {rountangle: Rountangle, dragging: boolean, selected: string[]}) {
+export function RountangleSVG(props: {rountangle: Rountangle, selected: string[]}) {
   const {topLeft, size, uid} = props.rountangle;
   return <g transform={`translate(${topLeft.x} ${topLeft.y})`}>
     <rect
       className={"rountangle"
-        +(props.dragging?" dragging":"")
         +(props.selected.length===4?" selected":"")
         +((props.rountangle.kind==="or")?" or":"")}
       rx={20} ry={20}
@@ -474,14 +533,11 @@ export function RountangleSVG(props: {rountangle: Rountangle, dragging: boolean,
   </g>;
 }
 
-export function ArrowSVG(props: {arrow: Arrow, dragging: boolean, selected: string[]}) {
+export function ArrowSVG(props: {arrow: Arrow, selected: string[]}) {
   const {start, end, uid} = props.arrow;
   return <g>
     <line
-      className={"arrow"
-        +(props.dragging?" dragging":"")
-        // +(props.selected.length===2?" selected":"")
-      }
+      className={"arrow"}
       markerEnd='url(#arrowEnd)'
       x1={start.x}
       y1={start.y}

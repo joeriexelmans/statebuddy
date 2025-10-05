@@ -23,7 +23,7 @@ svg > text {
 .rountangle:hover {
   /* fill: lightgrey; */
   /* stroke-width: 4px; */
-  cursor: grab;
+  /* cursor: grab; */
 }
 
 .rountangle.dragging {
@@ -36,6 +36,10 @@ svg > text {
   fill: rgba(0, 0, 255, 0.2);
   /* stroke: blue;
   stroke-width: 4px; */
+}
+
+.selected:hover {
+  cursor: grab;
 }
 
 .lineHelper {
@@ -86,4 +90,13 @@ line.selected, circle.selected {
   /* stroke-dasharray: 7 6; */
   stroke: blue;
   stroke-width: 4px;
+}
+
+text.selected, text.selected:hover {
+  fill: blue;
+  /* font-weight: bold; */
+}
+text:hover {
+  fill: rgba(0, 200, 0, 1);
+  /* cursor: grab; */
 }
