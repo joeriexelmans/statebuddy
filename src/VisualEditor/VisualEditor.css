@@ -100,3 +100,8 @@ text:hover {
   fill: rgba(0, 200, 0, 1);
   /* cursor: grab; */
 }
+
+.highlight {
+  stroke: green;
+  stroke-width: 4px;
+}

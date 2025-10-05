@@ -68,6 +68,19 @@ export function area(rect: Rect2D) {
   return rect.size.x * rect.size.y;
 }
 
+export function lineBBox(line: Line2D, margin=0): Rect2D {
+  return {
+    topLeft: {
+      x: line.start.x - margin,
+      y: line.start.y - margin,
+    },
+    size: {
+      x: line.end.x - line.start.x + margin*2,
+      y: line.end.y - line.start.y + margin*2,
+    },
+  }
+}
+
 export function transformRect(rect: Rect2D, parts: string[], delta: Vec2D): Rect2D {
   return {
     topLeft: {
@@ -89,5 +102,61 @@ export function transformLine(line: Line2D, parts: string[], delta: Vec2D): Line
   return {
     start: parts.includes("start") ? addV2D(line.start, {x: delta.x, y: delta.y}) : line.start,
     end: parts.includes("end") ? addV2D(line.end, {x: delta.x, y: delta.y}) : line.end,
+  };
+}
+
+// intersection point of two lines
+// note: point may not be part of the lines
+// author: ChatGPT
+export function intersectLines(a: Line2D, b: Line2D): Vec2D | null {
+  const { start: A1, end: A2 } = a;
+  const { start: B1, end: B2 } = b;
+
+  const den =
+    (A1.x - A2.x) * (B1.y - B2.y) - (A1.y - A2.y) * (B1.x - B2.x);
+
+  if (den === 0) return null; // parallel or coincident
+
+  const x =
+    ((A1.x * A2.y - A1.y * A2.x) * (B1.x - B2.x) -
+      (A1.x - A2.x) * (B1.x * B2.y - B1.y * B2.x)) /
+    den;
+
+  const y =
+    ((A1.x * A2.y - A1.y * A2.x) * (B1.y - B2.y) -
+      (A1.y - A2.y) * (B1.x * B2.y - B1.y * B2.x)) /
+    den;
+
+  return { x, y };
+}
+
+export function euclideanDistance(a: Vec2D, b: Vec2D): number {
+  const diffX = a.x - b.x;
+  const diffY = a.y - b.y;
+  return Math.sqrt(diffX*diffX + diffY*diffY);
+}
+
+export function getLeftSide(rect: Rect2D): Line2D {
+  return {
+    start: rect.topLeft,
+    end: {x: rect.topLeft.x, y: rect.topLeft.y + rect.size.y},
+  };
+}
+export function getTopSide(rect: Rect2D): Line2D {
+  return {
+    start: rect.topLeft,
+    end: { x: rect.topLeft.x + rect.size.x, y: rect.topLeft.y },
+  };
+}
+export function getRightSide(rect: Rect2D): Line2D {
+  return {
+    start: { x: rect.topLeft.x + rect.size.x, y: rect.topLeft.y },
+    end: { x: rect.topLeft.x + rect.size.x, y: rect.topLeft.y + rect.size.y },
+  };
+}
+export function getBottomSide(rect: Rect2D): Line2D {
+  return {
+    start: { x: rect.topLeft.x, y: rect.topLeft.y + rect.size.y },
+    end: { x: rect.topLeft.x + rect.size.x, y: rect.topLeft.y + rect.size.y },
   };
 }

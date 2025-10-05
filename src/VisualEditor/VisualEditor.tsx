@@ -1,5 +1,5 @@
 import { Dispatch, MouseEventHandler, SetStateAction, useEffect, useRef, useState } from "react";
-import { Line2D, Rect2D, Vec2D, addV2D, area, isEntirelyWithin, normalizeRect, subtractV2D, transformLine, transformRect } from "./geometry";
+import { Line2D, Rect2D, Vec2D, addV2D, area, euclideanDistance, getBottomSide, getLeftSide, getRightSide, getTopSide, intersectLines, isEntirelyWithin, isWithin, lineBBox, normalizeRect, subtractV2D, transformLine, transformRect } from "./geometry";
 
 import "./VisualEditor.css";
 import { getBBoxInSvgCoords } from "./svg_helper";
@@ -79,6 +79,34 @@ type HistoryState = {
   future: VisualEditorState[],
 }
 
+const threshold = 20;
+
+const sides: [RountanglePart, (r:Rect2D)=>Line2D][] = [
+  ["left", getLeftSide],
+  ["top", getTopSide],
+  ["right", getRightSide],
+  ["bottom", getBottomSide],
+];
+
+function findNearestRountangleSide(arrow: Line2D, arrowPart: "start"|"end", candidates: Rountangle[]): RountangleSelectable | undefined {
+  let best = Infinity;
+  let bestSide: undefined | RountangleSelectable;
+  for (const rountangle of candidates) {
+    for (const [side, getSide] of sides) {
+      const asLine = getSide(rountangle);
+      const intersection = intersectLines(arrow, asLine);
+      if (intersection !== null) {
+        const bbox = lineBBox(asLine, threshold);
+        const dist = euclideanDistance(arrow[arrowPart], intersection);
+        if (isWithin(arrow[arrowPart], bbox) && dist<best) {
+          best = dist;
+          bestSide = {uid: rountangle.uid, parts: [side]};
+        }
+      }
+    }
+  }
+  return bestSide;
+}
 
 
 export function VisualEditor() {
@@ -396,8 +424,8 @@ export function VisualEditor() {
       setMode("text");
     }
 
-
-          if (e.key === "z") {
+    if (e.ctrlKey) {
+      if (e.key === "z") {
         e.preventDefault();
         undo();
       }
@@ -405,8 +433,6 @@ export function VisualEditor() {
         e.preventDefault();
         redo();
       }
-
-    if (e.ctrlKey) {
       if (e.key === "a") {
         e.preventDefault();
         setDragging(null);
@@ -432,6 +458,23 @@ export function VisualEditor() {
     };
   }, [selectingState, dragging]);
 
+  let sidesToHighlight: {[key: string]: RountanglePart[]} = {};
+  for (const selected of selection) {
+    for (const arrow of state.arrows) {
+      if (arrow.uid === selected.uid) {
+        const rSideStart = findNearestRountangleSide(arrow, "start", state.rountangles);
+        if (rSideStart) {
+          sidesToHighlight[rSideStart.uid] = [...(sidesToHighlight[rSideStart.uid] || []), rSideStart.parts[0]];
+        }
+        const rSideEnd = findNearestRountangleSide(arrow, "end", state.rountangles);
+        if (rSideEnd) {
+          sidesToHighlight[rSideEnd.uid] = [...(sidesToHighlight[rSideEnd.uid] || []), rSideEnd.parts[0]];
+        }
+
+      }
+    }
+  }
+
   return <svg width="4000px" height="4000px"
       className="svgCanvas"
       onMouseDown={onMouseDown}
@@ -455,6 +498,7 @@ export function VisualEditor() {
       key={rountangle.uid}
       rountangle={rountangle}
       selected={selection.find(r => r.uid === rountangle.uid)?.parts || []}
+      highlight={sidesToHighlight[rountangle.uid] || []}
       />)}
 
     {state.arrows.map(arrow => <ArrowSVG
@@ -537,7 +581,7 @@ function rountangleMinSize(size: Vec2D): Vec2D {
   };
 }
 
-export function RountangleSVG(props: {rountangle: Rountangle, selected: string[]}) {
+export function RountangleSVG(props: {rountangle: Rountangle, selected: string[], highlight: RountanglePart[]}) {
   const {topLeft, size, uid} = props.rountangle;
   // always draw a rountangle with a minimum size
   // during resizing, rountangle can be smaller than this size and even have a negative size, but we don't show it
@@ -557,7 +601,9 @@ export function RountangleSVG(props: {rountangle: Rountangle, selected: string[]
     />
     <line
       className={"lineHelper"
-        +(props.selected.includes("top")?" selected":"")}
+        +(props.selected.includes("top")?" selected":"")
+        +(props.highlight.includes("top")?" highlight":"")
+      }
       x1={0}
       y1={0}
       x2={minSize.x}
@@ -567,7 +613,9 @@ export function RountangleSVG(props: {rountangle: Rountangle, selected: string[]
     />
     <line
       className={"lineHelper"
-        +(props.selected.includes("right")?" selected":"")}
+        +(props.selected.includes("right")?" selected":"")
+        +(props.highlight.includes("right")?" highlight":"")
+      }
       x1={minSize.x}
       y1={0}
       x2={minSize.x}
@@ -577,7 +625,9 @@ export function RountangleSVG(props: {rountangle: Rountangle, selected: string[]
     />
     <line
       className={"lineHelper"
-        +(props.selected.includes("bottom")?" selected":"")}
+        +(props.selected.includes("bottom")?" selected":"")
+        +(props.highlight.includes("bottom")?" highlight":"")
+      }
       x1={0}
       y1={minSize.y}
       x2={minSize.x}
@@ -587,7 +637,9 @@ export function RountangleSVG(props: {rountangle: Rountangle, selected: string[]
     />
     <line
       className={"lineHelper"
-        +(props.selected.includes("left")?" selected":"")}
+        +(props.selected.includes("left")?" selected":"")
+        +(props.highlight.includes("left")?" highlight":"")
+      }
       x1={0}
       y1={0}
       x2={0}
