@@ -2,7 +2,7 @@
   cursor: crosshair;
 }
 
-svg > text {
+text {
   user-select: none;
 }
 
@@ -36,6 +36,9 @@ svg > text {
   fill: rgba(0, 0, 255, 0.2);
   /* stroke: blue;
   stroke-width: 4px; */
+}
+.rountangle.error {
+  stroke: rgb(230,0,0);
 }
 
 .selected:hover {
@@ -104,4 +107,11 @@ text:hover {
 .highlight {
   stroke: green;
   stroke-width: 4px;
+}
+
+.arrow.error {
+  stroke: rgb(230,0,0);
+}
+text.error {
+  fill: rgb(230,0,0);
 }

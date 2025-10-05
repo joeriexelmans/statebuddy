@@ -1,47 +1,13 @@
-import { Dispatch, MouseEventHandler, SetStateAction, useEffect, useRef, useState } from "react";
-import { Line2D, Rect2D, Vec2D, addV2D, area, euclideanDistance, getBottomSide, getLeftSide, getRightSide, getTopSide, intersectLines, isEntirelyWithin, isWithin, lineBBox, normalizeRect, subtractV2D, transformLine, transformRect } from "./geometry";
+import { MouseEventHandler, SetStateAction, useEffect, useRef, useState } from "react";
+import { Line2D, Rect2D, Vec2D, addV2D, area, getBottomSide, getLeftSide, getRightSide, getTopSide, isEntirelyWithin, normalizeRect, subtractV2D, transformLine, transformRect } from "./geometry";
 
 import "./VisualEditor.css";
+
 import { getBBoxInSvgCoords } from "./svg_helper";
+import { VisualEditorState, Rountangle, emptyState, Arrow, ArrowPart, RountanglePart, findNearestRountangleSide } from "./editor_types";
+import { parseStatechart } from "./parser";
+import { CORNER_HELPER_OFFSET, CORNER_HELPER_RADIUS, MIN_ROUNTANGLE_SIZE, ROUNTANGLE_RADIUS } from "./parameters";
 
-
-type Rountangle = {
-  uid: string;
-  kind: "and" | "or";
-} & Rect2D;
-
-type Text = {
-  uid: string;
-  topLeft: Vec2D;
-  text: string;
-};
-
-type Arrow = {
-  uid: string;
-} & Line2D;
-
-type VisualEditorState = {
-  rountangles: Rountangle[];
-  texts: Text[];
-  arrows: Arrow[];
-  nextID: number;
-};
-
-const emptyState = {
-  rountangles: [], texts: [], arrows: [], nextID: 0,
-};
-
-const onOffStateMachine = {
-  rountangles: [
-    { uid: "0", topLeft: {x: 100, y: 100}, size: {x: 100, y: 100}, kind: "and" },
-    { uid: "1", topLeft: {x: 100, y: 300}, size: {x: 100, y: 100}, kind: "and" },
-  ],
-  texts: [],
-  arrows: [
-    { uid: "2", start: {x: 150, y: 200}, end: {x: 160, y: 300} },
-  ],
-  nextID: 3,
-};
 
 type DraggingState = {
   lastMousePos: Vec2D;
@@ -49,12 +15,7 @@ type DraggingState = {
 
 type SelectingState = Rect2D | null;
 
-
-// independently moveable parts of our shapes:
-type RountanglePart = "left" | "top" | "right" | "bottom";
-type ArrowPart = "start" | "end";
-
-type RountangleSelectable = {
+export type RountangleSelectable = {
   // kind: "rountangle";
   parts: RountanglePart[];
   uid: string;
@@ -71,43 +32,18 @@ type TextSelectable = {
 type Selectable = RountangleSelectable | ArrowSelectable | TextSelectable;
 type Selection = Selectable[];
 
-const minStateSize = {x: 40, y: 40};
-
 type HistoryState = {
   current: VisualEditorState,
   history: VisualEditorState[],
   future: VisualEditorState[],
 }
 
-const threshold = 20;
-
-const sides: [RountanglePart, (r:Rect2D)=>Line2D][] = [
+export const sides: [RountanglePart, (r:Rect2D)=>Line2D][] = [
   ["left", getLeftSide],
   ["top", getTopSide],
   ["right", getRightSide],
   ["bottom", getBottomSide],
 ];
-
-function findNearestRountangleSide(arrow: Line2D, arrowPart: "start"|"end", candidates: Rountangle[]): RountangleSelectable | undefined {
-  let best = Infinity;
-  let bestSide: undefined | RountangleSelectable;
-  for (const rountangle of candidates) {
-    for (const [side, getSide] of sides) {
-      const asLine = getSide(rountangle);
-      const intersection = intersectLines(arrow, asLine);
-      if (intersection !== null) {
-        const bbox = lineBBox(asLine, threshold);
-        const dist = euclideanDistance(arrow[arrowPart], intersection);
-        if (isWithin(arrow[arrowPart], bbox) && dist<best) {
-          best = dist;
-          bestSide = {uid: rountangle.uid, parts: [side]};
-        }
-      }
-    }
-  }
-  return bestSide;
-}
-
 
 export function VisualEditor() {
   const [historyState, setHistoryState] = useState<HistoryState>({current: emptyState, history: [], future: []});
@@ -162,10 +98,8 @@ export function VisualEditor() {
   }
 
   const [dragging, setDragging] = useState<DraggingState>(null);
-
   const [mode, setMode] = useState<"state"|"transition"|"text">("state");
-
-  const [showHelp, setShowHelp] = useState<boolean>(true);
+  const [showHelp, setShowHelp] = useState<boolean>(false);
 
   // uid's of selected rountangles
   const [selection, setSelection] = useState<Selection>([]);
@@ -173,16 +107,16 @@ export function VisualEditor() {
   // not null while the user is making a selection
   const [selectingState, setSelectingState] = useState<SelectingState>(null);
 
+  const [errors, setErrors] = useState<[string,string][]>([]);
+
   const refSVG = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
-    const recoveredState = JSON.parse(window.localStorage.getItem("state") || "null") || emptyState;
-    setState(recoveredState);
+    const recoveredState = JSON.parse(window.localStorage.getItem("state") || "null");
+    if (recoveredState) {
+      setState(recoveredState);
+    }
   }, []);
-
-  // useEffect(() => {
-  //   console.log(`history: ${history.length}, future: ${future.length}`);
-  // }, [editorState]);
 
   useEffect(() => {
     // delay is necessary for 2 reasons:
@@ -191,6 +125,10 @@ export function VisualEditor() {
     const timeout = setTimeout(() => {
       window.localStorage.setItem("state", JSON.stringify(state));
       console.log('saved to localStorage');
+
+      const [statechart, errors] = parseStatechart(state);
+      console.log('statechart: ', statechart, 'errors:', errors);
+      setErrors(errors);
     }, 100);
     return () => clearTimeout(timeout);
   }, [state]);
@@ -212,7 +150,7 @@ export function VisualEditor() {
             rountangles: [...state.rountangles, {
               uid: newID,
               topLeft: currentPointer,
-              size: minStateSize,
+              size: MIN_ROUNTANGLE_SIZE,
               kind: "and",
             }],
             nextID: state.nextID+1,
@@ -464,16 +402,18 @@ export function VisualEditor() {
       if (arrow.uid === selected.uid) {
         const rSideStart = findNearestRountangleSide(arrow, "start", state.rountangles);
         if (rSideStart) {
-          sidesToHighlight[rSideStart.uid] = [...(sidesToHighlight[rSideStart.uid] || []), rSideStart.parts[0]];
+          sidesToHighlight[rSideStart.uid] = [...(sidesToHighlight[rSideStart.uid] || []), rSideStart.part];
         }
         const rSideEnd = findNearestRountangleSide(arrow, "end", state.rountangles);
         if (rSideEnd) {
-          sidesToHighlight[rSideEnd.uid] = [...(sidesToHighlight[rSideEnd.uid] || []), rSideEnd.parts[0]];
+          sidesToHighlight[rSideEnd.uid] = [...(sidesToHighlight[rSideEnd.uid] || []), rSideEnd.part];
         }
 
       }
     }
   }
+
+  const rootErrors = errors.filter(([uid]) => uid === "root").map(err=>err[1]);
 
   return <svg width="4000px" height="4000px"
       className="svgCanvas"
@@ -494,17 +434,21 @@ export function VisualEditor() {
         </marker>
       </defs>
 
+    {(rootErrors.length>0) && <text className="error" x={5} y={50}>{rootErrors.join(' ')}</text>}
+
     {state.rountangles.map(rountangle => <RountangleSVG
       key={rountangle.uid}
       rountangle={rountangle}
       selected={selection.find(r => r.uid === rountangle.uid)?.parts || []}
       highlight={sidesToHighlight[rountangle.uid] || []}
+      errors={errors.filter(([uid,msg])=>uid===rountangle.uid).map(err=>err[1])}
       />)}
 
     {state.arrows.map(arrow => <ArrowSVG
       key={arrow.uid}
       arrow={arrow}
       selected={selection.find(a => a.uid === arrow.uid)?.parts || []}
+      errors={errors.filter(([uid,msg])=>uid===arrow.uid).map(err=>err[1])}
       />
     )}
 
@@ -542,7 +486,7 @@ export function VisualEditor() {
 
     {selectingState && <Selecting {...selectingState} />}
 
-    {showHelp && <>
+    {showHelp ? <>
       <text x={5} y={20}>
         Left mouse button: Select/Drag.
       </text>
@@ -563,13 +507,10 @@ export function VisualEditor() {
       <text x={5} y={140}>
         [H] Show/hide this help.
       </text>
-    </>}
+    </> : <text x={5} y={20}>[H] To show help.</text>}
 
   </svg>;
 }
-
-const cornerOffset = 4;
-const cornerRadius = 16;
 
 function rountangleMinSize(size: Vec2D): Vec2D {
   if (size.x >= 40 && size.y >= 40) {
@@ -581,7 +522,7 @@ function rountangleMinSize(size: Vec2D): Vec2D {
   };
 }
 
-export function RountangleSVG(props: {rountangle: Rountangle, selected: string[], highlight: RountanglePart[]}) {
+export function RountangleSVG(props: {rountangle: Rountangle, selected: string[], highlight: RountanglePart[], errors: string[]}) {
   const {topLeft, size, uid} = props.rountangle;
   // always draw a rountangle with a minimum size
   // during resizing, rountangle can be smaller than this size and even have a negative size, but we don't show it
@@ -590,8 +531,10 @@ export function RountangleSVG(props: {rountangle: Rountangle, selected: string[]
     <rect
       className={"rountangle"
         +(props.selected.length===4?" selected":"")
-        +((props.rountangle.kind==="or")?" or":"")}
-      rx={20} ry={20}
+        +((props.rountangle.kind==="or")?" or":"")
+        +(props.errors.length>0?" error":"")
+      }
+      rx={ROUNTANGLE_RADIUS} ry={ROUNTANGLE_RADIUS}
       x={0}
       y={0}
       width={minSize.x}
@@ -599,6 +542,10 @@ export function RountangleSVG(props: {rountangle: Rountangle, selected: string[]
       data-uid={uid}
       data-parts="left top right bottom"
     />
+
+    {(props.errors.length>0) && <text className="error" x={10} y={40} data-uid={uid} data-parts="left top right bottom">{props.errors.join(' ')}</text>}
+
+
     <line
       className={"lineHelper"
         +(props.selected.includes("top")?" selected":"")
@@ -650,51 +597,45 @@ export function RountangleSVG(props: {rountangle: Rountangle, selected: string[]
 
     <circle
       className="circleHelper corner"
-      cx={cornerOffset}
-      cy={cornerOffset}
-      r={cornerRadius}
+      cx={CORNER_HELPER_OFFSET}
+      cy={CORNER_HELPER_OFFSET}
+      r={CORNER_HELPER_RADIUS}
       data-uid={uid}
       data-parts="top left"
       />
-
     <circle
       className="circleHelper corner"
-      cx={minSize.x-cornerOffset}
-      cy={cornerOffset}
-      r={cornerRadius}
+      cx={minSize.x-CORNER_HELPER_OFFSET}
+      cy={CORNER_HELPER_OFFSET}
+      r={CORNER_HELPER_RADIUS}
       data-uid={uid}
       data-parts="top right"
       />
-
     <circle
       className="circleHelper corner"
-      cx={minSize.x-cornerOffset}
-      cy={minSize.y-cornerOffset}
-      r={cornerRadius}
+      cx={minSize.x-CORNER_HELPER_OFFSET}
+      cy={minSize.y-CORNER_HELPER_OFFSET}
+      r={CORNER_HELPER_RADIUS}
       data-uid={uid}
       data-parts="bottom right"
       />
-
     <circle
       className="circleHelper corner"
-      cx={cornerOffset}
-      cy={minSize.y-cornerOffset}
-      r={cornerRadius}
+      cx={CORNER_HELPER_OFFSET}
+      cy={minSize.y-CORNER_HELPER_OFFSET}
+      r={CORNER_HELPER_RADIUS}
       data-uid={uid}
       data-parts="bottom left"
       />
-
-
-
     <text x={10} y={20}>{uid}</text>
   </g>;
 }
 
-export function ArrowSVG(props: {arrow: Arrow, selected: string[]}) {
+export function ArrowSVG(props: {arrow: Arrow, selected: string[], errors: string[]}) {
   const {start, end, uid} = props.arrow;
   return <g>
     <line
-      className={"arrow"}
+      className={"arrow"+(props.errors.length>0?" error":"")}
       markerEnd='url(#arrowEnd)'
       x1={start.x}
       y1={start.y}
@@ -703,6 +644,9 @@ export function ArrowSVG(props: {arrow: Arrow, selected: string[]}) {
       data-uid={uid}
       data-parts="start end"
     />
+
+    {props.errors.length>0 && <text className="error" x={(start.x+end.x)/2} y={(start.y+end.y)/2} data-uid={uid} data-parts="start end">{props.errors.join(' ')}</text>}
+
     <line
       className="lineHelper"
       x1={start.x}
@@ -718,7 +662,7 @@ export function ArrowSVG(props: {arrow: Arrow, selected: string[]}) {
         +(props.selected.includes("start")?" selected":"")}
       cx={start.x}
       cy={start.y}
-      r={cornerRadius}
+      r={CORNER_HELPER_RADIUS}
       data-uid={uid}
       data-parts="start"
     />
@@ -727,7 +671,7 @@ export function ArrowSVG(props: {arrow: Arrow, selected: string[]}) {
         +(props.selected.includes("end")?" selected":"")}
       cx={end.x}
       cy={end.y}
-      r={cornerRadius}
+      r={CORNER_HELPER_RADIUS}
       data-uid={uid}
       data-parts="end"
     />
