@@ -645,7 +645,7 @@ export function ArrowSVG(props: {arrow: Arrow, selected: string[], errors: strin
       data-parts="start end"
     />
 
-    {props.errors.length>0 && <text className="error" x={(start.x+end.x)/2} y={(start.y+end.y)/2} data-uid={uid} data-parts="start end">{props.errors.join(' ')}</text>}
+    {props.errors.length>0 && <text className="error" x={(start.x+end.x)/2+5} y={(start.y+end.y)/2} data-uid={uid} data-parts="start end">{props.errors.join(' ')}</text>}
 
     <line
       className="lineHelper"

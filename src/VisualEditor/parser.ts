@@ -59,7 +59,7 @@ export function parseStatechart(state: VisualEditorState): [Statechart, [string,
     if (!srcUID) {
       if (!tgtUID) {
         // dangling edge - todo: display error...
-        errorShapes.push([arr.uid, "Dangling edge"]);
+        errorShapes.push([arr.uid, "dangling"]);
       }
       else {
         // target but no source, so we treat is as an 'initial' marking
@@ -76,7 +76,7 @@ export function parseStatechart(state: VisualEditorState): [Statechart, [string,
     }
     else {
       if (!tgtUID) {
-        errorShapes.push([arr.uid, "Needs target"]);
+        errorShapes.push([arr.uid, "no target"]);
       }
       else {
         // add transition
@@ -100,10 +100,10 @@ export function parseStatechart(state: VisualEditorState): [Statechart, [string,
   for (const state of uid2State.values()) {
     if (state.kind === "or") {
       if (state.initial.length > 1) {
-        errorShapes.push(...state.initial.map(([uid,childState])=>[uid,"OR-state can only have 1 initial state"] as [string, string]));
+        errorShapes.push(...state.initial.map(([uid,childState])=>[uid,"multiple initial states"] as [string, string]));
       }
       else if (state.initial.length === 0) {
-        errorShapes.push([state.uid, "Needs initial state"]);
+        errorShapes.push([state.uid, "no initial state"]);
       }
     }
   }
