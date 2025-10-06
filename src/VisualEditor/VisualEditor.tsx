@@ -4,7 +4,7 @@ import { Line2D, Rect2D, Vec2D, addV2D, area, getBottomSide, getLeftSide, getRig
 import "./VisualEditor.css";
 
 import { getBBoxInSvgCoords } from "./svg_helper";
-import { VisualEditorState, Rountangle, emptyState, Arrow, ArrowPart, RountanglePart, findNearestRountangleSide } from "./editor_types";
+import { VisualEditorState, Rountangle, emptyState, Arrow, ArrowPart, RountanglePart, findNearestRountangleSide, findNearestArrow, Text } from "./editor_types";
 import { parseStatechart } from "./parser";
 import { CORNER_HELPER_OFFSET, CORNER_HELPER_RADIUS, MIN_ROUNTANGLE_SIZE, ROUNTANGLE_RADIUS } from "./parameters";
 
@@ -124,7 +124,7 @@ export function VisualEditor() {
     //   2) performance: only save when the user does nothing
     const timeout = setTimeout(() => {
       window.localStorage.setItem("state", JSON.stringify(state));
-      console.log('saved to localStorage');
+      // console.log('saved to localStorage');
 
       const [statechart, errors] = parseStatechart(state);
       console.log('statechart: ', statechart, 'errors:', errors);
@@ -396,7 +396,11 @@ export function VisualEditor() {
     };
   }, [selectingState, dragging]);
 
+  // whenever an arrow is selected, highlight the rountangle sides it connects to
+  // just for visual feedback
   let sidesToHighlight: {[key: string]: RountanglePart[]} = {};
+  let arrowsToHighlight: {[key: string]: Arrow} = {};
+  let textsToHighlight: {[key: string]: Text} = {};
   for (const selected of selection) {
     for (const arrow of state.arrows) {
       if (arrow.uid === selected.uid) {
@@ -408,7 +412,20 @@ export function VisualEditor() {
         if (rSideEnd) {
           sidesToHighlight[rSideEnd.uid] = [...(sidesToHighlight[rSideEnd.uid] || []), rSideEnd.part];
         }
-
+        for (const text of state.texts) {
+          const belongsToArrow = findNearestArrow(text.topLeft, state.arrows);
+          if (belongsToArrow === arrow) {
+            textsToHighlight[text.uid] = text;
+          }
+        }
+      }
+    }
+    for (const text of state.texts) {
+      if (text.uid === selected.uid) {
+        const belongsToArrow = findNearestArrow(text.topLeft, state.arrows);
+        if (belongsToArrow) {
+          arrowsToHighlight[belongsToArrow.uid] = belongsToArrow;
+        }
       }
     }
   }
@@ -449,16 +466,19 @@ export function VisualEditor() {
       arrow={arrow}
       selected={selection.find(a => a.uid === arrow.uid)?.parts || []}
       errors={errors.filter(([uid,msg])=>uid===arrow.uid).map(err=>err[1])}
+      highlight={arrowsToHighlight.hasOwnProperty(arrow.uid)}
       />
     )}
 
     {state.texts.map(txt => <text
       key={txt.uid}
-      className={selection.find(s => s.uid === txt.uid)?.parts?.length ? "selected":""}
+      className={
+        (selection.find(s => s.uid === txt.uid)?.parts?.length ? "selected":"")
+        +(textsToHighlight.hasOwnProperty(txt.uid)?" highlight":"")
+      }
       x={txt.topLeft.x}
-      width={200}
-      height={40}
       y={txt.topLeft.y}
+      textAnchor="middle"
       data-uid={txt.uid}
       data-parts="text"
       onDoubleClick={() => {
@@ -543,7 +563,8 @@ export function RountangleSVG(props: {rountangle: Rountangle, selected: string[]
       data-parts="left top right bottom"
     />
 
-    {(props.errors.length>0) && <text className="error" x={10} y={40} data-uid={uid} data-parts="left top right bottom">{props.errors.join(' ')}</text>}
+    {(props.errors.length>0) &&
+      <text className="error" x={10} y={40} data-uid={uid} data-parts="left top right bottom">{props.errors.join(' ')}</text>}
 
 
     <line
@@ -631,11 +652,15 @@ export function RountangleSVG(props: {rountangle: Rountangle, selected: string[]
   </g>;
 }
 
-export function ArrowSVG(props: {arrow: Arrow, selected: string[], errors: string[]}) {
+export function ArrowSVG(props: {arrow: Arrow, selected: string[], errors: string[], highlight: boolean}) {
   const {start, end, uid} = props.arrow;
   return <g>
     <line
-      className={"arrow"+(props.errors.length>0?" error":"")}
+      className={"arrow"
+        +(props.selected.length===2?" selected":"")
+        +(props.errors.length>0?" error":"")
+        +(props.highlight?" highlight":"")
+      }
       markerEnd='url(#arrowEnd)'
       x1={start.x}
       y1={start.y}

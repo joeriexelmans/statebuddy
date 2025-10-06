@@ -2,8 +2,23 @@
   cursor: crosshair;
 }
 
-text {
+text, text.highlight {
   user-select: none;
+  /* text-shadow: 2px 0 #fff, -2px 0 #fff, 0 2px #fff, 0 -2px #fff, 1px 1px #fff, -1px -1px #fff, 1px -1px #fff, -1px 1px #fff; */
+  /* -webkit-text-stroke: 4px white; */
+  paint-order: stroke;
+  stroke: white;
+  stroke-width: 4px;
+  stroke-linecap: butt;
+  stroke-linejoin: miter;
+  stroke-opacity: 1;
+  fill-opacity:1;
+  /* font-weight: 800; */
+}
+
+text.highlight {
+  fill: green;
+  font-weight: 600;
 }
 
 .selecting {
@@ -70,6 +85,10 @@ text {
   stroke: black;
   stroke-width: 2px;
 }
+.arrow.selected {
+  stroke: blue;
+  stroke-width: 3px;
+}
 
 /* .arrow.selected {
   stroke: blue;
@@ -100,7 +119,7 @@ text.selected, text.selected:hover {
   /* font-weight: bold; */
 }
 text:hover {
-  fill: rgba(0, 200, 0, 1);
+  fill: darkcyan;
   /* cursor: grab; */
 }
 

@@ -133,7 +133,8 @@ export function intersectLines(a: Line2D, b: Line2D): Vec2D | null {
 export function euclideanDistance(a: Vec2D, b: Vec2D): number {
   const diffX = a.x - b.x;
   const diffY = a.y - b.y;
-  return Math.sqrt(diffX*diffX + diffY*diffY);
+  return Math.hypot(diffX, diffY);
+  // return Math.sqrt(diffX*diffX + diffY*diffY);
 }
 
 export function getLeftSide(rect: Rect2D): Line2D {

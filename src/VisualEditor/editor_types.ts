@@ -1,5 +1,5 @@
 import { Rect2D, Vec2D, Line2D, euclideanDistance, intersectLines, isWithin, lineBBox } from "./geometry";
-import { ARROW_SNAP_THRESHOLD } from "./parameters";
+import { ARROW_SNAP_THRESHOLD, TEXT_SNAP_THRESHOLD } from "./parameters";
 import {  sides } from "./VisualEditor";
 
 export type Rountangle = {
@@ -7,7 +7,7 @@ export type Rountangle = {
   kind: "and" | "or";
 } & Rect2D;
 
-type Text = {
+export type Text = {
   uid: string;
   topLeft: Vec2D;
   text: string;
@@ -44,6 +44,7 @@ export const onOffStateMachine = {
   nextID: 3,
 };
 
+// used to find which rountangle an arrow connects to (src/tgt)
 export function findNearestRountangleSide(arrow: Line2D, arrowPart: "start" | "end", candidates: Rountangle[]): {uid: string, part: RountanglePart} | undefined {
   let best = Infinity;
   let bestSide: undefined | {uid: string, part: RountanglePart};
@@ -62,4 +63,46 @@ export function findNearestRountangleSide(arrow: Line2D, arrowPart: "start" | "e
     }
   }
   return bestSide;
+}
+
+export function point2LineDistance(point: Vec2D, {start, end}: Line2D): number {
+  const A = point.x - start.x;
+  const B = point.y - start.y;
+  const C = end.x - start.x;
+  const D = end.y - start.y;
+
+  const dot = A * C + B * D;
+  const lenSq = C * C + D * D;
+  let t = lenSq ? dot / lenSq : -1;
+
+  if (t < 0) t = 0;
+  else if (t > 1) t = 1;
+
+  const closestX = start.x + t * C;
+  const closestY = start.y + t * D;
+
+  const dx = point.x - closestX;
+  const dy = point.y - closestY;
+
+  const distance = Math.hypot(dx, dy);
+  
+  return distance;
+}
+
+// used to find which arrow a text label belongs to (if any)
+//  author: ChatGPT
+export function findNearestArrow(point: Vec2D, candidates: Arrow[]): Arrow | undefined {
+  let best;
+  let bestDistance = Infinity
+
+  for (const arrow of candidates) {
+    const distance = point2LineDistance(point, arrow);
+
+    if (distance < TEXT_SNAP_THRESHOLD && distance < bestDistance) {
+      bestDistance = distance;
+      best = arrow;
+    }
+  }
+
+  return best;
 }
