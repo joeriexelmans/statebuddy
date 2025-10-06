@@ -470,39 +470,62 @@ export function VisualEditor() {
       />
     )}
 
-    {state.texts.map(txt => <text
-      key={txt.uid}
-      className={
-        (selection.find(s => s.uid === txt.uid)?.parts?.length ? "selected":"")
-        +(textsToHighlight.hasOwnProperty(txt.uid)?" highlight":"")
+    {state.texts.map(txt => {
+      const err = errors.find(([uid]) => txt.uid === uid)?.[1];
+      let markedText;
+      if (err) {
+        const {start,end} = err.location;
+        markedText = <>
+          {txt.text.slice(0, start.offset)}
+          <tspan className="error" data-uid={txt.uid} data-parts="text">
+            {txt.text.slice(start.offset, end.offset)}
+          </tspan>
+          {txt.text.slice(end.offset)}
+        </>;
       }
-      x={txt.topLeft.x}
-      y={txt.topLeft.y}
-      textAnchor="middle"
-      data-uid={txt.uid}
-      data-parts="text"
-      onDoubleClick={() => {
-        const newText = prompt("", txt.text);
-        if (newText) {
-          setState(state => ({
-            ...state,
-            texts: state.texts.map(t => {
-              if (t.uid === txt.uid) {
-                return {
-                  ...txt,
-                  text: newText,
-                }
-              }
-              else {
-                return t;
-              }
-            }),
-          }));
+      else {
+        markedText = <>{txt.text}</>;
+      }
+      // const annotatedText = err ? [...txt.text].map((char,i) => {
+      //   if (i >= err.location.start.offset && i < err.location.end.offset) {
+      //     return char+'\u0332';
+      //   }
+      //   return char;
+      // }).join('') : txt.text;
+      return <text
+        key={txt.uid}
+        className={
+          (selection.find(s => s.uid === txt.uid)?.parts?.length ? "selected":"")
+          +(textsToHighlight.hasOwnProperty(txt.uid)?" highlight":"")
+          // +(errors.some(([uid]) => uid === txt.uid)?" error":"")
         }
-      }}
-    >
-      {txt.text}
-    </text>)}
+        x={txt.topLeft.x}
+        y={txt.topLeft.y}
+        textAnchor="middle"
+        data-uid={txt.uid}
+        data-parts="text"
+        onDoubleClick={() => {
+          const newText = prompt("", txt.text);
+          if (newText) {
+            setState(state => ({
+              ...state,
+              texts: state.texts.map(t => {
+                if (t.uid === txt.uid) {
+                  return {
+                    ...txt,
+                    text: newText,
+                  }
+                }
+                else {
+                  return t;
+                }
+              }),
+            }));
+          }
+        }}
+      >
+        {markedText}
+      </text>;})}
 
     {selectingState && <Selecting {...selectingState} />}
 
@@ -648,7 +671,9 @@ export function RountangleSVG(props: {rountangle: Rountangle, selected: string[]
       data-uid={uid}
       data-parts="bottom left"
       />
-    <text x={10} y={20}>{uid}</text>
+    <text x={10} y={20}
+      data-uid={uid}
+      data-parts="left top right bottom">{uid}</text>
   </g>;
 }
 

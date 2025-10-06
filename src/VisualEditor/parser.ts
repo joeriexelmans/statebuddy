@@ -1,8 +1,13 @@
 import { ConcreteState, OrState, Statechart, Transition } from "./ast";
-import { findNearestRountangleSide, Rountangle, VisualEditorState } from "./editor_types";
+import { findNearestArrow, findNearestRountangleSide, Rountangle, VisualEditorState } from "./editor_types";
 import { isEntirelyWithin } from "./geometry";
+import { TransitionLabel } from "./label_ast";
+
+import { parse as parseLabel } from "./label_parser";
 
 export function parseStatechart(state: VisualEditorState): [Statechart, [string,string][]] {
+  const errorShapes: [string, string][] = [];
+
   // implicitly, the root is always an Or-state
   const root: OrState = {
     kind: "or",
@@ -22,6 +27,8 @@ export function parseStatechart(state: VisualEditorState): [Statechart, [string,
   }];
 
   const parentLinks = new Map<string, string>();
+
+  // step 1: figure out state hierarchy
 
   // we assume that the rountangles are sorted from big to small:
   for (const rt of state.rountangles) {
@@ -49,9 +56,10 @@ export function parseStatechart(state: VisualEditorState): [Statechart, [string,
     }
   }
 
-  const transitions = new Map<string, Transition[]>();
+  // step 2: figure out transitions
 
-  const errorShapes: [string, string][] = [];
+  const transitions = new Map<string, Transition[]>();
+  const uid2Transition = new Map<string, Transition>();
 
   for (const arr of state.arrows) {
     const srcUID = findNearestRountangleSide(arr, "start", state.rountangles)?.uid;
@@ -84,15 +92,12 @@ export function parseStatechart(state: VisualEditorState): [Statechart, [string,
           uid: arr.uid,
           src: uid2State.get(srcUID)!,
           tgt: uid2State.get(tgtUID)!,
-          trigger: {
-            kind: "?",
-          },
-          guard: {},
-          actions: [],
+          label: [],
         };
         const existingTransitions = transitions.get(srcUID) || [];
         existingTransitions.push(transition);
         transitions.set(srcUID, existingTransitions);
+        uid2Transition.set(arr.uid, transition);
       }
     }
   }
@@ -105,6 +110,36 @@ export function parseStatechart(state: VisualEditorState): [Statechart, [string,
       else if (state.initial.length === 0) {
         errorShapes.push([state.uid, "no initial state"]);
       }
+    }
+  }
+
+  // step 3: figure out labels
+
+  for (const text of state.texts) {
+    const belongsToArrow = findNearestArrow(text.topLeft, state.arrows);
+    if (belongsToArrow) {
+      const belongsToTransition = uid2Transition.get(belongsToArrow.uid);
+      if (belongsToTransition) {
+        // parse as transition label
+        let transitionLabel: TransitionLabel;
+        try {
+          transitionLabel = parseLabel(text.text); // may throw
+          belongsToTransition.label.push(transitionLabel);
+        }
+        catch (e) {
+          console.log({e});
+          errorShapes.push([text.uid, e]);
+        }
+      }
+    }
+  }
+
+  for (const transition of uid2Transition.values()) {
+    if (transition.label.length === 0) {
+      errorShapes.push([transition.uid, "no label"]);
+    }
+    else if (transition.label.length > 1) {
+      errorShapes.push([transition.uid, "multiple labels"]);
     }
   }
 

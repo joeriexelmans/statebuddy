@@ -1,0 +1,95 @@
+start = _ trigger:trigger _ guard:("[" _ guard _ "]")? _ actions:("/" _ actions )? _ {
+	return {
+    	trigger,
+        guard: guard ? guard[2] : {kind: "literal", value: true},
+        actions: actions ? actions[2] : [],
+    };
+}
+
+trigger = afterTrigger / eventTrigger
+
+eventTrigger = event:identifier {
+	return {kind: "event", event};
+}
+
+afterTrigger = "after" _ dur:durationMs {
+	return {kind: "after", durationMs: dur};
+}
+
+durationMs = num:number _ u:timeUnit {
+	return num * (u === "s" ? 1000 : 1);
+}
+
+timeUnit = "ms" / "s" {
+	return text();
+}
+
+guard = expr
+
+actions = head:action tail:(_ ";" _ action)* _ ";"? {
+	return [head, ...tail.map(t => t[3])];
+}
+action = assignment / raise
+
+assignment = lhs:identifier _ "=" _ rhs:expr {
+	return {kind: "assignment", lhs, rhs};
+}
+
+identifier = [a-zA-Z0-9]+ {
+	return text();
+}
+
+number = [0-9]+ {
+	return parseInt(text());
+}
+
+_ "whitespace"
+  = [ \t\n\r]*
+  
+expr = sum
+
+sum = prod:product rest:((_ ("+" / "-") _) sum)? {
+	if (rest === null) {
+    	return prod;
+    }
+    return {
+        kind:"binaryExpr",
+        operator: rest[0][1],
+        lhs: prod,
+        rhs: rest[1],
+    };
+}
+
+product = atom:atom rest:((_ ("*" / "/") _) product)? {
+	if (rest === null) {
+    	return atom;
+    }
+    return {
+        kind:"binaryExpr",
+        operator: rest[0][1],
+        lhs: atom,
+        rhs: rest[1],
+    };
+}
+
+atom = nested / literal / ref
+
+nested = "(" _ expr:expr _ ")" {
+	return expr;
+}
+
+literal = value:(number / boolean) {
+	return {kind: "literal", value}
+}
+
+ref = variable:identifier {
+	return {kind: "ref", variable}
+}
+
+boolean = ("true" / "false") {
+	return text() === "true";
+}
+
+raise = "^" _ event:identifier {
+	return {kind: "raise", event};
+}

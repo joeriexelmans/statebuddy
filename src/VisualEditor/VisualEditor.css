@@ -116,7 +116,7 @@ line.selected, circle.selected {
 
 text.selected, text.selected:hover {
   fill: blue;
-  /* font-weight: bold; */
+  font-weight: 600;
 }
 text:hover {
   fill: darkcyan;
@@ -125,12 +125,13 @@ text:hover {
 
 .highlight {
   stroke: green;
-  stroke-width: 4px;
+  stroke-width: 3px;
 }
 
 .arrow.error {
   stroke: rgb(230,0,0);
 }
-text.error {
+text.error, tspan.error {
   fill: rgb(230,0,0);
+  font-weight: 600;
 }
