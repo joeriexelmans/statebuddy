@@ -4,7 +4,7 @@ import { ArcDirection, Line2D, Rect2D, Vec2D, addV2D, arcDirection, area, euclid
 import "./VisualEditor.css";
 
 import { getBBoxInSvgCoords } from "./svg_helper";
-import { VisualEditorState, Rountangle, emptyState, Arrow, ArrowPart, RountanglePart, findNearestRountangleSide, findNearestArrow, Text } from "./editor_types";
+import { VisualEditorState, Rountangle, emptyState, Arrow, ArrowPart, RountanglePart, findNearestRountangleSide, findNearestArrow, Text, findRountangle } from "./editor_types";
 import { parseStatechart } from "./parser";
 import { CORNER_HELPER_OFFSET, CORNER_HELPER_RADIUS, MIN_ROUNTANGLE_SIZE, ROUNTANGLE_RADIUS } from "./parameters";
 
@@ -401,6 +401,7 @@ export function VisualEditor() {
   const side2ArrowMap = new Map<string, Set<["start"|"end", string]>>();
   const text2ArrowMap = new Map<string,string>();
   const arrow2TextMap = new Map<string,string[]>();
+  const text2RountangleMap = new Map<string, string>();
   for (const arrow of state.arrows) {
     const startSide = findNearestRountangleSide(arrow, "start", state.rountangles);
     const endSide = findNearestRountangleSide(arrow, "end", state.rountangles);
@@ -421,10 +422,18 @@ export function VisualEditor() {
   for (const text of state.texts) {
     const nearestArrow = findNearestArrow(text.topLeft, state.arrows);
     if (nearestArrow) {
+      // prioritize text belonging to arrows:
       text2ArrowMap.set(text.uid, nearestArrow.uid);
       const textsOfArrow = arrow2TextMap.get(nearestArrow.uid) || [];
       textsOfArrow.push(text.uid);
       arrow2TextMap.set(nearestArrow.uid, textsOfArrow);
+    }
+    else {
+      // no arrow, then the text belongs to the rountangle it is in
+      const rountangle = findRountangle(text.topLeft, state.rountangles);
+      if (rountangle) {
+        text2RountangleMap.set(text.uid, rountangle.uid);
+      }
     }
   }
 
@@ -432,6 +441,7 @@ export function VisualEditor() {
   const sidesToHighlight: {[key: string]: RountanglePart[]} = {};
   const arrowsToHighlight: {[key: string]: boolean} = {};
   const textsToHighlight: {[key: string]: boolean} = {};
+  const rountanglesToHighlight: {[key: string]: boolean} = {};
   for (const selected of selection) {
     const sides = arrow2SideMap.get(selected.uid);
     if (sides) {
@@ -454,6 +464,10 @@ export function VisualEditor() {
     const arrow2 = text2ArrowMap.get(selected.uid);
     if (arrow2) {
       arrowsToHighlight[arrow2] = true;
+    }
+    const rountangleUid = text2RountangleMap.get(selected.uid)
+    if (rountangleUid) {
+      rountanglesToHighlight[rountangleUid] = true;
     }
   }
 
@@ -484,7 +498,7 @@ export function VisualEditor() {
       key={rountangle.uid}
       rountangle={rountangle}
       selected={selection.find(r => r.uid === rountangle.uid)?.parts || []}
-      highlight={sidesToHighlight[rountangle.uid] || []}
+      highlight={[...(sidesToHighlight[rountangle.uid] || []), ...(rountanglesToHighlight[rountangle.uid]?["left","right","top","bottom"]:[])]}
       errors={errors.filter(([uid,msg])=>uid===rountangle.uid).map(err=>err[1])}
       />)}
 

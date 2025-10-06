@@ -1,4 +1,4 @@
-import { Rect2D, Vec2D, Line2D, euclideanDistance, intersectLines, isWithin, lineBBox } from "./geometry";
+import { Rect2D, Vec2D, Line2D, euclideanDistance, intersectLines, isWithin, lineBBox, isEntirelyWithin } from "./geometry";
 import { ARROW_SNAP_THRESHOLD, TEXT_SNAP_THRESHOLD } from "./parameters";
 import {  sides } from "./VisualEditor";
 
@@ -105,4 +105,13 @@ export function findNearestArrow(point: Vec2D, candidates: Arrow[]): Arrow | und
   }
 
   return best;
+}
+
+// precondition: candidates are sorted from big to small
+export function findRountangle(point: Vec2D, candidates: Rountangle[]): Rountangle | undefined {
+  for (let i=candidates.length-1; i>=0; i--) {
+    if (isWithin(point, candidates[i])) {
+      return candidates[i];
+    }
+  }
 }
