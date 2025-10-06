@@ -1,6 +1,6 @@
 
 export const ARROW_SNAP_THRESHOLD = 20;
-export const TEXT_SNAP_THRESHOLD = 20;
+export const TEXT_SNAP_THRESHOLD = 30;
 
 export const ROUNTANGLE_RADIUS = 20;
 export const MIN_ROUNTANGLE_SIZE = { x: ROUNTANGLE_RADIUS*2, y: ROUNTANGLE_RADIUS*2 };

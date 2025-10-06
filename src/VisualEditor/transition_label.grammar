@@ -6,7 +6,7 @@ start = _ trigger:trigger _ guard:("[" _ guard _ "]")? _ actions:("/" _ actions 
     };
 }
 
-trigger = afterTrigger / eventTrigger
+trigger = afterTrigger / entryTrigger / exitTrigger / eventTrigger
 
 eventTrigger = event:identifier {
 	return {kind: "event", event};
@@ -15,6 +15,15 @@ eventTrigger = event:identifier {
 afterTrigger = "after" _ dur:durationMs {
 	return {kind: "after", durationMs: dur};
 }
+
+entryTrigger = "entry" {
+	return {kind: "entry"};
+}
+
+exitTrigger = "exit" {
+	return {kind: "exit"};
+}
+
 
 durationMs = num:number _ u:timeUnit {
 	return num * (u === "s" ? 1000 : 1);
@@ -46,14 +55,26 @@ number = [0-9]+ {
 _ "whitespace"
   = [ \t\n\r]*
   
-expr = sum
+expr = compare
+
+compare = sum:sum rest:((_ ("==" / "!=" / "<" / ">" / "<=" / ">=") _) compare)? {
+	if (rest === null) {
+    	return sum;
+    }
+    return {
+        kind: "binaryExpr",
+        operator: rest[0][1],
+        lhs: sum,
+        rhs: rest[1],
+    };
+}
 
 sum = prod:product rest:((_ ("+" / "-") _) sum)? {
 	if (rest === null) {
     	return prod;
     }
     return {
-        kind:"binaryExpr",
+        kind: "binaryExpr",
         operator: rest[0][1],
         lhs: prod,
         rhs: rest[1],
@@ -65,7 +86,7 @@ product = atom:atom rest:((_ ("*" / "/") _) product)? {
     	return atom;
     }
     return {
-        kind:"binaryExpr",
+        kind: "binaryExpr",
         operator: rest[0][1],
         lhs: atom,
         rhs: rest[1],

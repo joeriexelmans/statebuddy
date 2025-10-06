@@ -32,7 +32,7 @@ export type RaiseEvent = {
 }
 
 
-export type Expression = BinaryExpression | UnaryExpression | VarRef;
+export type Expression = BinaryExpression | UnaryExpression | VarRef | Literal;
 
 export type BinaryExpression = {
   kind: "binaryExpr";
@@ -50,4 +50,9 @@ export type UnaryExpression = {
 export type VarRef = {
   kind: "ref";
   variable: string;
+}
+
+export type Literal = {
+  kind: "literal";
+  value: any;
 }

@@ -1,9 +1,10 @@
+import { act } from "react";
 import { ConcreteState, OrState, Statechart, Transition } from "./ast";
 import { findNearestArrow, findNearestRountangleSide, Rountangle, VisualEditorState } from "./editor_types";
-import { isEntirelyWithin } from "./geometry";
-import { TransitionLabel } from "./label_ast";
+import { isEntirelyWithin, transformLine } from "./geometry";
+import { Action, Expression, TransitionLabel } from "./label_ast";
 
-import { parse as parseLabel } from "./label_parser";
+import { parse as parseLabel, SyntaxError } from "./label_parser";
 
 export function parseStatechart(state: VisualEditorState): [Statechart, [string,string][]] {
   const errorShapes: [string, string][] = [];
@@ -113,6 +114,11 @@ export function parseStatechart(state: VisualEditorState): [Statechart, [string,
     }
   }
 
+  let variables = new Set<string>();
+  const inputEvents = new Set<string>();
+  const outputEvents = new Set<string>();
+  const internalEvents = new Set<string>();
+
   // step 3: figure out labels
 
   for (const text of state.texts) {
@@ -125,10 +131,42 @@ export function parseStatechart(state: VisualEditorState): [Statechart, [string,
         try {
           transitionLabel = parseLabel(text.text); // may throw
           belongsToTransition.label.push(transitionLabel);
+          // collect events
+          if (transitionLabel.trigger.kind === "event") {
+            const {event} = transitionLabel.trigger;
+            if (event.startsWith("_")) {
+              internalEvents.add(event);
+            }
+            else {
+              inputEvents.add(event);
+            }
+          }
+          for (const action of transitionLabel.actions) {
+            if (action.kind === "raise") {
+              const {event} = action;
+              if (event.startsWith("_")) {
+                internalEvents.add(event);
+              }
+              else {
+                outputEvents.add(event);
+              }
+            }
+          }
+          // collect variables
+          variables = variables
+            .union(findVariables(transitionLabel.guard));
+          for (const action of transitionLabel.actions) {
+            variables = variables.union(findVariablesAction(action));
+          }
         }
         catch (e) {
-          console.log({e});
-          errorShapes.push([text.uid, e]);
+          if (e instanceof SyntaxError) {
+            belongsToTransition.label.push(null);
+            errorShapes.push([text.uid, e]);
+          }
+          else {
+            throw e;
+          }
         }
       }
     }
@@ -146,5 +184,32 @@ export function parseStatechart(state: VisualEditorState): [Statechart, [string,
   return [{
     root,
     transitions,
+    variables,
+    inputEvents,
+    internalEvents,
+    outputEvents,
   }, errorShapes];
 }
+
+function findVariables(expr: Expression): Set<string> {
+  if (expr.kind === "ref") {
+    return new Set([expr.variable]);
+  }
+  else if (expr.kind === "unaryExpr") {
+    return findVariables(expr.expr);
+  }
+  else if (expr.kind === "binaryExpr") {
+    return findVariables(expr.lhs).union(findVariables(expr.rhs));
+  }
+  else if (expr.kind === "literal") {
+    return new Set();
+  }
+}
+
+function findVariablesAction(action: Action): Set<string> {
+  if (action.kind === "assignment") {
+    return new Set([action.lhs, ...findVariables(action.rhs)]);
+  }
+  return new Set();
+}
+

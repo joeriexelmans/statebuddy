@@ -26,6 +26,12 @@ export type Transition = {
 }
 
 export type Statechart = {
-  root: ConcreteState;
+  root: OrState;
   transitions: Map<string, Transition[]>; // key: source state uid
+
+  variables: Set<string>;
+
+  inputEvents: Set<string>;
+  internalEvents: Set<string>;
+  outputEvents: Set<string>;
 }

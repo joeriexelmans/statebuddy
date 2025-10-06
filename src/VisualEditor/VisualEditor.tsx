@@ -1,5 +1,5 @@
 import { MouseEventHandler, SetStateAction, useEffect, useRef, useState } from "react";
-import { Line2D, Rect2D, Vec2D, addV2D, area, getBottomSide, getLeftSide, getRightSide, getTopSide, isEntirelyWithin, normalizeRect, subtractV2D, transformLine, transformRect } from "./geometry";
+import { ArcDirection, Line2D, Rect2D, Vec2D, addV2D, arcDirection, area, euclideanDistance, getBottomSide, getLeftSide, getRightSide, getTopSide, isEntirelyWithin, normalizeRect, subtractV2D, transformLine, transformRect } from "./geometry";
 
 import "./VisualEditor.css";
 
@@ -396,37 +396,64 @@ export function VisualEditor() {
     };
   }, [selectingState, dragging]);
 
-  // whenever an arrow is selected, highlight the rountangle sides it connects to
-  // just for visual feedback
-  let sidesToHighlight: {[key: string]: RountanglePart[]} = {};
-  let arrowsToHighlight: {[key: string]: Arrow} = {};
-  let textsToHighlight: {[key: string]: Text} = {};
+  // detect what is 'connected'
+  const arrow2SideMap = new Map<string,[{ uid: string; part: RountanglePart; } | undefined, { uid: string; part: RountanglePart; } | undefined]>();
+  const side2ArrowMap = new Map<string, Set<["start"|"end", string]>>();
+  const text2ArrowMap = new Map<string,string>();
+  const arrow2TextMap = new Map<string,string[]>();
+  for (const arrow of state.arrows) {
+    const startSide = findNearestRountangleSide(arrow, "start", state.rountangles);
+    const endSide = findNearestRountangleSide(arrow, "end", state.rountangles);
+    if (startSide || endSide) {
+      arrow2SideMap.set(arrow.uid, [startSide, endSide]);
+    }
+    if (startSide) {
+      const arrowConns = side2ArrowMap.get(startSide.uid) || new Set();
+      arrowConns.add(["start", arrow.uid]);
+      side2ArrowMap.set(startSide.uid, arrowConns);
+    }
+    if (endSide) {
+      const arrowConns = side2ArrowMap.get(endSide.uid) || new Set();
+      arrowConns.add(["end", arrow.uid]);
+      side2ArrowMap.set(endSide.uid, arrowConns);
+    }
+  }
+  for (const text of state.texts) {
+    const nearestArrow = findNearestArrow(text.topLeft, state.arrows);
+    if (nearestArrow) {
+      text2ArrowMap.set(text.uid, nearestArrow.uid);
+      const textsOfArrow = arrow2TextMap.get(nearestArrow.uid) || [];
+      textsOfArrow.push(text.uid);
+      arrow2TextMap.set(nearestArrow.uid, textsOfArrow);
+    }
+  }
+
+  // for visual feedback, when selecting/moving one thing, we also highlight (in green) all the things that belong to the thing we selected.
+  const sidesToHighlight: {[key: string]: RountanglePart[]} = {};
+  const arrowsToHighlight: {[key: string]: boolean} = {};
+  const textsToHighlight: {[key: string]: boolean} = {};
   for (const selected of selection) {
-    for (const arrow of state.arrows) {
-      if (arrow.uid === selected.uid) {
-        const rSideStart = findNearestRountangleSide(arrow, "start", state.rountangles);
-        if (rSideStart) {
-          sidesToHighlight[rSideStart.uid] = [...(sidesToHighlight[rSideStart.uid] || []), rSideStart.part];
-        }
-        const rSideEnd = findNearestRountangleSide(arrow, "end", state.rountangles);
-        if (rSideEnd) {
-          sidesToHighlight[rSideEnd.uid] = [...(sidesToHighlight[rSideEnd.uid] || []), rSideEnd.part];
-        }
-        for (const text of state.texts) {
-          const belongsToArrow = findNearestArrow(text.topLeft, state.arrows);
-          if (belongsToArrow === arrow) {
-            textsToHighlight[text.uid] = text;
-          }
-        }
+    const sides = arrow2SideMap.get(selected.uid);
+    if (sides) {
+      const [startSide, endSide] = sides;
+      if (startSide) sidesToHighlight[startSide.uid] = [...sidesToHighlight[startSide.uid]||[], startSide.part];
+      if (endSide) sidesToHighlight[endSide.uid] = [...sidesToHighlight[endSide.uid]||[], endSide.part];
+    }
+    const texts = arrow2TextMap.get(selected.uid);
+    if (texts) {
+      for (const textUid of texts) {
+        textsToHighlight[textUid] = true;
       }
     }
-    for (const text of state.texts) {
-      if (text.uid === selected.uid) {
-        const belongsToArrow = findNearestArrow(text.topLeft, state.arrows);
-        if (belongsToArrow) {
-          arrowsToHighlight[belongsToArrow.uid] = belongsToArrow;
-        }
+    const arrows = side2ArrowMap.get(selected.uid);
+    if (arrows) {
+      for (const [arrowPart, arrowUid] of arrows) {
+        arrowsToHighlight[arrowUid] = true;
       }
+    }
+    const arrow2 = text2ArrowMap.get(selected.uid);
+    if (arrow2) {
+      arrowsToHighlight[arrow2] = true;
     }
   }
 
@@ -461,13 +488,22 @@ export function VisualEditor() {
       errors={errors.filter(([uid,msg])=>uid===rountangle.uid).map(err=>err[1])}
       />)}
 
-    {state.arrows.map(arrow => <ArrowSVG
-      key={arrow.uid}
-      arrow={arrow}
-      selected={selection.find(a => a.uid === arrow.uid)?.parts || []}
-      errors={errors.filter(([uid,msg])=>uid===arrow.uid).map(err=>err[1])}
-      highlight={arrowsToHighlight.hasOwnProperty(arrow.uid)}
-      />
+    {state.arrows.map(arrow => {
+      const sides = arrow2SideMap.get(arrow.uid);
+      console.log(sides, arrow);
+      let arc = "no" as ArcDirection;
+      if (sides && sides[0]?.uid === sides[1]?.uid && sides[0].uid !== undefined) {
+        arc = arcDirection(sides[0]?.part, sides[1]?.part);
+      }
+      return <ArrowSVG
+        key={arrow.uid}
+        arrow={arrow}
+        selected={selection.find(a => a.uid === arrow.uid)?.parts || []}
+        errors={errors.filter(([uid,msg])=>uid===arrow.uid).map(err=>err[1])}
+        highlight={arrowsToHighlight.hasOwnProperty(arrow.uid)}
+        arc={arc}
+        />;
+      }
     )}
 
     {state.texts.map(txt => {
@@ -479,6 +515,7 @@ export function VisualEditor() {
           {txt.text.slice(0, start.offset)}
           <tspan className="error" data-uid={txt.uid} data-parts="text">
             {txt.text.slice(start.offset, end.offset)}
+            {start.offset === end.offset && <>_</>}
           </tspan>
           {txt.text.slice(end.offset)}
         </>;
@@ -486,18 +523,11 @@ export function VisualEditor() {
       else {
         markedText = <>{txt.text}</>;
       }
-      // const annotatedText = err ? [...txt.text].map((char,i) => {
-      //   if (i >= err.location.start.offset && i < err.location.end.offset) {
-      //     return char+'\u0332';
-      //   }
-      //   return char;
-      // }).join('') : txt.text;
       return <text
         key={txt.uid}
         className={
           (selection.find(s => s.uid === txt.uid)?.parts?.length ? "selected":"")
           +(textsToHighlight.hasOwnProperty(txt.uid)?" highlight":"")
-          // +(errors.some(([uid]) => uid === txt.uid)?" error":"")
         }
         x={txt.topLeft.x}
         y={txt.topLeft.y}
@@ -677,20 +707,23 @@ export function RountangleSVG(props: {rountangle: Rountangle, selected: string[]
   </g>;
 }
 
-export function ArrowSVG(props: {arrow: Arrow, selected: string[], errors: string[], highlight: boolean}) {
+export function ArrowSVG(props: {arrow: Arrow, selected: string[], errors: string[], highlight: boolean, arc: ArcDirection}) {
   const {start, end, uid} = props.arrow;
+  const radius = euclideanDistance(start, end)/1.6;
+  const largeArc = "1";
+  const arcOrLine = props.arc === "no" ? "L" :
+    `A ${radius} ${radius} 0 ${largeArc} ${props.arc === "ccw" ? "0" : "1"}`;
   return <g>
-    <line
+    <path
       className={"arrow"
         +(props.selected.length===2?" selected":"")
         +(props.errors.length>0?" error":"")
         +(props.highlight?" highlight":"")
       }
       markerEnd='url(#arrowEnd)'
-      x1={start.x}
-      y1={start.y}
-      x2={end.x}
-      y2={end.y}
+      d={`M ${start.x} ${start.y}
+            ${arcOrLine}
+            ${end.x} ${end.y}`}
       data-uid={uid}
       data-parts="start end"
     />

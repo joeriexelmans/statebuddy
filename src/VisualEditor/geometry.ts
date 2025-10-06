@@ -1,3 +1,5 @@
+import { RountanglePart } from "./editor_types";
+
 export type Vec2D = {
   x: number;
   y: number;
@@ -160,4 +162,37 @@ export function getBottomSide(rect: Rect2D): Line2D {
     start: { x: rect.topLeft.x, y: rect.topLeft.y + rect.size.y },
     end: { x: rect.topLeft.x + rect.size.x, y: rect.topLeft.y + rect.size.y },
   };
+}
+
+export type ArcDirection = "no" | "cw" | "ccw";
+
+export function arcDirection(start: RountanglePart, end: RountanglePart): ArcDirection {
+  if (start === end) {
+    if (start === "left" || start === "top") {
+      return "ccw";
+    }
+    else {
+      return "cw";
+    }
+  }
+  const both = [start, end];
+  if (both.includes("top") && both.includes("bottom")) {
+    return "no";
+  }
+  if (both.includes("left") && both.includes("right")) {
+    return "no";
+  }
+  if (start === "top" && end === "left") {
+    return "ccw";
+  }
+  if (start === "left" && end === "bottom") {
+    return "ccw";
+  }
+  if (start === "bottom" && end === "right") {
+    return "ccw";
+  }
+  if (start === "right" && end === "top") {
+    return "ccw";
+  }
+  return "cw";
 }
