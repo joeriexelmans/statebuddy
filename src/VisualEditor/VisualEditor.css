@@ -136,3 +136,11 @@ text.error, tspan.error {
   fill: rgb(230,0,0);
   font-weight: 600;
 }
+
+.errorHover {
+  display: none;
+}
+
+g:hover > .errorHover {
+  display: inline;
+}

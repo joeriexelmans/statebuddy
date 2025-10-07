@@ -3,6 +3,7 @@ import { TransitionLabel } from "./label_ast";
 export type AbstractState = {
   uid: string;
   children: ConcreteState[];
+  comments: [string, string][]; // array of tuple (text-uid, text-text)
 }
 
 export type AndState = {

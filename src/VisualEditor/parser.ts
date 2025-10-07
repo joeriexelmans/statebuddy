@@ -1,8 +1,8 @@
 import { act } from "react";
 import { ConcreteState, OrState, Statechart, Transition } from "./ast";
-import { findNearestArrow, findNearestRountangleSide, Rountangle, VisualEditorState } from "./editor_types";
+import { findNearestArrow, findNearestRountangleSide, findRountangle, Rountangle, VisualEditorState } from "./editor_types";
 import { isEntirelyWithin, transformLine } from "./geometry";
-import { Action, Expression, TransitionLabel } from "./label_ast";
+import { Action, Expression, ParsedText, TransitionLabel } from "./label_ast";
 
 import { parse as parseLabel, SyntaxError } from "./label_parser";
 
@@ -37,6 +37,7 @@ export function parseStatechart(state: VisualEditorState): [Statechart, [string,
       kind: rt.kind,
       uid: rt.uid,
       children: [],
+      comments: [],
     }
     if (state.kind === "or") {
       state.initial = [];
@@ -122,18 +123,28 @@ export function parseStatechart(state: VisualEditorState): [Statechart, [string,
   // step 3: figure out labels
 
   for (const text of state.texts) {
-    const belongsToArrow = findNearestArrow(text.topLeft, state.arrows);
-    if (belongsToArrow) {
-      const belongsToTransition = uid2Transition.get(belongsToArrow.uid);
-      if (belongsToTransition) {
-        // parse as transition label
-        let transitionLabel: TransitionLabel;
-        try {
-          transitionLabel = parseLabel(text.text); // may throw
-          belongsToTransition.label.push(transitionLabel);
+    let parsed: ParsedText;
+    try {
+      parsed = parseLabel(text.text); // may throw
+    } catch (e) {
+      if (e instanceof SyntaxError) {
+        errorShapes.push([text.uid, e]);
+        continue;
+      }
+      else {
+        throw e;
+      }
+    }
+    if (parsed.kind === "transitionLabel") {
+      const belongsToArrow = findNearestArrow(text.topLeft, state.arrows);
+      if (belongsToArrow) {
+        const belongsToTransition = uid2Transition.get(belongsToArrow.uid);
+        if (belongsToTransition) {
+          // parse as transition label
+          belongsToTransition.label.push(parsed);
           // collect events
-          if (transitionLabel.trigger.kind === "event") {
-            const {event} = transitionLabel.trigger;
+          if (parsed.trigger.kind === "event") {
+            const {event} = parsed.trigger;
             if (event.startsWith("_")) {
               internalEvents.add(event);
             }
@@ -141,7 +152,7 @@ export function parseStatechart(state: VisualEditorState): [Statechart, [string,
               inputEvents.add(event);
             }
           }
-          for (const action of transitionLabel.actions) {
+          for (const action of parsed.actions) {
             if (action.kind === "raise") {
               const {event} = action;
               if (event.startsWith("_")) {
@@ -154,21 +165,30 @@ export function parseStatechart(state: VisualEditorState): [Statechart, [string,
           }
           // collect variables
           variables = variables
-            .union(findVariables(transitionLabel.guard));
-          for (const action of transitionLabel.actions) {
+            .union(findVariables(parsed.guard));
+          for (const action of parsed.actions) {
             variables = variables.union(findVariablesAction(action));
           }
         }
-        catch (e) {
-          if (e instanceof SyntaxError) {
-            belongsToTransition.label.push(null);
-            errorShapes.push([text.uid, e]);
-          }
-          else {
-            throw e;
-          }
-        }
+        continue;
       }
+    }
+    // text does not belong to transition...
+    // so it belongs to a rountangle (a state)
+    const rountangle = findRountangle(text.topLeft, state.rountangles);
+    if (parsed.kind === "transitionLabel") {
+      // labels belonging to a rountangle (= a state) must by entry/exit actions
+      // if we cannot find a containing state, then it belong to the root
+      const state = rountangle ? uid2State.get(rountangle.uid)! : root;
+      if (parsed.trigger.kind !== "entry" && parsed.trigger.kind !== "exit") {
+        errorShapes.push([text.uid, {
+          message: "states can only have entry/exit triggers",
+          location: {start: {offset: 0}, end: {offset: text.text.length}},
+        }]);
+      }
+    }
+    else if (parsed.kind === "comment") {
+      // just append comments to their respective states
     }
   }
 

@@ -8,6 +8,8 @@ import { VisualEditorState, Rountangle, emptyState, Arrow, ArrowPart, Rountangle
 import { parseStatechart } from "./parser";
 import { CORNER_HELPER_OFFSET, CORNER_HELPER_RADIUS, MIN_ROUNTANGLE_SIZE, ROUNTANGLE_RADIUS } from "./parameters";
 
+import * as lz4 from "@nick/lz4";
+
 
 type DraggingState = {
   lastMousePos: Vec2D;
@@ -112,9 +114,14 @@ export function VisualEditor() {
   const refSVG = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
-    const recoveredState = JSON.parse(window.localStorage.getItem("state") || "null");
-    if (recoveredState) {
+    const compressedState = window.location.hash.slice(1);
+    try {
+      const compressedBuffer = Uint8Array.fromBase64(compressedState);
+      const recoveredState = JSON.parse(new TextDecoder().decode(lz4.decompress(compressedBuffer)));
       setState(recoveredState);
+    }
+    catch (e) {
+      console.error("could not recover state:", e);
     }
   }, []);
 
@@ -123,8 +130,10 @@ export function VisualEditor() {
     //   1) it's a hack - prevents us from writing the initial state to localstorage (before having recovered the state that was in localstorage)
     //   2) performance: only save when the user does nothing
     const timeout = setTimeout(() => {
-      window.localStorage.setItem("state", JSON.stringify(state));
-      // console.log('saved to localStorage');
+      const stateBuffer = new TextEncoder().encode(JSON.stringify(state));
+      const compressedStateBuffer = lz4.compress(stateBuffer);
+      const compressedStateString = compressedStateBuffer.toBase64();
+      window.location.hash = "#"+compressedStateString;
 
       const [statechart, errors] = parseStatechart(state);
       console.log('statechart: ', statechart, 'errors:', errors);
@@ -402,6 +411,7 @@ export function VisualEditor() {
   const text2ArrowMap = new Map<string,string>();
   const arrow2TextMap = new Map<string,string[]>();
   const text2RountangleMap = new Map<string, string>();
+  const rountangle2TextMap = new Map<string, string[]>();
   for (const arrow of state.arrows) {
     const startSide = findNearestRountangleSide(arrow, "start", state.rountangles);
     const endSide = findNearestRountangleSide(arrow, "end", state.rountangles);
@@ -433,6 +443,9 @@ export function VisualEditor() {
       const rountangle = findRountangle(text.topLeft, state.rountangles);
       if (rountangle) {
         text2RountangleMap.set(text.uid, rountangle.uid);
+        const texts = rountangle2TextMap.get(rountangle.uid) || [];
+        texts.push(text.uid);
+        rountangle2TextMap.set(rountangle.uid, texts);
       }
     }
   }
@@ -449,13 +462,14 @@ export function VisualEditor() {
       if (startSide) sidesToHighlight[startSide.uid] = [...sidesToHighlight[startSide.uid]||[], startSide.part];
       if (endSide) sidesToHighlight[endSide.uid] = [...sidesToHighlight[endSide.uid]||[], endSide.part];
     }
-    const texts = arrow2TextMap.get(selected.uid);
-    if (texts) {
-      for (const textUid of texts) {
-        textsToHighlight[textUid] = true;
-      }
+    const texts = [
+      ...(arrow2TextMap.get(selected.uid) || []),
+      ...(rountangle2TextMap.get(selected.uid) || []),
+    ];
+    for (const textUid of texts) {
+      textsToHighlight[textUid] = true;
     }
-    const arrows = side2ArrowMap.get(selected.uid);
+    const arrows = side2ArrowMap.get(selected.uid) || [];
     if (arrows) {
       for (const [arrowPart, arrowUid] of arrows) {
         arrowsToHighlight[arrowUid] = true;
@@ -504,7 +518,6 @@ export function VisualEditor() {
 
     {state.arrows.map(arrow => {
       const sides = arrow2SideMap.get(arrow.uid);
-      console.log(sides, arrow);
       let arc = "no" as ArcDirection;
       if (sides && sides[0]?.uid === sides[1]?.uid && sides[0].uid !== undefined) {
         arc = arcDirection(sides[0]?.part, sides[1]?.part);
@@ -522,32 +535,33 @@ export function VisualEditor() {
 
     {state.texts.map(txt => {
       const err = errors.find(([uid]) => txt.uid === uid)?.[1];
-      let markedText;
+      const commonProps = {
+        "data-uid": txt.uid,
+        "data-parts": "text",
+        textAnchor: "middle",
+        className: 
+          (selection.find(s => s.uid === txt.uid)?.parts?.length ? "selected":"")
+          +(textsToHighlight.hasOwnProperty(txt.uid)?" highlight":""),
+      }
+      let textNode;
       if (err) {
         const {start,end} = err.location;
-        markedText = <>
+        textNode = <><text {...commonProps}>
           {txt.text.slice(0, start.offset)}
           <tspan className="error" data-uid={txt.uid} data-parts="text">
             {txt.text.slice(start.offset, end.offset)}
             {start.offset === end.offset && <>_</>}
           </tspan>
           {txt.text.slice(end.offset)}
-        </>;
+        </text>
+        <text className="error errorHover" y={20} textAnchor="middle">{err.message}</text></>;
       }
       else {
-        markedText = <>{txt.text}</>;
+        textNode = <text {...commonProps}>{txt.text}</text>;
       }
-      return <text
+      return <g
         key={txt.uid}
-        className={
-          (selection.find(s => s.uid === txt.uid)?.parts?.length ? "selected":"")
-          +(textsToHighlight.hasOwnProperty(txt.uid)?" highlight":"")
-        }
-        x={txt.topLeft.x}
-        y={txt.topLeft.y}
-        textAnchor="middle"
-        data-uid={txt.uid}
-        data-parts="text"
+        transform={`translate(${txt.topLeft.x} ${txt.topLeft.y})`}
         onDoubleClick={() => {
           const newText = prompt("", txt.text);
           if (newText) {
@@ -566,10 +580,14 @@ export function VisualEditor() {
               }),
             }));
           }
+          else if (newText === "") {
+            setState(state => ({
+              ...state,
+              texts: state.texts.filter(t => t.uid !== txt.uid),
+            }));
+          }
         }}
-      >
-        {markedText}
-      </text>;})}
+      >{textNode}</g>;})}
 
     {selectingState && <Selecting {...selectingState} />}
 

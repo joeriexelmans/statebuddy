@@ -1,11 +1,18 @@
+export type ParsedText = TransitionLabel | Comment;
+
 export type TransitionLabel = {
+  kind: "transitionLabel";
   trigger: Trigger;
   guard: Expression;
   actions: Action[];
 }
 
+export type Comment = {
+  kind: "comment";
+  text: string;
+}
 
-export type Trigger = EventTrigger | AfterTrigger;
+export type Trigger = EventTrigger | AfterTrigger | EntryTrigger | ExitTrigger;
 
 export type EventTrigger = {
   kind: "event";
@@ -15,6 +22,13 @@ export type EventTrigger = {
 export type AfterTrigger = {
   kind: "after";
   durationMs: number;
+}
+
+export type EntryTrigger = {
+  kind: "entry";
+}
+export type ExitTrigger = {
+  kind: "exit";
 }
 
 

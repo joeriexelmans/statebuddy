@@ -1,9 +1,12 @@
-start = _ trigger:trigger _ guard:("[" _ guard _ "]")? _ actions:("/" _ actions )? _ {
-	return {
-    	trigger,
-        guard: guard ? guard[2] : {kind: "literal", value: true},
-        actions: actions ? actions[2] : [],
-    };
+start = tlabel / comment
+
+tlabel = _ trigger:trigger _ guard:("[" _ guard _ "]")? _ actions:("/" _ actions )? _ {
+  return {
+    kind: "transitionLabel",
+    trigger,
+    guard: guard ? guard[2] : {kind: "literal", value: true},
+    actions: actions ? actions[2] : [],
+  };
 }
 
 trigger = afterTrigger / entryTrigger / exitTrigger / eventTrigger
@@ -52,9 +55,6 @@ number = [0-9]+ {
 	return parseInt(text());
 }
 
-_ "whitespace"
-  = [ \t\n\r]*
-  
 expr = compare
 
 compare = sum:sum rest:((_ ("==" / "!=" / "<" / ">" / "<=" / ">=") _) compare)? {
@@ -114,3 +114,15 @@ boolean = ("true" / "false") {
 raise = "^" _ event:identifier {
 	return {kind: "raise", event};
 }
+
+_ "whitespace"
+  = (comment / [ \t\n\r])*
+  { return null; }
+
+comment = "//" _ text:.* _ ('\n' / !.) {
+	return {
+    	kind: "comment",
+        text: text.join(''),
+    };
+}
+
