@@ -144,3 +144,7 @@ text.error, tspan.error {
 g:hover > .errorHover {
   display: inline;
 }
+
+text.uid {
+  fill: lightgrey;
+}

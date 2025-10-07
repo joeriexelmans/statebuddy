@@ -734,6 +734,7 @@ export function RountangleSVG(props: {rountangle: Rountangle, selected: string[]
       data-parts="bottom left"
       />
     <text x={10} y={20}
+      className="uid"
       data-uid={uid}
       data-parts="left top right bottom">{uid}</text>
   </g>;

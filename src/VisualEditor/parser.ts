@@ -15,6 +15,9 @@ export function parseStatechart(state: VisualEditorState): [Statechart, [string,
     uid: "root",
     children: [],
     initial: [],
+    comments: [],
+    entryActions: [],
+    exitActions: [],
   }
 
   const uid2State = new Map<string, ConcreteState>([["root", root]]);
@@ -38,6 +41,8 @@ export function parseStatechart(state: VisualEditorState): [Statechart, [string,
       uid: rt.uid,
       children: [],
       comments: [],
+      entryActions: [],
+      exitActions: [],
     }
     if (state.kind === "or") {
       state.initial = [];
@@ -122,7 +127,8 @@ export function parseStatechart(state: VisualEditorState): [Statechart, [string,
 
   // step 3: figure out labels
 
-  for (const text of state.texts) {
+  const textsSorted = state.texts.toSorted((a,b) => a.topLeft.y - b.topLeft.y);
+  for (const text of textsSorted) {
     let parsed: ParsedText;
     try {
       parsed = parseLabel(text.text); // may throw
@@ -176,19 +182,27 @@ export function parseStatechart(state: VisualEditorState): [Statechart, [string,
     // text does not belong to transition...
     // so it belongs to a rountangle (a state)
     const rountangle = findRountangle(text.topLeft, state.rountangles);
+    const belongsToState = rountangle ? uid2State.get(rountangle.uid)! : root;
     if (parsed.kind === "transitionLabel") {
       // labels belonging to a rountangle (= a state) must by entry/exit actions
       // if we cannot find a containing state, then it belong to the root
-      const state = rountangle ? uid2State.get(rountangle.uid)! : root;
-      if (parsed.trigger.kind !== "entry" && parsed.trigger.kind !== "exit") {
+      if (parsed.trigger.kind === "entry") {
+        belongsToState.entryActions.push(...parsed.actions);
+      }
+      else if(parsed.trigger.kind === "exit") {
+        belongsToState.exitActions.push(...parsed.actions);
+      }
+      else {
         errorShapes.push([text.uid, {
           message: "states can only have entry/exit triggers",
           location: {start: {offset: 0}, end: {offset: text.text.length}},
-        }]);
+        } as unknown as string]);
       }
+
     }
     else if (parsed.kind === "comment") {
       // just append comments to their respective states
+      belongsToState.comments.push([text.uid, parsed.text]);
     }
   }
 
