@@ -9,6 +9,7 @@ import { parseStatechart } from "./parser";
 import { CORNER_HELPER_OFFSET, CORNER_HELPER_RADIUS, MIN_ROUNTANGLE_SIZE, ROUNTANGLE_RADIUS } from "./parameters";
 
 import * as lz4 from "@nick/lz4";
+import { initialize } from "./interpreter";
 
 
 type DraggingState = {
@@ -138,6 +139,9 @@ export function VisualEditor() {
       const [statechart, errors] = parseStatechart(state);
       console.log('statechart: ', statechart, 'errors:', errors);
       setErrors(errors);
+
+      const rt = initialize(statechart);
+      console.log('runtime:', rt);
     }, 100);
     return () => clearTimeout(timeout);
   }, [state]);
@@ -183,7 +187,7 @@ export function VisualEditor() {
             ...state,
             texts: [...state.texts, {
               uid: newID,
-              text: "Double-click to edit text",
+              text: "// Double-click to edit",
               topLeft: currentPointer,
             }],
             nextID: state.nextID+1,
@@ -538,7 +542,7 @@ export function VisualEditor() {
       const commonProps = {
         "data-uid": txt.uid,
         "data-parts": "text",
-        textAnchor: "middle",
+        textAnchor: "middle" as "middle",
         className: 
           (selection.find(s => s.uid === txt.uid)?.parts?.length ? "selected":"")
           +(textsToHighlight.hasOwnProperty(txt.uid)?" highlight":""),
@@ -763,12 +767,12 @@ export function ArrowSVG(props: {arrow: Arrow, selected: string[], errors: strin
 
     {props.errors.length>0 && <text className="error" x={(start.x+end.x)/2+5} y={(start.y+end.y)/2} data-uid={uid} data-parts="start end">{props.errors.join(' ')}</text>}
 
-    <line
-      className="lineHelper"
-      x1={start.x}
-      y1={start.y}
-      x2={end.x}
-      y2={end.y}
+    <path
+      className="pathHelper"
+      // markerEnd='url(#arrowEnd)'
+      d={`M ${start.x} ${start.y}
+            ${arcOrLine}
+            ${end.x} ${end.y}`}
       data-uid={uid}
       data-parts="start end"
     />

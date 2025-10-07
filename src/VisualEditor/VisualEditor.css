@@ -36,7 +36,9 @@ text.highlight {
 }
 
 .rountangle:hover {
-  /* fill: lightgrey; */
+  /* stroke: darkcyan; */
+  /* stroke-opacity: 0.2; */
+  /* fill: #eee; */
   /* stroke-width: 4px; */
   /* cursor: grab; */
 }
@@ -65,15 +67,29 @@ text.highlight {
   stroke-width: 16px;
 }
 .lineHelper:hover {
-  stroke: rgba(0, 255, 0, 0.2);
+  stroke: darkcyan;
+  stroke-opacity: 0.2;
   cursor: grab;
 }
+
+.pathHelper {
+  fill: none;
+  stroke: rgba(0, 0, 0, 0);
+  stroke-width: 16px;
+}
+.pathHelper:hover {
+  stroke: darkcyan;
+  stroke-opacity: 0.2;
+  cursor: grab;
+}
+
 
 .circleHelper {
   fill: rgba(0, 0, 0, 0);
 }
 .circleHelper:hover {
-  fill: rgba(0, 255, 0, 0.2);
+  fill: darkcyan;
+  fill-opacity: 0.2;
   cursor: grab;
 }
 

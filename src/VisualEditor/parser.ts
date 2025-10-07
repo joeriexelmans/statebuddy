@@ -196,7 +196,7 @@ export function parseStatechart(state: VisualEditorState): [Statechart, [string,
         errorShapes.push([text.uid, {
           message: "states can only have entry/exit triggers",
           location: {start: {offset: 0}, end: {offset: text.text.length}},
-        } as unknown as string]);
+        }]);
       }
 
     }
@@ -235,9 +235,7 @@ function findVariables(expr: Expression): Set<string> {
   else if (expr.kind === "binaryExpr") {
     return findVariables(expr.lhs).union(findVariables(expr.rhs));
   }
-  else if (expr.kind === "literal") {
-    return new Set();
-  }
+  return new Set();
 }
 
 function findVariablesAction(action: Action): Set<string> {
