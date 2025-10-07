@@ -20,19 +20,25 @@ type ActionScope = {
   raised: RaisedEvents,
 };
 
-export function enter(state: ConcreteState, rt: ActionScope): ({mode: Mode} & ActionScope) {
+type EnteredScope = { mode: Mode } & ActionScope;
+
+export function enter(state: ConcreteState, rt: ActionScope): EnteredScope {
   let {environment, raised} = rt;
+
+  // execute entry actions
   for (const action of state.entryActions) {
     ({environment, raised} = execAction(action, {environment, raised}));
   }
+
+  // enter children...
+  const mode: {[uid:string]: Mode} = {};
   if (state.kind === "and") {
-    const mode: {[uid:string]: Mode} = {};
+    
     for (const child of state.children) {
       let childMode;
       ({mode: childMode, environment, raised} = enter(child, {environment, raised}));
       mode[child.uid] = childMode;
     }
-    return { mode, environment, raised };
   }
   else if (state.kind === "or") {
     const mode: {[uid:string]: Mode} = {};
@@ -41,10 +47,29 @@ export function enter(state: ConcreteState, rt: ActionScope): ({mode: Mode} & Ac
       let childMode;
       ({mode: childMode, environment, raised} = enter(child, {environment, raised}));
       mode[child.uid] = childMode;
-      return { mode, environment, raised };
     }
   }
-  throw new Error("should never reach here");
+
+  return { mode, environment, raised };
+}
+
+export function exit(state: ConcreteState, rt: EnteredScope): ActionScope {
+  let {mode, environment, raised} = rt;
+
+  // exit all active children...
+  for (const [childUid, childMode] of Object.entries(mode)) {
+    const child = state.children.find(child => child.uid === childUid);
+    if (child) {
+      ({environment, raised} = exit(child, {mode: childMode, environment, raised}));
+    }
+  }
+
+  // execute exit actions
+  for (const action of state.exitActions) {
+    ({environment, raised} = execAction(action, {environment, raised}));
+  }
+
+  return {environment, raised};
 }
 
 export function execAction(action: Action, rt: ActionScope): ActionScope {

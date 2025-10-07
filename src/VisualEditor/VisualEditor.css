@@ -22,7 +22,8 @@ text.highlight {
 }
 
 .selecting {
-  fill: rgba(0, 0, 255, 0.2);
+  fill: blue;
+  fill-opacity: 0.2;
   stroke-width: 1px;
   stroke:black;
   stroke-dasharray: 7 6;
@@ -36,7 +37,7 @@ text.highlight {
 }
 
 .rountangle:hover {
-  /* stroke: darkcyan; */
+  /* stroke: blue; */
   /* stroke-opacity: 0.2; */
   /* fill: #eee; */
   /* stroke-width: 4px; */
@@ -67,7 +68,7 @@ text.highlight {
   stroke-width: 16px;
 }
 .lineHelper:hover {
-  stroke: darkcyan;
+  stroke: blue;
   stroke-opacity: 0.2;
   cursor: grab;
 }
@@ -78,7 +79,7 @@ text.highlight {
   stroke-width: 16px;
 }
 .pathHelper:hover {
-  stroke: darkcyan;
+  stroke: blue;
   stroke-opacity: 0.2;
   cursor: grab;
 }
@@ -88,7 +89,7 @@ text.highlight {
   fill: rgba(0, 0, 0, 0);
 }
 .circleHelper:hover {
-  fill: darkcyan;
+  fill: blue;
   fill-opacity: 0.2;
   cursor: grab;
 }
@@ -136,7 +137,7 @@ text.selected, text.selected:hover {
   font-weight: 600;
 }
 text:hover {
-  fill: darkcyan;
+  fill: blue;
   /* cursor: grab; */
 }
 
