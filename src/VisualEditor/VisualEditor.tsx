@@ -1,4 +1,4 @@
-import { MouseEventHandler, SetStateAction, useEffect, useRef, useState } from "react";
+import { Dispatch, MouseEventHandler, SetStateAction, useEffect, useRef, useState } from "react";
 import { ArcDirection, Line2D, Rect2D, Vec2D, addV2D, arcDirection, area, euclideanDistance, getBottomSide, getLeftSide, getRightSide, getTopSide, isEntirelyWithin, normalizeRect, subtractV2D, transformLine, transformRect } from "./geometry";
 
 import "./VisualEditor.css";
@@ -9,7 +9,9 @@ import { parseStatechart } from "./parser";
 import { CORNER_HELPER_OFFSET, CORNER_HELPER_RADIUS, MIN_ROUNTANGLE_SIZE, ROUNTANGLE_RADIUS } from "./parameters";
 
 import * as lz4 from "@nick/lz4";
-import { initialize } from "./interpreter";
+import { getActiveStates, initialize } from "./interpreter";
+import { RT_Statechart } from "./runtime_types";
+import { emptyStatechart, Statechart } from "./ast";
 
 
 type DraggingState = {
@@ -48,7 +50,16 @@ export const sides: [RountanglePart, (r:Rect2D)=>Line2D][] = [
   ["bottom", getBottomSide],
 ];
 
-export function VisualEditor() {
+type VisualEditorProps = {
+  ast: Statechart,
+  setAST: Dispatch<SetStateAction<Statechart>>,
+  rt: RT_Statechart|null,
+  setRT: Dispatch<SetStateAction<RT_Statechart|null>>,
+  errors: [string,string][],
+  setErrors: Dispatch<SetStateAction<[string,string][]>>,
+};
+
+export function VisualEditor({ast, setAST, rt, setRT, errors, setErrors}: VisualEditorProps) {
   const [historyState, setHistoryState] = useState<HistoryState>({current: emptyState, history: [], future: []});
 
   const state = historyState.current;
@@ -110,8 +121,6 @@ export function VisualEditor() {
   // not null while the user is making a selection
   const [selectingState, setSelectingState] = useState<SelectingState>(null);
 
-  const [errors, setErrors] = useState<[string,string][]>([]);
-
   const refSVG = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
@@ -139,9 +148,7 @@ export function VisualEditor() {
       const [statechart, errors] = parseStatechart(state);
       console.log('statechart: ', statechart, 'errors:', errors);
       setErrors(errors);
-
-      const rt = initialize(statechart);
-      console.log('runtime:', rt);
+      setAST(statechart);
     }, 100);
     return () => clearTimeout(timeout);
   }, [state]);
@@ -489,6 +496,8 @@ export function VisualEditor() {
     }
   }
 
+  const active = getActiveStates(rt?.mode || {});
+
   const rootErrors = errors.filter(([uid]) => uid === "root").map(err=>err[1]);
 
   return <svg width="4000px" height="4000px"
@@ -518,6 +527,7 @@ export function VisualEditor() {
       selected={selection.find(r => r.uid === rountangle.uid)?.parts || []}
       highlight={[...(sidesToHighlight[rountangle.uid] || []), ...(rountanglesToHighlight[rountangle.uid]?["left","right","top","bottom"]:[])]}
       errors={errors.filter(([uid,msg])=>uid===rountangle.uid).map(err=>err[1])}
+      active={active.has(rountangle.uid)}
       />)}
 
     {state.arrows.map(arrow => {
@@ -631,7 +641,7 @@ function rountangleMinSize(size: Vec2D): Vec2D {
   };
 }
 
-export function RountangleSVG(props: {rountangle: Rountangle, selected: string[], highlight: RountanglePart[], errors: string[]}) {
+export function RountangleSVG(props: {rountangle: Rountangle, selected: string[], highlight: RountanglePart[], errors: string[], active: boolean}) {
   const {topLeft, size, uid} = props.rountangle;
   // always draw a rountangle with a minimum size
   // during resizing, rountangle can be smaller than this size and even have a negative size, but we don't show it
@@ -642,6 +652,7 @@ export function RountangleSVG(props: {rountangle: Rountangle, selected: string[]
         +(props.selected.length===4?" selected":"")
         +((props.rountangle.kind==="or")?" or":"")
         +(props.errors.length>0?" error":"")
+        +(props.active?" active":"")
       }
       rx={ROUNTANGLE_RADIUS} ry={ROUNTANGLE_RADIUS}
       x={0}

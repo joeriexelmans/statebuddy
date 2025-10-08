@@ -18,6 +18,7 @@ export function parseStatechart(state: VisualEditorState): [Statechart, [string,
     comments: [],
     entryActions: [],
     exitActions: [],
+    depth: 0,
   }
 
   const uid2State = new Map<string, ConcreteState>([["root", root]]);
@@ -54,10 +55,12 @@ export function parseStatechart(state: VisualEditorState): [Statechart, [string,
       const candidate = parentCandidates[i];
       if (candidate.uid === "root" || isEntirelyWithin(rt, candidate)) {
         // found our parent :)
-        const parentState = uid2State.get(candidate.uid);
-        parentState!.children.push(state);
+        const parentState = uid2State.get(candidate.uid)!;
+        parentState.children.push(state);
         parentCandidates.push(rt);
         parentLinks.set(rt.uid, candidate.uid);
+        state.parent = parentState;
+        state.depth = parentState.depth+1;
         break;
       }
     }
