@@ -152,9 +152,16 @@ export function VisualEditor({ast, setAST, rt, setRT, errors, setErrors}: Visual
     return () => clearTimeout(timeout);
   }, [state]);
 
+  function getCurrentPointer(e: MouseEvent) {
+    const bbox = refSVG.current!.getBoundingClientRect();
+    return {
+      x: e.pageX - bbox.left,
+      y: e.pageY - bbox.top,
+    }
+  }
 
   const onMouseDown: MouseEventHandler<SVGSVGElement> = (e) => {
-    const currentPointer = {x: e.pageX, y: e.pageY};
+    const currentPointer = getCurrentPointer(e);
 
     if (e.button === 1) {
       checkPoint();
@@ -240,7 +247,7 @@ export function VisualEditor({ast, setAST, rt, setRT, errors, setErrors}: Visual
   };
 
   const onMouseMove = (e: MouseEvent) => {
-    const currentPointer = {x: e.pageX, y: e.pageY};
+    const currentPointer = getCurrentPointer(e);
     if (dragging) {
       const pointerDelta = subtractV2D(currentPointer, dragging.lastMousePos);
       setState(state => ({
