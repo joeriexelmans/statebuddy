@@ -225,6 +225,7 @@ export function parseStatechart(state: VisualEditorState): [Statechart, [string,
     inputEvents,
     internalEvents,
     outputEvents,
+    uid2State,
   }, errorShapes];
 }
 

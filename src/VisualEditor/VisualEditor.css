@@ -60,7 +60,7 @@ text.highlight {
 }
 .rountangle.active {
   fill: rgb(255, 196, 0);
-  fill-opacity: 0.6;
+  fill-opacity: 0.2;
 }
 
 .selected:hover {

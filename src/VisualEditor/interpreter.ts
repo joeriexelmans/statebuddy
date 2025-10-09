@@ -1,16 +1,17 @@
-import { computeArena, ConcreteState, isAncestorOf, Statechart, Transition } from "./ast";
-import { Action, Expression } from "./label_ast";
+import { act } from "react";
+import { evalExpr } from "./actionlang_interpreter";
+import { computeArena, ConcreteState, getDescendants, isAncestorOf, isOverlapping, OrState, Statechart, stateDescription, Transition } from "./ast";
+import { Action } from "./label_ast";
 import { Environment, RaisedEvents, Mode, RT_Statechart, initialRaised } from "./runtime_types";
 
 export function initialize(ast: Statechart): RT_Statechart {
-  const {mode, environment, ...raised} = enterDefault(ast.root, {
+  const {enteredStates, environment, ...raised} = enterDefault(ast.root, {
     environment: new Map(),
     ...initialRaised,
   });
   return {
-    mode,
+    mode: enteredStates,
     environment,
-    inputEvents: [],
     ...raised,
   };
 }
@@ -19,7 +20,7 @@ type ActionScope = {
   environment: Environment,
 } & RaisedEvents;
 
-type EnteredScope = { mode: Mode } & ActionScope;
+type EnteredScope = { enteredStates: Mode } & ActionScope;
 
 export function enterDefault(state: ConcreteState, rt: ActionScope): EnteredScope {
   let actionScope = rt;
@@ -30,25 +31,29 @@ export function enterDefault(state: ConcreteState, rt: ActionScope): EnteredScop
   }
 
   // enter children...
-  const mode: {[uid:string]: Mode} = {};
+  let enteredStates = new Set([state.uid]);
   if (state.kind === "and") {
     // enter every child
     for (const child of state.children) {
-      let childMode;
-      ({mode: childMode, ...actionScope} = enterDefault(child, actionScope));
-      mode[child.uid] = childMode;
+      let enteredChildren;
+      ({enteredStates: enteredChildren, ...actionScope} = enterDefault(child, actionScope));
+      enteredStates = enteredStates.union(enteredChildren);
     }
   }
   else if (state.kind === "or") {
     // same as AND-state, but we only enter the initial state(s)
-    for (const [_, child] of state.initial) {
-      let childMode;
-      ({mode: childMode, ...actionScope} = enterDefault(child, actionScope));
-      mode[child.uid] = childMode;
+    if (state.initial.length > 0) {
+      if (state.initial.length > 1) {
+        console.warn(state.uid + ': multiple initial states, only entering one of them');
+      }
+      let enteredChildren;
+      ({enteredStates: enteredChildren, ...actionScope} = enterDefault(state.initial[0][1], actionScope));
+      enteredStates = enteredStates.union(enteredChildren);
     }
+    console.warn(state.uid + ': no initial state');
   }
 
-  return { mode, ...actionScope };
+  return {enteredStates, ...actionScope};
 }
 
 export function enterPath(path: ConcreteState[], rt: ActionScope): EnteredScope {
@@ -62,49 +67,69 @@ export function enterPath(path: ConcreteState[], rt: ActionScope): EnteredScope 
   }
 
   // enter children...
-
-  const mode: {[uid:string]: Mode} = {};
+  let enteredStates = new Set([state.uid]);
   if (state.kind === "and") {
     // enter every child
     for (const child of state.children) {
-      let childMode;
+      let enteredChildren;
       if (rest.length > 0 && child.uid === rest[0].uid) {
-        ({mode: childMode, ...actionScope} = enterPath(rest, actionScope));
+        ({enteredStates: enteredChildren, ...actionScope} = enterPath(rest, actionScope));
       }
       else {
-        ({mode: childMode, ...actionScope} = enterDefault(child, actionScope));
+        ({enteredStates: enteredChildren, ...actionScope} = enterDefault(child, actionScope));
       }
-      mode[child.uid] = childMode;
+      enteredStates = enteredStates.union(enteredChildren);
     }
   }
   else if (state.kind === "or") {
     if (rest.length > 0) {
-      let childMode;
-      ({mode: childMode, ...actionScope} = enterPath(rest, actionScope));
-      mode[rest[0].uid] = childMode;
+      let enteredChildren;
+      ({enteredStates: enteredChildren, ...actionScope} = enterPath(rest, actionScope));
+      enteredStates = enteredStates.union(enteredChildren);
     }
     else {
       // same as AND-state, but we only enter the initial state(s)
       for (const [_, child] of state.initial) {
-        let childMode;
-        ({mode: childMode, ...actionScope} = enterDefault(child, actionScope));
-        mode[child.uid] = childMode;
+        let enteredChildren;
+        ({enteredStates: enteredChildren, ...actionScope} = enterDefault(child, actionScope));
+        enteredStates = enteredStates.union(enteredChildren);
       }
     }
   }
 
-  return { mode, ...actionScope };
+  return { enteredStates, ...actionScope };
 }
 
+// exit the given state and all its active descendants
 export function exitCurrent(state: ConcreteState, rt: EnteredScope): ActionScope {
-  let {mode, ...actionScope} = rt;
+  let {enteredStates, ...actionScope} = rt;
 
   // exit all active children...
-  for (const [childUid, childMode] of Object.entries(mode)) {
-    const child = state.children.find(child => child.uid === childUid);
-    if (child) {
-      (actionScope = exitCurrent(child, {mode: childMode, ...actionScope}));
+  for (const child of state.children) {
+    if (enteredStates.has(child.uid)) {
+      actionScope = exitCurrent(child,  {enteredStates, ...actionScope});
     }
+  }
+
+  // execute exit actions
+  for (const action of state.exitActions) {
+    (actionScope = execAction(action, actionScope));
+  }
+
+  return actionScope;
+}
+
+export function exitPath(path: ConcreteState[], rt: EnteredScope): ActionScope {
+  let {enteredStates, ...actionScope} = rt;
+
+  const toExit = enteredStates.difference(new Set(path));
+
+  const [state, ...rest] = path;
+  
+  // exit state and all its children, *except* states along the rest of the path
+  actionScope = exitCurrent(state,  {enteredStates: toExit, ...actionScope});
+  if (rest.length > 0) {
+    actionScope = exitPath(rest, {enteredStates, ...actionScope});
   }
 
   // execute exit actions
@@ -144,117 +169,73 @@ export function execAction(action: Action, rt: ActionScope): ActionScope {
   throw new Error("should never reach here");
 }
 
-
-const UNARY_OPERATOR_MAP: Map<string, (x:any)=>any> = new Map([
-  ["!", x => !x],
-  ["-", x => -x as any],
-]);
-
-const BINARY_OPERATOR_MAP: Map<string, (a:any,b:any)=>any> = new Map([
-  ["+", (a,b) => a+b],
-  ["-", (a,b) => a-b],
-  ["*", (a,b) => a*b],
-  ["/", (a,b) => a/b],
-  ["&&", (a,b) => a&&b],
-  ["||", (a,b) => a||b],
-  ["==", (a,b) => a==b],
-  ["<=", (a,b) => a<=b],
-  [">=", (a,b) => a>=b],
-  ["<", (a,b) => a<b],
-  [">", (a,b) => a>b],
-]);
-
-export function evalExpr(expr: Expression, environment: Environment): any {
-  if (expr.kind === "literal") {
-    return expr.value;
-  }
-  else if (expr.kind === "ref") {
-    const found = environment.get(expr.variable);
-    if (found === undefined) {
-      throw new Error(`variable '${expr.variable}' does not exist in environment`)
-    }
-    return found;
-  }
-  else if (expr.kind === "unaryExpr") {
-    const arg = evalExpr(expr.expr, environment);
-    return UNARY_OPERATOR_MAP.get(expr.operator)!(arg);
-  }
-  else if (expr.kind === "binaryExpr") {
-    const lhs = evalExpr(expr.lhs, environment);
-    const rhs = evalExpr(expr.rhs, environment);
-    return BINARY_OPERATOR_MAP.get(expr.operator)!(lhs,rhs);
-  }
-  throw new Error("should never reach here");
-}
-
-export function getActiveStates(mode: Mode): Set<string> {
-  return new Set([].concat(
-    ...Object.entries(mode).map(([childUid, childMode]) =>
-      [childUid, ...getActiveStates(childMode)])
-  ));
-}
-
-export function raiseEvent(event: string, statechart: Statechart, sourceState: ConcreteState, rt: RT_Statechart): RT_Statechart[] {
-  const activeStates = sourceState.children.filter(child => rt.mode.hasOwnProperty(child.uid))
-  for (const state of activeStates) {
-    const outgoing = statechart.transitions.get(state.uid) || [];
-    const enabled = outgoing.filter(transition => transition.label[0].trigger.kind === "event" && transition.label[0].trigger.event === event);
-    const enabledGuard = enabled.filter(transition =>
-      evalExpr(transition.label[0].guard, rt.environment)
-    );
-    if (enabledGuard.length > 0) {
-      const newRts = enabledGuard.map(t => fireTransition(t, statechart, rt));
-      return newRts;
-    }
-    else {
-      // no enabled outgoing transitions, try the children:
-      return raiseEvent(event, statechart, state, rt);
+export function handleEvent(event: string, statechart: Statechart, activeParent: ConcreteState, {environment, mode, ...raised}: RT_Statechart): RT_Statechart {
+  const arenasFired = new Set<OrState>();
+  for (const state of activeParent.children) {
+    if (mode.has(state.uid)) {
+      const outgoing = statechart.transitions.get(state.uid) || [];
+      const triggered = outgoing.filter(transition => transition.label[0].trigger.kind === "event" && transition.label[0].trigger.event === event);
+      const enabled = triggered.filter(transition =>
+        evalExpr(transition.label[0].guard, environment)
+      );
+      if (enabled.length > 0) {
+        if (enabled.length > 1) {
+          console.warn('nondeterminism!!!!');
+        }
+        const t = enabled[0];
+        console.log('enabled:', transitionDescription(t));
+        const {arena, srcPath, tgtPath} = computeArena(t);
+        let overlapping = false;
+        for (const alreadyFired of arenasFired) {
+          if (isOverlapping(arena, alreadyFired)) {
+            overlapping = true;
+          }
+        }
+        if (!overlapping) {
+          console.log('^ firing');
+          ({mode, environment, ...raised} = fireTransition(t, arena, srcPath, tgtPath, {mode, environment, ...raised}));
+          arenasFired.add(arena);
+        }
+        else {
+          console.log('skip (overlapping arenas)');
+        }
+      }
+      else {
+        // no enabled outgoing transitions, try the children:
+        ({environment, mode, ...raised} = handleEvent(event, statechart, state, {environment, mode, ...raised}));
+      }
     }
   }
-  return [];
+  return {environment, mode, ...raised};
 }
 
-function setModeDeep(oldMode: Mode, pathToState: ConcreteState[], newMode: Mode): Mode {
-  if (pathToState.length === 0) {
-    return newMode;
-  }
-  const [next, ...rest] = pathToState;
-  return {
-    ...oldMode,
-    [next.uid]: setModeDeep(oldMode[next.uid], rest, newMode),
-  }
+function transitionDescription(t: Transition) {
+  return stateDescription(t.src) + ' ➔ ' + stateDescription(t.tgt);
 }
 
-function unsetModeDeep(oldMode: Mode, pathToState: ConcreteState[]): Mode {
-  if (pathToState.length === 0) {
-    return {};
-  }
-  if (pathToState.length === 1) {
-    const keyToDelete = pathToState[0].uid;
-    const newMode = {...oldMode}; // shallow copy
-    delete newMode[keyToDelete];
-    return newMode;
-  }
-  const [next, ...rest] = pathToState;
-  return {
-    ...oldMode,
-    [next.uid]: unsetModeDeep(oldMode[next.uid], rest),
-  }
-}
+export function fireTransition(t: Transition, arena: OrState, srcPath: ConcreteState[], tgtPath: ConcreteState[], {mode, environment, ...raised}: RT_Statechart): {mode: Mode, environment: Environment} & RaisedEvents {
 
-export function fireTransition(t: Transition, statechart: Statechart, rt: RT_Statechart): RT_Statechart {
-  const {arena, srcPath, tgtPath} = computeArena(t);
-  const pathToArena = isAncestorOf({ancestor: statechart.root, descendant: arena}) as ConcreteState[];
-  console.log('fire ', t.src.comments[0][1], '->', t.tgt.comments[0][1], {srcPath, tgtPath});
-  let {environment, ...raised} = exitCurrent(srcPath[1], rt);
-  const exitedMode = unsetModeDeep(rt.mode, [...pathToArena.slice(1), ...srcPath.slice(1)]);
+  console.log('fire ', transitionDescription(t), {arena, srcPath, tgtPath});
+
+  // exit src
+  ({environment, ...raised} = exitPath(srcPath.slice(1), {environment, enteredStates: mode, ...raised}));
+  const toExit = getDescendants(arena);
+  toExit.delete(arena.uid); // do not exit the arena itself
+  const exitedMode = mode.difference(toExit);
+
+  console.log('exitedMode', exitedMode);
+
+  // exec transition actions
   for (const action of t.label[0].actions) {
     ({environment, ...raised} = execAction(action, {environment, ...raised}));
   }
-  let deepMode;
-  ({mode: deepMode, environment, ...raised} = enterPath(tgtPath.slice(1), {environment, ...raised}));
-  // console.log('entered path:', tgtPath.slice(1), {deepMode});
-  const enteredMode = setModeDeep(exitedMode, [...pathToArena.slice(1), ...tgtPath.slice(1)], deepMode);
-  // console.log('pathToArena:', pathToArena, 'newMode:', enteredMode);
-  return {mode: enteredMode, environment, inputEvents: rt.inputEvents, ...raised};
+
+  // enter tgt
+  let enteredStates;
+  ({enteredStates, environment, ...raised} = enterPath(tgtPath.slice(1), {environment, ...raised}));
+  const enteredMode = exitedMode.union(enteredStates);
+
+  console.log('enteredMode', enteredMode);
+
+  return {mode: enteredMode, environment, ...raised};
 }

@@ -9,9 +9,8 @@ import { parseStatechart } from "./parser";
 import { CORNER_HELPER_OFFSET, CORNER_HELPER_RADIUS, MIN_ROUNTANGLE_SIZE, ROUNTANGLE_RADIUS } from "./parameters";
 
 import * as lz4 from "@nick/lz4";
-import { getActiveStates, initialize } from "./interpreter";
 import { RT_Statechart } from "./runtime_types";
-import { emptyStatechart, Statechart } from "./ast";
+import { Statechart } from "./ast";
 
 
 type DraggingState = {
@@ -401,6 +400,11 @@ export function VisualEditor({ast, setAST, rt, setRT, errors, setErrors}: Visual
           ...state.texts.map(t => ({uid: t.uid, parts: ["text"]})),
         ]);
       }
+
+      if (e.key === "c") {
+        // e.preventDefault();
+        // setClipboard()
+      }
     }
   };
 
@@ -496,7 +500,7 @@ export function VisualEditor({ast, setAST, rt, setRT, errors, setErrors}: Visual
     }
   }
 
-  const active = getActiveStates(rt?.mode || {});
+  const active = rt?.mode || new Set();
 
   const rootErrors = errors.filter(([uid]) => uid === "root").map(err=>err[1]);
 

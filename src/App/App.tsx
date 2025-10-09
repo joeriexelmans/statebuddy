@@ -1,19 +1,13 @@
 import { useState } from "react";
 
-import { ConcreteState, emptyStatechart, Statechart, Transition } from "../VisualEditor/ast";
-
+import { ConcreteState, emptyStatechart, Statechart, stateDescription, Transition } from "../VisualEditor/ast";
 import { VisualEditor } from "../VisualEditor/VisualEditor";
 import { RT_Statechart } from "../VisualEditor/runtime_types";
-import { initialize, raiseEvent } from "../VisualEditor/interpreter";
+import { initialize, handleEvent } from "../VisualEditor/interpreter";
+import { Action, Expression } from "../VisualEditor/label_ast";
 
 import "../index.css";
 import "./App.css";
-import { Action, Expression } from "../VisualEditor/label_ast";
-
-export function stateDescription(state: ConcreteState) {
-  const description = state.comments.length > 0 ? state.comments[0][1] : state.uid;
-  return description;
-}
 
 export function ShowTransition(props: {transition: Transition}) {
   return <>&#10132; {stateDescription(props.transition.tgt)}</>;
@@ -51,34 +45,22 @@ export function AST(props: {root: ConcreteState, transitions: Map<string, Transi
     <summary>{props.root.kind}: {description}</summary>
 
     {props.root.entryActions.length>0 &&
-      <details open={true}>
-        <summary>entry actions</summary>
-        {props.root.entryActions.map(action =>
-          <div>&emsp;<ShowAction action={action}/></div>
-        )}
-      </details>
+        props.root.entryActions.map(action =>
+          <div>&emsp;entry / <ShowAction action={action}/></div>
+        )
     }
     {props.root.exitActions.length>0 &&
-      <details open={true}>
-        <summary>exit actions</summary>
-        {props.root.exitActions.map(action =>
-          <ShowAction action={action}/>
-        )}
-      </details>
+        props.root.exitActions.map(action =>
+          <div>&emsp;exit / <ShowAction action={action}/></div>
+        )
     }
     {props.root.children.length>0 &&
-      <details open={true}>
-        <summary>children</summary>
-          {props.root.children.map(child => 
+          props.root.children.map(child => 
             <AST root={child} transitions={props.transitions} />
-          )}
-      </details>
+          )
     }
     {outgoing.length>0 &&
-      <details open={true}>
-        <summary>outgoing</summary>
-        {outgoing.map(transition => <>&emsp;<ShowTransition transition={transition}/><br/></>)}
-      </details>
+        outgoing.map(transition => <>&emsp;<ShowTransition transition={transition}/><br/></>)
     }
   </details>
 }
@@ -104,14 +86,15 @@ export function App() {
 
   function raise(event: string) {
     if (rt && ast.inputEvents.has(event)) {
-      const nextConfigs = raiseEvent(event, ast, ast.root, rt)
-      console.log({nextConfigs});
-      if (nextConfigs.length > 0) {
-        if (nextConfigs.length > 1) {
-          console.warn('non-determinism, blindly selecting first next run-time state!');
-        }
-        setRT(nextConfigs[0]);
-      }
+      const nextConfig = handleEvent(event, ast, ast.root, rt);
+      setRT(nextConfig);
+      // console.log({nextConfigs});
+      // if (nextConfigs.length > 0) {
+      //   if (nextConfigs.length > 1) {
+      //     console.warn('non-determinism, blindly selecting first next run-time state!');
+      //   }
+      //   setRT(nextConfigs[0]);
+      // }
     }
   }
 
@@ -126,9 +109,9 @@ export function App() {
       </select>
       <button onClick={stop} >stop</button>
       &emsp;
-      <input type="radio" name="paused" id="radio-paused" checked={paused} disabled={rt===null}/>
+      <input type="radio" name="paused" id="radio-paused" checked={paused} disabled={rt===null} onChange={e => setPaused(e.target.checked)}/>
       <label htmlFor="radio-paused">paused</label>
-      <input type="radio" name="realtime" id="radio-realtime" checked={!paused} disabled={rt===null}/>
+      <input type="radio" name="realtime" id="radio-realtime" checked={!paused} disabled={rt===null} onChange={e => setPaused(!e.target.checked)}/>
       <label htmlFor="radio-realtime">real-time</label>
       &emsp;
       <label htmlFor="number-timescale">timescale</label>
