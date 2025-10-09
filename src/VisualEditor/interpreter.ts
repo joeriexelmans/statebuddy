@@ -1,4 +1,3 @@
-import { act } from "react";
 import { evalExpr } from "./actionlang_interpreter";
 import { computeArena, ConcreteState, getDescendants, isAncestorOf, isOverlapping, OrState, Statechart, stateDescription, Transition } from "./ast";
 import { Action } from "./label_ast";
@@ -209,13 +208,24 @@ export function handleEvent(event: string, statechart: Statechart, activeParent:
   return {environment, mode, ...raised};
 }
 
+export function handleInputEvent(event: string, statechart: Statechart, rt: RT_Statechart): RT_Statechart {
+  let {mode, environment, internalEvents, outputEvents} = handleEvent(event, statechart, statechart.root, rt);
+
+  while (internalEvents.length > 0) {
+    const [event, ...rest] = internalEvents;
+    ({mode, environment, internalEvents, outputEvents} = handleEvent(event, statechart, statechart.root, {mode, environment, internalEvents: rest, outputEvents}));
+  }
+
+  return {mode, environment, internalEvents, outputEvents};
+}
+
 function transitionDescription(t: Transition) {
   return stateDescription(t.src) + ' ➔ ' + stateDescription(t.tgt);
 }
 
-export function fireTransition(t: Transition, arena: OrState, srcPath: ConcreteState[], tgtPath: ConcreteState[], {mode, environment, ...raised}: RT_Statechart): {mode: Mode, environment: Environment} & RaisedEvents {
+export function fireTransition(t: Transition, arena: OrState, srcPath: ConcreteState[], tgtPath: ConcreteState[], {mode, environment, ...raised}: RT_Statechart): RT_Statechart {
 
-  console.log('fire ', transitionDescription(t), {arena, srcPath, tgtPath});
+  // console.log('fire ', transitionDescription(t), {arena, srcPath, tgtPath});
 
   // exit src
   ({environment, ...raised} = exitPath(srcPath.slice(1), {environment, enteredStates: mode, ...raised}));
@@ -223,7 +233,7 @@ export function fireTransition(t: Transition, arena: OrState, srcPath: ConcreteS
   toExit.delete(arena.uid); // do not exit the arena itself
   const exitedMode = mode.difference(toExit);
 
-  console.log('exitedMode', exitedMode);
+  // console.log('exitedMode', exitedMode);
 
   // exec transition actions
   for (const action of t.label[0].actions) {
@@ -235,7 +245,7 @@ export function fireTransition(t: Transition, arena: OrState, srcPath: ConcreteS
   ({enteredStates, environment, ...raised} = enterPath(tgtPath.slice(1), {environment, ...raised}));
   const enteredMode = exitedMode.union(enteredStates);
 
-  console.log('enteredMode', enteredMode);
+  // console.log('enteredMode', enteredMode);
 
   return {mode: enteredMode, environment, ...raised};
 }

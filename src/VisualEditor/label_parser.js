@@ -186,7 +186,7 @@ function peg$parse(input, options) {
   const peg$c19 = "//";
   const peg$c20 = "\n";
 
-  const peg$r0 = /^[a-zA-Z0-9]/;
+  const peg$r0 = /^[0-9A-Z_a-z]/;
   const peg$r1 = /^[0-9]/;
   const peg$r2 = /^[<>]/;
   const peg$r3 = /^[+\-]/;
@@ -203,7 +203,7 @@ function peg$parse(input, options) {
   const peg$e7 = peg$literalExpectation("s", false);
   const peg$e8 = peg$literalExpectation(";", false);
   const peg$e9 = peg$literalExpectation("=", false);
-  const peg$e10 = peg$classExpectation([["a", "z"], ["A", "Z"], ["0", "9"]], false, false, false);
+  const peg$e10 = peg$classExpectation([["0", "9"], ["A", "Z"], "_", ["a", "z"]], false, false, false);
   const peg$e11 = peg$classExpectation([["0", "9"]], false, false, false);
   const peg$e12 = peg$literalExpectation("==", false);
   const peg$e13 = peg$literalExpectation("!=", false);

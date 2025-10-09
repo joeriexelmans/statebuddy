@@ -59,8 +59,10 @@ text.highlight {
   stroke: rgb(230,0,0);
 }
 .rountangle.active {
-  fill: rgb(255, 196, 0);
+  fill: darkorange;
   fill-opacity: 0.2;
+  /* filter: drop-shadow( 3px 3px 2px rgba(0, 0, 0, .7)); */
+  stroke-width: 3px;
 }
 
 .selected:hover {

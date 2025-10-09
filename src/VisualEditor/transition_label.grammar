@@ -47,7 +47,7 @@ assignment = lhs:identifier _ "=" _ rhs:expr {
 	return {kind: "assignment", lhs, rhs};
 }
 
-identifier = [a-zA-Z0-9]+ {
+identifier = ("_" / [a-zA-Z0-9])+ {
 	return text();
 }
 

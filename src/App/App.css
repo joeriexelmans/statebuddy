@@ -26,6 +26,18 @@
 details {
   padding-left :10;
 }
+
+.runtimeState:hover {
+  /* background-color: rgba(255, 140, 0, 0.2); */
+  background-color: rgba(0,0,255,0.2);
+  cursor: pointer;
+}
+.runtimeState.active {
+  /* background-color: rgba(255, 140, 0, 0.2); */
+  background-color: rgba(0,0,255,0.2);
+  /* border: solid black 3px; */
+  border: solid blue 2px;
+}
 /* details:not(:has(details)) > summary::marker {
   color: white;
 } */
