@@ -16,6 +16,13 @@ export type RT_Statechart = {
   // history: // TODO
 } & RaisedEvents;
 
+export type BigStep = {
+  from: RT_Statechart;
+  to: RT_Statechart;
+  inputEvent: string;
+  outputEvents: string[];
+}
+
 export type RaisedEvents = {
   internalEvents: string[];
   outputEvents: string[];

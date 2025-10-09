@@ -445,14 +445,14 @@ export function VisualEditor({ast, setAST, rt, setRT, errors, setErrors}: Visual
       arrow2SideMap.set(arrow.uid, [startSide, endSide]);
     }
     if (startSide) {
-      const arrowConns = side2ArrowMap.get(startSide.uid) || new Set();
+      const arrowConns = side2ArrowMap.get(startSide.uid + '/' + startSide.part) || new Set();
       arrowConns.add(["start", arrow.uid]);
-      side2ArrowMap.set(startSide.uid, arrowConns);
+      side2ArrowMap.set(startSide.uid + '/' + startSide.part, arrowConns);
     }
     if (endSide) {
-      const arrowConns = side2ArrowMap.get(endSide.uid) || new Set();
+      const arrowConns = side2ArrowMap.get(endSide.uid + '/' + endSide.part) || new Set();
       arrowConns.add(["end", arrow.uid]);
-      side2ArrowMap.set(endSide.uid, arrowConns);
+      side2ArrowMap.set(endSide.uid + '/' + endSide.part, arrowConns);
     }
   }
   for (const text of state.texts) {
@@ -495,10 +495,12 @@ export function VisualEditor({ast, setAST, rt, setRT, errors, setErrors}: Visual
     for (const textUid of texts) {
       textsToHighlight[textUid] = true;
     }
-    const arrows = side2ArrowMap.get(selected.uid) || [];
-    if (arrows) {
-      for (const [arrowPart, arrowUid] of arrows) {
-        arrowsToHighlight[arrowUid] = true;
+    for (const part of selected.parts) {
+      const arrows = side2ArrowMap.get(selected.uid + '/' + part) || [];
+      if (arrows) {
+        for (const [arrowPart, arrowUid] of arrows) {
+          arrowsToHighlight[arrowUid] = true;
+        }
       }
     }
     const arrow2 = text2ArrowMap.get(selected.uid);
