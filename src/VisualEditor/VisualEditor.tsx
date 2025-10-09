@@ -220,6 +220,7 @@ export function VisualEditor({ast, setAST, rt, setRT, errors, setErrors}: Visual
       if (uid) {
         checkPoint();
 
+        // if the mouse button is pressed outside of the current selection, we reset the selection to whatever shape the mouse is on
         let allPartsInSelection = true;
         for (const part of parts) {
           if (!(selection.find(s => s.uid === uid)?.parts || []).includes(part)) {
@@ -228,8 +229,10 @@ export function VisualEditor({ast, setAST, rt, setRT, errors, setErrors}: Visual
           }
         }
         if (!allPartsInSelection) {
-          setSelection([{uid, parts, kind: "dontcare"}]);
+          setSelection([{uid, parts}]);
         }
+
+        // start dragging
         setDragging({
           lastMousePos: currentPointer,
         });
@@ -321,6 +324,7 @@ export function VisualEditor({ast, setAST, rt, setRT, errors, setErrors}: Visual
         const bbox = getBBoxInSvgCoords(el, refSVG.current!);
         return isEntirelyWithin(bbox, normalizedSS);
       }).filter(el => !el.classList.contains("corner"));
+      
       const uidToParts = new Map();
       for (const shape of shapesInSelection) {
         const uid = shape.dataset.uid;
@@ -761,8 +765,7 @@ export function RountangleSVG(props: {rountangle: Rountangle, selected: string[]
       />
     <text x={10} y={20}
       className="uid"
-      data-uid={uid}
-      data-parts="left top right bottom">{uid}</text>
+      data-uid={uid}>{uid}</text>
   </g>;
 }
 
