@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { ConcreteState, emptyStatechart, isAncestorOf, Statechart, stateDescription, Transition } from "../VisualEditor/ast";
 import { VisualEditor } from "../VisualEditor/VisualEditor";
@@ -8,6 +8,7 @@ import { Action, Expression } from "../VisualEditor/label_ast";
 
 import "../index.css";
 import "./App.css";
+import { getSimTime, setPaused, setRealtime, TimeMode } from "../VisualEditor/time";
 
 export function ShowTransition(props: {transition: Transition}) {
   return <>&#10132; {stateDescription(props.transition.tgt)}</>;
@@ -69,18 +70,21 @@ export function AST(props: {root: ConcreteState, transitions: Map<string, Transi
 export function App() {
   const [ast, setAST] = useState<Statechart>(emptyStatechart);
   const [errors, setErrors] = useState<[string,string][]>([]);
+  
   const [rt, setRT] = useState<RT_Statechart[]>([]);
   const [rtIdx, setRTIdx] = useState<number|null>(null);
-  const [timeMs, setTimeMs] = useState(0);
 
-  const [paused, setPaused] = useState(true);
+  const [time, setTime] = useState<TimeMode>({kind: "paused", simtime: 0});
   const [timescale, setTimescale] = useState(1);
+  const [displayTime, setDisplayTime] = useState("0.000");
+
 
   function restart() {
     const rt = initialize(ast);
     console.log('runtime: ', rt);
     setRT([rt]);
     setRTIdx(0);
+    setTime({kind: "paused", simtime: 0});
   }
 
   function stop() {
@@ -97,6 +101,54 @@ export function App() {
     }
   }
 
+  function updateDisplayedTime() {
+    const now = performance.now();
+    const timeMs = getSimTime(time, now);
+    const leadingZeros = "00" + timeMs % 1000;
+    const formatted = `${Math.floor(timeMs / 1000)}.${(leadingZeros).substring(leadingZeros.length-3)}`;
+    // console.log(now, timeMs, formatted);
+    setDisplayTime(formatted);
+  }
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      updateDisplayedTime();
+    }, 20);
+    return () => {
+      clearInterval(interval);
+    }
+  }, [time]);
+
+  function onChangePaused(paused: boolean, wallclktime: number) {
+    setTime(time => {
+      if (paused) {
+        console.log('setPaused...');
+        return setPaused(time, performance.now());
+      }
+      else {
+        console.log('setRealtime...');
+        return setRealtime(time, timescale, wallclktime);
+      }
+    });
+    updateDisplayedTime();
+  }
+
+  function onTimeScaleChange(newValue: string, wallclktime: number) {
+    const asFloat = parseFloat(newValue);
+    if (Number.isNaN(asFloat)) {
+      return;
+    }
+    setTimescale(asFloat);
+    setTime(time => {
+      if (time.kind === "paused") {
+        return time;
+      }
+      else {
+        return setRealtime(time, asFloat, wallclktime);
+      }
+    })
+  }
+
   return <div className="layoutVertical">
     <div className="panel">
 
@@ -105,18 +157,23 @@ export function App() {
       <button onClick={restart}>(re)start</button>
       <button onClick={stop} disabled={rt===null}>stop</button>
       &emsp;
-      raise
+      raise&nbsp;
       {[...ast.inputEvents].map(event => <button disabled={rtIdx===null} onClick={() => raise(event)}>{event}</button>)}
       &emsp;
-      <input type="radio" name="paused" id="radio-paused" checked={paused} disabled={rtIdx===null} onChange={e => setPaused(e.target.checked)}/>
+      <input type="radio" name="paused" id="radio-paused" checked={time.kind==="paused"} disabled={rtIdx===null} onChange={e => onChangePaused(e.target.checked, performance.now())}/>
       <label htmlFor="radio-paused">paused</label>
-      <input type="radio" name="realtime" id="radio-realtime" checked={!paused} disabled={rtIdx===null} onChange={e => setPaused(!e.target.checked)}/>
-      <label htmlFor="radio-realtime">real-time</label>
+      <input type="radio" name="realtime" id="radio-realtime" checked={time.kind==="realtime"} disabled={rtIdx===null} onChange={e => onChangePaused(!e.target.checked, performance.now())}/>
+      <label htmlFor="radio-realtime">real time</label>
       &emsp;
-      <label htmlFor="number-timescale">timescale</label>
-      <input type="number" id="number-timescale" disabled={rtIdx===null} value={timescale} style={{width:40}}/>
+      <label htmlFor="number-timescale">timescale</label>&nbsp;
+      <input type="number" min={0} id="number-timescale" disabled={rtIdx===null} value={timescale} style={{width:40}} onChange={e => onTimeScaleChange(e.target.value, performance.now())}/>
       &emsp;
-      time is {timeMs} ms
+      {rtIdx !== null &&
+        <>
+          <label htmlFor="time">time (s)</label>&nbsp;
+          <input id="time" value={displayTime} readOnly={true} style={{width:56, backgroundColor:"#eee", textAlign: "right"}}/>
+        </>
+      }
     </div>
     <div className="layout">
       <main className="content">
@@ -142,7 +199,7 @@ function ShowEnvironment(props: {environment: Environment}) {
 function ShowMode(props: {mode: Mode, statechart: Statechart}) {
   const activeLeafs = getActiveLeafs(props.mode, props.statechart);
   return <div>{[...activeLeafs].map(uid =>
-    stateDescription(props.statechart.uid2State.get(uid)!)).join(",")}</div>;
+    stateDescription(props.statechart.uid2State.get(uid)!)).join(", ")}</div>;
 }
 
 function getActiveLeafs(mode: Mode, sc: Statechart) {

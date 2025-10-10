@@ -1,11 +1,3 @@
-// modal configuration: maps child-uid to modal configuration of the child
-// for OR-states, only the modal configuration of the current state is kept
-// for AND-states, the modal configuration of every child is kept
-// for basic states (= empty AND-states), the modal configuration is just an empty object
-// export type Mode = {[uid:string]: Mode};
-
-import { Transition } from "./ast";
-
 export type Timestamp = number; // milliseconds since begin of simulation
 export type Event = string;
 
@@ -20,12 +12,7 @@ export type RT_Statechart = {
   // history: // TODO
 }
 
-export type BigStep = {
-  from: RT_Statechart;
-  to: RT_Statechart;
-  inputEvent: string;
-  outputEvents: string[];
-}
+export type BigStep = RT_Statechart & {outputEvents: string[]};
 
 export type RaisedEvents = {
   internalEvents: string[];
