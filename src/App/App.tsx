@@ -3,9 +3,9 @@ import { useEffect, useState } from "react";
 import { ConcreteState, emptyStatechart, Statechart, stateDescription, Transition } from "../VisualEditor/ast";
 import { handleInputEvent, initialize } from "../VisualEditor/interpreter";
 import { Action, Expression } from "../VisualEditor/label_ast";
-import { BigStep, Environment, Mode } from "../VisualEditor/runtime_types";
+import { BigStep, BigStepOutput, Environment, Mode } from "../VisualEditor/runtime_types";
 import { VisualEditor } from "../VisualEditor/VisualEditor";
-import { getSimTime, setPaused, setRealtime, TimeMode } from "../VisualEditor/time";
+import { getSimTime, getWallClkDelay, setPaused, setRealtime, TimeMode } from "../VisualEditor/time";
 
 import "../index.css";
 import "./App.css";
@@ -101,13 +101,16 @@ export function App() {
   }
 
   function raise(inputEvent: string) {
-    console.log(rtIdx);
     if (rt.length>0 && rtIdx!==null && ast.inputEvents.has(inputEvent)) {
       const simtime = getSimTime(time, performance.now());
       const nextConfig = handleInputEvent(simtime, inputEvent, ast, rt[rtIdx]!);
-      setRT([...rt.slice(0, rtIdx+1), {inputEvent, simtime, ...nextConfig}]);
-      setRTIdx(rtIdx+1);
+      appendNewConfig(inputEvent, simtime, nextConfig);
     }
+  }
+
+  function appendNewConfig(inputEvent: string, simtime: number, config: BigStepOutput) {
+    setRT([...rt.slice(0, rtIdx!+1), {inputEvent, simtime, ...config}]);
+    setRTIdx(rtIdx!+1);
   }
 
   function updateDisplayedTime() {
@@ -120,19 +123,36 @@ export function App() {
     const interval = setInterval(() => {
       updateDisplayedTime();
     }, 20);
+
+    let timeout: NodeJS.Timeout | undefined;
+    if (time.kind === "realtime" && rtIdx !== null) {
+      console.log('checking timers...');
+      const currentRt = rt[rtIdx]!;
+      const timers = currentRt.environment.get("_timers") || [];
+      if (timers.length > 0) {
+        const [nextInterrupt, timeElapsedEvent] = timers[0];
+        const wallclkDelay = getWallClkDelay(time, nextInterrupt, performance.now());
+        console.log('scheduling timeout after', wallclkDelay);
+        timeout = setTimeout(() => {
+          const nextConfig = handleInputEvent(nextInterrupt, timeElapsedEvent, ast, currentRt);
+          appendNewConfig('<timer>', nextInterrupt, nextConfig);
+        }, wallclkDelay);
+      }
+    }
+
     return () => {
       clearInterval(interval);
+      if (timeout) clearTimeout(timeout);
     }
+
   }, [time]);
 
   function onChangePaused(paused: boolean, wallclktime: number) {
     setTime(time => {
       if (paused) {
-        console.log('setPaused...');
         return setPaused(time, performance.now());
       }
       else {
-        console.log('setRealtime...');
         return setRealtime(time, timescale, wallclktime);
       }
     });

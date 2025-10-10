@@ -21,6 +21,7 @@ export type TimeRealTime = {
   scale: number, // time scale relative to wall-clock time
 }
 
+// given a wall-clock time, how does it translate to simtime?
 export function getSimTime(currentMode: TimeMode, wallclktime: number): number {
   if (currentMode.kind === "paused") {
     return currentMode.simtime;
@@ -31,6 +32,14 @@ export function getSimTime(currentMode: TimeMode, wallclktime: number): number {
   }
 }
 
+// given a simulated real time clock, how long will it take in wall-clock time duration until 'simtime' is the current time?
+export function getWallClkDelay(realtime: TimeRealTime, simtime: number, wallclktime: number): number {
+  const currentSimTime = getSimTime(realtime, wallclktime);
+  const simtimeDelay = simtime - currentSimTime;
+  return Math.max(0, simtimeDelay / realtime.scale);
+}
+
+// given a current simulated clock (paused or real time), switch to real time with given time scale
 export function setRealtime(currentMode: TimeMode, scale: number, wallclktime: number): TimeRealTime {
   if (currentMode.kind === "paused") {
     return {
@@ -54,6 +63,7 @@ export function setRealtime(currentMode: TimeMode, scale: number, wallclktime: n
   }
 }
 
+// given a current simulated clock (paused or real time), switch to paused
 export function setPaused(currentMode: TimeMode, wallclktime: number): TimePaused {
   if (currentMode.kind === "paused") {
     return currentMode; // no change

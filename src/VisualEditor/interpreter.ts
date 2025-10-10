@@ -17,6 +17,9 @@ type ActionScope = {
 
 type EnteredScope = { enteredStates: Mode } & ActionScope;
 
+type TimerElapseEvent = {state: string, timeDurMs: number};
+type Timers = [number, TimerElapseEvent][];
+
 export function entryActions(simtime: number, state: ConcreteState, actionScope: ActionScope): ActionScope {
   for (const action of state.entryActions) {
     (actionScope = execAction(action, actionScope));
@@ -24,10 +27,10 @@ export function entryActions(simtime: number, state: ConcreteState, actionScope:
   // schedule timers
   // we store timers in the environment (dirty!)
   const environment = new Map(actionScope.environment);
-  const timers: [number,string][] = [...(environment.get("_timers") || [])];
+  const timers: Timers = [...(environment.get("_timers") || [])];
   for (const timeOffset of state.timers) {
     const futureSimTime = simtime + timeOffset; // point in simtime when after-trigger becomes enabled
-    timers.push([futureSimTime, state.uid+'/'+timeOffset]);
+    timers.push([futureSimTime, {state: state.uid, timeDurMs: timeOffset}]);
   }
   timers.sort((a,b) => a[0] - b[0]); // smallest futureSimTime comes first
   environment.set("_timers", timers);
@@ -40,8 +43,8 @@ export function exitActions(simtime: number, state: ConcreteState, actionScope: 
   }
   // cancel timers
   const environment = new Map(actionScope.environment);
-  const timers: [number,string][] = environment.get("_timers") || [];
-  const filtered = timers.filter(([_, timerId]) => !timerId.startsWith(state.uid+'/'));
+  const timers: Timers = environment.get("_timers") || [];
+  const filtered = timers.filter(([_, {state: s}]) => s !== state.uid);
   environment.set("_timers", filtered);
   return {...actionScope, environment};
 }
@@ -185,12 +188,30 @@ export function execAction(action: Action, rt: ActionScope): ActionScope {
   throw new Error("should never reach here");
 }
 
-export function handleEvent(simtime: number, event: string, statechart: Statechart, activeParent: ConcreteState, {environment, mode, ...raised}: RT_Statechart & RaisedEvents): RT_Statechart & RaisedEvents {
+export function handleEvent(simtime: number, event: string | TimerElapseEvent, statechart: Statechart, activeParent: ConcreteState, {environment, mode, ...raised}: RT_Statechart & RaisedEvents): RT_Statechart & RaisedEvents {
   const arenasFired = new Set<OrState>();
   for (const state of activeParent.children) {
     if (mode.has(state.uid)) {
       const outgoing = statechart.transitions.get(state.uid) || [];
-      const triggered = outgoing.filter(transition => transition.label[0].trigger.kind === "event" && transition.label[0].trigger.event === event);
+      let triggered;
+      if (typeof event === 'string') {
+        triggered = outgoing.filter(transition => {
+          const trigger = transition.label[0].trigger;
+          if (trigger.kind === "event") {
+            return trigger.event === event;
+          }
+          return false;
+        });
+      }
+      else {
+        triggered = outgoing.filter(transition => {
+          const trigger = transition.label[0].trigger;
+          if (trigger.kind === "after") {
+            return trigger.durationMs === event.timeDurMs;
+          }
+          return false;
+        });
+      }
       const enabled = triggered.filter(transition =>
         evalExpr(transition.label[0].guard, environment)
       );
