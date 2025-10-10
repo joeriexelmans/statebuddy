@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
 
-import { ConcreteState, emptyStatechart, isAncestorOf, Statechart, stateDescription, Transition } from "../VisualEditor/ast";
-import { VisualEditor } from "../VisualEditor/VisualEditor";
-import { BigStepOutput, Environment, Mode, RT_Statechart } from "../VisualEditor/runtime_types";
-import { initialize, handleEvent, handleInputEvent } from "../VisualEditor/interpreter";
+import { ConcreteState, emptyStatechart, Statechart, stateDescription, Transition } from "../VisualEditor/ast";
+import { handleInputEvent, initialize } from "../VisualEditor/interpreter";
 import { Action, Expression } from "../VisualEditor/label_ast";
+import { BigStep, Environment, Mode } from "../VisualEditor/runtime_types";
+import { VisualEditor } from "../VisualEditor/VisualEditor";
+import { getSimTime, setPaused, setRealtime, TimeMode } from "../VisualEditor/time";
 
 import "../index.css";
 import "./App.css";
-import { getSimTime, setPaused, setRealtime, TimeMode } from "../VisualEditor/time";
 
 export function ShowTransition(props: {transition: Transition}) {
   return <>&#10132; {stateDescription(props.transition.tgt)}</>;
@@ -31,7 +31,7 @@ export function ShowExpr(props: {expr: Expression}) {
 
 export function ShowAction(props: {action: Action}) {
   if (props.action.kind === "raise") {
-    return <>raise {props.action.event}</>;
+    return <>^{props.action.event}</>;
   }
   else if (props.action.kind === "assignment") {
     return <>{props.action.lhs} = <ShowExpr expr={props.action.rhs}/>;</>;
@@ -91,9 +91,10 @@ export function App() {
     console.log('runtime: ', rt);
     setRT([{inputEvent: null, simtime: 0, ...config}]);
     setRTIdx(0);
-  }
+    setTime({kind: "paused", simtime: 0});
+ }
 
-  function stop() {
+  function clear() {
     setRT([]);
     setRTIdx(null);
     setTime({kind: "paused", simtime: 0});
@@ -103,7 +104,7 @@ export function App() {
     console.log(rtIdx);
     if (rt.length>0 && rtIdx!==null && ast.inputEvents.has(inputEvent)) {
       const simtime = getSimTime(time, performance.now());
-      const nextConfig = handleInputEvent(inputEvent, ast, rt[rtIdx]!);
+      const nextConfig = handleInputEvent(simtime, inputEvent, ast, rt[rtIdx]!);
       setRT([...rt.slice(0, rtIdx+1), {inputEvent, simtime, ...nextConfig}]);
       setRTIdx(rtIdx+1);
     }
@@ -165,7 +166,7 @@ export function App() {
     </div>
     <div className="panel">
       <button onClick={restart}>(re)start</button>
-      <button onClick={stop} disabled={rtIdx===null}>stop</button>
+      <button onClick={clear} disabled={rtIdx===null}>clear</button>
       &emsp;
       raise&nbsp;
       {[...ast.inputEvents].map(event => <button disabled={rtIdx===null} onClick={() => raise(event)}>{event}</button>)}
@@ -201,7 +202,9 @@ export function App() {
 }
 
 function ShowEnvironment(props: {environment: Environment}) {
-  return <div>{[...props.environment.entries()].map(([variable,value]) =>
+  return <div>{[...props.environment.entries()]
+    .filter(([variable]) => !variable.startsWith('_'))
+    .map(([variable,value]) =>
     `${variable}: ${value}`
   ).join(', ')}</div>;
 }

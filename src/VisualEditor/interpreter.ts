@@ -1,14 +1,14 @@
 import { evalExpr } from "./actionlang_interpreter";
-import { computeArena, ConcreteState, getDescendants, isAncestorOf, isOverlapping, OrState, Statechart, stateDescription, Transition } from "./ast";
+import { computeArena, ConcreteState, getDescendants, isOverlapping, OrState, Statechart, stateDescription, Transition } from "./ast";
 import { Action } from "./label_ast";
 import { Environment, RaisedEvents, Mode, RT_Statechart, initialRaised, BigStepOutput } from "./runtime_types";
 
 export function initialize(ast: Statechart): BigStepOutput {
-  let {enteredStates, environment, ...raised} = enterDefault(ast.root, {
+  let {enteredStates, environment, ...raised} = enterDefault(0, ast.root, {
     environment: new Map(),
     ...initialRaised,
   });
-  return handleInternalEvents(ast, {mode: enteredStates, environment, ...raised});
+  return handleInternalEvents(0, ast, {mode: enteredStates, environment, ...raised});
 }
 
 type ActionScope = {
@@ -17,13 +17,40 @@ type ActionScope = {
 
 type EnteredScope = { enteredStates: Mode } & ActionScope;
 
-export function enterDefault(state: ConcreteState, rt: ActionScope): EnteredScope {
-  let actionScope = rt;
-
-  // execute entry actions
+export function entryActions(simtime: number, state: ConcreteState, actionScope: ActionScope): ActionScope {
   for (const action of state.entryActions) {
     (actionScope = execAction(action, actionScope));
   }
+  // schedule timers
+  // we store timers in the environment (dirty!)
+  const environment = new Map(actionScope.environment);
+  const timers: [number,string][] = [...(environment.get("_timers") || [])];
+  for (const timeOffset of state.timers) {
+    const futureSimTime = simtime + timeOffset; // point in simtime when after-trigger becomes enabled
+    timers.push([futureSimTime, state.uid+'/'+timeOffset]);
+  }
+  timers.sort((a,b) => a[0] - b[0]); // smallest futureSimTime comes first
+  environment.set("_timers", timers);
+  return {...actionScope, environment};
+}
+
+export function exitActions(simtime: number, state: ConcreteState, actionScope: ActionScope): ActionScope {
+  for (const action of state.exitActions) {
+    (actionScope = execAction(action, actionScope));
+  }
+  // cancel timers
+  const environment = new Map(actionScope.environment);
+  const timers: [number,string][] = environment.get("_timers") || [];
+  const filtered = timers.filter(([_, timerId]) => !timerId.startsWith(state.uid+'/'));
+  environment.set("_timers", filtered);
+  return {...actionScope, environment};
+}
+
+export function enterDefault(simtime: number, state: ConcreteState, rt: ActionScope): EnteredScope {
+  let actionScope = rt;
+
+  // execute entry actions
+  actionScope = entryActions(simtime, state, actionScope);
 
   // enter children...
   let enteredStates = new Set([state.uid]);
@@ -31,7 +58,7 @@ export function enterDefault(state: ConcreteState, rt: ActionScope): EnteredScop
     // enter every child
     for (const child of state.children) {
       let enteredChildren;
-      ({enteredStates: enteredChildren, ...actionScope} = enterDefault(child, actionScope));
+      ({enteredStates: enteredChildren, ...actionScope} = enterDefault(simtime, child, actionScope));
       enteredStates = enteredStates.union(enteredChildren);
     }
   }
@@ -42,7 +69,7 @@ export function enterDefault(state: ConcreteState, rt: ActionScope): EnteredScop
         console.warn(state.uid + ': multiple initial states, only entering one of them');
       }
       let enteredChildren;
-      ({enteredStates: enteredChildren, ...actionScope} = enterDefault(state.initial[0][1], actionScope));
+      ({enteredStates: enteredChildren, ...actionScope} = enterDefault(simtime, state.initial[0][1], actionScope));
       enteredStates = enteredStates.union(enteredChildren);
     }
     console.warn(state.uid + ': no initial state');
@@ -51,15 +78,13 @@ export function enterDefault(state: ConcreteState, rt: ActionScope): EnteredScop
   return {enteredStates, ...actionScope};
 }
 
-export function enterPath(path: ConcreteState[], rt: ActionScope): EnteredScope {
+export function enterPath(simtime: number, path: ConcreteState[], rt: ActionScope): EnteredScope {
   let actionScope = rt;
 
   const [state, ...rest] = path;
 
   // execute entry actions
-  for (const action of state.entryActions) {
-    (actionScope = execAction(action, actionScope));
-  }
+  actionScope = entryActions(simtime, state, actionScope);
 
   // enter children...
   let enteredStates = new Set([state.uid]);
@@ -68,10 +93,10 @@ export function enterPath(path: ConcreteState[], rt: ActionScope): EnteredScope 
     for (const child of state.children) {
       let enteredChildren;
       if (rest.length > 0 && child.uid === rest[0].uid) {
-        ({enteredStates: enteredChildren, ...actionScope} = enterPath(rest, actionScope));
+        ({enteredStates: enteredChildren, ...actionScope} = enterPath(simtime, rest, actionScope));
       }
       else {
-        ({enteredStates: enteredChildren, ...actionScope} = enterDefault(child, actionScope));
+        ({enteredStates: enteredChildren, ...actionScope} = enterDefault(simtime, child, actionScope));
       }
       enteredStates = enteredStates.union(enteredChildren);
     }
@@ -79,14 +104,14 @@ export function enterPath(path: ConcreteState[], rt: ActionScope): EnteredScope 
   else if (state.kind === "or") {
     if (rest.length > 0) {
       let enteredChildren;
-      ({enteredStates: enteredChildren, ...actionScope} = enterPath(rest, actionScope));
+      ({enteredStates: enteredChildren, ...actionScope} = enterPath(simtime, rest, actionScope));
       enteredStates = enteredStates.union(enteredChildren);
     }
     else {
       // same as AND-state, but we only enter the initial state(s)
       for (const [_, child] of state.initial) {
         let enteredChildren;
-        ({enteredStates: enteredChildren, ...actionScope} = enterDefault(child, actionScope));
+        ({enteredStates: enteredChildren, ...actionScope} = enterDefault(simtime, child, actionScope));
         enteredStates = enteredStates.union(enteredChildren);
       }
     }
@@ -96,25 +121,23 @@ export function enterPath(path: ConcreteState[], rt: ActionScope): EnteredScope 
 }
 
 // exit the given state and all its active descendants
-export function exitCurrent(state: ConcreteState, rt: EnteredScope): ActionScope {
+export function exitCurrent(simtime: number, state: ConcreteState, rt: EnteredScope): ActionScope {
   let {enteredStates, ...actionScope} = rt;
 
   // exit all active children...
   for (const child of state.children) {
     if (enteredStates.has(child.uid)) {
-      actionScope = exitCurrent(child,  {enteredStates, ...actionScope});
+      actionScope = exitCurrent(simtime, child,  {enteredStates, ...actionScope});
     }
   }
 
   // execute exit actions
-  for (const action of state.exitActions) {
-    (actionScope = execAction(action, actionScope));
-  }
+  actionScope = exitActions(simtime, state, actionScope);
 
   return actionScope;
 }
 
-export function exitPath(path: ConcreteState[], rt: EnteredScope): ActionScope {
+export function exitPath(simtime: number, path: ConcreteState[], rt: EnteredScope): ActionScope {
   let {enteredStates, ...actionScope} = rt;
 
   const toExit = enteredStates.difference(new Set(path));
@@ -122,15 +145,13 @@ export function exitPath(path: ConcreteState[], rt: EnteredScope): ActionScope {
   const [state, ...rest] = path;
   
   // exit state and all its children, *except* states along the rest of the path
-  actionScope = exitCurrent(state,  {enteredStates: toExit, ...actionScope});
+  actionScope = exitCurrent(simtime, state,  {enteredStates: toExit, ...actionScope});
   if (rest.length > 0) {
-    actionScope = exitPath(rest, {enteredStates, ...actionScope});
+    actionScope = exitPath(simtime, rest, {enteredStates, ...actionScope});
   }
 
   // execute exit actions
-  for (const action of state.exitActions) {
-    (actionScope = execAction(action, actionScope));
-  }
+  actionScope = exitActions(simtime, state, actionScope);
 
   return actionScope;
 }
@@ -164,7 +185,7 @@ export function execAction(action: Action, rt: ActionScope): ActionScope {
   throw new Error("should never reach here");
 }
 
-export function handleEvent(event: string, statechart: Statechart, activeParent: ConcreteState, {environment, mode, ...raised}: RT_Statechart & RaisedEvents): RT_Statechart & RaisedEvents {
+export function handleEvent(simtime: number, event: string, statechart: Statechart, activeParent: ConcreteState, {environment, mode, ...raised}: RT_Statechart & RaisedEvents): RT_Statechart & RaisedEvents {
   const arenasFired = new Set<OrState>();
   for (const state of activeParent.children) {
     if (mode.has(state.uid)) {
@@ -188,7 +209,7 @@ export function handleEvent(event: string, statechart: Statechart, activeParent:
         }
         if (!overlapping) {
           console.log('^ firing');
-          ({mode, environment, ...raised} = fireTransition(t, arena, srcPath, tgtPath, {mode, environment, ...raised}));
+          ({mode, environment, ...raised} = fireTransition(simtime, t, arena, srcPath, tgtPath, {mode, environment, ...raised}));
           arenasFired.add(arena);
         }
         else {
@@ -197,25 +218,25 @@ export function handleEvent(event: string, statechart: Statechart, activeParent:
       }
       else {
         // no enabled outgoing transitions, try the children:
-        ({environment, mode, ...raised} = handleEvent(event, statechart, state, {environment, mode, ...raised}));
+        ({environment, mode, ...raised} = handleEvent(simtime, event, statechart, state, {environment, mode, ...raised}));
       }
     }
   }
   return {environment, mode, ...raised};
 }
 
-export function handleInputEvent(event: string, statechart: Statechart, {mode, environment}: {mode: Mode, environment: Environment}): BigStepOutput {
+export function handleInputEvent(simtime: number, event: string, statechart: Statechart, {mode, environment}: {mode: Mode, environment: Environment}): BigStepOutput {
   let raised = initialRaised;
 
-  ({mode, environment, ...raised} = handleEvent(event, statechart, statechart.root, {mode, environment, ...raised}));
+  ({mode, environment, ...raised} = handleEvent(simtime, event, statechart, statechart.root, {mode, environment, ...raised}));
 
-  return handleInternalEvents(statechart, {mode, environment, ...raised});
+  return handleInternalEvents(simtime, statechart, {mode, environment, ...raised});
 }
 
-export function handleInternalEvents(statechart: Statechart, {mode, environment, ...raised}: RT_Statechart & RaisedEvents): BigStepOutput {
+export function handleInternalEvents(simtime: number, statechart: Statechart, {mode, environment, ...raised}: RT_Statechart & RaisedEvents): BigStepOutput {
   while (raised.internalEvents.length > 0) {
     const [internalEvent, ...rest] = raised.internalEvents;
-    ({mode, environment, ...raised} = handleEvent(internalEvent, statechart, statechart.root, {mode, environment, internalEvents: rest, outputEvents: raised.outputEvents}));
+    ({mode, environment, ...raised} = handleEvent(simtime, internalEvent, statechart, statechart.root, {mode, environment, internalEvents: rest, outputEvents: raised.outputEvents}));
   }
   return {mode, environment, outputEvents: raised.outputEvents};
 }
@@ -224,12 +245,12 @@ function transitionDescription(t: Transition) {
   return stateDescription(t.src) + ' ➔ ' + stateDescription(t.tgt);
 }
 
-export function fireTransition(t: Transition, arena: OrState, srcPath: ConcreteState[], tgtPath: ConcreteState[], {mode, environment, ...raised}: RT_Statechart & RaisedEvents): RT_Statechart & RaisedEvents {
+export function fireTransition(simtime: number, t: Transition, arena: OrState, srcPath: ConcreteState[], tgtPath: ConcreteState[], {mode, environment, ...raised}: RT_Statechart & RaisedEvents): RT_Statechart & RaisedEvents {
 
   // console.log('fire ', transitionDescription(t), {arena, srcPath, tgtPath});
 
   // exit src
-  ({environment, ...raised} = exitPath(srcPath.slice(1), {environment, enteredStates: mode, ...raised}));
+  ({environment, ...raised} = exitPath(simtime, srcPath.slice(1), {environment, enteredStates: mode, ...raised}));
   const toExit = getDescendants(arena);
   toExit.delete(arena.uid); // do not exit the arena itself
   const exitedMode = mode.difference(toExit);
@@ -241,7 +262,7 @@ export function fireTransition(t: Transition, arena: OrState, srcPath: ConcreteS
 
   // enter tgt
   let enteredStates;
-  ({enteredStates, environment, ...raised} = enterPath(tgtPath.slice(1), {environment, ...raised}));
+  ({enteredStates, environment, ...raised} = enterPath(simtime, tgtPath.slice(1), {environment, ...raised}));
   const enteredMode = exitedMode.union(enteredStates);
 
   return {mode: enteredMode, environment, ...raised};

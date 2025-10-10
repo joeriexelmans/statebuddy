@@ -2,6 +2,7 @@ export type ParsedText = TransitionLabel | Comment;
 
 export type TransitionLabel = {
   kind: "transitionLabel";
+  uid: string; // uid of the text node
   trigger: Trigger;
   guard: Expression;
   actions: Action[];
@@ -9,6 +10,7 @@ export type TransitionLabel = {
 
 export type Comment = {
   kind: "comment";
+  uid: string; // uid of the text node
   text: string;
 }
 

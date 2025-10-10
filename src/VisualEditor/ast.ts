@@ -8,6 +8,7 @@ export type AbstractState = {
   entryActions: Action[];
   exitActions: Action[];
   depth: number;
+  timers: number[]; // list of timeouts (e.g., the state having an outgoing transition with trigger "after 4s" would appear as the number 4000 in this list)
 }
 
 export type AndState = {
@@ -52,6 +53,7 @@ const emptyRoot: OrState = {
   comments: [],
   entryActions: [],
   exitActions: [],
+  timers: [],
 };
 
 export const emptyStatechart: Statechart = {

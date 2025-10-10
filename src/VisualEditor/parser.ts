@@ -1,8 +1,7 @@
-import { act } from "react";
 import { ConcreteState, OrState, Statechart, Transition } from "./ast";
 import { findNearestArrow, findNearestRountangleSide, findRountangle, Rountangle, VisualEditorState } from "./editor_types";
-import { isEntirelyWithin, transformLine } from "./geometry";
-import { Action, Expression, ParsedText, TransitionLabel } from "./label_ast";
+import { isEntirelyWithin } from "./geometry";
+import { Action, Expression, ParsedText } from "./label_ast";
 
 import { parse as parseLabel, SyntaxError } from "./label_parser";
 
@@ -19,6 +18,7 @@ export function parseStatechart(state: VisualEditorState): [Statechart, [string,
     entryActions: [],
     exitActions: [],
     depth: 0,
+    timers: [],
   }
 
   const uid2State = new Map<string, ConcreteState>([["root", root]]);
@@ -44,6 +44,7 @@ export function parseStatechart(state: VisualEditorState): [Statechart, [string,
       comments: [],
       entryActions: [],
       exitActions: [],
+      timers: [],
     }
     if (state.kind === "or") {
       state.initial = [];
@@ -144,6 +145,7 @@ export function parseStatechart(state: VisualEditorState): [Statechart, [string,
         throw e;
       }
     }
+    parsed.uid = text.uid;
     if (parsed.kind === "transitionLabel") {
       const belongsToArrow = findNearestArrow(text.topLeft, state.arrows);
       if (belongsToArrow) {
@@ -160,6 +162,10 @@ export function parseStatechart(state: VisualEditorState): [Statechart, [string,
             else {
               inputEvents.add(event);
             }
+          }
+          else if (parsed.trigger.kind === "after") {
+            belongsToTransition.src.timers.push(parsed.trigger.durationMs);
+            belongsToTransition.src.timers.sort();
           }
           for (const action of parsed.actions) {
             if (action.kind === "raise") {
