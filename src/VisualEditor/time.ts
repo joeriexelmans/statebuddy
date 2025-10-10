@@ -1,18 +1,24 @@
 
 export type TimeMode = TimePaused | TimeRealTime;
 
+// When the simulation is paused, we only need to know the current simulated time.
 export type TimePaused = {
   kind: "paused",
   simtime: number, // the current simulated time
 }
 
+// When the simulation is running in real time, we need to know the time when the simulation was set to real time (both in simulated and wall-clock time), and the time scale. This allows us to compute the simulated time of every future event.
+// Such a 'future event' may be:
+//  - raising an input event
+//  - changing of the time scale parameter
+//  - pausing the simulation
 export type TimeRealTime = {
   kind: "realtime",
-  scale: number, // time scale relative to wall-clock time
   since: {
     simtime: number,  // the simulated time at which the time was set to realtime
     wallclktime: number, // the wall-clock time at which the time was set to realtime
   }
+  scale: number, // time scale relative to wall-clock time
 }
 
 export function getSimTime(currentMode: TimeMode, wallclktime: number): number {

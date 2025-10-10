@@ -1,9 +1,9 @@
 import { evalExpr } from "./actionlang_interpreter";
 import { computeArena, ConcreteState, getDescendants, isAncestorOf, isOverlapping, OrState, Statechart, stateDescription, Transition } from "./ast";
 import { Action } from "./label_ast";
-import { Environment, RaisedEvents, Mode, RT_Statechart, initialRaised, BigStep } from "./runtime_types";
+import { Environment, RaisedEvents, Mode, RT_Statechart, initialRaised, BigStepOutput } from "./runtime_types";
 
-export function initialize(ast: Statechart): BigStep {
+export function initialize(ast: Statechart): BigStepOutput {
   let {enteredStates, environment, ...raised} = enterDefault(ast.root, {
     environment: new Map(),
     ...initialRaised,
@@ -204,7 +204,7 @@ export function handleEvent(event: string, statechart: Statechart, activeParent:
   return {environment, mode, ...raised};
 }
 
-export function handleInputEvent(event: string, statechart: Statechart, {mode, environment}: {mode: Mode, environment: Environment}): BigStep {
+export function handleInputEvent(event: string, statechart: Statechart, {mode, environment}: {mode: Mode, environment: Environment}): BigStepOutput {
   let raised = initialRaised;
 
   ({mode, environment, ...raised} = handleEvent(event, statechart, statechart.root, {mode, environment, ...raised}));
@@ -212,7 +212,7 @@ export function handleInputEvent(event: string, statechart: Statechart, {mode, e
   return handleInternalEvents(statechart, {mode, environment, ...raised});
 }
 
-export function handleInternalEvents(statechart: Statechart, {mode, environment, ...raised}: RT_Statechart & RaisedEvents): BigStep {
+export function handleInternalEvents(statechart: Statechart, {mode, environment, ...raised}: RT_Statechart & RaisedEvents): BigStepOutput {
   while (raised.internalEvents.length > 0) {
     const [internalEvent, ...rest] = raised.internalEvents;
     ({mode, environment, ...raised} = handleEvent(internalEvent, statechart, statechart.root, {mode, environment, internalEvents: rest, outputEvents: raised.outputEvents}));

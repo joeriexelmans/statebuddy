@@ -12,7 +12,15 @@ export type RT_Statechart = {
   // history: // TODO
 }
 
-export type BigStep = RT_Statechart & {outputEvents: string[]};
+export type BigStepOutput = RT_Statechart & {
+  outputEvents: string[],
+};
+
+export type BigStep = {
+  inputEvent: string | null, // null if initialization
+  simtime: number,
+} & BigStepOutput;
+
 
 export type RaisedEvents = {
   internalEvents: string[];
@@ -24,4 +32,4 @@ export type Timers = Map<string, number>; // transition uid -> timestamp
 export const initialRaised: RaisedEvents = {
   internalEvents: [],
   outputEvents: [],
-}
+};

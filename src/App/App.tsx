@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 import { ConcreteState, emptyStatechart, isAncestorOf, Statechart, stateDescription, Transition } from "../VisualEditor/ast";
 import { VisualEditor } from "../VisualEditor/VisualEditor";
-import { Environment, Mode, RT_Statechart } from "../VisualEditor/runtime_types";
+import { BigStepOutput, Environment, Mode, RT_Statechart } from "../VisualEditor/runtime_types";
 import { initialize, handleEvent, handleInputEvent } from "../VisualEditor/interpreter";
 import { Action, Expression } from "../VisualEditor/label_ast";
 
@@ -67,11 +67,18 @@ export function AST(props: {root: ConcreteState, transitions: Map<string, Transi
 }
 
 
+function formatTime(timeMs: number) {
+  const leadingZeros = "00" + timeMs % 1000;
+  const formatted = `${Math.floor(timeMs / 1000)}.${(leadingZeros).substring(leadingZeros.length-3)}`;
+  return formatted;
+}
+
+
 export function App() {
   const [ast, setAST] = useState<Statechart>(emptyStatechart);
   const [errors, setErrors] = useState<[string,string][]>([]);
-  
-  const [rt, setRT] = useState<RT_Statechart[]>([]);
+
+  const [rt, setRT] = useState<BigStep[]>([]);
   const [rtIdx, setRTIdx] = useState<number|null>(null);
 
   const [time, setTime] = useState<TimeMode>({kind: "paused", simtime: 0});
@@ -80,23 +87,24 @@ export function App() {
 
 
   function restart() {
-    const rt = initialize(ast);
+    const config = initialize(ast);
     console.log('runtime: ', rt);
-    setRT([rt]);
+    setRT([{inputEvent: null, simtime: 0, ...config}]);
     setRTIdx(0);
-    setTime({kind: "paused", simtime: 0});
   }
 
   function stop() {
     setRT([]);
     setRTIdx(null);
+    setTime({kind: "paused", simtime: 0});
   }
 
-  function raise(event: string) {
+  function raise(inputEvent: string) {
     console.log(rtIdx);
-    if (rt.length>0 && rtIdx!==null && ast.inputEvents.has(event)) {
-      const nextConfig = handleInputEvent(event, ast, rt[rtIdx]!);
-      setRT([...rt.slice(0, rtIdx+1), nextConfig]);
+    if (rt.length>0 && rtIdx!==null && ast.inputEvents.has(inputEvent)) {
+      const simtime = getSimTime(time, performance.now());
+      const nextConfig = handleInputEvent(inputEvent, ast, rt[rtIdx]!);
+      setRT([...rt.slice(0, rtIdx+1), {inputEvent, simtime, ...nextConfig}]);
       setRTIdx(rtIdx+1);
     }
   }
@@ -104,10 +112,7 @@ export function App() {
   function updateDisplayedTime() {
     const now = performance.now();
     const timeMs = getSimTime(time, now);
-    const leadingZeros = "00" + timeMs % 1000;
-    const formatted = `${Math.floor(timeMs / 1000)}.${(leadingZeros).substring(leadingZeros.length-3)}`;
-    // console.log(now, timeMs, formatted);
-    setDisplayTime(formatted);
+    setDisplayTime(formatTime(timeMs));
   }
 
   useEffect(() => {
@@ -148,6 +153,11 @@ export function App() {
       }
     })
   }
+  
+  function gotoRt(idx: number, timestamp: number) {
+    setRTIdx(idx);
+    setTime({kind: "paused", simtime: timestamp});
+  }
 
   return <div className="layoutVertical">
     <div className="panel">
@@ -155,7 +165,7 @@ export function App() {
     </div>
     <div className="panel">
       <button onClick={restart}>(re)start</button>
-      <button onClick={stop} disabled={rt===null}>stop</button>
+      <button onClick={stop} disabled={rtIdx===null}>stop</button>
       &emsp;
       raise&nbsp;
       {[...ast.inputEvents].map(event => <button disabled={rtIdx===null} onClick={() => raise(event)}>{event}</button>)}
@@ -168,12 +178,8 @@ export function App() {
       <label htmlFor="number-timescale">timescale</label>&nbsp;
       <input type="number" min={0} id="number-timescale" disabled={rtIdx===null} value={timescale} style={{width:40}} onChange={e => onTimeScaleChange(e.target.value, performance.now())}/>
       &emsp;
-      {rtIdx !== null &&
-        <>
-          <label htmlFor="time">time (s)</label>&nbsp;
-          <input id="time" value={displayTime} readOnly={true} style={{width:56, backgroundColor:"#eee", textAlign: "right"}}/>
-        </>
-      }
+      <label htmlFor="time">time (s)</label>&nbsp;
+      <input id="time" disabled={rtIdx===null} value={displayTime} readOnly={true} style={{width:56, backgroundColor:"#eee", textAlign: "right"}}/>
     </div>
     <div className="layout">
       <main className="content">
@@ -181,9 +187,13 @@ export function App() {
       </main>
       <aside className="sidebar">
         <AST {...ast}/>
-        {rt.map((rt, idx) => <><hr/><div className={"runtimeState"+(idx===rtIdx?" active":"")} onClick={() => setRTIdx(idx)}>
-          <ShowEnvironment environment={rt.environment}/>
+        {rt.map((rt, idx) => <><hr/><div className={"runtimeState"+(idx===rtIdx?" active":"")} onClick={() => gotoRt(idx, rt.simtime)}>
+          <div>({formatTime(rt.simtime)}, {rt.inputEvent || "<init>"})</div>
           <ShowMode mode={rt.mode} statechart={ast}/>
+          <ShowEnvironment environment={rt.environment}/>
+          {rt.outputEvents.length>0 && <div>
+            {rt.outputEvents.map((e:string) => '^'+e).join(', ')}
+          </div>}
         </div></>)}
       </aside>
     </div>
@@ -198,7 +208,7 @@ function ShowEnvironment(props: {environment: Environment}) {
 
 function ShowMode(props: {mode: Mode, statechart: Statechart}) {
   const activeLeafs = getActiveLeafs(props.mode, props.statechart);
-  return <div>{[...activeLeafs].map(uid =>
+  return <div>mode: {[...activeLeafs].map(uid =>
     stateDescription(props.statechart.uid2State.get(uid)!)).join(", ")}</div>;
 }
 
