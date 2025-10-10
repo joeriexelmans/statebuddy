@@ -145,7 +145,7 @@ export function App() {
       if (timeout) clearTimeout(timeout);
     }
 
-  }, [time]);
+  }, [time, rtIdx]);
 
   function onChangePaused(paused: boolean, wallclktime: number) {
     setTime(time => {
