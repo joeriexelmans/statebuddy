@@ -4,6 +4,10 @@
 // for basic states (= empty AND-states), the modal configuration is just an empty object
 // export type Mode = {[uid:string]: Mode};
 
+import { Transition } from "./ast";
+
+export type Timestamp = number; // milliseconds since begin of simulation
+export type Event = string;
 
 export type Mode = Set<string>; // set of active states
 
@@ -14,7 +18,7 @@ export type RT_Statechart = {
   mode: Mode;
   environment: Environment;
   // history: // TODO
-} & RaisedEvents;
+}
 
 export type BigStep = {
   from: RT_Statechart;
@@ -28,10 +32,9 @@ export type RaisedEvents = {
   outputEvents: string[];
 };
 
+export type Timers = Map<string, number>; // transition uid -> timestamp
+
 export const initialRaised: RaisedEvents = {
   internalEvents: [],
   outputEvents: [],
 }
-
-// export type RT_Events = {
-// };

@@ -126,7 +126,6 @@ export function App() {
         <AST {...ast}/>
         {rt.map((rt, idx) => <><hr/><div className={"runtimeState"+(idx===rtIdx?" active":"")} onClick={() => setRTIdx(idx)}>
           <ShowEnvironment environment={rt.environment}/>
-          <br/>
           <ShowMode mode={rt.mode} statechart={ast}/>
         </div></>)}
       </aside>
@@ -135,15 +134,15 @@ export function App() {
 }
 
 function ShowEnvironment(props: {environment: Environment}) {
-  return <>{[...props.environment.entries()].map(([variable,value]) =>
+  return <div>{[...props.environment.entries()].map(([variable,value]) =>
     `${variable}: ${value}`
-  ).join(', ')}</>;
+  ).join(', ')}</div>;
 }
 
 function ShowMode(props: {mode: Mode, statechart: Statechart}) {
   const activeLeafs = getActiveLeafs(props.mode, props.statechart);
-  return <>{[...activeLeafs].map(uid =>
-    stateDescription(props.statechart.uid2State.get(uid)!)).join(",")}</>;
+  return <div>{[...activeLeafs].map(uid =>
+    stateDescription(props.statechart.uid2State.get(uid)!)).join(",")}</div>;
 }
 
 function getActiveLeafs(mode: Mode, sc: Statechart) {

@@ -1,18 +1,14 @@
 import { evalExpr } from "./actionlang_interpreter";
 import { computeArena, ConcreteState, getDescendants, isAncestorOf, isOverlapping, OrState, Statechart, stateDescription, Transition } from "./ast";
 import { Action } from "./label_ast";
-import { Environment, RaisedEvents, Mode, RT_Statechart, initialRaised } from "./runtime_types";
+import { Environment, RaisedEvents, Mode, RT_Statechart, initialRaised, BigStep } from "./runtime_types";
 
-export function initialize(ast: Statechart): RT_Statechart {
-  const {enteredStates, environment, ...raised} = enterDefault(ast.root, {
+export function initialize(ast: Statechart): BigStep {
+  let {enteredStates, environment, ...raised} = enterDefault(ast.root, {
     environment: new Map(),
     ...initialRaised,
   });
-  return {
-    mode: enteredStates,
-    environment,
-    ...raised,
-  };
+  return handleInternalEvents(ast, {mode: enteredStates, environment, ...raised});
 }
 
 type ActionScope = {
@@ -168,7 +164,7 @@ export function execAction(action: Action, rt: ActionScope): ActionScope {
   throw new Error("should never reach here");
 }
 
-export function handleEvent(event: string, statechart: Statechart, activeParent: ConcreteState, {environment, mode, ...raised}: RT_Statechart): RT_Statechart {
+export function handleEvent(event: string, statechart: Statechart, activeParent: ConcreteState, {environment, mode, ...raised}: RT_Statechart & RaisedEvents): RT_Statechart & RaisedEvents {
   const arenasFired = new Set<OrState>();
   for (const state of activeParent.children) {
     if (mode.has(state.uid)) {
@@ -208,22 +204,27 @@ export function handleEvent(event: string, statechart: Statechart, activeParent:
   return {environment, mode, ...raised};
 }
 
-export function handleInputEvent(event: string, statechart: Statechart, rt: RT_Statechart): RT_Statechart {
-  let {mode, environment, internalEvents, outputEvents} = handleEvent(event, statechart, statechart.root, rt);
+export function handleInputEvent(event: string, statechart: Statechart, {mode, environment}: {mode: Mode, environment: Environment}): BigStep {
+  let raised = initialRaised;
 
-  while (internalEvents.length > 0) {
-    const [event, ...rest] = internalEvents;
-    ({mode, environment, internalEvents, outputEvents} = handleEvent(event, statechart, statechart.root, {mode, environment, internalEvents: rest, outputEvents}));
+  ({mode, environment, ...raised} = handleEvent(event, statechart, statechart.root, {mode, environment, ...raised}));
+
+  return handleInternalEvents(statechart, {mode, environment, ...raised});
+}
+
+export function handleInternalEvents(statechart: Statechart, {mode, environment, ...raised}: RT_Statechart & RaisedEvents): BigStep {
+  while (raised.internalEvents.length > 0) {
+    const [internalEvent, ...rest] = raised.internalEvents;
+    ({mode, environment, ...raised} = handleEvent(internalEvent, statechart, statechart.root, {mode, environment, internalEvents: rest, outputEvents: raised.outputEvents}));
   }
-
-  return {mode, environment, internalEvents, outputEvents};
+  return {mode, environment, outputEvents: raised.outputEvents};
 }
 
 function transitionDescription(t: Transition) {
   return stateDescription(t.src) + ' ➔ ' + stateDescription(t.tgt);
 }
 
-export function fireTransition(t: Transition, arena: OrState, srcPath: ConcreteState[], tgtPath: ConcreteState[], {mode, environment, ...raised}: RT_Statechart): RT_Statechart {
+export function fireTransition(t: Transition, arena: OrState, srcPath: ConcreteState[], tgtPath: ConcreteState[], {mode, environment, ...raised}: RT_Statechart & RaisedEvents): RT_Statechart & RaisedEvents {
 
   // console.log('fire ', transitionDescription(t), {arena, srcPath, tgtPath});
 
@@ -232,8 +233,6 @@ export function fireTransition(t: Transition, arena: OrState, srcPath: ConcreteS
   const toExit = getDescendants(arena);
   toExit.delete(arena.uid); // do not exit the arena itself
   const exitedMode = mode.difference(toExit);
-
-  // console.log('exitedMode', exitedMode);
 
   // exec transition actions
   for (const action of t.label[0].actions) {
@@ -244,8 +243,6 @@ export function fireTransition(t: Transition, arena: OrState, srcPath: ConcreteS
   let enteredStates;
   ({enteredStates, environment, ...raised} = enterPath(tgtPath.slice(1), {environment, ...raised}));
   const enteredMode = exitedMode.union(enteredStates);
-
-  // console.log('enteredMode', enteredMode);
 
   return {mode: enteredMode, environment, ...raised};
 }
