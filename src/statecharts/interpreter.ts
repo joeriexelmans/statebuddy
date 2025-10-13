@@ -1,5 +1,5 @@
 import { evalExpr } from "./actionlang_interpreter";
-import { computeArena, ConcreteState, getDescendants, isOverlapping, OrState, Statechart, stateDescription, Transition } from "./ast";
+import { computeArena, ConcreteState, getDescendants, isOverlapping, OrState, Statechart, stateDescription, Transition } from "./abstract_syntax";
 import { Action } from "./label_ast";
 import { Environment, RaisedEvents, Mode, RT_Statechart, initialRaised, BigStepOutput, TimerElapseEvent, Timers } from "./runtime_types";
 

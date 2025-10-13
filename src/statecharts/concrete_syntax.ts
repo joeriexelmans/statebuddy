@@ -1,6 +1,6 @@
-import { Rect2D, Vec2D, Line2D, euclideanDistance, intersectLines, isWithin, lineBBox, isEntirelyWithin } from "./geometry";
-import { ARROW_SNAP_THRESHOLD, TEXT_SNAP_THRESHOLD } from "./parameters";
-import {  sides } from "./VisualEditor";
+import { Rect2D, Vec2D, Line2D, euclideanDistance, intersectLines, isWithin, lineBBox, isEntirelyWithin } from "../VisualEditor/geometry";
+import { ARROW_SNAP_THRESHOLD, TEXT_SNAP_THRESHOLD } from "../VisualEditor/parameters";
+import {  sides } from "../VisualEditor/VisualEditor";
 
 export type Rountangle = {
   uid: string;

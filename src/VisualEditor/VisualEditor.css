@@ -1,5 +1,6 @@
 .svgCanvas {
   cursor: crosshair;
+  background-color: #eee;
 }
 
 text, text.highlight {
@@ -102,6 +103,7 @@ text.highlight {
 
 .rountangle.or {
   stroke-dasharray: 7 6;
+  fill: #eee;
 }
 
 .arrow {

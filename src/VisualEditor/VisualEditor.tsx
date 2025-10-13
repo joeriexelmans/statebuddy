@@ -4,13 +4,13 @@ import { ArcDirection, Line2D, Rect2D, Vec2D, addV2D, arcDirection, area, euclid
 import "./VisualEditor.css";
 
 import { getBBoxInSvgCoords } from "./svg_helper";
-import { VisualEditorState, Rountangle, emptyState, Arrow, ArrowPart, RountanglePart, findNearestRountangleSide, findNearestArrow, Text, findRountangle } from "./editor_types";
-import { parseStatechart } from "./parser";
+import { VisualEditorState, Rountangle, emptyState, Arrow, ArrowPart, RountanglePart, findNearestRountangleSide, findNearestArrow, Text, findRountangle } from "../statecharts/concrete_syntax";
+import { parseStatechart } from "../statecharts/parser";
 import { CORNER_HELPER_OFFSET, CORNER_HELPER_RADIUS, MIN_ROUNTANGLE_SIZE, ROUNTANGLE_RADIUS } from "./parameters";
 
 import * as lz4 from "@nick/lz4";
-import { RT_Statechart } from "./runtime_types";
-import { Statechart } from "./ast";
+import { BigStep, RT_Statechart } from "../statecharts/runtime_types";
+import { Statechart } from "../statecharts/abstract_syntax";
 
 
 type DraggingState = {
@@ -50,15 +50,13 @@ export const sides: [RountanglePart, (r:Rect2D)=>Line2D][] = [
 ];
 
 type VisualEditorProps = {
-  ast: Statechart,
   setAST: Dispatch<SetStateAction<Statechart>>,
-  rt: RT_Statechart|null,
-  setRT: Dispatch<SetStateAction<RT_Statechart|null>>,
+  rt: BigStep|undefined,
   errors: [string,string][],
   setErrors: Dispatch<SetStateAction<[string,string][]>>,
 };
 
-export function VisualEditor({ast, setAST, rt, setRT, errors, setErrors}: VisualEditorProps) {
+export function VisualEditor({setAST, rt, errors, setErrors}: VisualEditorProps) {
   const [historyState, setHistoryState] = useState<HistoryState>({current: emptyState, history: [], future: []});
 
   const state = historyState.current;
@@ -145,7 +143,7 @@ export function VisualEditor({ast, setAST, rt, setRT, errors, setErrors}: Visual
       window.location.hash = "#"+compressedStateString;
 
       const [statechart, errors] = parseStatechart(state);
-      console.log('statechart: ', statechart, 'errors:', errors);
+      // console.log('statechart: ', statechart, 'errors:', errors);
       setErrors(errors);
       setAST(statechart);
     }, 100);

@@ -1,6 +1,6 @@
-import { ConcreteState, OrState, Statechart, Transition } from "./ast";
-import { findNearestArrow, findNearestRountangleSide, findRountangle, Rountangle, VisualEditorState } from "./editor_types";
-import { isEntirelyWithin } from "./geometry";
+import { ConcreteState, OrState, Statechart, Transition } from "./abstract_syntax";
+import { findNearestArrow, findNearestRountangleSide, findRountangle, Rountangle, VisualEditorState } from "./concrete_syntax";
+import { isEntirelyWithin } from "../VisualEditor/geometry";
 import { Action, Expression, ParsedText } from "./label_ast";
 
 import { parse as parseLabel, SyntaxError } from "./label_parser";

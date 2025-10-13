@@ -1,4 +1,4 @@
-import { RountanglePart } from "./editor_types";
+import { RountanglePart } from "../statecharts/concrete_syntax";
 
 export type Vec2D = {
   x: number;
