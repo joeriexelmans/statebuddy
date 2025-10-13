@@ -41,3 +41,9 @@ details {
 /* details:not(:has(details)) > summary::marker {
   color: white;
 } */
+
+.readonlyTextBox {
+  width: 56;
+  background-color:"#eee";
+  text-align: "right";
+}

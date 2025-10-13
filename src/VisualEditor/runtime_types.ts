@@ -27,9 +27,13 @@ export type RaisedEvents = {
   outputEvents: string[];
 };
 
-export type Timers = Map<string, number>; // transition uid -> timestamp
+// export type Timers = Map<string, number>; // transition uid -> timestamp
 
 export const initialRaised: RaisedEvents = {
   internalEvents: [],
   outputEvents: [],
 };
+
+export type TimerElapseEvent = { state: string; timeDurMs: number; };
+export type Timers = [number, TimerElapseEvent][];
+

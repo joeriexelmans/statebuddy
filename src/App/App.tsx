@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import { ConcreteState, emptyStatechart, Statechart, stateDescription, Transition } from "../VisualEditor/ast";
 import { handleInputEvent, initialize } from "../VisualEditor/interpreter";
+import { TimerElapseEvent, Timers } from "@/VisualEditor/runtime_types";
 import { Action, Expression } from "../VisualEditor/label_ast";
 import { BigStep, BigStepOutput, Environment, Mode } from "../VisualEditor/runtime_types";
 import { VisualEditor } from "../VisualEditor/VisualEditor";
@@ -68,9 +69,16 @@ export function AST(props: {root: ConcreteState, transitions: Map<string, Transi
 
 
 function formatTime(timeMs: number) {
-  const leadingZeros = "00" + timeMs % 1000;
+  const leadingZeros = "00" + Math.floor(timeMs) % 1000;
   const formatted = `${Math.floor(timeMs / 1000)}.${(leadingZeros).substring(leadingZeros.length-3)}`;
   return formatted;
+}
+
+function compactTime(timeMs: number) {
+  if (timeMs % 1000 === 0) {
+    return `${timeMs / 1000}s`;
+  } 
+  return `${timeMs} ms`;
 }
 
 
@@ -180,6 +188,10 @@ export function App() {
     setTime({kind: "paused", simtime: timestamp});
   }
 
+  // timestamp of next timed transition, in simulated time
+  const timers: Timers = (rt[rtIdx!]?.environment.get("_timers") || []);
+  const nextTimedTransition: [number, TimerElapseEvent] | undefined = timers[0];
+
   return <div className="layoutVertical">
     <div className="panel">
 
@@ -188,9 +200,11 @@ export function App() {
       <button onClick={restart}>(re)start</button>
       <button onClick={clear} disabled={rtIdx===null}>clear</button>
       &emsp;
-      raise&nbsp;
-      {[...ast.inputEvents].map(event => <button disabled={rtIdx===null} onClick={() => raise(event)}>{event}</button>)}
-      &emsp;
+      {ast.inputEvents &&
+        <>raise&nbsp;
+        {[...ast.inputEvents].map(event => <button disabled={rtIdx===null} onClick={() => raise(event)}>{event}</button>)}
+        &emsp;</>
+      }
       <input type="radio" name="paused" id="radio-paused" checked={time.kind==="paused"} disabled={rtIdx===null} onChange={e => onChangePaused(e.target.checked, performance.now())}/>
       <label htmlFor="radio-paused">paused</label>
       <input type="radio" name="realtime" id="radio-realtime" checked={time.kind==="realtime"} disabled={rtIdx===null} onChange={e => onChangePaused(!e.target.checked, performance.now())}/>
@@ -200,7 +214,15 @@ export function App() {
       <input type="number" min={0} id="number-timescale" disabled={rtIdx===null} value={timescale} style={{width:40}} onChange={e => onTimeScaleChange(e.target.value, performance.now())}/>
       &emsp;
       <label htmlFor="time">time (s)</label>&nbsp;
-      <input id="time" disabled={rtIdx===null} value={displayTime} readOnly={true} style={{width:56, backgroundColor:"#eee", textAlign: "right"}}/>
+      <input id="time" disabled={rtIdx===null} value={displayTime} readOnly={true} className="readonlyTextBox" />
+      {nextTimedTransition &&
+        <>
+        &emsp;
+        next timeout (s):
+        <input id="time" disabled={rtIdx===null} value={formatTime(nextTimedTransition[0])} readOnly={true} className="readonlyTextBox"/>
+        <button>advance</button>
+        </>
+      }
     </div>
     <div className="layout">
       <main className="content">

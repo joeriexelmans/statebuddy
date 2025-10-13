@@ -1,7 +1,7 @@
 import { evalExpr } from "./actionlang_interpreter";
 import { computeArena, ConcreteState, getDescendants, isOverlapping, OrState, Statechart, stateDescription, Transition } from "./ast";
 import { Action } from "./label_ast";
-import { Environment, RaisedEvents, Mode, RT_Statechart, initialRaised, BigStepOutput } from "./runtime_types";
+import { Environment, RaisedEvents, Mode, RT_Statechart, initialRaised, BigStepOutput, TimerElapseEvent, Timers } from "./runtime_types";
 
 export function initialize(ast: Statechart): BigStepOutput {
   let {enteredStates, environment, ...raised} = enterDefault(0, ast.root, {
@@ -16,9 +16,6 @@ type ActionScope = {
 } & RaisedEvents;
 
 type EnteredScope = { enteredStates: Mode } & ActionScope;
-
-type TimerElapseEvent = {state: string, timeDurMs: number};
-type Timers = [number, TimerElapseEvent][];
 
 export function entryActions(simtime: number, state: ConcreteState, actionScope: ActionScope): ActionScope {
   for (const action of state.entryActions) {
