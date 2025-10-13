@@ -133,18 +133,25 @@ export function App() {
     }, 20);
 
     let timeout: NodeJS.Timeout | undefined;
-    if (time.kind === "realtime" && rtIdx !== null) {
-      console.log('checking timers...');
+    if (rtIdx !== null) {
       const currentRt = rt[rtIdx]!;
       const timers = currentRt.environment.get("_timers") || [];
       if (timers.length > 0) {
         const [nextInterrupt, timeElapsedEvent] = timers[0];
-        const wallclkDelay = getWallClkDelay(time, nextInterrupt, performance.now());
-        console.log('scheduling timeout after', wallclkDelay);
-        timeout = setTimeout(() => {
+        const raiseTimeEvent = () => {
           const nextConfig = handleInputEvent(nextInterrupt, timeElapsedEvent, ast, currentRt);
           appendNewConfig('<timer>', nextInterrupt, nextConfig);
-        }, wallclkDelay);
+        }
+        if (time.kind === "realtime") {
+          const wallclkDelay = getWallClkDelay(time, nextInterrupt, performance.now());
+          // console.log('scheduling timeout after', wallclkDelay);
+          timeout = setTimeout(raiseTimeEvent, wallclkDelay);
+        }
+        else if (time.kind === "paused") {
+          if (nextInterrupt <= time.simtime) {
+            raiseTimeEvent();
+          }
+        }
       }
     }
 
@@ -202,7 +209,7 @@ export function App() {
       &emsp;
       {ast.inputEvents &&
         <>raise&nbsp;
-        {[...ast.inputEvents].map(event => <button disabled={rtIdx===null} onClick={() => raise(event)}>{event}</button>)}
+        {[...ast.inputEvents].map(event => <button title="raise input event" disabled={rtIdx===null} onClick={() => raise(event)}>{event}</button>)}
         &emsp;</>
       }
       <input type="radio" name="paused" id="radio-paused" checked={time.kind==="paused"} disabled={rtIdx===null} onChange={e => onChangePaused(e.target.checked, performance.now())}/>
@@ -211,19 +218,30 @@ export function App() {
       <label htmlFor="radio-realtime">real time</label>
       &emsp;
       <label htmlFor="number-timescale">timescale</label>&nbsp;
-      <input type="number" min={0} id="number-timescale" disabled={rtIdx===null} value={timescale} style={{width:40}} onChange={e => onTimeScaleChange(e.target.value, performance.now())}/>
+      <input title="controls how fast the simulation should run in real time mode - larger than 1 means: faster than wall-clock time" type="number" min={0} id="number-timescale" disabled={rtIdx===null} value={timescale} style={{width:40}} onChange={e => onTimeScaleChange(e.target.value, performance.now())}/>
       &emsp;
       <label htmlFor="time">time (s)</label>&nbsp;
-      <input id="time" disabled={rtIdx===null} value={displayTime} readOnly={true} className="readonlyTextBox" />
+      <input title="the current simulated time" id="time" disabled={rtIdx===null} value={displayTime} readOnly={true} className="readonlyTextBox" />
       {nextTimedTransition &&
         <>
         &emsp;
-        next timeout (s):
-        <input id="time" disabled={rtIdx===null} value={formatTime(nextTimedTransition[0])} readOnly={true} className="readonlyTextBox"/>
-        <button>advance</button>
+        <label htmlFor="next-timeout">next timeout (s)</label>&nbsp;
+        <input id="next-timeout" disabled={rtIdx===null} value={formatTime(nextTimedTransition[0])} readOnly={true} className="readonlyTextBox"/>
+        <button title="advance time to the next timer elapse" onClick={() => {
+          const now = performance.now();
+          setTime(time => {
+            if (time.kind === "paused") {
+              return {kind: "paused", simtime: nextTimedTransition[0]};
+            }
+            else {
+              return {kind: "realtime", scale: time.scale, since: {simtime: nextTimedTransition[0], wallclktime: now}};
+            }
+          });
+        }}>advance</button>
         </>
       }
     </div>
+
     <div className="layout">
       <main className="content">
         <VisualEditor {...{ast, setAST, rt: rt.at(rtIdx!), setRT, errors, setErrors}}/>
