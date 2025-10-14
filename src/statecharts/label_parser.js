@@ -231,7 +231,7 @@ function peg$parse(input, options) {
     };
   }
   function peg$f1(event, param) {
-    return {kind: "event", event, param: param ? param[1] : undefined};
+    return {kind: "event", event, paramName: param ? param[1] : undefined};
   }
   function peg$f2(dur) {
     return {kind: "after", durationMs: dur};

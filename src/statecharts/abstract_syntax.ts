@@ -1,4 +1,4 @@
-import { Action, TransitionLabel } from "./label_ast";
+import { Action, EventTrigger, TransitionLabel } from "./label_ast";
 
 export type AbstractState = {
   uid: string;
@@ -37,8 +37,8 @@ export type Statechart = {
 
   variables: Set<string>;
 
-  inputEvents: Set<string>;
-  internalEvents: Set<string>;
+  inputEvents: EventTrigger[];
+  internalEvents: EventTrigger[];
   outputEvents: Set<string>;
 
   uid2State: Map<string, ConcreteState>;
@@ -60,8 +60,8 @@ export const emptyStatechart: Statechart = {
   root: emptyRoot,
   transitions: new Map(),
   variables: new Set(),
-  inputEvents: new Set(),
-  internalEvents: new Set(),
+  inputEvents: [],
+  internalEvents: [],
   outputEvents: new Set(),
   uid2State: new Map([["root", emptyRoot]]),
 };

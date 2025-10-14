@@ -1,7 +1,7 @@
 import { ConcreteState, OrState, Statechart, Transition } from "./abstract_syntax";
 import { findNearestArrow, findNearestRountangleSide, findRountangle, Rountangle, VisualEditorState } from "./concrete_syntax";
 import { isEntirelyWithin } from "../VisualEditor/geometry";
-import { Action, Expression, ParsedText } from "./label_ast";
+import { Action, EventTrigger, Expression, ParsedText } from "./label_ast";
 
 import { parse as parseLabel, SyntaxError } from "./label_parser";
 
@@ -9,6 +9,24 @@ export type TraceableError = {
   shapeUid: string;
   message: string;
   data?: any;
+}
+
+function addEvent(events: EventTrigger[], e: EventTrigger, textUid: string) {
+  const haveEvent = events.find(({event}) => event === e.event);
+  if (haveEvent) {
+    if (haveEvent.paramName !== e.paramName === undefined) {
+      return [{
+          shapeUid: textUid,
+          message: "inconsistent event parameter",
+      }];
+    }
+    return [];
+  }
+  else {
+    events.push(e);
+    events.sort((a,b) => a.event.localeCompare(b.event));
+    return [];
+  }
 }
 
 export function parseStatechart(state: VisualEditorState): [Statechart, TraceableError[]] {
@@ -144,9 +162,9 @@ export function parseStatechart(state: VisualEditorState): [Statechart, Traceabl
   }
 
   let variables = new Set<string>();
-  const inputEvents = new Set<string>();
+  const inputEvents: EventTrigger[] = [];
+  const internalEvents: EventTrigger[] = [];
   const outputEvents = new Set<string>();
-  const internalEvents = new Set<string>();
 
   // step 3: figure out labels
 
@@ -176,31 +194,35 @@ export function parseStatechart(state: VisualEditorState): [Statechart, Traceabl
         if (belongsToTransition) {
           // parse as transition label
           belongsToTransition.label.push(parsed);
+
           // collect events
+          // triggers
           if (parsed.trigger.kind === "event") {
             const {event} = parsed.trigger;
             if (event.startsWith("_")) {
-              internalEvents.add(event);
+              errors.push(...addEvent(internalEvents, parsed.trigger, parsed.uid));
             }
             else {
-              inputEvents.add(event);
+              errors.push(...addEvent(inputEvents, parsed.trigger, parsed.uid));
             }
           }
           else if (parsed.trigger.kind === "after") {
             belongsToTransition.src.timers.push(parsed.trigger.durationMs);
             belongsToTransition.src.timers.sort();
           }
-          for (const action of parsed.actions) {
-            if (action.kind === "raise") {
-              const {event} = action;
-              if (event.startsWith("_")) {
-                internalEvents.add(event);
-              }
-              else {
-                outputEvents.add(event);
-              }
-            }
-          }
+          // // raise-actions
+          // for (const action of parsed.actions) {
+          //   if (action.kind === "raise") {
+          //     const {event} = action;
+          //     if (event.startsWith("_")) {
+          //       internalEvents.add(event);
+          //     }
+          //     else {
+          //       outputEvents.add(event);
+          //     }
+          //   }
+          // }
+
           // collect variables
           variables = variables
             .union(findVariables(parsed.guard));

@@ -1,15 +1,17 @@
 import * as lz4 from "@nick/lz4";
-import { Dispatch, MouseEventHandler, SetStateAction, useEffect, useRef, useState, MouseEvent } from "react";
+import { Dispatch, SetStateAction, useEffect, useRef, useState, MouseEvent } from "react";
 
 import { Statechart } from "../statecharts/abstract_syntax";
-import { Arrow, ArrowPart, Rountangle, RountanglePart, VisualEditorState, emptyState, findNearestArrow, findNearestRountangleSide, findRountangle } from "../statecharts/concrete_syntax";
+import { ArrowPart, RountanglePart, VisualEditorState, emptyState, findNearestArrow, findNearestRountangleSide, findRountangle } from "../statecharts/concrete_syntax";
 import { parseStatechart, TraceableError } from "../statecharts/parser";
 import { BigStep } from "../statecharts/runtime_types";
-import { ArcDirection, Line2D, Rect2D, Vec2D, addV2D, arcDirection, area, euclideanDistance, getBottomSide, getLeftSide, getRightSide, getTopSide, isEntirelyWithin, normalizeRect, subtractV2D, transformLine, transformRect } from "./geometry";
-import { CORNER_HELPER_OFFSET, CORNER_HELPER_RADIUS, MIN_ROUNTANGLE_SIZE, ROUNTANGLE_RADIUS } from "./parameters";
+import { ArcDirection, Line2D, Rect2D, Vec2D, addV2D, arcDirection, area, getBottomSide, getLeftSide, getRightSide, getTopSide, isEntirelyWithin, normalizeRect, subtractV2D, transformLine, transformRect } from "./geometry";
+import { MIN_ROUNTANGLE_SIZE } from "./parameters";
 import { getBBoxInSvgCoords } from "./svg_helper";
 
 import "./VisualEditor.css";
+import { ArrowSVG } from "./ArrowSVG";
+import { RountangleSVG } from "./RountangleSVG";
 
 
 type DraggingState = {
@@ -48,14 +50,17 @@ export const sides: [RountanglePart, (r:Rect2D)=>Line2D][] = [
   ["bottom", getBottomSide],
 ];
 
+export type InsertMode = "and"|"or"|"pseudo"|"transition"|"text";
+
 type VisualEditorProps = {
   setAST: Dispatch<SetStateAction<Statechart>>,
   rt: BigStep|undefined,
   errors: TraceableError[],
   setErrors: Dispatch<SetStateAction<TraceableError[]>>,
+  mode: InsertMode,
 };
 
-export function VisualEditor({setAST, rt, errors, setErrors}: VisualEditorProps) {
+export function VisualEditor({setAST, rt, errors, setErrors, mode}: VisualEditorProps) {
   const [historyState, setHistoryState] = useState<HistoryState>({current: emptyState, history: [], future: []});
 
   const state = historyState.current;
@@ -108,7 +113,6 @@ export function VisualEditor({setAST, rt, errors, setErrors}: VisualEditorProps)
   }
 
   const [dragging, setDragging] = useState<DraggingState>(null);
-  const [mode, setMode] = useState<"state"|"transition"|"text">("state");
   const [showHelp, setShowHelp] = useState<boolean>(false);
 
   // uid's of selected rountangles
@@ -165,7 +169,7 @@ export function VisualEditor({setAST, rt, errors, setErrors}: VisualEditorProps)
       // ignore selection, middle mouse button always inserts
       setState(state => {
         const newID = state.nextID.toString();
-        if (mode === "state") {
+        if (mode === "and" || mode === "or" || mode === "pseudo") {
           // insert rountangle
           setSelection([{uid: newID, parts: ["bottom", "right"]}]);
           return {
@@ -174,7 +178,7 @@ export function VisualEditor({setAST, rt, errors, setErrors}: VisualEditorProps)
               uid: newID,
               topLeft: currentPointer,
               size: MIN_ROUNTANGLE_SIZE,
-              kind: "and",
+              kind: mode,
             }],
             nextID: state.nextID+1,
           };
@@ -203,7 +207,7 @@ export function VisualEditor({setAST, rt, errors, setErrors}: VisualEditorProps)
             nextID: state.nextID+1,
           }
         }
-        throw new Error("unreachable"); // shut up typescript
+        throw new Error("unreachable, mode=" + mode); // shut up typescript
       });
       setDragging({
         lastMousePos: currentPointer,
@@ -377,18 +381,28 @@ export function VisualEditor({setAST, rt, errors, setErrors}: VisualEditorProps)
         return selection;
       });
     }
+    if (e.key === "p") {
+      // selected states become pseudo-states
+      setSelection(selection => {
+        setState(state => ({
+          ...state,
+          rountangles: state.rountangles.map(r => selection.some(rs => rs.uid === r.uid) ? ({...r, kind: "pseudo"}) : r),
+        }));
+        return selection;
+      });
+    }
     if (e.key === "h") {
       setShowHelp(showHelp => !showHelp);
     }
-    if (e.key === "s") {
-      setMode("state");
-    }
-    if (e.key === "t") {
-      setMode("transition");
-    }
-    if (e.key === "x") {
-      setMode("text");
-    }
+    // if (e.key === "s") {
+    //   setMode("state");
+    // }
+    // if (e.key === "t") {
+    //   setMode("transition");
+    // }
+    // if (e.key === "x") {
+    //   setMode("text");
+    // }
 
     if (e.ctrlKey) {
       if (e.key === "z") {
@@ -577,8 +591,8 @@ export function VisualEditor({setAST, rt, errors, setErrors}: VisualEditorProps)
           +(textsToHighlight.hasOwnProperty(txt.uid)?" highlight":""),
       }
       let textNode;
-      if (err) {
-        const {start,end} = err.data;
+      if (err?.data?.location) {
+        const {start,end} = err.data.location;
         textNode = <><text {...commonProps}>
           {txt.text.slice(0, start.offset)}
           <tspan className="error" data-uid={txt.uid} data-parts="text">
@@ -650,7 +664,7 @@ export function VisualEditor({setAST, rt, errors, setErrors}: VisualEditorProps)
   </svg>;
 }
 
-function rountangleMinSize(size: Vec2D): Vec2D {
+export function rountangleMinSize(size: Vec2D): Vec2D {
   if (size.x >= 40 && size.y >= 40) {
     return size;
   }
@@ -658,173 +672,6 @@ function rountangleMinSize(size: Vec2D): Vec2D {
     x: Math.max(40, size.x),
     y: Math.max(40, size.y),
   };
-}
-
-export function RountangleSVG(props: {rountangle: Rountangle, selected: string[], highlight: RountanglePart[], errors: string[], active: boolean}) {
-  const {topLeft, size, uid} = props.rountangle;
-  // always draw a rountangle with a minimum size
-  // during resizing, rountangle can be smaller than this size and even have a negative size, but we don't show it
-  const minSize = rountangleMinSize(size);
-  return <g transform={`translate(${topLeft.x} ${topLeft.y})`}>
-    <rect
-      className={"rountangle"
-        +(props.selected.length===4?" selected":"")
-        +((props.rountangle.kind==="or")?" or":"")
-        +(props.errors.length>0?" error":"")
-        +(props.active?" active":"")
-      }
-      rx={ROUNTANGLE_RADIUS} ry={ROUNTANGLE_RADIUS}
-      x={0}
-      y={0}
-      width={minSize.x}
-      height={minSize.y}
-      data-uid={uid}
-      data-parts="left top right bottom"
-    />
-
-    {(props.errors.length>0) &&
-      <text className="error" x={10} y={40} data-uid={uid} data-parts="left top right bottom">{props.errors.join(' ')}</text>}
-
-
-    <line
-      className={"lineHelper"
-        +(props.selected.includes("top")?" selected":"")
-        +(props.highlight.includes("top")?" highlight":"")
-      }
-      x1={0}
-      y1={0}
-      x2={minSize.x}
-      y2={0}
-      data-uid={uid}
-      data-parts="top"
-    />
-    <line
-      className={"lineHelper"
-        +(props.selected.includes("right")?" selected":"")
-        +(props.highlight.includes("right")?" highlight":"")
-      }
-      x1={minSize.x}
-      y1={0}
-      x2={minSize.x}
-      y2={minSize.y}
-      data-uid={uid}
-      data-parts="right"
-    />
-    <line
-      className={"lineHelper"
-        +(props.selected.includes("bottom")?" selected":"")
-        +(props.highlight.includes("bottom")?" highlight":"")
-      }
-      x1={0}
-      y1={minSize.y}
-      x2={minSize.x}
-      y2={minSize.y}
-      data-uid={uid}
-      data-parts="bottom"
-    />
-    <line
-      className={"lineHelper"
-        +(props.selected.includes("left")?" selected":"")
-        +(props.highlight.includes("left")?" highlight":"")
-      }
-      x1={0}
-      y1={0}
-      x2={0}
-      y2={minSize.y}
-      data-uid={uid}
-      data-parts="left"
-    />
-
-    <circle
-      className="circleHelper corner"
-      cx={CORNER_HELPER_OFFSET}
-      cy={CORNER_HELPER_OFFSET}
-      r={CORNER_HELPER_RADIUS}
-      data-uid={uid}
-      data-parts="top left"
-      />
-    <circle
-      className="circleHelper corner"
-      cx={minSize.x-CORNER_HELPER_OFFSET}
-      cy={CORNER_HELPER_OFFSET}
-      r={CORNER_HELPER_RADIUS}
-      data-uid={uid}
-      data-parts="top right"
-      />
-    <circle
-      className="circleHelper corner"
-      cx={minSize.x-CORNER_HELPER_OFFSET}
-      cy={minSize.y-CORNER_HELPER_OFFSET}
-      r={CORNER_HELPER_RADIUS}
-      data-uid={uid}
-      data-parts="bottom right"
-      />
-    <circle
-      className="circleHelper corner"
-      cx={CORNER_HELPER_OFFSET}
-      cy={minSize.y-CORNER_HELPER_OFFSET}
-      r={CORNER_HELPER_RADIUS}
-      data-uid={uid}
-      data-parts="bottom left"
-      />
-    <text x={10} y={20}
-      className="uid"
-      data-uid={uid}>{uid}</text>
-  </g>;
-}
-
-export function ArrowSVG(props: {arrow: Arrow, selected: string[], errors: string[], highlight: boolean, arc: ArcDirection}) {
-  const {start, end, uid} = props.arrow;
-  const radius = euclideanDistance(start, end)/1.6;
-  const largeArc = "1";
-  const arcOrLine = props.arc === "no" ? "L" :
-    `A ${radius} ${radius} 0 ${largeArc} ${props.arc === "ccw" ? "0" : "1"}`;
-  return <g>
-    <path
-      className={"arrow"
-        +(props.selected.length===2?" selected":"")
-        +(props.errors.length>0?" error":"")
-        +(props.highlight?" highlight":"")
-      }
-      markerEnd='url(#arrowEnd)'
-      d={`M ${start.x} ${start.y}
-            ${arcOrLine}
-            ${end.x} ${end.y}`}
-      data-uid={uid}
-      data-parts="start end"
-    />
-
-    {props.errors.length>0 && <text className="error" x={(start.x+end.x)/2+5} y={(start.y+end.y)/2} data-uid={uid} data-parts="start end">{props.errors.join(' ')}</text>}
-
-    <path
-      className="pathHelper"
-      // markerEnd='url(#arrowEnd)'
-      d={`M ${start.x} ${start.y}
-            ${arcOrLine}
-            ${end.x} ${end.y}`}
-      data-uid={uid}
-      data-parts="start end"
-    />
-
-    <circle
-      className={"circleHelper"
-        +(props.selected.includes("start")?" selected":"")}
-      cx={start.x}
-      cy={start.y}
-      r={CORNER_HELPER_RADIUS}
-      data-uid={uid}
-      data-parts="start"
-    />
-    <circle
-      className={"circleHelper"
-        +(props.selected.includes("end")?" selected":"")}
-      cx={end.x}
-      cy={end.y}
-      r={CORNER_HELPER_RADIUS}
-      data-uid={uid}
-      data-parts="end"
-    />
-  </g>;
 }
 
 export function Selecting(props: SelectingState) {

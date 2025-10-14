@@ -29,6 +29,7 @@ export function evalExpr(expr: Expression, environment: Environment): any {
   else if (expr.kind === "ref") {
     const found = environment.get(expr.variable);
     if (found === undefined) {
+      console.log({environment});
       throw new Error(`variable '${expr.variable}' does not exist in environment`);
     }
     return found;

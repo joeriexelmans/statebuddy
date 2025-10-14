@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { emptyStatechart, Statechart } from "../statecharts/abstract_syntax";
 import { handleInputEvent, initialize } from "../statecharts/interpreter";
 import { BigStep, BigStepOutput } from "../statecharts/runtime_types";
-import { VisualEditor } from "../VisualEditor/VisualEditor";
+import { InsertMode, VisualEditor } from "../VisualEditor/VisualEditor";
 import { getSimTime, getWallClkDelay, TimeMode } from "../statecharts/time";
 
 import "../index.css";
@@ -16,6 +16,8 @@ import { AST } from "./AST";
 import { TraceableError } from "../statecharts/parser";
 
 export function App() {
+  const [mode, setMode] = useState<InsertMode>("and");
+
   const [ast, setAST] = useState<Statechart>(emptyStatechart);
   const [errors, setErrors] = useState<TraceableError[]>([]);
 
@@ -38,10 +40,10 @@ export function App() {
     setTime({kind: "paused", simtime: 0});
   }
 
-  function onRaise(inputEvent: string) {
-    if (rt.length>0 && rtIdx!==undefined && ast.inputEvents.has(inputEvent)) {
+  function onRaise(inputEvent: string, param: any) {
+    if (rt.length>0 && rtIdx!==undefined && ast.inputEvents.some(e => e.event === inputEvent)) {
       const simtime = getSimTime(time, performance.now());
-      const nextConfig = handleInputEvent(simtime, {kind: "input", name: inputEvent}, ast, rt[rtIdx]!);
+      const nextConfig = handleInputEvent(simtime, {kind: "input", name: inputEvent, param}, ast, rt[rtIdx]!);
       appendNewConfig(inputEvent, simtime, nextConfig);
     }
   }
@@ -92,13 +94,13 @@ export function App() {
       }}>
       <TopPanel
         rt={rtIdx === undefined ? undefined : rt[rtIdx]}
-        {...{ast, time, setTime, onInit, onClear, onRaise}}
+        {...{ast, time, setTime, onInit, onClear, onRaise, mode, setMode}}
       />
     </Box>
     <Stack direction="row" sx={{height:'calc(100vh - 32px)'}}>
       {/* main */}
       <Box sx={{flexGrow:1, overflow:'auto'}}>
-        <VisualEditor {...{ast, setAST, rt: rt.at(rtIdx!), setRT, errors, setErrors}}/>
+        <VisualEditor {...{ast, setAST, rt: rt.at(rtIdx!), setRT, errors, setErrors, mode}}/>
       </Box>
       {/* right sidebar */}
       <Box

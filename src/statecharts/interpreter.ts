@@ -238,10 +238,10 @@ export function handleEvent(simtime: number, event: RT_Event, statechart: Statec
           if (event.kind === "input" && event.param !== undefined) {
             // input events may have a parameter
             // *temporarily* add event to environment (dirty!)
-            oldValue = environment.get(event.param.name);
+            oldValue = environment.get(event.param);
             environment = new Map([
               ...environment,
-              [(t.label[0].trigger as EventTrigger).paramName as string, event.param.value],
+              [(t.label[0].trigger as EventTrigger).paramName as string, event.param],
             ]);
           }
           ({mode, environment, ...raised} = fireTransition(simtime, t, arena, srcPath, tgtPath, {mode, environment, ...raised}));
@@ -251,6 +251,7 @@ export function handleEvent(simtime: number, event: RT_Event, statechart: Statec
               ...environment,
               [(t.label[0].trigger as EventTrigger).paramName as string, oldValue],
             ]);
+            console.log('restored environment:', environment);
           }
           arenasFired.add(arena);
         }
