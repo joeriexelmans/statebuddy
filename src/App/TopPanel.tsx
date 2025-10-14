@@ -102,13 +102,14 @@ export function TopPanel({rt, time, setTime, onInit, onClear, onRaise, ast, mode
   return <>
     <div className="toolbar">
       {([
-        ["and", <RountangleIcon kind="and"/>],
-        ["or", <RountangleIcon kind="or"/>],
-        ["pseudo", <PseudoStateIcon/>],
-        ["transition", <TrendingFlatIcon fontSize="small"/>],
-        ["text", <>T</>],
-      ] as [InsertMode, ReactElement][]).map(([m, buttonTxt]) =>
+        ["and", "AND-states", <RountangleIcon kind="and"/>],
+        ["or", "OR-states", <RountangleIcon kind="or"/>],
+        ["pseudo", "pseudo-states", <PseudoStateIcon/>],
+        ["transition", "transitions", <TrendingFlatIcon fontSize="small"/>],
+        ["text", "text", <>T</>],
+      ] as [InsertMode, string, ReactElement][]).map(([m, hint, buttonTxt]) =>
         <button
+          title={"insert "+hint}
           disabled={mode===m}
           onClick={() => setMode(m)}
         >{buttonTxt}</button>)}

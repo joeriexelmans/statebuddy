@@ -112,7 +112,7 @@ export function App() {
           paddingLeft: 1,
         }}>
           <AST {...{...ast, rt: rt.at(rtIdx!)}}/>
-          <hr/>
+          <br/>
           <RTHistory {...{ast, rt, rtIdx, setTime, setRTIdx}}/>
         </Box>
     </Stack>
