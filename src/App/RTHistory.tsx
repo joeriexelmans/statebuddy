@@ -1,6 +1,6 @@
 import { Dispatch, SetStateAction } from "react";
 import { Statechart, stateDescription } from "../statecharts/abstract_syntax";
-import { BigStep, Environment, Mode } from "../statecharts/runtime_types";
+import { BigStep, Environment, Mode, RaisedEvent } from "../statecharts/runtime_types";
 import { formatTime } from "./util";
 import { TimeMode } from "../statecharts/time";
 
@@ -24,7 +24,7 @@ export function RTHistory({rt, rtIdx, ast, setRTIdx, setTime}: RTHistoryProps) {
       <ShowMode mode={rt.mode} statechart={ast}/>
       <ShowEnvironment environment={rt.environment}/>
       {rt.outputEvents.length>0 && <div>
-        {rt.outputEvents.map((e:string) => '^'+e).join(', ')}
+        {rt.outputEvents.map((e:RaisedEvent) => '^'+e.name).join(', ')}
     </div>}
   </div></>);
 }

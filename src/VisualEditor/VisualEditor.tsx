@@ -1,5 +1,5 @@
 import * as lz4 from "@nick/lz4";
-import { Dispatch, MouseEventHandler, SetStateAction, useEffect, useRef, useState } from "react";
+import { Dispatch, MouseEventHandler, SetStateAction, useEffect, useRef, useState, MouseEvent } from "react";
 
 import { Statechart } from "../statecharts/abstract_syntax";
 import { Arrow, ArrowPart, Rountangle, RountanglePart, VisualEditorState, emptyState, findNearestArrow, findNearestRountangleSide, findRountangle } from "../statecharts/concrete_syntax";
@@ -149,7 +149,7 @@ export function VisualEditor({setAST, rt, errors, setErrors}: VisualEditorProps)
     return () => clearTimeout(timeout);
   }, [state]);
 
-  function getCurrentPointer(e: MouseEvent) {
+  function getCurrentPointer(e: {pageX: number, pageY: number}) {
     const bbox = refSVG.current!.getBoundingClientRect();
     return {
       x: e.pageX - bbox.left,
@@ -157,7 +157,7 @@ export function VisualEditor({setAST, rt, errors, setErrors}: VisualEditorProps)
     }
   }
 
-  const onMouseDown: MouseEventHandler<SVGSVGElement> = (e) => {
+  const onMouseDown = (e: MouseEvent) => {
     const currentPointer = getCurrentPointer(e);
 
     if (e.button === 1) {
@@ -247,7 +247,7 @@ export function VisualEditor({setAST, rt, errors, setErrors}: VisualEditorProps)
     setSelection([]);
   };
 
-  const onMouseMove = (e: MouseEvent) => {
+  const onMouseMove = (e: {pageX: number, pageY: number}) => {
     const currentPointer = getCurrentPointer(e);
     if (dragging) {
       const pointerDelta = subtractV2D(currentPointer, dragging.lastMousePos);
@@ -300,7 +300,7 @@ export function VisualEditor({setAST, rt, errors, setErrors}: VisualEditorProps)
     }
   };
 
-  const onMouseUp = (e: MouseEvent) => {
+  const onMouseUp = () => {
     if (dragging) {
       setDragging(null);
       // do not persist sizes smaller than 40x40
