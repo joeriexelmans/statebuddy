@@ -1,7 +1,7 @@
 import { evalExpr } from "./actionlang_interpreter";
 import { computeArena, ConcreteState, getDescendants, isOverlapping, OrState, Statechart, stateDescription, Transition } from "./abstract_syntax";
-import { Action } from "./label_ast";
-import { Environment, RaisedEvents, Mode, RT_Statechart, initialRaised, BigStepOutput, TimerElapseEvent, Timers } from "./runtime_types";
+import { Action, EventTrigger } from "./label_ast";
+import { Environment, RaisedEvents, Mode, RT_Statechart, initialRaised, BigStepOutput, Timers, RT_Event } from "./runtime_types";
 
 export function initialize(ast: Statechart): BigStepOutput {
   let {enteredStates, environment, ...raised} = enterDefault(0, ast.root, {
@@ -27,7 +27,7 @@ export function entryActions(simtime: number, state: ConcreteState, actionScope:
   const timers: Timers = [...(environment.get("_timers") || [])];
   for (const timeOffset of state.timers) {
     const futureSimTime = simtime + timeOffset; // point in simtime when after-trigger becomes enabled
-    timers.push([futureSimTime, {state: state.uid, timeDurMs: timeOffset}]);
+    timers.push([futureSimTime, {kind: "timer", state: state.uid, timeDurMs: timeOffset}]);
   }
   timers.sort((a,b) => a[0] - b[0]); // smallest futureSimTime comes first
   environment.set("_timers", timers);
@@ -167,40 +167,46 @@ export function execAction(action: Action, rt: ActionScope): ActionScope {
     };
   }
   else if (action.kind === "raise") {
+    const raisedEvent = {
+      name: action.event,
+      param: action.param && evalExpr(action.param, rt.environment),
+    };
     if (action.event.startsWith('_')) {
       // append to internal events
       return {
         ...rt,
-        internalEvents: [...rt.internalEvents, action.event],
+        internalEvents: [...rt.internalEvents, raisedEvent],
       };
     }
     else {
       // append to output events
       return {
         ...rt,
-        outputEvents: [...rt.outputEvents, action.event],
+        outputEvents: [...rt.outputEvents, raisedEvent],
       }
     }
   }
   throw new Error("should never reach here");
 }
 
-export function handleEvent(simtime: number, event: string | TimerElapseEvent, statechart: Statechart, activeParent: ConcreteState, {environment, mode, ...raised}: RT_Statechart & RaisedEvents): RT_Statechart & RaisedEvents {
+export function handleEvent(simtime: number, event: RT_Event, statechart: Statechart, activeParent: ConcreteState, {environment, mode, ...raised}: RT_Statechart & RaisedEvents): RT_Statechart & RaisedEvents {
   const arenasFired = new Set<OrState>();
   for (const state of activeParent.children) {
     if (mode.has(state.uid)) {
       const outgoing = statechart.transitions.get(state.uid) || [];
       let triggered;
-      if (typeof event === 'string') {
+      if (event.kind === "input") {
+        // get transitions triggered by event
         triggered = outgoing.filter(transition => {
           const trigger = transition.label[0].trigger;
           if (trigger.kind === "event") {
-            return trigger.event === event;
+            return trigger.event === event.name;
           }
           return false;
         });
       }
       else {
+        // get transitions triggered by timeout
         triggered = outgoing.filter(transition => {
           const trigger = transition.label[0].trigger;
           if (trigger.kind === "after") {
@@ -209,6 +215,7 @@ export function handleEvent(simtime: number, event: string | TimerElapseEvent, s
           return false;
         });
       }
+      // eval guard
       const enabled = triggered.filter(transition =>
         evalExpr(transition.label[0].guard, environment)
       );
@@ -227,7 +234,24 @@ export function handleEvent(simtime: number, event: string | TimerElapseEvent, s
         }
         if (!overlapping) {
           console.log('^ firing');
+          let oldValue;
+          if (event.kind === "input" && event.param !== undefined) {
+            // input events may have a parameter
+            // *temporarily* add event to environment (dirty!)
+            oldValue = environment.get(event.param.name);
+            environment = new Map([
+              ...environment,
+              [(t.label[0].trigger as EventTrigger).paramName as string, event.param.value],
+            ]);
+          }
           ({mode, environment, ...raised} = fireTransition(simtime, t, arena, srcPath, tgtPath, {mode, environment, ...raised}));
+          if (event.kind === "input" && event.param) {
+            // restore original value of variable that had same name as input parameter
+            environment = new Map([
+              ...environment,
+              [(t.label[0].trigger as EventTrigger).paramName as string, oldValue],
+            ]);
+          }
           arenasFired.add(arena);
         }
         else {
@@ -243,7 +267,7 @@ export function handleEvent(simtime: number, event: string | TimerElapseEvent, s
   return {environment, mode, ...raised};
 }
 
-export function handleInputEvent(simtime: number, event: string, statechart: Statechart, {mode, environment}: {mode: Mode, environment: Environment}): BigStepOutput {
+export function handleInputEvent(simtime: number, event: RT_Event, statechart: Statechart, {mode, environment}: {mode: Mode, environment: Environment}): BigStepOutput {
   let raised = initialRaised;
 
   ({mode, environment, ...raised} = handleEvent(simtime, event, statechart, statechart.root, {mode, environment, ...raised}));
@@ -254,7 +278,9 @@ export function handleInputEvent(simtime: number, event: string, statechart: Sta
 export function handleInternalEvents(simtime: number, statechart: Statechart, {mode, environment, ...raised}: RT_Statechart & RaisedEvents): BigStepOutput {
   while (raised.internalEvents.length > 0) {
     const [internalEvent, ...rest] = raised.internalEvents;
-    ({mode, environment, ...raised} = handleEvent(simtime, internalEvent, statechart, statechart.root, {mode, environment, internalEvents: rest, outputEvents: raised.outputEvents}));
+    ({mode, environment, ...raised} = handleEvent(simtime, 
+      {kind: "input", ...internalEvent}, // internal event becomes input event
+      statechart, statechart.root, {mode, environment, internalEvents: rest, outputEvents: raised.outputEvents}));
   }
   return {mode, environment, outputEvents: raised.outputEvents};
 }

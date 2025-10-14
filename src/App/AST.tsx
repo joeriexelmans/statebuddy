@@ -1,8 +1,11 @@
 import { ConcreteState, stateDescription, Transition } from "../statecharts/abstract_syntax";
 import { Action, Expression } from "../statecharts/label_ast";
+import { RT_Statechart } from "../statecharts/runtime_types";
+
+import "./AST.css";
 
 export function ShowTransition(props: {transition: Transition}) {
-  return <>&#10132; {stateDescription(props.transition.tgt)}</>;
+  return <>➝ {stateDescription(props.transition.tgt)}</>;
 }
 
 export function ShowExpr(props: {expr: Expression}) {
@@ -29,11 +32,11 @@ export function ShowAction(props: {action: Action}) {
   }
 }
 
-export function AST(props: {root: ConcreteState, transitions: Map<string, Transition[]>}) {
+export function AST(props: {root: ConcreteState, transitions: Map<string, Transition[]>, rt: RT_Statechart | undefined}) {
   const description = stateDescription(props.root);
   const outgoing = props.transitions.get(props.root.uid) || [];
 
-  return <details open={true}>
+  return <details open={true} className={props.rt?.mode.has(props.root.uid) ? "active" : ""}>
     <summary>{props.root.kind}: {description}</summary>
 
     {props.root.entryActions.length>0 &&
@@ -48,7 +51,7 @@ export function AST(props: {root: ConcreteState, transitions: Map<string, Transi
     }
     {props.root.children.length>0 &&
           props.root.children.map(child => 
-            <AST root={child} transitions={props.transitions} />
+            <AST root={child} transitions={props.transitions} rt={props.rt} />
           )
     }
     {outgoing.length>0 &&

@@ -11,8 +11,8 @@ tlabel = _ trigger:trigger _ guard:("[" _ guard _ "]")? _ actions:("/" _ actions
 
 trigger = afterTrigger / entryTrigger / exitTrigger / eventTrigger
 
-eventTrigger = event:identifier {
-	return {kind: "event", event};
+eventTrigger = event:identifier param:("(" identifier ")")? {
+	return {kind: "event", event, param: param ? param[1] : undefined};
 }
 
 afterTrigger = "after" _ dur:durationMs {
@@ -111,8 +111,8 @@ boolean = ("true" / "false") {
 	return text() === "true";
 }
 
-raise = "^" _ event:identifier {
-	return {kind: "raise", event};
+raise = "^" _ event:identifier param:("(" expr ")")? {
+	return {kind: "raise", event, param: param ? param[1] : undefined};
 }
 
 _ "whitespace"

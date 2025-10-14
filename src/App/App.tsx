@@ -13,10 +13,11 @@ import { Box, Stack } from "@mui/material";
 import { TopPanel } from "./TopPanel";
 import { RTHistory } from "./RTHistory";
 import { AST } from "./AST";
+import { TraceableError } from "../statecharts/parser";
 
 export function App() {
   const [ast, setAST] = useState<Statechart>(emptyStatechart);
-  const [errors, setErrors] = useState<[string,string][]>([]);
+  const [errors, setErrors] = useState<TraceableError[]>([]);
 
   const [rt, setRT] = useState<BigStep[]>([]);
   const [rtIdx, setRTIdx] = useState<number|undefined>();
@@ -40,7 +41,7 @@ export function App() {
   function onRaise(inputEvent: string) {
     if (rt.length>0 && rtIdx!==undefined && ast.inputEvents.has(inputEvent)) {
       const simtime = getSimTime(time, performance.now());
-      const nextConfig = handleInputEvent(simtime, inputEvent, ast, rt[rtIdx]!);
+      const nextConfig = handleInputEvent(simtime, {kind: "input", name: inputEvent}, ast, rt[rtIdx]!);
       appendNewConfig(inputEvent, simtime, nextConfig);
     }
   }
@@ -108,7 +109,7 @@ export function App() {
           paddingRight: 1,
           paddingLeft: 1,
         }}>
-          <AST {...ast}/>
+          <AST {...{...ast, rt: rt.at(rtIdx!)}}/>
           <hr/>
           <RTHistory {...{ast, rt, rtIdx, setTime, setRTIdx}}/>
         </Box>

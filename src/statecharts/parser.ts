@@ -5,8 +5,14 @@ import { Action, Expression, ParsedText } from "./label_ast";
 
 import { parse as parseLabel, SyntaxError } from "./label_parser";
 
-export function parseStatechart(state: VisualEditorState): [Statechart, [string,string][]] {
-  const errorShapes: [string, string][] = [];
+export type TraceableError = {
+  shapeUid: string;
+  message: string;
+  data?: any;
+}
+
+export function parseStatechart(state: VisualEditorState): [Statechart, TraceableError[]] {
+  const errors: TraceableError[] = [];
 
   // implicitly, the root is always an Or-state
   const root: OrState = {
@@ -37,6 +43,7 @@ export function parseStatechart(state: VisualEditorState): [Statechart, [string,
 
   // we assume that the rountangles are sorted from big to small:
   for (const rt of state.rountangles) {
+    // @ts-ignore
     const state: ConcreteState = {
       kind: rt.kind,
       uid: rt.uid,
@@ -45,11 +52,11 @@ export function parseStatechart(state: VisualEditorState): [Statechart, [string,
       entryActions: [],
       exitActions: [],
       timers: [],
-    }
+    };
     if (state.kind === "or") {
-      state.initial = [];
+      (state as unknown as OrState).initial = [];
     }
-    uid2State.set(rt.uid, state);
+    uid2State.set(rt.uid, (state));
 
     // iterate in reverse:
     for (let i=parentCandidates.length-1; i>=0; i--) {
@@ -57,7 +64,7 @@ export function parseStatechart(state: VisualEditorState): [Statechart, [string,
       if (candidate.uid === "root" || isEntirelyWithin(rt, candidate)) {
         // found our parent :)
         const parentState = uid2State.get(candidate.uid)!;
-        parentState.children.push(state);
+        parentState.children.push(state as unknown as ConcreteState);
         parentCandidates.push(rt);
         parentLinks.set(rt.uid, candidate.uid);
         state.parent = parentState;
@@ -78,7 +85,7 @@ export function parseStatechart(state: VisualEditorState): [Statechart, [string,
     if (!srcUID) {
       if (!tgtUID) {
         // dangling edge - todo: display error...
-        errorShapes.push([arr.uid, "dangling"]);
+        errors.push({shapeUid: arr.uid, message: "dangling"});
       }
       else {
         // target but no source, so we treat is as an 'initial' marking
@@ -89,13 +96,19 @@ export function parseStatechart(state: VisualEditorState): [Statechart, [string,
         }
         else {
           // and states do not have an 'initial' state - todo: display error...
-          errorShapes.push([arr.uid, "AND-state cannot have an initial state"]);
+          errors.push({
+            shapeUid: arr.uid,
+            message: "AND-state cannot have an initial state",
+          });
         }
       }
     }
     else {
       if (!tgtUID) {
-        errorShapes.push([arr.uid, "no target"]);
+        errors.push({
+          shapeUid: arr.uid,
+          message: "no target",
+        });
       }
       else {
         // add transition
@@ -116,10 +129,16 @@ export function parseStatechart(state: VisualEditorState): [Statechart, [string,
   for (const state of uid2State.values()) {
     if (state.kind === "or") {
       if (state.initial.length > 1) {
-        errorShapes.push(...state.initial.map(([uid,childState])=>[uid,"multiple initial states"] as [string, string]));
+        errors.push(...state.initial.map(([uid,childState]) => ({
+          shapeUid: uid,
+          message: "multiple initial states",
+        })));
       }
       else if (state.initial.length === 0) {
-        errorShapes.push([state.uid, "no initial state"]);
+        errors.push({
+          shapeUid: state.uid, 
+          message: "no initial state",
+        });
       }
     }
   }
@@ -138,7 +157,11 @@ export function parseStatechart(state: VisualEditorState): [Statechart, [string,
       parsed = parseLabel(text.text); // may throw
     } catch (e) {
       if (e instanceof SyntaxError) {
-        errorShapes.push([text.uid, e]);
+        errors.push({
+          shapeUid: text.uid,
+          message: e.message,
+          data: e,
+        });
         continue;
       }
       else {
@@ -202,10 +225,11 @@ export function parseStatechart(state: VisualEditorState): [Statechart, [string,
         belongsToState.exitActions.push(...parsed.actions);
       }
       else {
-        errorShapes.push([text.uid, {
+        errors.push({
+          shapeUid: text.uid,
           message: "states can only have entry/exit triggers",
-          location: {start: {offset: 0}, end: {offset: text.text.length}},
-        }]);
+          data: {start: {offset: 0}, end: {offset: text.text.length}},
+        });
       }
 
     }
@@ -217,10 +241,16 @@ export function parseStatechart(state: VisualEditorState): [Statechart, [string,
 
   for (const transition of uid2Transition.values()) {
     if (transition.label.length === 0) {
-      errorShapes.push([transition.uid, "no label"]);
+      errors.push({
+        shapeUid: transition.uid,
+        message: "no label",
+      });
     }
     else if (transition.label.length > 1) {
-      errorShapes.push([transition.uid, "multiple labels"]);
+      errors.push({
+        shapeUid: transition.uid,
+        message: "multiple labels",
+      });
     }
   }
 
@@ -232,7 +262,7 @@ export function parseStatechart(state: VisualEditorState): [Statechart, [string,
     internalEvents,
     outputEvents,
     uid2State,
-  }, errorShapes];
+  }, errors];
 }
 
 function findVariables(expr: Expression): Set<string> {

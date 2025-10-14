@@ -19,6 +19,7 @@ export type Trigger = EventTrigger | AfterTrigger | EntryTrigger | ExitTrigger;
 export type EventTrigger = {
   kind: "event";
   event: string;
+  paramName?: string;
 }
 
 export type AfterTrigger = {
@@ -45,6 +46,7 @@ export type Assignment = {
 export type RaiseEvent = {
   kind: "raise";
   event: string;
+  param?: Expression;
 }
 
 

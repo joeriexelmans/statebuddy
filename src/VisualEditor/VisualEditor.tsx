@@ -1,16 +1,15 @@
+import * as lz4 from "@nick/lz4";
 import { Dispatch, MouseEventHandler, SetStateAction, useEffect, useRef, useState } from "react";
+
+import { Statechart } from "../statecharts/abstract_syntax";
+import { Arrow, ArrowPart, Rountangle, RountanglePart, VisualEditorState, emptyState, findNearestArrow, findNearestRountangleSide, findRountangle } from "../statecharts/concrete_syntax";
+import { parseStatechart, TraceableError } from "../statecharts/parser";
+import { BigStep } from "../statecharts/runtime_types";
 import { ArcDirection, Line2D, Rect2D, Vec2D, addV2D, arcDirection, area, euclideanDistance, getBottomSide, getLeftSide, getRightSide, getTopSide, isEntirelyWithin, normalizeRect, subtractV2D, transformLine, transformRect } from "./geometry";
+import { CORNER_HELPER_OFFSET, CORNER_HELPER_RADIUS, MIN_ROUNTANGLE_SIZE, ROUNTANGLE_RADIUS } from "./parameters";
+import { getBBoxInSvgCoords } from "./svg_helper";
 
 import "./VisualEditor.css";
-
-import { getBBoxInSvgCoords } from "./svg_helper";
-import { VisualEditorState, Rountangle, emptyState, Arrow, ArrowPart, RountanglePart, findNearestRountangleSide, findNearestArrow, Text, findRountangle } from "../statecharts/concrete_syntax";
-import { parseStatechart } from "../statecharts/parser";
-import { CORNER_HELPER_OFFSET, CORNER_HELPER_RADIUS, MIN_ROUNTANGLE_SIZE, ROUNTANGLE_RADIUS } from "./parameters";
-
-import * as lz4 from "@nick/lz4";
-import { BigStep, RT_Statechart } from "../statecharts/runtime_types";
-import { Statechart } from "../statecharts/abstract_syntax";
 
 
 type DraggingState = {
@@ -52,8 +51,8 @@ export const sides: [RountanglePart, (r:Rect2D)=>Line2D][] = [
 type VisualEditorProps = {
   setAST: Dispatch<SetStateAction<Statechart>>,
   rt: BigStep|undefined,
-  errors: [string,string][],
-  setErrors: Dispatch<SetStateAction<[string,string][]>>,
+  errors: TraceableError[],
+  setErrors: Dispatch<SetStateAction<TraceableError[]>>,
 };
 
 export function VisualEditor({setAST, rt, errors, setErrors}: VisualEditorProps) {
@@ -204,6 +203,7 @@ export function VisualEditor({setAST, rt, errors, setErrors}: VisualEditorProps)
             nextID: state.nextID+1,
           }
         }
+        throw new Error("unreachable"); // shut up typescript
       });
       setDragging({
         lastMousePos: currentPointer,
@@ -221,13 +221,13 @@ export function VisualEditor({setAST, rt, errors, setErrors}: VisualEditorProps)
         // if the mouse button is pressed outside of the current selection, we reset the selection to whatever shape the mouse is on
         let allPartsInSelection = true;
         for (const part of parts) {
-          if (!(selection.find(s => s.uid === uid)?.parts || []).includes(part)) {
+          if (!(selection.find(s => s.uid === uid)?.parts || [] as string[]).includes(part)) {
             allPartsInSelection = false;
             break;
           }
         }
         if (!allPartsInSelection) {
-          setSelection([{uid, parts}]);
+          setSelection([{uid, parts}] as Selection);
         }
 
         // start dragging
@@ -513,10 +513,10 @@ export function VisualEditor({setAST, rt, errors, setErrors}: VisualEditorProps)
 
   const active = rt?.mode || new Set();
 
-  const rootErrors = errors.filter(([uid]) => uid === "root").map(err=>err[1]);
+  const rootErrors = errors.filter(({shapeUid}) => shapeUid === "root").map(({message}) => message);
 
   return <svg width="4000px" height="4000px"
-      className="svgCanvas"
+      className={"svgCanvas"+(active.has("root")?" active":"")}
       onMouseDown={onMouseDown}
       onContextMenu={e => e.preventDefault()}
       ref={refSVG}
@@ -540,22 +540,26 @@ export function VisualEditor({setAST, rt, errors, setErrors}: VisualEditorProps)
       key={rountangle.uid}
       rountangle={rountangle}
       selected={selection.find(r => r.uid === rountangle.uid)?.parts || []}
-      highlight={[...(sidesToHighlight[rountangle.uid] || []), ...(rountanglesToHighlight[rountangle.uid]?["left","right","top","bottom"]:[])]}
-      errors={errors.filter(([uid,msg])=>uid===rountangle.uid).map(err=>err[1])}
+      highlight={[...(sidesToHighlight[rountangle.uid] || []), ...(rountanglesToHighlight[rountangle.uid]?["left","right","top","bottom"]:[]) as RountanglePart[]]}
+      errors={errors
+        .filter(({shapeUid}) => shapeUid === rountangle.uid)
+        .map(({message}) => message)}
       active={active.has(rountangle.uid)}
       />)}
 
     {state.arrows.map(arrow => {
       const sides = arrow2SideMap.get(arrow.uid);
       let arc = "no" as ArcDirection;
-      if (sides && sides[0]?.uid === sides[1]?.uid && sides[0].uid !== undefined) {
-        arc = arcDirection(sides[0]?.part, sides[1]?.part);
+      if (sides && sides[0]?.uid === sides[1]?.uid && sides[0]!.uid !== undefined) {
+        arc = arcDirection(sides[0]!.part, sides[1]!.part);
       }
       return <ArrowSVG
         key={arrow.uid}
         arrow={arrow}
         selected={selection.find(a => a.uid === arrow.uid)?.parts || []}
-        errors={errors.filter(([uid,msg])=>uid===arrow.uid).map(err=>err[1])}
+        errors={errors
+          .filter(({shapeUid}) => shapeUid === arrow.uid)
+          .map(({message}) => message)}
         highlight={arrowsToHighlight.hasOwnProperty(arrow.uid)}
         arc={arc}
         />;
@@ -563,7 +567,7 @@ export function VisualEditor({setAST, rt, errors, setErrors}: VisualEditorProps)
     )}
 
     {state.texts.map(txt => {
-      const err = errors.find(([uid]) => txt.uid === uid)?.[1];
+      const err = errors.find(({shapeUid}) => txt.uid === shapeUid);
       const commonProps = {
         "data-uid": txt.uid,
         "data-parts": "text",
@@ -574,7 +578,7 @@ export function VisualEditor({setAST, rt, errors, setErrors}: VisualEditorProps)
       }
       let textNode;
       if (err) {
-        const {start,end} = err.location;
+        const {start,end} = err.data;
         textNode = <><text {...commonProps}>
           {txt.text.slice(0, start.offset)}
           <tspan className="error" data-uid={txt.uid} data-parts="text">
@@ -620,7 +624,7 @@ export function VisualEditor({setAST, rt, errors, setErrors}: VisualEditorProps)
 
     {selectingState && <Selecting {...selectingState} />}
 
-    {showHelp ? <>
+    {/* {showHelp ? <>
       <text x={5} y={20}>
         Left mouse button: Select/Drag.
       </text>
@@ -641,7 +645,7 @@ export function VisualEditor({setAST, rt, errors, setErrors}: VisualEditorProps)
       <text x={5} y={140}>
         [H] Show/hide this help.
       </text>
-    </> : <text x={5} y={20}>[H] To show help.</text>}
+    </> : <text x={5} y={20}>[H] To show help.</text>} */}
 
   </svg>;
 }

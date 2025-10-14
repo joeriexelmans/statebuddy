@@ -3,6 +3,10 @@
   background-color: #eee;
 }
 
+.svgCanvas.active {
+  background-color: rgb(255, 140, 0, 0.2);
+}
+
 text, text.highlight {
   user-select: none;
   /* text-shadow: 2px 0 #fff, -2px 0 #fff, 0 2px #fff, 0 -2px #fff, 1px 1px #fff, -1px -1px #fff, 1px -1px #fff, -1px 1px #fff; */

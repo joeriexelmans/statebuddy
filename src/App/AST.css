@@ -1,0 +1,11 @@
+details.active  {
+  background-color: rgba(255, 140, 0, 0.2);
+}
+
+details { 
+  border: 1px black solid;
+  /* border-radius: 5px; */
+  background-color: white;
+  margin-bottom: 2px;
+  padding-right: 2px;
+}
