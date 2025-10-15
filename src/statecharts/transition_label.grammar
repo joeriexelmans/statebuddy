@@ -93,13 +93,21 @@ product = atom:atom rest:((_ ("*" / "/") _) product)? {
     };
 }
 
-atom = nested / literal / ref
+atom = fnCall / nested / literal / ref
 
 nested = "(" _ expr:expr _ ")" {
 	return expr;
 }
 
-literal = value:(number / boolean) {
+fnCall = fn:ref param:nested {
+	return {
+    	kind: "call",
+        fn,
+        param,
+    };
+}
+
+literal = value:(number / boolean / string) {
 	return {kind: "literal", value}
 }
 
@@ -109,6 +117,10 @@ ref = variable:identifier {
 
 boolean = ("true" / "false") {
 	return text() === "true";
+}
+
+string = '"' str:([^"]*) '"' {
+	return str.join('');
 }
 
 raise = "^" _ event:identifier param:("(" expr ")")? {

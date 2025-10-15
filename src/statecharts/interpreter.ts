@@ -1,11 +1,11 @@
 import { evalExpr } from "./actionlang_interpreter";
 import { computeArena, ConcreteState, getDescendants, isOverlapping, OrState, Statechart, stateDescription, Transition } from "./abstract_syntax";
-import { Action, EventTrigger } from "./label_ast";
-import { Environment, RaisedEvents, Mode, RT_Statechart, initialRaised, BigStepOutput, Timers, RT_Event } from "./runtime_types";
+import { Action, AfterTrigger, EventTrigger } from "./label_ast";
+import { Environment, RaisedEvents, Mode, RT_Statechart, initialRaised, BigStepOutput, Timers, RT_Event, TimerElapseEvent } from "./runtime_types";
 
 export function initialize(ast: Statechart): BigStepOutput {
   let {enteredStates, environment, ...raised} = enterDefault(0, ast.root, {
-    environment: new Map(),
+    environment: new Environment(),
     ...initialRaised,
   });
   return handleInternalEvents(0, ast, {mode: enteredStates, environment, ...raised});
@@ -23,14 +23,19 @@ export function entryActions(simtime: number, state: ConcreteState, actionScope:
   }
   // schedule timers
   // we store timers in the environment (dirty!)
-  const environment = new Map(actionScope.environment);
-  const timers: Timers = [...(environment.get("_timers") || [])];
-  for (const timeOffset of state.timers) {
-    const futureSimTime = simtime + timeOffset; // point in simtime when after-trigger becomes enabled
-    timers.push([futureSimTime, {kind: "timer", state: state.uid, timeDurMs: timeOffset}]);
-  }
-  timers.sort((a,b) => a[0] - b[0]); // smallest futureSimTime comes first
-  environment.set("_timers", timers);
+  let environment = actionScope.environment.transform<Timers>("_timers", oldTimers => {
+    const newTimers = [
+      ...oldTimers,
+      ...state.timers.map(timeOffset => {
+        const futureSimTime = simtime + timeOffset;
+        return [futureSimTime, {kind: "timer", state: state.uid, timeDurMs: timeOffset}] as [number, TimerElapseEvent];
+      }),
+    ];
+    newTimers.sort((a,b) => a[0] - b[0]);
+    return newTimers;
+  }, []);
+  // new nested scope
+  environment = environment.pushScope();
   return {...actionScope, environment};
 }
 
@@ -38,11 +43,12 @@ export function exitActions(simtime: number, state: ConcreteState, actionScope: 
   for (const action of state.exitActions) {
     (actionScope = execAction(action, actionScope));
   }
+  let environment = actionScope.environment.popScope();
   // cancel timers
-  const environment = new Map(actionScope.environment);
-  const timers: Timers = environment.get("_timers") || [];
-  const filtered = timers.filter(([_, {state: s}]) => s !== state.uid);
-  environment.set("_timers", filtered);
+  environment = environment.transform<Timers>("_timers", oldTimers => {
+    // remove all timers of 'state':
+    return oldTimers.filter(([_, {state: s}]) => s !== state.uid);
+  }, []);
   return {...actionScope, environment};
 }
 
@@ -124,15 +130,15 @@ export function enterPath(simtime: number, path: ConcreteState[], rt: ActionScop
 export function exitCurrent(simtime: number, state: ConcreteState, rt: EnteredScope): ActionScope {
   let {enteredStates, ...actionScope} = rt;
 
-  // exit all active children...
-  for (const child of state.children) {
-    if (enteredStates.has(child.uid)) {
+  if (enteredStates.has(state.uid)) {
+    // exit all active children...
+    for (const child of state.children) {
       actionScope = exitCurrent(simtime, child,  {enteredStates, ...actionScope});
     }
-  }
 
-  // execute exit actions
-  actionScope = exitActions(simtime, state, actionScope);
+    // execute exit actions
+    actionScope = exitActions(simtime, state, actionScope);
+  }
 
   return actionScope;
 }
@@ -140,7 +146,7 @@ export function exitCurrent(simtime: number, state: ConcreteState, rt: EnteredSc
 export function exitPath(simtime: number, path: ConcreteState[], rt: EnteredScope): ActionScope {
   let {enteredStates, ...actionScope} = rt;
 
-  const toExit = enteredStates.difference(new Set(path));
+  const toExit = enteredStates.difference(new Set(path.map(s=>s.uid)));
 
   const [state, ...rest] = path;
   
@@ -152,18 +158,16 @@ export function exitPath(simtime: number, path: ConcreteState[], rt: EnteredScop
 
   // execute exit actions
   actionScope = exitActions(simtime, state, actionScope);
-
   return actionScope;
 }
 
 export function execAction(action: Action, rt: ActionScope): ActionScope {
   if (action.kind === "assignment") {
     const rhs = evalExpr(action.rhs, rt.environment);
-    const newEnvironment = new Map(rt.environment);
-    newEnvironment.set(action.lhs, rhs);
+    const environment = rt.environment.set(action.lhs, rhs);
     return {
       ...rt,
-      environment: newEnvironment,
+      environment,
     };
   }
   else if (action.kind === "raise") {
@@ -224,7 +228,6 @@ export function handleEvent(simtime: number, event: RT_Event, statechart: Statec
           console.warn('nondeterminism!!!!');
         }
         const t = enabled[0];
-        console.log('enabled:', transitionDescription(t));
         const {arena, srcPath, tgtPath} = computeArena(t);
         let overlapping = false;
         for (const alreadyFired of arenasFired) {
@@ -233,30 +236,25 @@ export function handleEvent(simtime: number, event: RT_Event, statechart: Statec
           }
         }
         if (!overlapping) {
-          console.log('^ firing');
           let oldValue;
           if (event.kind === "input" && event.param !== undefined) {
             // input events may have a parameter
-            // *temporarily* add event to environment (dirty!)
-            oldValue = environment.get(event.param);
-            environment = new Map([
-              ...environment,
-              [(t.label[0].trigger as EventTrigger).paramName as string, event.param],
-            ]);
+            // add event parameter to environment in new scope
+            environment = environment.pushScope();
+            environment = environment.newVar(
+              (t.label[0].trigger as EventTrigger).paramName as string,
+              event.param,
+            );
           }
           ({mode, environment, ...raised} = fireTransition(simtime, t, arena, srcPath, tgtPath, {mode, environment, ...raised}));
           if (event.kind === "input" && event.param) {
-            // restore original value of variable that had same name as input parameter
-            environment = new Map([
-              ...environment,
-              [(t.label[0].trigger as EventTrigger).paramName as string, oldValue],
-            ]);
-            console.log('restored environment:', environment);
+            environment = environment.popScope();
+            // console.log('restored environment:', environment);
           }
           arenasFired.add(arena);
         }
         else {
-          console.log('skip (overlapping arenas)');
+          // console.log('skip (overlapping arenas)');
         }
       }
       else {
@@ -292,9 +290,10 @@ function transitionDescription(t: Transition) {
 
 export function fireTransition(simtime: number, t: Transition, arena: OrState, srcPath: ConcreteState[], tgtPath: ConcreteState[], {mode, environment, ...raised}: RT_Statechart & RaisedEvents): RT_Statechart & RaisedEvents {
 
-  // console.log('fire ', transitionDescription(t), {arena, srcPath, tgtPath});
+  console.log('fire ', transitionDescription(t), {arena, srcPath, tgtPath});
 
   // exit src
+  console.log('exit src...');
   ({environment, ...raised} = exitPath(simtime, srcPath.slice(1), {environment, enteredStates: mode, ...raised}));
   const toExit = getDescendants(arena);
   toExit.delete(arena.uid); // do not exit the arena itself
@@ -306,6 +305,7 @@ export function fireTransition(simtime: number, t: Transition, arena: OrState, s
   }
 
   // enter tgt
+  console.log('enter tgt...');
   let enteredStates;
   ({enteredStates, environment, ...raised} = enterPath(simtime, tgtPath.slice(1), {environment, ...raised}));
   const enteredMode = exitedMode.union(enteredStates);

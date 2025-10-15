@@ -173,6 +173,7 @@ export function parseStatechart(state: VisualEditorState): [Statechart, Traceabl
     let parsed: ParsedText;
     try {
       parsed = parseLabel(text.text); // may throw
+      parsed.uid = text.uid;
     } catch (e) {
       if (e instanceof SyntaxError) {
         errors.push({
@@ -180,21 +181,21 @@ export function parseStatechart(state: VisualEditorState): [Statechart, Traceabl
           message: e.message,
           data: e,
         });
-        continue;
+        parsed = {
+          kind: "parserError",
+          uid: text.uid,
+        }
       }
       else {
         throw e;
       }
     }
-    parsed.uid = text.uid;
-    if (parsed.kind === "transitionLabel") {
-      const belongsToArrow = findNearestArrow(text.topLeft, state.arrows);
-      if (belongsToArrow) {
-        const belongsToTransition = uid2Transition.get(belongsToArrow.uid);
-        if (belongsToTransition) {
-          // parse as transition label
-          belongsToTransition.label.push(parsed);
-
+    const belongsToArrow = findNearestArrow(text.topLeft, state.arrows);
+    if (belongsToArrow) {
+      const belongsToTransition = uid2Transition.get(belongsToArrow.uid);
+      if (belongsToTransition) {
+        belongsToTransition.label.push(parsed);
+        if (parsed.kind === "transitionLabel") {
           // collect events
           // triggers
           if (parsed.trigger.kind === "event") {
@@ -210,6 +211,10 @@ export function parseStatechart(state: VisualEditorState): [Statechart, Traceabl
             belongsToTransition.src.timers.push(parsed.trigger.durationMs);
             belongsToTransition.src.timers.sort();
           }
+          else if (["entry", "exit"].includes(parsed.trigger.kind)) {
+            errors.push({shapeUid: text.uid, message: "entry/exit trigger not allowed on transitions"});
+          }
+
           // // raise-actions
           // for (const action of parsed.actions) {
           //   if (action.kind === "raise") {
@@ -224,40 +229,40 @@ export function parseStatechart(state: VisualEditorState): [Statechart, Traceabl
           // }
 
           // collect variables
-          variables = variables
-            .union(findVariables(parsed.guard));
+          variables = variables.union(findVariables(parsed.guard));
           for (const action of parsed.actions) {
             variables = variables.union(findVariablesAction(action));
           }
         }
-        continue;
       }
     }
-    // text does not belong to transition...
-    // so it belongs to a rountangle (a state)
-    const rountangle = findRountangle(text.topLeft, state.rountangles);
-    const belongsToState = rountangle ? uid2State.get(rountangle.uid)! : root;
-    if (parsed.kind === "transitionLabel") {
-      // labels belonging to a rountangle (= a state) must by entry/exit actions
-      // if we cannot find a containing state, then it belong to the root
-      if (parsed.trigger.kind === "entry") {
-        belongsToState.entryActions.push(...parsed.actions);
-      }
-      else if(parsed.trigger.kind === "exit") {
-        belongsToState.exitActions.push(...parsed.actions);
-      }
-      else {
-        errors.push({
-          shapeUid: text.uid,
-          message: "states can only have entry/exit triggers",
-          data: {start: {offset: 0}, end: {offset: text.text.length}},
-        });
-      }
+    else {
+      // text does not belong to transition...
+      // so it belongs to a rountangle (a state)
+      const rountangle = findRountangle(text.topLeft, state.rountangles);
+      const belongsToState = rountangle ? uid2State.get(rountangle.uid)! : root;
+      if (parsed.kind === "transitionLabel") {
+        // labels belonging to a rountangle (= a state) must by entry/exit actions
+        // if we cannot find a containing state, then it belong to the root
+        if (parsed.trigger.kind === "entry") {
+          belongsToState.entryActions.push(...parsed.actions);
+        }
+        else if(parsed.trigger.kind === "exit") {
+          belongsToState.exitActions.push(...parsed.actions);
+        }
+        else {
+          errors.push({
+            shapeUid: text.uid,
+            message: "states can only have entry/exit triggers",
+            data: {start: {offset: 0}, end: {offset: text.text.length}},
+          });
+        }
 
-    }
-    else if (parsed.kind === "comment") {
-      // just append comments to their respective states
-      belongsToState.comments.push([text.uid, parsed.text]);
+      }
+      else if (parsed.kind === "comment") {
+        // just append comments to their respective states
+        belongsToState.comments.push([text.uid, parsed.text]);
+      }
     }
   }
 

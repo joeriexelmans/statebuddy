@@ -81,7 +81,7 @@ text.highlight {
 .lineHelper:hover {
   stroke: blue;
   stroke-opacity: 0.2;
-  cursor: grab;
+  /* cursor: grab; */
 }
 
 .pathHelper {
@@ -102,7 +102,7 @@ text.highlight {
 .circleHelper:hover {
   fill: blue;
   fill-opacity: 0.2;
-  cursor: grab;
+  /* cursor: grab; */
 }
 
 .rountangle.or {

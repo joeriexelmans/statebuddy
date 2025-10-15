@@ -1,4 +1,4 @@
-export type ParsedText = TransitionLabel | Comment;
+export type ParsedText = TransitionLabel | Comment | ParserError;
 
 export type TransitionLabel = {
   kind: "transitionLabel";
@@ -12,6 +12,11 @@ export type Comment = {
   kind: "comment";
   uid: string; // uid of the text node
   text: string;
+}
+
+export type ParserError = {
+  kind: "parserError";
+  uid: string; // uid of the text node
 }
 
 export type Trigger = EventTrigger | AfterTrigger | EntryTrigger | ExitTrigger;
@@ -73,4 +78,10 @@ export type VarRef = {
 export type Literal = {
   kind: "literal";
   value: any;
+}
+
+export type FunctionCall = {
+  kind: "call",
+  fn: VarRef,
+  param: Expression,
 }

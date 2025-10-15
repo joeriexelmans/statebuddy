@@ -1,4 +1,4 @@
-import { Action, EventTrigger, TransitionLabel } from "./label_ast";
+import { Action, EventTrigger, ParsedText, TransitionLabel } from "./label_ast";
 
 export type AbstractState = {
   uid: string;
@@ -28,7 +28,7 @@ export type Transition = {
   uid: string;
   src: ConcreteState;
   tgt: ConcreteState;
-  label: TransitionLabel[];
+  label: ParsedText[];
 }
 
 export type Statechart = {

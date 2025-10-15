@@ -116,7 +116,7 @@ export function TopPanel({rt, time, setTime, onInit, onClear, onRaise, ast, mode
     </div>
     &emsp;
     <div className="toolbar">
-    <button title="(re)initialize simulation" onClick={onInit} ><CachedIcon fontSize="small"/></button>
+    <button title="(re)initialize simulation" onClick={onInit} ><CachedIcon fontSize="small"/><PlayArrowIcon fontSize="small"/></button>
     <button title="clear the simulation" onClick={onClear} disabled={!rt}><ClearIcon fontSize="small"/></button>
 
     &emsp;

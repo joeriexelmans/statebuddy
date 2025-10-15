@@ -2,7 +2,7 @@ import * as lz4 from "@nick/lz4";
 import { Dispatch, SetStateAction, useEffect, useRef, useState, MouseEvent } from "react";
 
 import { Statechart } from "../statecharts/abstract_syntax";
-import { ArrowPart, RountanglePart, VisualEditorState, emptyState, findNearestArrow, findNearestRountangleSide, findRountangle } from "../statecharts/concrete_syntax";
+import { Arrow, ArrowPart, Rountangle, RountanglePart, Text, VisualEditorState, emptyState, findNearestArrow, findNearestRountangleSide, findRountangle } from "../statecharts/concrete_syntax";
 import { parseStatechart, TraceableError } from "../statecharts/parser";
 import { BigStep } from "../statecharts/runtime_types";
 import { ArcDirection, Line2D, Rect2D, Vec2D, addV2D, arcDirection, area, getBottomSide, getLeftSide, getRightSide, getTopSide, isEntirelyWithin, normalizeRect, subtractV2D, transformLine, transformRect } from "./geometry";
@@ -62,6 +62,8 @@ type VisualEditorProps = {
 
 export function VisualEditor({setAST, rt, errors, setErrors, mode}: VisualEditorProps) {
   const [historyState, setHistoryState] = useState<HistoryState>({current: emptyState, history: [], future: []});
+
+  const [clipboard, setClipboard] = useState<Set<string>>(new Set());
 
   const state = historyState.current;
   const setState = (s: SetStateAction<VisualEditorState>) => {
@@ -164,7 +166,7 @@ export function VisualEditor({setAST, rt, errors, setErrors, mode}: VisualEditor
   const onMouseDown = (e: MouseEvent) => {
     const currentPointer = getCurrentPointer(e);
 
-    if (e.button === 1) {
+    if (e.button === 2) {
       checkPoint();
       // ignore selection, middle mouse button always inserts
       setState(state => {
@@ -230,25 +232,26 @@ export function VisualEditor({setAST, rt, errors, setErrors, mode}: VisualEditor
             break;
           }
         }
-        if (!allPartsInSelection) {
-          setSelection([{uid, parts}] as Selection);
+        // if (!allPartsInSelection) {
+        //   setSelection([{uid, parts}] as Selection);
+        // }
+
+        if (allPartsInSelection) {
+          // start dragging
+          setDragging({
+            lastMousePos: currentPointer,
+          });
+          return;
         }
-
-        // start dragging
-        setDragging({
-          lastMousePos: currentPointer,
-        });
-        return;
       }
+      // otherwise, just start making a selection
+      setDragging(null);
+      setSelectingState({
+        topLeft: currentPointer,
+        size: {x: 0, y: 0},
+      });
+      setSelection([]);
     }
-
-    // otherwise, just start making a selection
-    setDragging(null);
-    setSelectingState({
-      topLeft: currentPointer,
-      size: {x: 0, y: 0},
-    });
-    setSelection([]);
   };
 
   const onMouseMove = (e: {pageX: number, pageY: number}) => {
@@ -304,7 +307,7 @@ export function VisualEditor({setAST, rt, errors, setErrors, mode}: VisualEditor
     }
   };
 
-  const onMouseUp = () => {
+  const onMouseUp = (e) => {
     if (dragging) {
       setDragging(null);
       // do not persist sizes smaller than 40x40
@@ -320,45 +323,68 @@ export function VisualEditor({setAST, rt, errors, setErrors, mode}: VisualEditor
     }
     if (selectingState) {
       // we were making a selection
-      const normalizedSS = normalizeRect(selectingState);
-      const shapes = Array.from(refSVG.current?.querySelectorAll("rect, line, circle, text") || []) as SVGGraphicsElement[];
-      const shapesInSelection = shapes.filter(el => {
-        const bbox = getBBoxInSvgCoords(el, refSVG.current!);
-        return isEntirelyWithin(bbox, normalizedSS);
-      }).filter(el => !el.classList.contains("corner"));
-      
-      const uidToParts = new Map();
-      for (const shape of shapesInSelection) {
-        const uid = shape.dataset.uid;
+      if (selectingState.size.x === 0 && selectingState.size.y === 0) {
+        const uid = e.target?.dataset.uid;
+        const parts: string[] = e.target?.dataset.parts?.split(' ') || [];
         if (uid) {
-          const parts: Set<string> = uidToParts.get(uid) || new Set();
-          for (const part of shape.dataset.parts?.split(' ') || []) {
-            parts.add(part);
+          checkPoint();
+          // @ts-ignore
+          setSelection(() => ([{uid, parts}]));
+
+          // if the mouse button is pressed outside of the current selection, we reset the selection to whatever shape the mouse is on
+          let allPartsInSelection = true;
+          for (const part of parts) {
+            if (!(selection.find(s => s.uid === uid)?.parts || [] as string[]).includes(part)) {
+              allPartsInSelection = false;
+              break;
+            }
           }
-          uidToParts.set(uid, parts);
         }
       }
-      setSelection(() => [...uidToParts.entries()].map(([uid,parts]) => ({
-        kind: "rountangle",
-        uid,
-        parts: [...parts],
-      })));
-      setSelectingState(null); // no longer making a selection
+      else {
+        const normalizedSS = normalizeRect(selectingState);
+        const shapes = Array.from(refSVG.current?.querySelectorAll("rect, line, circle, text") || []) as SVGGraphicsElement[];
+        const shapesInSelection = shapes.filter(el => {
+          const bbox = getBBoxInSvgCoords(el, refSVG.current!);
+          return isEntirelyWithin(bbox, normalizedSS);
+        }).filter(el => !el.classList.contains("corner"));
+        
+        const uidToParts = new Map();
+        for (const shape of shapesInSelection) {
+          const uid = shape.dataset.uid;
+          if (uid) {
+            const parts: Set<string> = uidToParts.get(uid) || new Set();
+            for (const part of shape.dataset.parts?.split(' ') || []) {
+              parts.add(part);
+            }
+            uidToParts.set(uid, parts);
+          }
+        }
+        setSelection(() => [...uidToParts.entries()].map(([uid,parts]) => ({
+          uid,
+          parts: [...parts],
+        })));
+      }
     }
+    setSelectingState(null); // no longer making a selection
   };
+
+  function deleteShapes(selection: Selection) {
+    setState(state => ({
+      ...state,
+      rountangles: state.rountangles.filter(r => !selection.some(rs => rs.uid === r.uid)),
+      arrows: state.arrows.filter(a => !selection.some(as => as.uid === a.uid)),
+      texts: state.texts.filter(t => !selection.some(ts => ts.uid === t.uid)),
+    }));
+    setSelection([]);
+  }
 
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.key === "Delete") {
       // delete selection
       if (selection.length > 0) {
         checkPoint();
-        setState(state => ({
-          ...state,
-          rountangles: state.rountangles.filter(r => !selection.some(rs => rs.uid === r.uid)),
-          arrows: state.arrows.filter(a => !selection.some(as => as.uid === a.uid)),
-          texts: state.texts.filter(t => !selection.some(ts => ts.uid === t.uid)),
-        }));
-        setSelection([]);
+        deleteShapes(selection);
       }
     }
     if (e.key === "o") {
@@ -394,17 +420,61 @@ export function VisualEditor({setAST, rt, errors, setErrors, mode}: VisualEditor
     if (e.key === "h") {
       setShowHelp(showHelp => !showHelp);
     }
-    // if (e.key === "s") {
-    //   setMode("state");
-    // }
-    // if (e.key === "t") {
-    //   setMode("transition");
-    // }
-    // if (e.key === "x") {
-    //   setMode("text");
-    // }
-
     if (e.ctrlKey) {
+      // if (e.key === "c") {
+      //   if (selection.length > 0) {
+      //     e.preventDefault();
+      //     setClipboard(new Set(selection.map(shape => shape.uid)));
+      //     console.log('set clipboard', new Set(selection.map(shape => shape.uid)));
+      //   }
+      // }
+      // if (e.key === "v") {
+      //   console.log('paste shortcut..', clipboard);
+      //   if (clipboard.size > 0) {
+      //     console.log('pasting...a');
+      //     e.preventDefault();
+      //     checkPoint();
+      //     const offset = {x: 40, y: 40};
+      //     const rountanglesToCopy = state.rountangles.filter(r => clipboard.has(r.uid));
+      //     const arrowsToCopy = state.arrows.filter(a => clipboard.has(a.uid));
+      //     const textsToCopy = state.texts.filter(t => clipboard.has(t.uid));
+      //     let nextUid = state.nextID;
+      //     const rountanglesCopied: Rountangle[] = rountanglesToCopy.map(r => ({
+      //       ...r,
+      //       uid: (nextUid++).toString(),
+      //       topLeft: addV2D(r.topLeft, offset),
+      //     }));
+      //     const arrowsCopied: Arrow[] = arrowsToCopy.map(a => ({
+      //       ...a,
+      //       uid: (nextUid++).toString(),
+      //       start: addV2D(a.start, offset),
+      //       end: addV2D(a.end, offset),
+      //     }));
+      //     const textsCopied: Text[] = textsToCopy.map(t => ({
+      //       ...t,
+      //       uid: (nextUid++).toString(),
+      //       topLeft: addV2D(t.topLeft, offset),
+      //     }));
+      //     setState(state => ({
+      //       ...state,
+      //       rountangles: [...state.rountangles, ...rountanglesCopied],
+      //       arrows: [...state.arrows, ...arrowsCopied],
+      //       texts: [...state.texts, ...textsCopied],
+      //       nextID: nextUid,
+      //     }));
+      //     setClipboard(new Set([
+      //       ...rountanglesCopied.map(r => r.uid),
+      //       ...arrowsCopied.map(a => a.uid),
+      //       ...textsCopied.map(t => t.uid),
+      //     ]));
+      //     // @ts-ignore
+      //     setSelection([
+      //       ...rountanglesCopied.map(r => ({uid: r.uid, parts: ["left", "top", "right", "bottom"]})),
+      //       ...arrowsCopied.map(a => ({uid: a.uid, parts: ["start", "end"]})),
+      //       ...textsCopied.map(t => ({uid: t.uid, parts: ["text"]})),
+      //     ]);
+      //   }
+      // }
       if (e.key === "z") {
         e.preventDefault();
         undo();
@@ -441,7 +511,7 @@ export function VisualEditor({setAST, rt, errors, setErrors, mode}: VisualEditor
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseup", onMouseUp);
     };
-  }, [selectingState, dragging]);
+  }, [selectingState, dragging, clipboard]);
 
   // detect what is 'connected'
   const arrow2SideMap = new Map<string,[{ uid: string; part: RountanglePart; } | undefined, { uid: string; part: RountanglePart; } | undefined]>();
@@ -525,6 +595,86 @@ export function VisualEditor({setAST, rt, errors, setErrors, mode}: VisualEditor
     }
   }
 
+  function onPaste(e: ClipboardEvent) {
+    const data = e.clipboardData?.getData("text/plain");
+    if (data) {
+      let parsed;
+      try {
+        parsed = JSON.parse(data);
+      }
+      catch (e) {
+        return;
+      }
+      // const offset = {x: 40, y: 40};
+      const offset = {x: 0, y: 0};
+      let nextID = state.nextID;
+      try {
+        const copiedRountangles: Rountangle[] = parsed.rountangles.map((r: Rountangle) => ({
+          ...r,
+          uid: (nextID++).toString(),
+          topLeft: addV2D(r.topLeft, offset),
+        } as Rountangle));
+        const copiedArrows: Arrow[] = parsed.arrows.map((a: Arrow) => ({
+          ...a,
+          uid: (nextID++).toString(),
+          start: addV2D(a.start, offset),
+          end: addV2D(a.end, offset),
+        } as Arrow));
+        const copiedTexts: Text[] = parsed.texts.map((t: Text) => ({
+          ...t,
+          uid: (nextID++).toString(),
+          topLeft: addV2D(t.topLeft, offset),
+        } as Text));
+        setState(state => ({
+          ...state,
+          rountangles: [...state.rountangles, ...copiedRountangles],
+          arrows: [...state.arrows, ...copiedArrows],
+          texts: [...state.texts, ...copiedTexts],
+          nextID: nextID,
+        }));
+        // @ts-ignore
+        const newSelection: Selection = [
+          ...copiedRountangles.map(r => ({uid: r.uid, parts: ["left", "top", "right", "bottom"]})),
+          ...copiedArrows.map(a => ({uid: a.uid, parts: ["start", "end"]})),
+          ...copiedTexts.map(t => ({uid: t.uid, parts: ["text"]})),
+        ];
+        setSelection(newSelection);
+        // copyInternal(newSelection, e); // doesn't work
+        e.preventDefault();
+      }
+      catch (e) {
+      }
+    }
+  }
+
+  function copyInternal(selection: Selection, e: ClipboardEvent) {
+    const uidsToCopy = new Set(selection.map(shape => shape.uid));
+    const rountanglesToCopy = state.rountangles.filter(r => uidsToCopy.has(r.uid));
+    const arrowsToCopy = state.arrows.filter(a => uidsToCopy.has(a.uid));
+    const textsToCopy = state.texts.filter(t => uidsToCopy.has(t.uid));
+    e.clipboardData?.setData("text/plain", JSON.stringify({
+      rountangles: rountanglesToCopy,
+      arrows: arrowsToCopy,
+      texts: textsToCopy,
+    }));
+  }
+
+  function onCopy(e: ClipboardEvent) {
+    if (selection.length > 0) {
+      e.preventDefault();
+      copyInternal(selection, e);
+    }
+  }
+
+  function onCut(e: ClipboardEvent) {
+    if (selection.length > 0) {
+      copyInternal(selection, e);
+      deleteShapes(selection);
+      e.preventDefault();
+    }
+    
+  }
+
   const active = rt?.mode || new Set();
 
   const rootErrors = errors.filter(({shapeUid}) => shapeUid === "root").map(({message}) => message);
@@ -534,6 +684,9 @@ export function VisualEditor({setAST, rt, errors, setErrors, mode}: VisualEditor
       onMouseDown={onMouseDown}
       onContextMenu={e => e.preventDefault()}
       ref={refSVG}
+      onCopy={onCopy}
+      onPaste={onPaste}
+      onCut={onCut}
     >
       <defs>
         <marker
@@ -637,30 +790,6 @@ export function VisualEditor({setAST, rt, errors, setErrors, mode}: VisualEditor
       >{textNode}</g>;})}
 
     {selectingState && <Selecting {...selectingState} />}
-
-    {/* {showHelp ? <>
-      <text x={5} y={20}>
-        Left mouse button: Select/Drag.
-      </text>
-      <text x={5} y={40}>
-        Right mouse button: Select only.
-      </text>
-      <text x={5} y={60}>
-        Middle mouse button: Insert [S]tates / [T]ransitions / Te[X]t (current mode: {mode})</text>
-      <text x={5} y={80}>
-        [Del] Delete selection.
-      </text>
-      <text x={5} y={100}>
-        [O] Turn selected states into OR-states.
-      </text>
-      <text x={5} y={120}>
-        [A] Turn selected states into AND-states.
-      </text>
-      <text x={5} y={140}>
-        [H] Show/hide this help.
-      </text>
-    </> : <text x={5} y={20}>[H] To show help.</text>} */}
-
   </svg>;
 }
 

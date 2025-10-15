@@ -31,11 +31,11 @@ export function RTHistory({rt, rtIdx, ast, setRTIdx, setTime}: RTHistoryProps) {
 
 
 function ShowEnvironment(props: {environment: Environment}) {
-  return <div>{[...props.environment.entries()]
-    .filter(([variable]) => !variable.startsWith('_'))
-    .map(([variable,value]) =>
-    `${variable}: ${value}`
-  ).join(', ')}</div>;
+  return <div>{
+    [...props.environment.entries()]
+      .filter(([variable]) => !variable.startsWith('_'))
+      .map(([variable,value]) => `${variable}: ${value}`).join(', ')
+  }</div>;
 }
 
 function ShowMode(props: {mode: Mode, statechart: Statechart}) {

@@ -3,7 +3,6 @@
 import { Expression } from "./label_ast";
 import { Environment } from "./runtime_types";
 
-
 const UNARY_OPERATOR_MAP: Map<string, (x: any) => any> = new Map([
   ["!", x => !x],
   ["-", x => -x as any],

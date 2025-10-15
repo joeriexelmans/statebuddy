@@ -14,6 +14,7 @@ import { TopPanel } from "./TopPanel";
 import { RTHistory } from "./RTHistory";
 import { AST } from "./AST";
 import { TraceableError } from "../statecharts/parser";
+import { getKeyHandler } from "./shortcut_handler";
 
 export function App() {
   const [mode, setMode] = useState<InsertMode>("and");
@@ -82,6 +83,14 @@ export function App() {
     }
 
   }, [time, rtIdx]);
+
+  useEffect(() => {
+    const onKeyDown = getKeyHandler(setMode);
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, []);
 
   return <Stack sx={{height:'100vh'}}>
     {/* Top bar */}
