@@ -147,13 +147,19 @@ export function VisualEditor({setAST, rt, errors, setErrors, mode}: VisualEditor
       const compressedStateString = compressedStateBuffer.toBase64();
       window.location.hash = "#"+compressedStateString;
 
-      const [statechart, errors] = parseStatechart(state);
-      // console.log('statechart: ', statechart, 'errors:', errors);
-      setErrors(errors);
-      setAST(statechart);
-    }, 100);
+      // const [statechart, errors] = parseStatechart(state);
+      // setErrors(errors);
+      // setAST(statechart);
+    }, 200);
     return () => clearTimeout(timeout);
   }, [state]);
+
+  useEffect(() => {
+    const [statechart, errors] = parseStatechart(state);
+    setErrors(errors);
+    setAST(statechart);
+  }, [state])
+  
 
   function getCurrentPointer(e: {pageX: number, pageY: number}) {
     const bbox = refSVG.current!.getBoundingClientRect();
@@ -232,26 +238,25 @@ export function VisualEditor({setAST, rt, errors, setErrors, mode}: VisualEditor
             break;
           }
         }
-        // if (!allPartsInSelection) {
-        //   setSelection([{uid, parts}] as Selection);
-        // }
-
-        if (allPartsInSelection) {
-          // start dragging
-          setDragging({
-            lastMousePos: currentPointer,
-          });
-          return;
+        if (!allPartsInSelection) {
+          setSelection([{uid, parts}] as Selection);
         }
+
+        // start dragging
+        setDragging({
+          lastMousePos: currentPointer,
+        });
+        return;
       }
-      // otherwise, just start making a selection
-      setDragging(null);
-      setSelectingState({
-        topLeft: currentPointer,
-        size: {x: 0, y: 0},
-      });
-      setSelection([]);
     }
+
+    // otherwise, just start making a selection
+    setDragging(null);
+    setSelectingState({
+      topLeft: currentPointer,
+      size: {x: 0, y: 0},
+    });
+    setSelection([]);
   };
 
   const onMouseMove = (e: {pageX: number, pageY: number}) => {
@@ -680,7 +685,7 @@ export function VisualEditor({setAST, rt, errors, setErrors, mode}: VisualEditor
   const rootErrors = errors.filter(({shapeUid}) => shapeUid === "root").map(({message}) => message);
 
   return <svg width="4000px" height="4000px"
-      className={"svgCanvas"+(active.has("root")?" active":"")}
+      className={"svgCanvas"+(active.has("root")?" active":"")+(dragging!==null?" dragging":"")}
       onMouseDown={onMouseDown}
       onContextMenu={e => e.preventDefault()}
       ref={refSVG}
@@ -701,7 +706,7 @@ export function VisualEditor({setAST, rt, errors, setErrors, mode}: VisualEditor
         </marker>
       </defs>
 
-    {(rootErrors.length>0) && <text className="error" x={5} y={50}>{rootErrors.join(' ')}</text>}
+    {(rootErrors.length>0) && <text className="error" x={5} y={20}>{rootErrors.join(' ')}</text>}
 
     {state.rountangles.map(rountangle => <RountangleSVG
       key={rountangle.uid}

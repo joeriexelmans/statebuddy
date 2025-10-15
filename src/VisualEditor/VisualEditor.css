@@ -3,6 +3,10 @@
   background-color: #eee;
 }
 
+.svgCanvas.dragging  {
+  cursor: grabbing !important;
+}
+
 .svgCanvas.active {
   background-color: rgb(255, 140, 0, 0.2);
 }
@@ -49,12 +53,6 @@ text.highlight {
   /* cursor: grab; */
 }
 
-.rountangle.dragging {
-  /* fill: lightgrey; */
-  /* stroke-width: 4px; */
-  cursor: grabbing;
-}
-
 .rountangle.selected {
   fill: rgba(0, 0, 255, 0.2);
   /* stroke: blue;
@@ -70,7 +68,7 @@ text.highlight {
   stroke-width: 3px;
 }
 
-.selected:hover {
+.selected:hover:not(:active) {
   cursor: grab;
 }
 
@@ -78,10 +76,10 @@ text.highlight {
   stroke: rgba(0, 0, 0, 0);
   stroke-width: 16px;
 }
-.lineHelper:hover {
+.lineHelper:hover:not(:active) {
   stroke: blue;
   stroke-opacity: 0.2;
-  /* cursor: grab; */
+  cursor: grab;
 }
 
 .pathHelper {
@@ -89,7 +87,7 @@ text.highlight {
   stroke: rgba(0, 0, 0, 0);
   stroke-width: 16px;
 }
-.pathHelper:hover {
+.pathHelper:hover:not(:active) {
   stroke: blue;
   stroke-opacity: 0.2;
   cursor: grab;
@@ -99,10 +97,10 @@ text.highlight {
 .circleHelper {
   fill: rgba(0, 0, 0, 0);
 }
-.circleHelper:hover {
+.circleHelper:hover:not(:active) {
   fill: blue;
   fill-opacity: 0.2;
-  /* cursor: grab; */
+  cursor: grab;
 }
 
 .rountangle.or {
@@ -133,9 +131,6 @@ text.highlight {
 .arrow:hover {
   cursor: grab;
 }
-
-
-
 
 line.selected, circle.selected {
   fill: rgba(0, 0, 255, 0.2);
