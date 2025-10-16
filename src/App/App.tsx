@@ -30,7 +30,6 @@ export function App() {
 
   function onInit() {
     const config = initialize(ast);
-    console.log('runtime: ', rt);
     setRT([{inputEvent: null, simtime: 0, ...config}]);
     setRTIdx(0);
     setTime({kind: "paused", simtime: 0});

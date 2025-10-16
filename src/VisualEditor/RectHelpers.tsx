@@ -73,8 +73,5 @@ export function RectHelper(props: { uid: string, size: Vec2D, selected: string[]
       r={CORNER_HELPER_RADIUS}
       data-uid={props.uid}
       data-parts="bottom left" />
-    <text x={10} y={20}
-      className="uid"
-      data-uid={props.uid}>{props.uid}</text>
   </>;
 }

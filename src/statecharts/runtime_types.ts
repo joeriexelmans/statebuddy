@@ -57,7 +57,6 @@ export class Environment {
         ])));
       }
     }
-    console.log(this.scopes);
     return new Environment(this.scopes.with(-1, new Map([
       ...this.scopes[this.scopes.length-1].entries(),
       [key, value],
@@ -93,18 +92,6 @@ export class Environment {
     }
   }
 }
-
-// console.log('env...');
-// let env = new Environment();
-// env = env.set("a", 1);
-// env = env.set("b", 2);
-// env = env.pushScope();
-// console.log(env.get("a")); // 1
-// env = env.newVar("a", 99);
-// console.log(env.get("a")); // 99
-// env = env.popScope();
-// console.log(env.get("a")); // 1
-// console.log('end env...');
 
 export type RT_Statechart = {
   mode: Mode;

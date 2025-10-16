@@ -33,5 +33,11 @@ export function DiamondSVG(props: { diamond: Diamond; selected: string[]; highli
     <DiamondShape size={minSize} extraAttrs={extraAttrs}/>
 
     <RectHelper uid={props.diamond.uid} size={minSize} highlight={props.highlight} selected={props.selected} />
+
+    <text x={minSize.x/2} y={minSize.y/2}
+      className="uid"
+      textAnchor="middle"
+      data-uid={props.diamond.uid}>{props.diamond.uid}</text>
+
   </g>;
 }
