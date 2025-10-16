@@ -143,9 +143,9 @@ text.selected, text.selected:hover {
   fill: blue;
   font-weight: 600;
 }
-text:hover {
+text:hover:not(:active) {
   fill: blue;
-  /* cursor: grab; */
+  cursor: grab;
 }
 
 .highlight {

@@ -10,10 +10,11 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import BoltIcon from '@mui/icons-material/Bolt';
 import SkipNextIcon from '@mui/icons-material/SkipNext';
 import TrendingFlatIcon from '@mui/icons-material/TrendingFlat';
+import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
+import StopIcon from '@mui/icons-material/Stop';
 
 import { formatTime } from "./util";
 import { InsertMode } from "../VisualEditor/VisualEditor";
-import { DiamondShape } from "../VisualEditor/RountangleSVG";
 
 export type TopPanelProps = {
   rt?: BigStep,
@@ -33,16 +34,21 @@ function RountangleIcon(props: {kind: string}) {
       x={1} y={1}
       width={18} height={18}
       className={`rountangle ${props.kind}`}
-      style={props.kind === "or" ? {strokeDasharray: '3 2'}: {}}
+      style={{...(props.kind === "or" ? {strokeDasharray: '3 2'}: {}), strokeWidth: 1.2}}
     />
   </svg>;
 }
 
 function PseudoStateIcon(props: {}) {
-  return <svg width={20} height={20}>
-    <g transform="translate(2,1)">
-    <DiamondShape geometry={{topLeft:{x:0,y:0}, size:{x:16,y:18}}} extraAttrs={{className: 'rountangle pseudo'}}/>
-    </g>
+  const w=20, h=20;
+  return <svg width={w} height={h}>
+    <polygon
+      points={`
+        ${w/2} ${1},
+        ${w-1} ${h/2},
+        ${w/2} ${h-1},
+        ${1}   ${h/2},
+      `} fill="white" stroke="black" strokeWidth={1.2}/>
   </svg>;
 }
 
@@ -101,28 +107,29 @@ export function TopPanel({rt, time, setTime, onInit, onClear, onRaise, ast, mode
 
   return <>
     <div className="toolbar">
-      {([
-        ["and", "AND-states", <RountangleIcon kind="and"/>],
-        ["or", "OR-states", <RountangleIcon kind="or"/>],
-        ["pseudo", "pseudo-states", <PseudoStateIcon/>],
-        ["transition", "transitions", <TrendingFlatIcon fontSize="small"/>],
-        ["text", "text", <>T</>],
-      ] as [InsertMode, string, ReactElement][]).map(([m, hint, buttonTxt]) =>
-        <button
-          title={"insert "+hint}
-          disabled={mode===m}
-          onClick={() => setMode(m)}
-        >{buttonTxt}</button>)}
-    </div>
-    &emsp;
-    <div className="toolbar">
-    <button title="(re)initialize simulation" onClick={onInit} ><CachedIcon fontSize="small"/><PlayArrowIcon fontSize="small"/></button>
-    <button title="clear the simulation" onClick={onClear} disabled={!rt}><ClearIcon fontSize="small"/></button>
+    {([
+      ["and", "AND-states", <RountangleIcon kind="and"/>],
+      ["or", "OR-states", <RountangleIcon kind="or"/>],
+      ["pseudo", "pseudo-states", <PseudoStateIcon/>],
+      ["transition", "transitions", <TrendingFlatIcon fontSize="small"/>],
+      ["text", "text", <>&nbsp;T&nbsp;</>],
+    ] as [InsertMode, string, ReactElement][]).map(([m, hint, buttonTxt]) =>
+      <button
+        title={"insert "+hint}
+        disabled={mode===m}
+        className={mode===m ? "active":""}
+        onClick={() => setMode(m)}
+      >{buttonTxt}</button>)}
 
     &emsp;
 
-    <button title="pause the simulation" disabled={!rt || time.kind==="paused"} onClick={() => onChangePaused(true, performance.now())}><PauseIcon fontSize="small"/></button>
-    <button title="run the simulation in real time" disabled={!rt || time.kind==="realtime"} onClick={() => onChangePaused(false, performance.now())}><PlayArrowIcon fontSize="small"/></button>
+    <button title="(re)initialize simulation" onClick={onInit} ><PlayArrowIcon fontSize="small"/><CachedIcon fontSize="small"/></button>
+    <button title="clear the simulation" onClick={onClear} disabled={!rt}><StopIcon fontSize="small"/></button>
+
+    &emsp;
+
+    <button title="pause the simulation" disabled={!rt || time.kind==="paused"} className={(rt && time.kind==="paused") ? "active":""} onClick={() => onChangePaused(true, performance.now())}><PauseIcon fontSize="small"/></button>
+    <button title="run the simulation in real time" disabled={!rt || time.kind==="realtime"} className={(rt && time.kind==="realtime") ? "active":""} onClick={() => onChangePaused(false, performance.now())}><PlayArrowIcon fontSize="small"/></button>
 
     {/* <ToggleButtonGroup value={time.kind} exclusive onChange={(_,newValue) => onChangePaused(newValue==="paused", performance.now())} size="small">
       <ToggleButton disableRipple value="paused" disabled={!rt}><PauseIcon/></ToggleButton>
@@ -155,12 +162,15 @@ export function TopPanel({rt, time, setTime, onInit, onClear, onRaise, ast, mode
           return {kind: "realtime", scale: time.scale, since: {simtime: nextTimedTransition[0], wallclktime: now}};
         }
       });
-    }}><SkipNextIcon fontSize="small"/></button>
+    }}><SkipNextIcon fontSize="small"/><AccessAlarmIcon fontSize="small"/></button>
+
+    &emsp;
 
     {ast.inputEvents &&
       <>
         {ast.inputEvents.map(({event, paramName}) =>
-        <>&emsp;<button title={`raise input event '${event}'`} disabled={!rt} onClick={() => {
+        <><button title={`raise input event '${event}'`} disabled={!rt} onClick={() => {
+          // @ts-ignore
           const param = document.getElementById(`input-${event}-param`)?.value;
           let paramParsed;
           try {
@@ -176,7 +186,7 @@ export function TopPanel({rt, time, setTime, onInit, onClear, onRaise, ast, mode
         }}>
           <BoltIcon fontSize="small"/>
           {event}
-        </button>{paramName && <><input id={`input-${event}-param`} style={{width: 20}} placeholder={paramName}/></>}</>)}
+        </button>{paramName && <><input id={`input-${event}-param`} style={{width: 20}} placeholder={paramName}/></>}&nbsp;</>)}
       </>
     }
 

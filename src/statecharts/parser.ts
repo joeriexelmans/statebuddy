@@ -1,5 +1,5 @@
-import { ConcreteState, OrState, Statechart, Transition } from "./abstract_syntax";
-import { findNearestArrow, findNearestRountangleSide, findRountangle, Rountangle, VisualEditorState } from "./concrete_syntax";
+import { AbstractState, ConcreteState, OrState, PseudoState, Statechart, Transition } from "./abstract_syntax";
+import { findNearestArrow, findNearestSide, findRountangle, Rountangle, VisualEditorState } from "./concrete_syntax";
 import { isEntirelyWithin } from "../VisualEditor/geometry";
 import { Action, EventTrigger, Expression, ParsedText } from "./label_ast";
 
@@ -45,7 +45,7 @@ export function parseStatechart(state: VisualEditorState): [Statechart, Traceabl
     timers: [],
   }
 
-  const uid2State = new Map<string, ConcreteState>([["root", root]]);
+  const uid2State = new Map<string, ConcreteState|PseudoState>([["root", root]]);
 
   // we will always look for the smallest parent rountangle
   const parentCandidates: Rountangle[] = [{
@@ -59,37 +59,59 @@ export function parseStatechart(state: VisualEditorState): [Statechart, Traceabl
 
   // step 1: figure out state hierarchy
 
-  // we assume that the rountangles are sorted from big to small:
+  // IMPORTANT ASSUMPTION: state.rountangles is sorted from big to small surface area:
   for (const rt of state.rountangles) {
-    // @ts-ignore
-    const state: ConcreteState = {
+    const common = {
       kind: rt.kind,
       uid: rt.uid,
-      children: [],
       comments: [],
       entryActions: [],
       exitActions: [],
-      timers: [],
     };
-    if (state.kind === "or") {
-      (state as unknown as OrState).initial = [];
+
+    let state;
+    if (rt.kind === "or") {
+      state = {
+        ...common,
+        initial: [],
+        children: [],
+        timers: [],
+      };
     }
-    uid2State.set(rt.uid, (state));
+    else if (rt.kind === "and") {
+      state = {
+        ...common,
+        children: [],
+        timers: [],
+      };
+    }
 
     // iterate in reverse:
     for (let i=parentCandidates.length-1; i>=0; i--) {
       const candidate = parentCandidates[i];
       if (candidate.uid === "root" || isEntirelyWithin(rt, candidate)) {
-        // found our parent :)
-        const parentState = uid2State.get(candidate.uid)!;
+        // found our parent
+        const parentState = uid2State.get(candidate.uid)! as ConcreteState;
         parentState.children.push(state as unknown as ConcreteState);
         parentCandidates.push(rt);
         parentLinks.set(rt.uid, candidate.uid);
-        state.parent = parentState;
-        state.depth = parentState.depth+1;
+        state = {
+          ...state,
+          parent: parentState,
+          depth: parentState.depth + 1,
+        }
         break;
       }
     }
+    uid2State.set(rt.uid, state as ConcreteState);
+  }
+
+  for (const d of state.diamonds) {
+    uid2State.set(d.uid, {
+      kind: "pseudo",
+      uid: d.uid,
+      comments: [],
+    });
   }
 
   // step 2: figure out transitions
@@ -98,26 +120,36 @@ export function parseStatechart(state: VisualEditorState): [Statechart, Traceabl
   const uid2Transition = new Map<string, Transition>();
 
   for (const arr of state.arrows) {
-    const srcUID = findNearestRountangleSide(arr, "start", state.rountangles)?.uid;
-    const tgtUID = findNearestRountangleSide(arr, "end", state.rountangles)?.uid;
+    const sides = [...state.rountangles, ...state.diamonds];
+    const srcUID = findNearestSide(arr, "start", sides)?.uid;
+    const tgtUID = findNearestSide(arr, "end", sides)?.uid;
     if (!srcUID) {
       if (!tgtUID) {
-        // dangling edge - todo: display error...
+        // dangling edge
         errors.push({shapeUid: arr.uid, message: "dangling"});
       }
       else {
         // target but no source, so we treat is as an 'initial' marking
-        const initialState = uid2State.get(tgtUID)!;
-        const ofState = uid2State.get(parentLinks.get(tgtUID)!)!;
-        if (ofState.kind === "or") {
-          ofState.initial.push([arr.uid, initialState]);
-        }
-        else {
-          // and states do not have an 'initial' state - todo: display error...
+        const tgtState = uid2State.get(tgtUID)!;
+        if (tgtState.kind === "pseudo") {
+          // maybe allow this in the future?
           errors.push({
             shapeUid: arr.uid,
-            message: "AND-state cannot have an initial state",
+            message: "pseudo-state cannot be initial state",
           });
+        }
+        else {
+          const ofState = uid2State.get(parentLinks.get(tgtUID)!)!;
+          if (ofState.kind === "or") {
+            ofState.initial.push([arr.uid, tgtState]);
+          }
+          else {
+            // and states do not have an 'initial' state
+            errors.push({
+              shapeUid: arr.uid,
+              message: "AND-state cannot have an initial state",
+            });
+          }
         }
       }
     }
@@ -194,25 +226,41 @@ export function parseStatechart(state: VisualEditorState): [Statechart, Traceabl
     if (belongsToArrow) {
       const belongsToTransition = uid2Transition.get(belongsToArrow.uid);
       if (belongsToTransition) {
+        const {src} = belongsToTransition;
         belongsToTransition.label.push(parsed);
         if (parsed.kind === "transitionLabel") {
           // collect events
           // triggers
           if (parsed.trigger.kind === "event") {
-            const {event} = parsed.trigger;
-            if (event.startsWith("_")) {
-              errors.push(...addEvent(internalEvents, parsed.trigger, parsed.uid));
+            if (src.kind === "pseudo") {
+              errors.push({shapeUid: text.uid, message: "pseudo state outgoing transition must not have event trigger"});
             }
             else {
-              errors.push(...addEvent(inputEvents, parsed.trigger, parsed.uid));
+              const {event} = parsed.trigger;
+              if (event.startsWith("_")) {
+                errors.push(...addEvent(internalEvents, parsed.trigger, parsed.uid));
+              }
+              else {
+                errors.push(...addEvent(inputEvents, parsed.trigger, parsed.uid));
+              }
             }
           }
           else if (parsed.trigger.kind === "after") {
-            belongsToTransition.src.timers.push(parsed.trigger.durationMs);
-            belongsToTransition.src.timers.sort();
+            if (src.kind === "pseudo") {
+              errors.push({shapeUid: text.uid, message: "pseudo state outgoing transition must not have after-trigger"});
+            }
+            else {
+              src.timers.push(parsed.trigger.durationMs);
+              src.timers.sort();
+            }
           }
           else if (["entry", "exit"].includes(parsed.trigger.kind)) {
             errors.push({shapeUid: text.uid, message: "entry/exit trigger not allowed on transitions"});
+          }
+          else if (parsed.trigger.kind === "triggerless") {
+            if (src.kind !== "pseudo") {
+              errors.push({shapeUid: text.uid, message: "triggerless transitions only allowed on pseudo-states"});
+            }
           }
 
           // // raise-actions
@@ -240,7 +288,7 @@ export function parseStatechart(state: VisualEditorState): [Statechart, Traceabl
       // text does not belong to transition...
       // so it belongs to a rountangle (a state)
       const rountangle = findRountangle(text.topLeft, state.rountangles);
-      const belongsToState = rountangle ? uid2State.get(rountangle.uid)! : root;
+      const belongsToState = rountangle ? uid2State.get(rountangle.uid)! as ConcreteState : root;
       if (parsed.kind === "transitionLabel") {
         // labels belonging to a rountangle (= a state) must by entry/exit actions
         // if we cannot find a containing state, then it belong to the root
@@ -257,7 +305,6 @@ export function parseStatechart(state: VisualEditorState): [Statechart, Traceabl
             data: {start: {offset: 0}, end: {offset: text.text.length}},
           });
         }
-
       }
       else if (parsed.kind === "comment") {
         // just append comments to their respective states

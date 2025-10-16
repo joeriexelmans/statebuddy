@@ -4,7 +4,11 @@ import {  sides } from "../VisualEditor/VisualEditor";
 
 export type Rountangle = {
   uid: string;
-  kind: "and" | "or" | "pseudo";
+  kind: "and" | "or";
+} & Rect2D;
+
+export type Diamond = {
+  uid: string;
 } & Rect2D;
 
 export type Text = {
@@ -21,6 +25,7 @@ export type VisualEditorState = {
   rountangles: Rountangle[];
   texts: Text[];
   arrows: Arrow[];
+  diamonds: Diamond[];
   nextID: number;
 };
 
@@ -28,8 +33,8 @@ export type VisualEditorState = {
 export type RountanglePart = "left" | "top" | "right" | "bottom";
 export type ArrowPart = "start" | "end";
 
-export const emptyState = {
-  rountangles: [], texts: [], arrows: [], nextID: 0,
+export const emptyState: VisualEditorState = {
+  rountangles: [], texts: [], arrows: [], diamonds: [], nextID: 0,
 };
 
 export const onOffStateMachine = {
@@ -45,7 +50,7 @@ export const onOffStateMachine = {
 };
 
 // used to find which rountangle an arrow connects to (src/tgt)
-export function findNearestRountangleSide(arrow: Line2D, arrowPart: "start" | "end", candidates: Rountangle[]): {uid: string, part: RountanglePart} | undefined {
+export function findNearestSide(arrow: Line2D, arrowPart: "start" | "end", candidates: (Rountangle|Diamond)[]): {uid: string, part: RountanglePart} | undefined {
   let best = Infinity;
   let bestSide: undefined | {uid: string, part: RountanglePart};
   for (const rountangle of candidates) {

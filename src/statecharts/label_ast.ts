@@ -19,7 +19,11 @@ export type ParserError = {
   uid: string; // uid of the text node
 }
 
-export type Trigger = EventTrigger | AfterTrigger | EntryTrigger | ExitTrigger;
+export type Trigger = TriggerLess | EventTrigger | AfterTrigger | EntryTrigger | ExitTrigger;
+
+export type TriggerLess = {
+  kind: "triggerless";
+}
 
 export type EventTrigger = {
   kind: "event";
@@ -55,7 +59,7 @@ export type RaiseEvent = {
 }
 
 
-export type Expression = BinaryExpression | UnaryExpression | VarRef | Literal;
+export type Expression = BinaryExpression | UnaryExpression | VarRef | Literal | FunctionCall;
 
 export type BinaryExpression = {
   kind: "binaryExpr";

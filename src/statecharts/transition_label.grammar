@@ -1,9 +1,9 @@
-start = tlabel / comment
+start = comment / tlabel
 
-tlabel = _ trigger:trigger _ guard:("[" _ guard _ "]")? _ actions:("/" _ actions )? _ {
+tlabel = _ trigger:trigger? _ guard:("[" _ guard _ "]")? _ actions:("/" _ actions )? _ {
   return {
     kind: "transitionLabel",
-    trigger,
+    trigger: trigger ? trigger : {kind: "triggerless"},
     guard: guard ? guard[2] : {kind: "literal", value: true},
     actions: actions ? actions[2] : [],
   };
@@ -57,7 +57,7 @@ number = [0-9]+ {
 
 expr = compare
 
-compare = sum:sum rest:((_ ("==" / "!=" / "<" / ">" / "<=" / ">=") _) compare)? {
+compare = sum:sum rest:((_ ("==" / "!=" / "<=" / ">=" / "<" / ">") _) compare)? {
 	if (rest === null) {
     	return sum;
     }

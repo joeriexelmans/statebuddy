@@ -12,9 +12,10 @@ import "./App.css";
 import { Box, Stack } from "@mui/material";
 import { TopPanel } from "./TopPanel";
 import { RTHistory } from "./RTHistory";
-import { AST } from "./AST";
+import { ShowAST } from "./ShowAST";
 import { TraceableError } from "../statecharts/parser";
 import { getKeyHandler } from "./shortcut_handler";
+import { BottomPanel } from "./BottomPanel";
 
 export function App() {
   const [mode, setMode] = useState<InsertMode>("and");
@@ -106,7 +107,7 @@ export function App() {
         {...{ast, time, setTime, onInit, onClear, onRaise, mode, setMode}}
       />
     </Box>
-    <Stack direction="row" sx={{height:'calc(100vh - 32px)'}}>
+    <Stack direction="row" sx={{height:'calc(100vh - 64px)'}}>
       {/* main */}
       <Box sx={{flexGrow:1, overflow:'auto'}}>
         <VisualEditor {...{ast, setAST, rt: rt.at(rtIdx!), setRT, errors, setErrors, mode}}/>
@@ -117,14 +118,17 @@ export function App() {
           borderLeft: 1,
           borderColor: "divider",
           flex: '0 0 content',
-          paddingRight: 1,
-          paddingLeft: 1,
+          // paddingRight: 1,
+          // paddingLeft: 1,
         }}>
-          <AST {...{...ast, rt: rt.at(rtIdx!)}}/>
+          <ShowAST {...{...ast, rt: rt.at(rtIdx!)}}/>
           <br/>
           <RTHistory {...{ast, rt, rtIdx, setTime, setRTIdx}}/>
         </Box>
     </Stack>
+    <Box>
+      <BottomPanel {...{errors}}/>
+    </Box>
   </Stack>;
 }
 

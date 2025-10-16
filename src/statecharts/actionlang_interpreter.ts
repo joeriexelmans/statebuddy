@@ -42,5 +42,10 @@ export function evalExpr(expr: Expression, environment: Environment): any {
     const rhs = evalExpr(expr.rhs, environment);
     return BINARY_OPERATOR_MAP.get(expr.operator)!(lhs, rhs);
   }
+  else if (expr.kind === "call") {
+    const fn = evalExpr(expr.fn, environment);
+    const param = evalExpr(expr.param, environment);
+    return fn(param);
+  }
   throw new Error("should never reach here");
 }

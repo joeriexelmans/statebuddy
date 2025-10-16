@@ -1,4 +1,4 @@
-import { ConcreteState, stateDescription, Transition } from "../statecharts/abstract_syntax";
+import { ConcreteState, PseudoState, stateDescription, Transition } from "../statecharts/abstract_syntax";
 import { Action, Expression } from "../statecharts/label_ast";
 import { RT_Statechart } from "../statecharts/runtime_types";
 
@@ -32,7 +32,7 @@ export function ShowAction(props: {action: Action}) {
   }
 }
 
-export function AST(props: {root: ConcreteState, transitions: Map<string, Transition[]>, rt: RT_Statechart | undefined}) {
+export function ShowAST(props: {root: ConcreteState | PseudoState, transitions: Map<string, Transition[]>, rt: RT_Statechart | undefined}) {
   const description = stateDescription(props.root);
   const outgoing = props.transitions.get(props.root.uid) || [];
 
@@ -49,9 +49,9 @@ export function AST(props: {root: ConcreteState, transitions: Map<string, Transi
           <div>&emsp;exit / <ShowAction action={action}/></div>
         )
     }
-    {props.root.children.length>0 &&
+    {props.root.kind !== "pseudo" && props.root.children.length>0 &&
           props.root.children.map(child => 
-            <AST root={child} transitions={props.transitions} rt={props.rt} />
+            <ShowAST root={child} transitions={props.transitions} rt={props.rt} />
           )
     }
     {outgoing.length>0 &&

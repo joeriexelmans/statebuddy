@@ -1,33 +1,43 @@
-import { Action, EventTrigger, ParsedText, TransitionLabel } from "./label_ast";
+import { Action, EventTrigger, ParsedText } from "./label_ast";
 
 export type AbstractState = {
   uid: string;
   parent?: ConcreteState;
-  children: ConcreteState[];
   comments: [string, string][]; // array of tuple (text-uid, text-text)
   entryActions: Action[];
   exitActions: Action[];
   depth: number;
-  timers: number[]; // list of timeouts (e.g., the state having an outgoing transition with trigger "after 4s" would appear as the number 4000 in this list)
 }
+
+export type StableState = {
+  kind: "and" | "or";
+  children: ConcreteState[];
+  timers: number[]; // list of timeouts (e.g., the state having an outgoing transition with trigger "after 4s" would appear as the number 4000 in this list)
+} & AbstractState;
 
 export type AndState = {
   kind: "and";
-} & AbstractState;
+} & StableState;
 
 export type OrState = {
   kind: "or";
   // array of tuples: (uid of Arrow indicating initial state, initial state)
   // in a valid AST, there must be one initial state, but we allow the user to draw crazy shit
   initial: [string, ConcreteState][]; 
-} & AbstractState;
+} & StableState;
+
+export type PseudoState = {
+  kind: "pseudo";
+  uid: string;
+  comments: [string, string][];
+};
 
 export type ConcreteState = AndState | OrState;
 
 export type Transition = {
-  uid: string;
-  src: ConcreteState;
-  tgt: ConcreteState;
+  uid: string; // uid of arrow in concrete syntax
+  src: ConcreteState | PseudoState;
+  tgt: ConcreteState | PseudoState;
   label: ParsedText[];
 }
 
@@ -41,7 +51,7 @@ export type Statechart = {
   internalEvents: EventTrigger[];
   outputEvents: Set<string>;
 
-  uid2State: Map<string, ConcreteState>;
+  uid2State: Map<string, ConcreteState|PseudoState>;
 }
 
 const emptyRoot: OrState = {
@@ -87,6 +97,57 @@ export function isOverlapping(a: ConcreteState, b: ConcreteState): boolean {
   }
 }
 
+
+export function computeLCA(a: ConcreteState, b: ConcreteState): ConcreteState {
+  if (a === b) {
+    return a;
+  }
+  if (a.depth > b.depth) {
+    return computeLCA(a.parent!, b);
+  }
+  return computeLCA(a, b.parent!);
+}
+
+export function computeLCA2(states: ConcreteState[]): ConcreteState {
+  if (states.length === 0) {
+    throw new Error("cannot compute LCA of empty set of states");
+  }
+  if (states.length === 1) {
+    return states[0];
+  }
+  // 2 states or more
+  return states.reduce((acc, cur) => computeLCA(acc, cur));
+}
+
+export function getPossibleTargets(t: Transition, ts: Map<string, Transition[]>): ConcreteState[] {
+  if (t.tgt.kind !== "pseudo") {
+    return [t.tgt];
+  }
+  const pseudoOutgoing = ts.get(t.tgt.uid) || [];
+  return pseudoOutgoing.flatMap(t => getPossibleTargets(t, ts));
+}
+
+export function computeArena2(t: Transition, ts: Map<string, Transition[]>): OrState {
+  const tgts = getPossibleTargets(t, ts);
+  let lca = computeLCA2([t.src as ConcreteState, ...tgts]);
+  while (lca.kind !== "or") {
+    lca = lca.parent!;
+  }
+  return lca as OrState;
+}
+
+// Assuming ancestor is already entered, what states to enter in order to enter descendants?
+// E.g.
+//    root > A > B > C > D
+//  computePath({ancestor: A, descendant: A}) = []
+//  computePath({ancestor: A, descendant: C}) = [B, C]
+export function computePath({ancestor, descendant}: {ancestor: ConcreteState, descendant: ConcreteState}): ConcreteState[] {
+  if (ancestor === descendant) {
+    return [];
+  }
+  return [...computePath({ancestor, descendant: descendant.parent!}), descendant];
+}
+
 // the arena of a transition is the lowest common ancestor state that is an OR-state
 // see "Deconstructing the Semantics of Big-Step Modelling Languages" by Shahram Esmaeilsabzali, 2009
 export function computeArena({src, tgt}: {src: ConcreteState, tgt: ConcreteState}): {
@@ -98,7 +159,7 @@ export function computeArena({src, tgt}: {src: ConcreteState, tgt: ConcreteState
     const path = isAncestorOf({descendant: src, ancestor: tgt});
     if (path) {
       if (tgt.kind === "or") {
-        return {arena: tgt, srcPath: path, tgtPath: [tgt]};
+        return {arena: tgt as OrState, srcPath: path, tgtPath: [tgt]};
       }
     }
     // keep looking
@@ -126,8 +187,7 @@ export function getDescendants(state: ConcreteState): Set<string> {
 // the 'description' of a state is a human-readable string that (hopefully) identifies the state.
 // if the state contains a comment, we take the 'first' (= visually topmost) comment
 // otherwise we fall back to the state's UID.
-export function stateDescription(state: ConcreteState) {
+export function stateDescription(state: ConcreteState | PseudoState) {
   const description = state.comments.length > 0 ? state.comments[0][1] : state.uid;
   return description;
 }
-
