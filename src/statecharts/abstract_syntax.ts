@@ -12,6 +12,7 @@ export type AbstractState = {
 export type StableState = {
   kind: "and" | "or";
   children: ConcreteState[];
+  history: HistoryState[];
   timers: number[]; // list of timeouts (e.g., the state having an outgoing transition with trigger "after 4s" would appear as the number 4000 in this list)
 } & AbstractState;
 
@@ -32,12 +33,19 @@ export type PseudoState = {
   comments: [string, string][];
 };
 
+export type HistoryState = {
+  kind: "shallow" | "deep";
+  parent: ConcreteState;
+  uid: string;
+  depth: number;
+}
+
 export type ConcreteState = AndState | OrState;
 
 export type Transition = {
   uid: string; // uid of arrow in concrete syntax
   src: ConcreteState | PseudoState;
-  tgt: ConcreteState | PseudoState;
+  tgt: ConcreteState | PseudoState | HistoryState;
   label: ParsedText[];
 }
 
@@ -52,6 +60,8 @@ export type Statechart = {
   outputEvents: Set<string>;
 
   uid2State: Map<string, ConcreteState|PseudoState>;
+
+  historyStates: HistoryState[];
 }
 
 const emptyRoot: OrState = {
@@ -60,6 +70,7 @@ const emptyRoot: OrState = {
   depth: 0,
   initial: [],
   children:[],
+  history: [],
   comments: [],
   entryActions: [],
   exitActions: [],
@@ -74,6 +85,7 @@ export const emptyStatechart: Statechart = {
   internalEvents: [],
   outputEvents: new Set(),
   uid2State: new Map([["root", emptyRoot]]),
+  historyStates: [],
 };
 
 // reflexive, transitive relation
@@ -98,7 +110,7 @@ export function isOverlapping(a: ConcreteState, b: ConcreteState): boolean {
 }
 
 
-export function computeLCA(a: ConcreteState, b: ConcreteState): ConcreteState {
+export function computeLCA(a: (ConcreteState|HistoryState), b: (ConcreteState|HistoryState)): (ConcreteState|HistoryState) {
   if (a === b) {
     return a;
   }
@@ -108,7 +120,7 @@ export function computeLCA(a: ConcreteState, b: ConcreteState): ConcreteState {
   return computeLCA(a, b.parent!);
 }
 
-export function computeLCA2(states: ConcreteState[]): ConcreteState {
+export function computeLCA2(states: (ConcreteState|HistoryState)[]): (ConcreteState|HistoryState) {
   if (states.length === 0) {
     throw new Error("cannot compute LCA of empty set of states");
   }
@@ -119,7 +131,7 @@ export function computeLCA2(states: ConcreteState[]): ConcreteState {
   return states.reduce((acc, cur) => computeLCA(acc, cur));
 }
 
-export function getPossibleTargets(t: Transition, ts: Map<string, Transition[]>): ConcreteState[] {
+export function getPossibleTargets(t: Transition, ts: Map<string, Transition[]>): (ConcreteState|HistoryState)[] {
   if (t.tgt.kind !== "pseudo") {
     return [t.tgt];
   }
@@ -141,7 +153,7 @@ export function computeArena2(t: Transition, ts: Map<string, Transition[]>): OrS
 //    root > A > B > C > D
 //  computePath({ancestor: A, descendant: A}) = []
 //  computePath({ancestor: A, descendant: C}) = [B, C]
-export function computePath({ancestor, descendant}: {ancestor: ConcreteState, descendant: ConcreteState}): ConcreteState[] {
+export function computePath({ancestor, descendant}: {ancestor: ConcreteState, descendant: (ConcreteState|HistoryState)}): (ConcreteState|HistoryState)[] {
   if (ancestor === descendant) {
     return [];
   }
@@ -187,7 +199,21 @@ export function getDescendants(state: ConcreteState): Set<string> {
 // the 'description' of a state is a human-readable string that (hopefully) identifies the state.
 // if the state contains a comment, we take the 'first' (= visually topmost) comment
 // otherwise we fall back to the state's UID.
-export function stateDescription(state: ConcreteState | PseudoState) {
-  const description = state.comments.length > 0 ? state.comments[0][1] : state.uid;
-  return description;
+export function stateDescription(state: ConcreteState | PseudoState | HistoryState): string {
+  if (state.kind === "shallow") {
+    return `shallow(${stateDescription(state.parent)})`;
+  }
+  else if (state.kind === "deep") {
+    return `deep(${stateDescription(state.parent)})`;
+  }
+  else {
+    // @ts-ignore
+    const description = state.comments.length > 0 ? state.comments[0][1] : state.uid;
+    return description;
+  }
 }
+
+export function transitionDescription(t: Transition) {
+  return stateDescription(t.src) + ' ➔ ' + stateDescription(t.tgt);
+}
+

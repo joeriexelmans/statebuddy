@@ -91,10 +91,12 @@ export class Environment {
   }
 }
 
+export type RT_History = Map<string, Set<string>>;
+
 export type RT_Statechart = {
   mode: Mode;
   environment: Environment;
-  // history: // TODO
+  history: RT_History; // history-uid -> set of states
 }
 
 export type BigStepOutput = RT_Statechart & {

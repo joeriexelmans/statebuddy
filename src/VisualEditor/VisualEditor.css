@@ -116,17 +116,18 @@ line.selected, circle.selected {
   font-weight: 600;
 }
 .draggableText:hover:not(:active) {
-  fill: blue;
-  cursor: grab;
+  /* fill: blue; */
+  /* cursor: grab; */
 }
 text.helper {
   fill: rgba(0,0,0,0);
   stroke: rgba(0,0,0,0);
-  stroke-width: 8px;
+  stroke-width: 16px;
 }
 text.helper:hover {
   stroke: blue;
   stroke-opacity: 0.2;
+  cursor: grab;
 }
 
 .draggableText, .draggableText.highlight {

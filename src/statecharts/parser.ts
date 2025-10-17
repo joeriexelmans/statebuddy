@@ -1,9 +1,10 @@
-import {  ConcreteState, OrState, PseudoState, Statechart, Transition } from "./abstract_syntax";
+import {  ConcreteState, HistoryState, OrState, PseudoState, Statechart, Transition } from "./abstract_syntax";
 import { Rountangle, VisualEditorState } from "./concrete_syntax";
-import { isEntirelyWithin } from "../VisualEditor/geometry";
+import { isEntirelyWithin, Rect2D } from "../VisualEditor/geometry";
 import { Action, EventTrigger, Expression, ParsedText } from "./label_ast";
 import { parse as parseLabel, SyntaxError } from "./label_parser";
 import { Connections } from "./detect_connections";
+import { HISTORY_RADIUS } from "../VisualEditor/parameters";
 
 export type TraceableError = {
   shapeUid: string;
@@ -37,6 +38,7 @@ export function parseStatechart(state: VisualEditorState, conns: Connections): [
     kind: "or",
     uid: "root",
     children: [],
+    history: [],
     initial: [],
     comments: [],
     entryActions: [],
@@ -46,6 +48,7 @@ export function parseStatechart(state: VisualEditorState, conns: Connections): [
   }
 
   const uid2State = new Map<string, ConcreteState|PseudoState>([["root", root]]);
+  const historyStates: HistoryState[] = [];
 
   // we will always look for the smallest parent rountangle
   const parentCandidates: Rountangle[] = [{
@@ -57,24 +60,39 @@ export function parseStatechart(state: VisualEditorState, conns: Connections): [
 
   const parentLinks = new Map<string, string>();
 
+  function findParent(geom: Rect2D): ConcreteState {
+    // iterate in reverse:
+    for (let i=parentCandidates.length-1; i>=0; i--) {
+      const candidate = parentCandidates[i];
+      if (candidate.uid === "root" || isEntirelyWithin(geom, candidate)) {
+        // found our parent
+        return uid2State.get(candidate.uid)! as ConcreteState;
+      }
+    }
+    throw new Error("impossible: should always find a parent state");
+  }
+
   // step 1: figure out state hierarchy
 
   // IMPORTANT ASSUMPTION: state.rountangles is sorted from big to small surface area:
   for (const rt of state.rountangles) {
+    const parent = findParent(rt);
     const common = {
       kind: rt.kind,
       uid: rt.uid,
       comments: [],
       entryActions: [],
       exitActions: [],
+      parent,
+      depth: parent.depth + 1,
     };
-
     let state;
     if (rt.kind === "or") {
       state = {
         ...common,
         initial: [],
         children: [],
+        history: [],
         timers: [],
       };
     }
@@ -82,36 +100,32 @@ export function parseStatechart(state: VisualEditorState, conns: Connections): [
       state = {
         ...common,
         children: [],
+        history: [],
         timers: [],
       };
     }
-
-    // iterate in reverse:
-    for (let i=parentCandidates.length-1; i>=0; i--) {
-      const candidate = parentCandidates[i];
-      if (candidate.uid === "root" || isEntirelyWithin(rt, candidate)) {
-        // found our parent
-        const parentState = uid2State.get(candidate.uid)! as ConcreteState;
-        parentState.children.push(state as unknown as ConcreteState);
-        parentCandidates.push(rt);
-        parentLinks.set(rt.uid, candidate.uid);
-        state = {
-          ...state,
-          parent: parentState,
-          depth: parentState.depth + 1,
-        }
-        break;
-      }
-    }
+    parent.children.push(state as ConcreteState);
+    parentCandidates.push(rt);
+    parentLinks.set(rt.uid, parent.uid);
     uid2State.set(rt.uid, state as ConcreteState);
   }
-
   for (const d of state.diamonds) {
     uid2State.set(d.uid, {
       kind: "pseudo",
       uid: d.uid,
       comments: [],
     });
+  }
+  for (const h of state.history) {
+    const parent = findParent({topLeft: h.topLeft, size: {x: HISTORY_RADIUS*2, y: HISTORY_RADIUS*2}});
+    const historyState = {
+      kind: h.kind,
+      uid: h.uid,
+      parent,
+      depth: parent.depth+1,
+    };
+    parent.history.push(historyState);
+    historyStates.push(historyState);
   }
 
   // step 2: figure out transitions
@@ -122,8 +136,12 @@ export function parseStatechart(state: VisualEditorState, conns: Connections): [
   for (const arr of state.arrows) {
     const srcUID = conns.arrow2SideMap.get(arr.uid)?.[0]?.uid;
     const tgtUID = conns.arrow2SideMap.get(arr.uid)?.[1]?.uid;
+    const historyTgtUID = conns.arrow2HistoryMap.get(arr.uid);
     if (!srcUID) {
-      if (!tgtUID) {
+      if (historyTgtUID) {
+        errors.push({shapeUid: arr.uid, message: "no source"});
+      }
+      else if (!tgtUID) {
         // dangling edge
         errors.push({shapeUid: arr.uid, message: "dangling"});
       }
@@ -153,24 +171,32 @@ export function parseStatechart(state: VisualEditorState, conns: Connections): [
       }
     }
     else {
-      if (!tgtUID) {
-        errors.push({
-          shapeUid: arr.uid,
-          message: "no target",
-        });
-      }
-      else {
+      if (historyTgtUID || tgtUID) {
         // add transition
+        let tgt;
+        if (historyTgtUID) {
+          tgt = historyStates.find(h => h.uid === historyTgtUID)!;
+          console.log(tgt);
+        }
+        else {
+          tgt = uid2State.get(tgtUID!)!;
+        }
         const transition: Transition = {
           uid: arr.uid,
           src: uid2State.get(srcUID)!,
-          tgt: uid2State.get(tgtUID)!,
+          tgt,
           label: [],
-        };
+        }
         const existingTransitions = transitions.get(srcUID) || [];
         existingTransitions.push(transition);
         transitions.set(srcUID, existingTransitions);
         uid2Transition.set(arr.uid, transition);
+      }
+      else {
+        errors.push({
+          shapeUid: arr.uid,
+          message: "no target",
+        });
       }
     }
   }
@@ -333,6 +359,7 @@ export function parseStatechart(state: VisualEditorState, conns: Connections): [
     internalEvents,
     outputEvents,
     uid2State,
+    historyStates,
   }, errors];
 }
 

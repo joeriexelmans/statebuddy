@@ -52,6 +52,7 @@ export function App() {
   function appendNewConfig(inputEvent: string, simtime: number, config: BigStepOutput) {
     setRT([...rt.slice(0, rtIdx!+1), {inputEvent, simtime, ...config}]);
     setRTIdx(rtIdx!+1);
+    console.log('new config:', config);
   }
 
   useEffect(() => {

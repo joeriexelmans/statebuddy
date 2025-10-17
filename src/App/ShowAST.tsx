@@ -39,12 +39,12 @@ export function ShowAST(props: {root: ConcreteState | PseudoState, transitions: 
   return <details open={true} className={props.rt?.mode.has(props.root.uid) ? "active" : ""}>
     <summary>{props.root.kind}: {description}</summary>
 
-    {props.root.entryActions.length>0 &&
+    {props.root.kind !== "pseudo" && props.root.entryActions.length>0 &&
         props.root.entryActions.map(action =>
           <div>&emsp;entry / <ShowAction action={action}/></div>
         )
     }
-    {props.root.exitActions.length>0 &&
+    {props.root.kind !== "pseudo" && props.root.exitActions.length>0 &&
         props.root.exitActions.map(action =>
           <div>&emsp;exit / <ShowAction action={action}/></div>
         )
