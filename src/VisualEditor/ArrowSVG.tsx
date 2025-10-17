@@ -28,31 +28,47 @@ export function ArrowSVG(props: { arrow: Arrow; selected: string[]; errors: stri
       y={(start.y + end.y) / 2}
       textAnchor="middle"
       data-uid={uid}
-      data-parts="start end">{props.errors.join(' ')}</text>}
+      data-parts="start end">{props.errors.join(', ')}</text>}
 
     <path
-      className="pathHelper helper"
+      className="helper"
       d={`M ${start.x} ${start.y}
             ${arcOrLine}
             ${end.x} ${end.y}`}
       data-uid={uid}
       data-parts="start end" />
 
+    {/* selection helper circles */}
     <circle
-      className={"circleHelper helper"
-        + (props.selected.includes("start") ? " selected" : "")}
+      className="helper"
       cx={start.x}
       cy={start.y}
       r={CORNER_HELPER_RADIUS}
       data-uid={uid}
       data-parts="start" />
     <circle
-      className={"circleHelper helper"
-        + (props.selected.includes("end") ? " selected" : "")}
+      className="helper"
       cx={end.x}
       cy={end.y}
       r={CORNER_HELPER_RADIUS}
       data-uid={uid}
       data-parts="end" />
+
+    {/* selection indicator circles */}
+    {props.selected.includes("start") && <circle
+      className="selected"
+      cx={start.x}
+      cy={start.y}
+      r={CORNER_HELPER_RADIUS}
+      data-uid={uid}
+      data-parts="start" />}
+    {props.selected.includes("end") && <circle
+      className="selected"
+      cx={end.x}
+      cy={end.y}
+      r={CORNER_HELPER_RADIUS}
+      data-uid={uid}
+      data-parts="end" />}
+
   </g>;
 }

@@ -32,12 +32,10 @@ export function DiamondSVG(props: { diamond: Diamond; selected: string[]; highli
   return <g transform={`translate(${props.diamond.topLeft.x} ${props.diamond.topLeft.y})`}>
     <DiamondShape size={minSize} extraAttrs={extraAttrs}/>
 
-    <RectHelper uid={props.diamond.uid} size={minSize} highlight={props.highlight} selected={props.selected} />
-
     <text x={minSize.x/2} y={minSize.y/2}
       className="uid"
-      textAnchor="middle"
-      data-uid={props.diamond.uid}>{props.diamond.uid}</text>
+      textAnchor="middle">{props.diamond.uid}</text>
 
+    <RectHelper uid={props.diamond.uid} size={minSize} highlight={props.highlight} selected={props.selected} />
   </g>;
 }

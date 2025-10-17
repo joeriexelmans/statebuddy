@@ -16,6 +16,10 @@
   background-color: rgb(255, 140, 0, 0.2);
 }
 
+.svgCanvas text {
+  user-select: none;
+}
+
 /* rectangle drawn while a selection is being made */
 .selecting {
   fill: blue;
@@ -32,7 +36,7 @@
 }
 
 .rountangle.selected {
-  fill: rgba(0, 0, 255, 0.2);
+  /* fill: rgba(0, 0, 255, 0.2); */
 }
 .rountangle.error {
   stroke: rgb(230,0,0);
@@ -127,7 +131,6 @@ text.helper:hover {
 }
 
 .draggableText, .draggableText.highlight {
-  user-select: none;
   /* text-shadow: 2px 0 #fff, -2px 0 #fff, 0 2px #fff, 0 -2px #fff, 1px 1px #fff, -1px -1px #fff, 1px -1px #fff, -1px 1px #fff; */
   /* -webkit-text-stroke: 4px white; */
   paint-order: stroke;
@@ -154,7 +157,7 @@ text.helper:hover {
 .arrow.error {
   stroke: rgb(230,0,0);
 }
-.draggableText.error, tspan.error {
+text.error, tspan.error {
   fill: rgb(230,0,0);
   font-weight: 600;
 }

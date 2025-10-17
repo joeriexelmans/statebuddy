@@ -28,6 +28,8 @@ export function RountangleSVG(props: { rountangle: Rountangle; selected: string[
       {...extraAttrs}
     />
 
+    <text x={10} y={20} className="uid">{props.rountangle.uid}</text>
+
     {(props.errors.length > 0) &&
       <text className="error" x={10} y={40} data-uid={uid} data-parts="left top right bottom">{props.errors.join(' ')}</text>}
 
@@ -35,9 +37,6 @@ export function RountangleSVG(props: { rountangle: Rountangle; selected: string[
       selected={props.selected}
       highlight={props.highlight} />
 
-    <text x={10} y={20}
-      className="uid"
-      data-uid={props.rountangle.uid}>{props.rountangle.uid}</text>
 
   </g>;
 }

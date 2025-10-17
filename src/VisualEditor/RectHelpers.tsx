@@ -23,29 +23,30 @@ export function RectHelper(props: { uid: string, size: Vec2D, selected: string[]
       <line className="helper" {...ps} data-uid={props.uid} data-parts={side}/>
     </>)}
 
+    {/* The corner-helpers have the DOM class 'corner' added to them, because we ignore them when the user is making a selection. Only if the user clicks directly on them, do we select their respective parts. */}
     <circle
-      className="helper"
+      className="helper corner"
       cx={CORNER_HELPER_OFFSET}
       cy={CORNER_HELPER_OFFSET}
       r={CORNER_HELPER_RADIUS}
       data-uid={props.uid}
       data-parts="top left" />
     <circle
-      className="helper"
+      className="helper corner"
       cx={props.size.x - CORNER_HELPER_OFFSET}
       cy={CORNER_HELPER_OFFSET}
       r={CORNER_HELPER_RADIUS}
       data-uid={props.uid}
       data-parts="top right" />
     <circle
-      className="helper"
+      className="helper corner"
       cx={props.size.x - CORNER_HELPER_OFFSET}
       cy={props.size.y - CORNER_HELPER_OFFSET}
       r={CORNER_HELPER_RADIUS}
       data-uid={props.uid}
       data-parts="bottom right" />
     <circle
-      className="helper"
+      className="helper corner"
       cx={CORNER_HELPER_OFFSET}
       cy={props.size.y - CORNER_HELPER_OFFSET}
       r={CORNER_HELPER_RADIUS}
