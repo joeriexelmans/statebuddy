@@ -143,13 +143,12 @@ text.helper:hover {
   /* font-weight: 800; */
 }
 
-.draggableText.highlight {
+.draggableText.highlight:not(.selected) {
   fill: green;
   font-weight: 600;
 }
 
-
-.highlight {
+.highlight:not(.selected) {
   stroke: green;
   stroke-width: 3px;
 }
