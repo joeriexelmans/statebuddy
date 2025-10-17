@@ -176,7 +176,6 @@ export function parseStatechart(state: VisualEditorState, conns: Connections): [
         let tgt;
         if (historyTgtUID) {
           tgt = historyStates.find(h => h.uid === historyTgtUID)!;
-          console.log(tgt);
         }
         else {
           tgt = uid2State.get(tgtUID!)!;

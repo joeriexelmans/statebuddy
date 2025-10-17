@@ -118,6 +118,8 @@ export function App() {
           borderLeft: 1,
           borderColor: "divider",
           flex: '0 0 content',
+          height: 'calc(100vh-32px)',
+          overflow: "auto",
           // paddingRight: 1,
           // paddingLeft: 1,
         }}>

@@ -251,7 +251,6 @@ export function VisualEditor({setAST, rt, errors, setErrors, mode}: VisualEditor
       const uid = e.target?.dataset.uid;
       const parts: string[] = e.target?.dataset.parts?.split(' ').filter((p:string) => p!=="") || [];
       if (uid && parts.length > 0) {
-        console.log('start drag');
         checkPoint();
 
         // if the mouse button is pressed outside of the current selection, we reset the selection to whatever shape the mouse is on
