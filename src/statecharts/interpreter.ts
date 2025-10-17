@@ -20,7 +20,7 @@ type EnteredScope = { enteredStates: Mode } & ActionScope;
 export function entryActions(simtime: number, state: ConcreteState, actionScope: ActionScope): ActionScope {
   // console.log('enter', stateDescription(state), '...');
   let {environment, ...rest} = actionScope;
-  environment = environment.pushScope();
+  // environment = environment.pushScope();
   for (const action of state.entryActions) {
     ({environment, ...rest} = execAction(action, {environment, ...rest}));
   }
@@ -52,7 +52,7 @@ export function exitActions(simtime: number, state: ConcreteState, actionScope: 
     // remove all timers of 'state':
     return oldTimers.filter(([_, {state: s}]) => s !== state.uid);
   }, []);
-  environment = environment.popScope();
+  // environment = environment.popScope();
   return {...actionScope, environment};
 }
 

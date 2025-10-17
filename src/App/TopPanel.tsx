@@ -52,6 +52,13 @@ function PseudoStateIcon(props: {}) {
   </svg>;
 }
 
+function HistoryIcon(props: {kind: "shallow"|"deep"}) {
+  const w=20, h=20;
+  const text = props.kind === "shallow" ? "H" : "H*";
+  return <svg width={w} height={h}><circle cx={w/2} cy={h/2} r={Math.min(w,h)/2-1} fill="white" stroke="black"/><text x={w/2} y={h/2+4} textAnchor="middle" fontSize={11} fontWeight={400}>{text}</text></svg>;
+}
+
+
 export function TopPanel({rt, time, setTime, onInit, onClear, onRaise, ast, mode, setMode}: TopPanelProps) {
   const [displayTime, setDisplayTime] = useState("0.000");
   const [timescale, setTimescale] = useState(1);
@@ -111,6 +118,8 @@ export function TopPanel({rt, time, setTime, onInit, onClear, onRaise, ast, mode
       ["and", "AND-states", <RountangleIcon kind="and"/>],
       ["or", "OR-states", <RountangleIcon kind="or"/>],
       ["pseudo", "pseudo-states", <PseudoStateIcon/>],
+      ["shallow", "shallow history", <HistoryIcon kind="shallow"/>],
+      ["deep", "deep history", <HistoryIcon kind="deep"/>],
       ["transition", "transitions", <TrendingFlatIcon fontSize="small"/>],
       ["text", "text", <>&nbsp;T&nbsp;</>],
     ] as [InsertMode, string, ReactElement][]).map(([m, hint, buttonTxt]) =>

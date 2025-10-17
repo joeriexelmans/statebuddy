@@ -7,29 +7,16 @@
   cursor: grabbing !important;
 }
 
+/* do not render helpers while dragging something */
+.svgCanvas.dragging .helper:hover {
+  visibility: hidden !important;
+}
+
 .svgCanvas.active {
   background-color: rgb(255, 140, 0, 0.2);
 }
 
-text, text.highlight {
-  user-select: none;
-  /* text-shadow: 2px 0 #fff, -2px 0 #fff, 0 2px #fff, 0 -2px #fff, 1px 1px #fff, -1px -1px #fff, 1px -1px #fff, -1px 1px #fff; */
-  /* -webkit-text-stroke: 4px white; */
-  paint-order: stroke;
-  stroke: white;
-  stroke-width: 4px;
-  stroke-linecap: butt;
-  stroke-linejoin: miter;
-  stroke-opacity: 1;
-  fill-opacity:1;
-  /* font-weight: 800; */
-}
-
-text.highlight {
-  fill: green;
-  font-weight: 600;
-}
-
+/* rectangle drawn while a selection is being made */
 .selecting {
   fill: blue;
   fill-opacity: 0.2;
@@ -40,23 +27,12 @@ text.highlight {
 
 .rountangle {
   fill: white;
-  /* fill: none; */
   stroke: black;
   stroke-width: 2px;
 }
 
-.rountangle:hover {
-  /* stroke: blue; */
-  /* stroke-opacity: 0.2; */
-  /* fill: #eee; */
-  /* stroke-width: 4px; */
-  /* cursor: grab; */
-}
-
 .rountangle.selected {
   fill: rgba(0, 0, 255, 0.2);
-  /* stroke: blue;
-  stroke-width: 4px; */
 }
 .rountangle.error {
   stroke: rgb(230,0,0);
@@ -72,32 +48,31 @@ text.highlight {
   cursor: grab;
 }
 
-.lineHelper {
+line.helper {
   stroke: rgba(0, 0, 0, 0);
   stroke-width: 16px;
 }
-.lineHelper:hover:not(:active) {
+line.helper:hover:not(:active) {
   stroke: blue;
   stroke-opacity: 0.2;
   cursor: grab;
 }
 
-.pathHelper {
+path.helper {
   fill: none;
   stroke: rgba(0, 0, 0, 0);
   stroke-width: 16px;
 }
-.pathHelper:hover:not(:active) {
+path.helper:hover:not(:active) {
   stroke: blue;
   stroke-opacity: 0.2;
   cursor: grab;
 }
 
-
-.circleHelper {
+circle.helper {
   fill: rgba(0, 0, 0, 0);
 }
-.circleHelper:hover:not(:active) {
+circle.helper:hover:not(:active) {
   fill: blue;
   fill-opacity: 0.2;
   cursor: grab;
@@ -118,12 +93,6 @@ text.highlight {
   stroke-width: 3px;
 }
 
-/* .arrow.selected {
-  stroke: blue;
-  stroke-width: 4px;
-} */
-
-
 #arrowEnd {
   fill: context-stroke;
 }
@@ -139,14 +108,43 @@ line.selected, circle.selected {
   stroke-width: 4px;
 }
 
-text.selected, text.selected:hover {
+.draggableText.selected, .draggableText.selected:hover {
   fill: blue;
   font-weight: 600;
 }
-text:hover:not(:active) {
+.draggableText:hover:not(:active) {
   fill: blue;
   cursor: grab;
 }
+text.helper {
+  fill: rgba(0,0,0,0);
+  stroke: rgba(0,0,0,0);
+  stroke-width: 8px;
+}
+text.helper:hover {
+  stroke: blue;
+  stroke-opacity: 0.2;
+}
+
+.draggableText, .draggableText.highlight {
+  user-select: none;
+  /* text-shadow: 2px 0 #fff, -2px 0 #fff, 0 2px #fff, 0 -2px #fff, 1px 1px #fff, -1px -1px #fff, 1px -1px #fff, -1px 1px #fff; */
+  /* -webkit-text-stroke: 4px white; */
+  paint-order: stroke;
+  stroke: white;
+  stroke-width: 4px;
+  stroke-linecap: butt;
+  stroke-linejoin: miter;
+  stroke-opacity: 1;
+  fill-opacity:1;
+  /* font-weight: 800; */
+}
+
+.draggableText.highlight {
+  fill: green;
+  font-weight: 600;
+}
+
 
 .highlight {
   stroke: green;
@@ -156,7 +154,7 @@ text:hover:not(:active) {
 .arrow.error {
   stroke: rgb(230,0,0);
 }
-text.error, tspan.error {
+.draggableText.error, tspan.error {
   fill: rgb(230,0,0);
   font-weight: 600;
 }

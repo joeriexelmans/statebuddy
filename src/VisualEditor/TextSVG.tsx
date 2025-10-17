@@ -6,9 +6,9 @@ export function TextSVG(props: {text: Text, error: TraceableError|undefined, sel
     "data-uid": props.text.uid,
     "data-parts": "text",
     textAnchor: "middle" as "middle",
-    className: 
-      (props.selected ? "selected":"")
-      +(props.highlight ? " highlight":""),
+    className: "draggableText"
+      + (props.selected ? " selected":"")
+      + (props.highlight ? " highlight":""),
   }
 
   let textNode;
@@ -36,6 +36,8 @@ export function TextSVG(props: {text: Text, error: TraceableError|undefined, sel
       if (newText) {
         props.onEdit(newText);
       }
-    }}
-  >{textNode}</g>;
+    }}>
+      {textNode}
+      <text className="draggableText helper" textAnchor="middle" data-uid={props.text.uid} data-parts="text">{props.text.text}</text>
+    </g>;
 }

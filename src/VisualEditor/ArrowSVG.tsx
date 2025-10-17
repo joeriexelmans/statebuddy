@@ -31,7 +31,7 @@ export function ArrowSVG(props: { arrow: Arrow; selected: string[]; errors: stri
       data-parts="start end">{props.errors.join(' ')}</text>}
 
     <path
-      className="pathHelper"
+      className="pathHelper helper"
       d={`M ${start.x} ${start.y}
             ${arcOrLine}
             ${end.x} ${end.y}`}
@@ -39,7 +39,7 @@ export function ArrowSVG(props: { arrow: Arrow; selected: string[]; errors: stri
       data-parts="start end" />
 
     <circle
-      className={"circleHelper"
+      className={"circleHelper helper"
         + (props.selected.includes("start") ? " selected" : "")}
       cx={start.x}
       cy={start.y}
@@ -47,7 +47,7 @@ export function ArrowSVG(props: { arrow: Arrow; selected: string[]; errors: stri
       data-uid={uid}
       data-parts="start" />
     <circle
-      className={"circleHelper"
+      className={"circleHelper helper"
         + (props.selected.includes("end") ? " selected" : "")}
       cx={end.x}
       cy={end.y}

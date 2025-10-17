@@ -21,11 +21,18 @@ export type Arrow = {
   uid: string;
 } & Line2D;
 
+export type History = {
+  uid: string;
+  kind: "shallow" | "deep";
+  topLeft: Vec2D;
+};
+
 export type VisualEditorState = {
   rountangles: Rountangle[];
   texts: Text[];
   arrows: Arrow[];
   diamonds: Diamond[];
+  history: History[];
   nextID: number;
 };
 
@@ -34,19 +41,7 @@ export type RountanglePart = "left" | "top" | "right" | "bottom";
 export type ArrowPart = "start" | "end";
 
 export const emptyState: VisualEditorState = {
-  rountangles: [], texts: [], arrows: [], diamonds: [], nextID: 0,
-};
-
-export const onOffStateMachine = {
-  rountangles: [
-    { uid: "0", topLeft: { x: 100, y: 100 }, size: { x: 100, y: 100 }, kind: "and" },
-    { uid: "1", topLeft: { x: 100, y: 300 }, size: { x: 100, y: 100 }, kind: "and" },
-  ],
-  texts: [],
-  arrows: [
-    { uid: "2", start: { x: 150, y: 200 }, end: { x: 160, y: 300 } },
-  ],
-  nextID: 3,
+  rountangles: [], texts: [], arrows: [], diamonds: [], history: [], nextID: 0,
 };
 
 // used to find which rountangle an arrow connects to (src/tgt)

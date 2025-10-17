@@ -17,8 +17,6 @@ export type TimerElapseEvent = {
 
 export type Mode = Set<string>; // set of active states
 
-// export type Environment = ReadonlyMap<string, any>; // variable name -> value
-
 export class Environment {
   scopes: ReadonlyMap<string, any>[]; // array of nested scopes - scope at the back of the array is used first
 
@@ -113,7 +111,6 @@ export type RaisedEvent = {
   name: string,
   param?: any,
 }
-
 
 export type RaisedEvents = {
   internalEvents: RaisedEvent[];
