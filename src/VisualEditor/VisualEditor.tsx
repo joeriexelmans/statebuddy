@@ -1,20 +1,21 @@
 import * as lz4 from "@nick/lz4";
-import { Dispatch, SetStateAction, useEffect, useRef, useState, MouseEvent } from "react";
+import { Dispatch, SetStateAction, useEffect, useMemo, useRef, useState } from "react";
 
 import { Statechart } from "../statecharts/abstract_syntax";
-import { Arrow, ArrowPart, Diamond, Rountangle, RountanglePart, Text, VisualEditorState, emptyState, findNearestArrow, findNearestSide, findRountangle } from "../statecharts/concrete_syntax";
+import { Arrow, ArrowPart, Diamond, History, Rountangle, RountanglePart, Text, VisualEditorState, emptyState } from "../statecharts/concrete_syntax";
 import { parseStatechart, TraceableError } from "../statecharts/parser";
 import { BigStep } from "../statecharts/runtime_types";
 import { ArcDirection, Line2D, Rect2D, Vec2D, addV2D, arcDirection, area, getBottomSide, getLeftSide, getRightSide, getTopSide, isEntirelyWithin, normalizeRect, subtractV2D, transformLine, transformRect } from "./geometry";
 import { MIN_ROUNTANGLE_SIZE } from "./parameters";
 import { getBBoxInSvgCoords } from "./svg_helper";
-
-import "./VisualEditor.css";
 import { ArrowSVG } from "./ArrowSVG";
 import { RountangleSVG } from "./RountangleSVG";
 import { TextSVG } from "./TextSVG";
 import { DiamondSVG } from "./DiamondSVG";
 import { HistorySVG } from "./HistorySVG";
+import { detectConnections } from "../statecharts/detect_connections";
+
+import "./VisualEditor.css";
 
 
 type DraggingState = {
@@ -142,28 +143,22 @@ export function VisualEditor({setAST, rt, errors, setErrors, mode}: VisualEditor
   }, []);
 
   useEffect(() => {
-    // delay is necessary for 2 reasons:
-    //   1) it's a hack - prevents us from writing the initial state to localstorage (before having recovered the state that was in localstorage)
-    //   2) performance: only save when the user does nothing
     const timeout = setTimeout(() => {
       const stateBuffer = new TextEncoder().encode(JSON.stringify(state));
       const compressedStateBuffer = lz4.compress(stateBuffer);
       const compressedStateString = compressedStateBuffer.toBase64();
       window.location.hash = "#"+compressedStateString;
-
-      // const [statechart, errors] = parseStatechart(state);
-      // setErrors(errors);
-      // setAST(statechart);
     }, 200);
     return () => clearTimeout(timeout);
   }, [state]);
 
+  const conns = useMemo(() => detectConnections(state), [state]);
+
   useEffect(() => {
-    const [statechart, errors] = parseStatechart(state);
+    const [statechart, errors] = parseStatechart(state, conns);
     setErrors(errors);
     setAST(statechart);
   }, [state])
-  
 
   function getCurrentPointer(e: {pageX: number, pageY: number}) {
     const bbox = refSVG.current!.getBoundingClientRect();
@@ -514,89 +509,49 @@ export function VisualEditor({setAST, rt, errors, setErrors, mode}: VisualEditor
     };
   }, [selectingState, dragging]);
 
-  // detect what is 'connected'
-  const arrow2SideMap = new Map<string,[{ uid: string; part: RountanglePart; } | undefined, { uid: string; part: RountanglePart; } | undefined]>();
-  const side2ArrowMap = new Map<string, Set<["start"|"end", string]>>();
-  const text2ArrowMap = new Map<string,string>();
-  const arrow2TextMap = new Map<string,string[]>();
-  const text2RountangleMap = new Map<string, string>();
-  const rountangle2TextMap = new Map<string, string[]>();
-
-  // arrow <-> (rountangle | diamond)
-  for (const arrow of state.arrows) {
-    const sides = [...state.rountangles, ...state.diamonds];
-    const startSide = findNearestSide(arrow, "start", sides);
-    const endSide = findNearestSide(arrow, "end", sides);
-    if (startSide || endSide) {
-      arrow2SideMap.set(arrow.uid, [startSide, endSide]);
-    }
-    if (startSide) {
-      const arrowConns = side2ArrowMap.get(startSide.uid + '/' + startSide.part) || new Set();
-      arrowConns.add(["start", arrow.uid]);
-      side2ArrowMap.set(startSide.uid + '/' + startSide.part, arrowConns);
-    }
-    if (endSide) {
-      const arrowConns = side2ArrowMap.get(endSide.uid + '/' + endSide.part) || new Set();
-      arrowConns.add(["end", arrow.uid]);
-      side2ArrowMap.set(endSide.uid + '/' + endSide.part, arrowConns);
-    }
-  }
-  // text <-> arrow
-  for (const text of state.texts) {
-    const nearestArrow = findNearestArrow(text.topLeft, state.arrows);
-    if (nearestArrow) {
-      // prioritize text belonging to arrows:
-      text2ArrowMap.set(text.uid, nearestArrow.uid);
-      const textsOfArrow = arrow2TextMap.get(nearestArrow.uid) || [];
-      textsOfArrow.push(text.uid);
-      arrow2TextMap.set(nearestArrow.uid, textsOfArrow);
-    }
-    else {
-      // text <-> rountangle
-      const rountangle = findRountangle(text.topLeft, state.rountangles);
-      if (rountangle) {
-        text2RountangleMap.set(text.uid, rountangle.uid);
-        const texts = rountangle2TextMap.get(rountangle.uid) || [];
-        texts.push(text.uid);
-        rountangle2TextMap.set(rountangle.uid, texts);
-      }
-    }
-  }
-
   // for visual feedback, when selecting/moving one thing, we also highlight (in green) all the things that belong to the thing we selected.
   const sidesToHighlight: {[key: string]: RountanglePart[]} = {};
   const arrowsToHighlight: {[key: string]: boolean} = {};
   const textsToHighlight: {[key: string]: boolean} = {};
   const rountanglesToHighlight: {[key: string]: boolean} = {};
+  const historyToHighlight: {[key: string]: boolean} = {};
   for (const selected of selection) {
-    const sides = arrow2SideMap.get(selected.uid);
+    const sides = conns.arrow2SideMap.get(selected.uid);
     if (sides) {
       const [startSide, endSide] = sides;
       if (startSide) sidesToHighlight[startSide.uid] = [...sidesToHighlight[startSide.uid]||[], startSide.part];
       if (endSide) sidesToHighlight[endSide.uid] = [...sidesToHighlight[endSide.uid]||[], endSide.part];
     }
     const texts = [
-      ...(arrow2TextMap.get(selected.uid) || []),
-      ...(rountangle2TextMap.get(selected.uid) || []),
+      ...(conns.arrow2TextMap.get(selected.uid) || []),
+      ...(conns.rountangle2TextMap.get(selected.uid) || []),
     ];
     for (const textUid of texts) {
       textsToHighlight[textUid] = true;
     }
     for (const part of selected.parts) {
-      const arrows = side2ArrowMap.get(selected.uid + '/' + part) || [];
+      const arrows = conns.side2ArrowMap.get(selected.uid + '/' + part) || [];
       if (arrows) {
         for (const [arrowPart, arrowUid] of arrows) {
           arrowsToHighlight[arrowUid] = true;
         }
       }
     }
-    const arrow2 = text2ArrowMap.get(selected.uid);
+    const arrow2 = conns.text2ArrowMap.get(selected.uid);
     if (arrow2) {
       arrowsToHighlight[arrow2] = true;
     }
-    const rountangleUid = text2RountangleMap.get(selected.uid)
+    const rountangleUid = conns.text2RountangleMap.get(selected.uid)
     if (rountangleUid) {
       rountanglesToHighlight[rountangleUid] = true;
+    }
+    const history = conns.arrow2HistoryMap.get(selected.uid);
+    if (history) {
+      historyToHighlight[history] = true;
+    }
+    const arrow3 = conns.history2ArrowMap.get(selected.uid) || [];
+    for (const arrow of arrow3) {
+      arrowsToHighlight[arrow] = true;
     }
   }
 
@@ -619,6 +574,11 @@ export function VisualEditor({setAST, rt, errors, setErrors, mode}: VisualEditor
           uid: (nextID++).toString(),
           topLeft: addV2D(r.topLeft, offset),
         } as Rountangle));
+        const copiedDiamonds: Diamond[] = parsed.diamonds.map((r: Diamond) => ({
+          ...r,
+          uid: (nextID++).toString(),
+          topLeft: addV2D(r.topLeft, offset),
+        } as Diamond));
         const copiedArrows: Arrow[] = parsed.arrows.map((a: Arrow) => ({
           ...a,
           uid: (nextID++).toString(),
@@ -630,18 +590,27 @@ export function VisualEditor({setAST, rt, errors, setErrors, mode}: VisualEditor
           uid: (nextID++).toString(),
           topLeft: addV2D(t.topLeft, offset),
         } as Text));
+        const copiedHistories: History[] = parsed.history.map((h: History) => ({
+          ...h,
+          uid: (nextID++).toString(),
+          topLeft: addV2D(h.topLeft, offset),
+        }))
         setState(state => ({
           ...state,
           rountangles: [...state.rountangles, ...copiedRountangles],
+          diamonds: [...state.diamonds, ...copiedDiamonds],
           arrows: [...state.arrows, ...copiedArrows],
           texts: [...state.texts, ...copiedTexts],
+          history: [...state.history, ...copiedHistories],
           nextID: nextID,
         }));
         // @ts-ignore
         const newSelection: Selection = [
           ...copiedRountangles.map(r => ({uid: r.uid, parts: ["left", "top", "right", "bottom"]})),
+          ...copiedDiamonds.map(d => ({uid: d.uid, parts: ["left", "top", "right", "bottom"]})),
           ...copiedArrows.map(a => ({uid: a.uid, parts: ["start", "end"]})),
           ...copiedTexts.map(t => ({uid: t.uid, parts: ["text"]})),
+          ...copiedHistories.map(h => ({uid: h.uid, parts: ["history"]})),
         ];
         setSelection(newSelection);
         // copyInternal(newSelection, e); // doesn't work
@@ -655,10 +624,14 @@ export function VisualEditor({setAST, rt, errors, setErrors, mode}: VisualEditor
   function copyInternal(selection: Selection, e: ClipboardEvent) {
     const uidsToCopy = new Set(selection.map(shape => shape.uid));
     const rountanglesToCopy = state.rountangles.filter(r => uidsToCopy.has(r.uid));
+    const diamondsToCopy = state.diamonds.filter(d => uidsToCopy.has(d.uid));
+    const historiesToCopy = state.history.filter(h => uidsToCopy.has(h.uid));
     const arrowsToCopy = state.arrows.filter(a => uidsToCopy.has(a.uid));
     const textsToCopy = state.texts.filter(t => uidsToCopy.has(t.uid));
     e.clipboardData?.setData("text/plain", JSON.stringify({
       rountangles: rountanglesToCopy,
+      diamonds: diamondsToCopy,
+      history: historiesToCopy,
       arrows: arrowsToCopy,
       texts: textsToCopy,
     }));
@@ -739,15 +712,16 @@ export function VisualEditor({setAST, rt, errors, setErrors, mode}: VisualEditor
 
     {(rootErrors.length>0) && <text className="error" x={5} y={20}>{rootErrors.join(' ')}</text>}
 
-    {state.rountangles.map(rountangle => <RountangleSVG
-      key={rountangle.uid}
-      rountangle={rountangle}
-      selected={selection.find(r => r.uid === rountangle.uid)?.parts || []}
-      highlight={[...(sidesToHighlight[rountangle.uid] || []), ...(rountanglesToHighlight[rountangle.uid]?["left","right","top","bottom"]:[]) as RountanglePart[]]}
-      errors={errors
-        .filter(({shapeUid}) => shapeUid === rountangle.uid)
-        .map(({message}) => message)}
-      active={active.has(rountangle.uid)}
+    {state.rountangles.map(rountangle =>
+      <RountangleSVG
+        key={rountangle.uid}
+        rountangle={rountangle}
+        selected={selection.find(r => r.uid === rountangle.uid)?.parts || []}
+        highlight={[...(sidesToHighlight[rountangle.uid] || []), ...(rountanglesToHighlight[rountangle.uid]?["left","right","top","bottom"]:[]) as RountanglePart[]]}
+        errors={errors
+          .filter(({shapeUid}) => shapeUid === rountangle.uid)
+          .map(({message}) => message)}
+        active={active.has(rountangle.uid)}
       />)}
 
     {state.diamonds.map(diamond => <>
@@ -763,11 +737,14 @@ export function VisualEditor({setAST, rt, errors, setErrors, mode}: VisualEditor
     </>)}
 
     {state.history.map(history => <>
-      <HistorySVG {...history} selected={selection.find(h => h.uid === history.uid)} />
+      <HistorySVG {...history}
+        selected={Boolean(selection.find(h => h.uid === history.uid))}
+        highlight={Boolean(historyToHighlight[history.uid])}
+        />
     </>)}
 
     {state.arrows.map(arrow => {
-      const sides = arrow2SideMap.get(arrow.uid);
+      const sides = conns.arrow2SideMap.get(arrow.uid);
       let arc = "no" as ArcDirection;
       if (sides && sides[0]?.uid === sides[1]?.uid && sides[0]!.uid !== undefined) {
         arc = arcDirection(sides[0]!.part, sides[1]!.part);

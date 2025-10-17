@@ -1,9 +1,9 @@
-import { AbstractState, ConcreteState, OrState, PseudoState, Statechart, Transition } from "./abstract_syntax";
-import { findNearestArrow, findNearestSide, findRountangle, Rountangle, VisualEditorState } from "./concrete_syntax";
+import {  ConcreteState, OrState, PseudoState, Statechart, Transition } from "./abstract_syntax";
+import { Rountangle, VisualEditorState } from "./concrete_syntax";
 import { isEntirelyWithin } from "../VisualEditor/geometry";
 import { Action, EventTrigger, Expression, ParsedText } from "./label_ast";
-
 import { parse as parseLabel, SyntaxError } from "./label_parser";
+import { Connections } from "./detect_connections";
 
 export type TraceableError = {
   shapeUid: string;
@@ -29,7 +29,7 @@ function addEvent(events: EventTrigger[], e: EventTrigger, textUid: string) {
   }
 }
 
-export function parseStatechart(state: VisualEditorState): [Statechart, TraceableError[]] {
+export function parseStatechart(state: VisualEditorState, conns: Connections): [Statechart, TraceableError[]] {
   const errors: TraceableError[] = [];
 
   // implicitly, the root is always an Or-state
@@ -120,9 +120,8 @@ export function parseStatechart(state: VisualEditorState): [Statechart, Traceabl
   const uid2Transition = new Map<string, Transition>();
 
   for (const arr of state.arrows) {
-    const sides = [...state.rountangles, ...state.diamonds];
-    const srcUID = findNearestSide(arr, "start", sides)?.uid;
-    const tgtUID = findNearestSide(arr, "end", sides)?.uid;
+    const srcUID = conns.arrow2SideMap.get(arr.uid)?.[0]?.uid;
+    const tgtUID = conns.arrow2SideMap.get(arr.uid)?.[1]?.uid;
     if (!srcUID) {
       if (!tgtUID) {
         // dangling edge
@@ -222,73 +221,71 @@ export function parseStatechart(state: VisualEditorState): [Statechart, Traceabl
         throw e;
       }
     }
-    const belongsToArrow = findNearestArrow(text.topLeft, state.arrows);
-    if (belongsToArrow) {
-      const belongsToTransition = uid2Transition.get(belongsToArrow.uid);
-      if (belongsToTransition) {
-        const {src} = belongsToTransition;
-        belongsToTransition.label.push(parsed);
-        if (parsed.kind === "transitionLabel") {
-          // collect events
-          // triggers
-          if (parsed.trigger.kind === "event") {
-            if (src.kind === "pseudo") {
-              errors.push({shapeUid: text.uid, message: "pseudo state outgoing transition must not have event trigger"});
+    const belongsToArrowUID = conns.text2ArrowMap.get(text.uid);
+    const belongsToTransition = uid2Transition.get(belongsToArrowUID!);
+    if (belongsToTransition) {
+      const {src} = belongsToTransition;
+      belongsToTransition.label.push(parsed);
+      if (parsed.kind === "transitionLabel") {
+        // collect events
+        // triggers
+        if (parsed.trigger.kind === "event") {
+          if (src.kind === "pseudo") {
+            errors.push({shapeUid: text.uid, message: "pseudo state outgoing transition must not have event trigger"});
+          }
+          else {
+            const {event} = parsed.trigger;
+            if (event.startsWith("_")) {
+              errors.push(...addEvent(internalEvents, parsed.trigger, parsed.uid));
             }
             else {
-              const {event} = parsed.trigger;
-              if (event.startsWith("_")) {
-                errors.push(...addEvent(internalEvents, parsed.trigger, parsed.uid));
-              }
-              else {
-                errors.push(...addEvent(inputEvents, parsed.trigger, parsed.uid));
-              }
+              errors.push(...addEvent(inputEvents, parsed.trigger, parsed.uid));
             }
           }
-          else if (parsed.trigger.kind === "after") {
-            if (src.kind === "pseudo") {
-              errors.push({shapeUid: text.uid, message: "pseudo state outgoing transition must not have after-trigger"});
-            }
-            else {
-              src.timers.push(parsed.trigger.durationMs);
-              src.timers.sort();
-            }
+        }
+        else if (parsed.trigger.kind === "after") {
+          if (src.kind === "pseudo") {
+            errors.push({shapeUid: text.uid, message: "pseudo state outgoing transition must not have after-trigger"});
           }
-          else if (["entry", "exit"].includes(parsed.trigger.kind)) {
-            errors.push({shapeUid: text.uid, message: "entry/exit trigger not allowed on transitions"});
+          else {
+            src.timers.push(parsed.trigger.durationMs);
+            src.timers.sort();
           }
-          else if (parsed.trigger.kind === "triggerless") {
-            if (src.kind !== "pseudo") {
-              errors.push({shapeUid: text.uid, message: "triggerless transitions only allowed on pseudo-states"});
-            }
+        }
+        else if (["entry", "exit"].includes(parsed.trigger.kind)) {
+          errors.push({shapeUid: text.uid, message: "entry/exit trigger not allowed on transitions"});
+        }
+        else if (parsed.trigger.kind === "triggerless") {
+          if (src.kind !== "pseudo") {
+            errors.push({shapeUid: text.uid, message: "triggerless transitions only allowed on pseudo-states"});
           }
+        }
 
-          // // raise-actions
-          // for (const action of parsed.actions) {
-          //   if (action.kind === "raise") {
-          //     const {event} = action;
-          //     if (event.startsWith("_")) {
-          //       internalEvents.add(event);
-          //     }
-          //     else {
-          //       outputEvents.add(event);
-          //     }
-          //   }
-          // }
+        // // raise-actions
+        // for (const action of parsed.actions) {
+        //   if (action.kind === "raise") {
+        //     const {event} = action;
+        //     if (event.startsWith("_")) {
+        //       internalEvents.add(event);
+        //     }
+        //     else {
+        //       outputEvents.add(event);
+        //     }
+        //   }
+        // }
 
-          // collect variables
-          variables = variables.union(findVariables(parsed.guard));
-          for (const action of parsed.actions) {
-            variables = variables.union(findVariablesAction(action));
-          }
+        // collect variables
+        variables = variables.union(findVariables(parsed.guard));
+        for (const action of parsed.actions) {
+          variables = variables.union(findVariablesAction(action));
         }
       }
     }
     else {
       // text does not belong to transition...
       // so it belongs to a rountangle (a state)
-      const rountangle = findRountangle(text.topLeft, state.rountangles);
-      const belongsToState = rountangle ? uid2State.get(rountangle.uid)! as ConcreteState : root;
+      const rountangleUID = conns.text2RountangleMap.get(text.uid);
+      const belongsToState = uid2State.get(rountangleUID!) as ConcreteState || root;
       if (parsed.kind === "transitionLabel") {
         // labels belonging to a rountangle (= a state) must by entry/exit actions
         // if we cannot find a containing state, then it belong to the root

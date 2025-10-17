@@ -44,7 +44,6 @@
 .rountangle.active {
   fill: darkorange;
   fill-opacity: 0.2;
-  /* filter: drop-shadow( 3px 3px 2px rgba(0, 0, 0, .7)); */
   stroke-width: 3px;
 }
 
@@ -131,8 +130,6 @@ text.helper:hover {
 }
 
 .draggableText, .draggableText.highlight {
-  /* text-shadow: 2px 0 #fff, -2px 0 #fff, 0 2px #fff, 0 -2px #fff, 1px 1px #fff, -1px -1px #fff, 1px -1px #fff, -1px 1px #fff; */
-  /* -webkit-text-stroke: 4px white; */
   paint-order: stroke;
   stroke: white;
   stroke-width: 4px;
@@ -140,7 +137,6 @@ text.helper:hover {
   stroke-linejoin: miter;
   stroke-opacity: 1;
   fill-opacity:1;
-  /* font-weight: 800; */
 }
 
 .draggableText.highlight:not(.selected) {
@@ -148,9 +144,10 @@ text.helper:hover {
   font-weight: 600;
 }
 
-.highlight:not(.selected) {
+.highlight:not(.selected):not(text) {
   stroke: green;
   stroke-width: 3px;
+  fill: none;
 }
 
 .arrow.error {

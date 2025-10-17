@@ -1,5 +1,5 @@
-import { Rect2D, Vec2D, Line2D, euclideanDistance, intersectLines, isWithin, lineBBox } from "../VisualEditor/geometry";
-import { ARROW_SNAP_THRESHOLD, TEXT_SNAP_THRESHOLD } from "../VisualEditor/parameters";
+import { Rect2D, Vec2D, Line2D, euclideanDistance, intersectLines, isWithin, lineBBox, subtractV2D } from "../VisualEditor/geometry";
+import { ARROW_SNAP_THRESHOLD, HISTORY_RADIUS, TEXT_SNAP_THRESHOLD } from "../VisualEditor/parameters";
 import {  sides } from "../VisualEditor/VisualEditor";
 
 export type Rountangle = {
@@ -114,4 +114,20 @@ export function findRountangle(point: Vec2D, candidates: Rountangle[]): Rountang
       return candidates[i];
     }
   }
+}
+
+export function findNearestHistory(point: Vec2D, candidates: History[]): History | undefined {
+  let best;
+  let bestDistance = Infinity;
+  for (const h of candidates) {
+    const diff = subtractV2D(point, {x: h.topLeft.x+HISTORY_RADIUS, y: h.topLeft.y+HISTORY_RADIUS});
+    const euclideanDistance = Math.hypot(diff.x, diff.y) - HISTORY_RADIUS;
+    if (euclideanDistance < ARROW_SNAP_THRESHOLD) {
+      if (euclideanDistance < bestDistance) {
+        best = h;
+        bestDistance = euclideanDistance;
+      }
+    }
+  }
+  return best;
 }
