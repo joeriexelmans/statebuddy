@@ -13,7 +13,7 @@
 }
 
 .svgCanvas.active {
-  background-color: rgb(255, 140, 0, 0.2);
+  /* background-color: rgb(255, 140, 0, 0.2); */
 }
 
 .svgCanvas text {
@@ -42,9 +42,12 @@
   stroke: rgb(230,0,0);
 }
 .rountangle.active {
-  fill: darkorange;
-  fill-opacity: 0.2;
-  stroke-width: 3px;
+  /* fill: rgb(255, 140, 0); */
+  /* fill-opacity: 0.2; */
+  /* stroke: rgb(100, 149, 237); */
+  /* stroke:  */
+  filter: drop-shadow( 0px 0px 6px rgba(0, 150, 255, 0.8));
+  /* stroke-width: 3px; */
 }
 
 .selected:hover:not(:active) {

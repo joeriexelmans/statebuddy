@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { emptyStatechart, Statechart } from "../statecharts/abstract_syntax";
 import { handleInputEvent, initialize } from "../statecharts/interpreter";
@@ -28,6 +28,8 @@ export function App() {
 
   const [time, setTime] = useState<TimeMode>({kind: "paused", simtime: 0});
 
+  const refRightSideBar = useRef<HTMLDivElement>(null);
+
   function onInit() {
     const config = initialize(ast);
     setRT([{inputEvent: null, simtime: 0, ...config}]);
@@ -52,7 +54,18 @@ export function App() {
   function appendNewConfig(inputEvent: string, simtime: number, config: BigStepOutput) {
     setRT([...rt.slice(0, rtIdx!+1), {inputEvent, simtime, ...config}]);
     setRTIdx(rtIdx!+1);
-    console.log('new config:', config);
+    // console.log('new config:', config);
+    if (refRightSideBar.current) {
+      
+      const el = refRightSideBar.current;
+      // console.log('scrolling to', el.scrollHeight);
+      console.log('scrolling to:', el);
+      setTimeout(() => {
+        el.scrollIntoView({block: "end", behavior: "smooth"});
+      }, 100);
+      
+      // el.scrollTo(0, el.scrollHeight+1000);
+    }
   }
 
   useEffect(() => {
@@ -125,7 +138,9 @@ export function App() {
         }}>
           <ShowAST {...{...ast, rt: rt.at(rtIdx!)}}/>
           <br/>
-          <RTHistory {...{ast, rt, rtIdx, setTime, setRTIdx}}/>
+          <div ref={refRightSideBar}>
+          <RTHistory {...{ast, rt, rtIdx, setTime, setRTIdx, refRightSideBar}}/>
+          </div>
         </Box>
     </Stack>
     <Box>

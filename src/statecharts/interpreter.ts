@@ -119,7 +119,7 @@ export function enterDefault(simtime: number, state: ConcreteState, rt: ActionSc
       ({enteredStates: enteredChildren, ...actionScope} = enterDefault(simtime, state.initial[0][1], actionScope));
       enteredStates = enteredStates.union(enteredChildren);
     }
-    console.warn(state.uid + ': no initial state');
+    // console.warn(state.uid + ': no initial state');
   }
 
   return {enteredStates, ...actionScope};
@@ -328,7 +328,7 @@ export function fireSecondHalfOfTransition(simtime: number, t: Transition, ts: M
         }
       }
     }
-    throw new Error("stuck in pseudo-state!!")
+    throw new Error("stuck in pseudo-state!!");
   }
   else {
     const tgtPath = computePath({ancestor: arena, descendant: t.tgt});
