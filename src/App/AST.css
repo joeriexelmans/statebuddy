@@ -1,11 +1,17 @@
 details.active  {
-  background-color: rgba(255, 140, 0, 0.2);
+  /* background-color: rgba(128, 72, 0, 0.855);
+  color: white; */
+
+  box-shadow: rgba(128, 72, 0, 0.856) 0 0 8;
 }
 
 details { 
   border: 1px black solid;
   /* border-radius: 5px; */
   background-color: white;
-  margin-bottom: 2px;
+  margin-bottom: 4px;
   padding-right: 2px;
+  color: black;
+  width: fit-content;
+  border-radius: 10px;
 }

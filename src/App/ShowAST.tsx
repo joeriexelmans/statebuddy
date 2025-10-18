@@ -32,11 +32,11 @@ export function ShowAction(props: {action: Action}) {
   }
 }
 
-export function ShowAST(props: {root: ConcreteState | PseudoState, transitions: Map<string, Transition[]>, rt: RT_Statechart | undefined}) {
+export function ShowAST(props: {root: ConcreteState | PseudoState, transitions: Map<string, Transition[]>, rt: RT_Statechart | undefined, highlightActive: Set<string>}) {
   const description = stateDescription(props.root);
   const outgoing = props.transitions.get(props.root.uid) || [];
 
-  return <details open={true} className={props.rt?.mode.has(props.root.uid) ? "active" : ""}>
+  return <details open={true} className={props.highlightActive.has(props.root.uid) ? "active" : ""}>
     <summary>{props.root.kind}: {description}</summary>
 
     {props.root.kind !== "pseudo" && props.root.entryActions.length>0 &&
@@ -51,7 +51,7 @@ export function ShowAST(props: {root: ConcreteState | PseudoState, transitions: 
     }
     {props.root.kind !== "pseudo" && props.root.children.length>0 &&
           props.root.children.map(child => 
-            <ShowAST root={child} transitions={props.transitions} rt={props.rt} />
+            <ShowAST root={child} transitions={props.transitions} rt={props.rt} highlightActive={props.highlightActive} />
           )
     }
     {outgoing.length>0 &&

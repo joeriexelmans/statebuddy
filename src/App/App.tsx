@@ -58,13 +58,10 @@ export function App() {
     if (refRightSideBar.current) {
       
       const el = refRightSideBar.current;
-      // console.log('scrolling to', el.scrollHeight);
       console.log('scrolling to:', el);
       setTimeout(() => {
         el.scrollIntoView({block: "end", behavior: "smooth"});
       }, 100);
-      
-      // el.scrollTo(0, el.scrollHeight+1000);
     }
   }
 
@@ -106,6 +103,11 @@ export function App() {
     };
   }, []);
 
+  const highlightActive = (rtIdx !== undefined) && new Set([...rt[rtIdx].mode].filter(uid => {
+    const state = ast.uid2State.get(uid);
+    return state && state.parent?.kind !== "and";
+  })) || new Set();
+
   return <Stack sx={{height:'100vh'}}>
     {/* Top bar */}
     <Box
@@ -123,7 +125,7 @@ export function App() {
     <Stack direction="row" sx={{height:'calc(100vh - 64px)'}}>
       {/* main */}
       <Box sx={{flexGrow:1, overflow:'auto'}}>
-        <VisualEditor {...{ast, setAST, rt: rt.at(rtIdx!), setRT, errors, setErrors, mode}}/>
+        <VisualEditor {...{ast, setAST, rt: rt.at(rtIdx!), setRT, errors, setErrors, mode, highlightActive}}/>
       </Box>
       {/* right sidebar */}
       <Box
@@ -133,10 +135,8 @@ export function App() {
           flex: '0 0 content',
           height: 'calc(100vh-32px)',
           overflow: "auto",
-          // paddingRight: 1,
-          // paddingLeft: 1,
         }}>
-          <ShowAST {...{...ast, rt: rt.at(rtIdx!)}}/>
+          <ShowAST {...{...ast, rt: rt.at(rtIdx!), highlightActive}}/>
           <br/>
           <div ref={refRightSideBar}>
           <RTHistory {...{ast, rt, rtIdx, setTime, setRTIdx, refRightSideBar}}/>

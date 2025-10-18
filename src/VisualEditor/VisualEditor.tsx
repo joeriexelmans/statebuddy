@@ -61,14 +61,16 @@ export const sides: [RountanglePart, (r:Rect2D)=>Line2D][] = [
 export type InsertMode = "and"|"or"|"pseudo"|"shallow"|"deep"|"transition"|"text";
 
 type VisualEditorProps = {
+  ast: Statechart,
   setAST: Dispatch<SetStateAction<Statechart>>,
   rt: BigStep|undefined,
   errors: TraceableError[],
   setErrors: Dispatch<SetStateAction<TraceableError[]>>,
   mode: InsertMode,
+  highlightActive: Set<string>,
 };
 
-export function VisualEditor({setAST, rt, errors, setErrors, mode}: VisualEditorProps) {
+export function VisualEditor({ast, setAST, rt, errors, setErrors, mode, highlightActive}: VisualEditorProps) {
   const [historyState, setHistoryState] = useState<HistoryState>({current: emptyState, history: [], future: []});
 
   const state = historyState.current;
@@ -680,6 +682,8 @@ export function VisualEditor({setAST, rt, errors, setErrors, mode}: VisualEditor
 
   const active = rt?.mode || new Set();
 
+  console.log(highlightActive);
+
   const rootErrors = errors.filter(({shapeUid}) => shapeUid === "root").map(({message}) => message);
 
   return <svg width="4000px" height="4000px"
@@ -711,8 +715,8 @@ export function VisualEditor({setAST, rt, errors, setErrors, mode}: VisualEditor
 
     {(rootErrors.length>0) && <text className="error" x={5} y={20}>{rootErrors.join(' ')}</text>}
 
-    {state.rountangles.map(rountangle =>
-      <RountangleSVG
+    {state.rountangles.map(rountangle => {
+      return <RountangleSVG
         key={rountangle.uid}
         rountangle={rountangle}
         selected={selection.find(r => r.uid === rountangle.uid)?.parts || []}
@@ -720,8 +724,8 @@ export function VisualEditor({setAST, rt, errors, setErrors, mode}: VisualEditor
         errors={errors
           .filter(({shapeUid}) => shapeUid === rountangle.uid)
           .map(({message}) => message)}
-        active={active.has(rountangle.uid)}
-      />)}
+        active={highlightActive.has(rountangle.uid)}
+      />})}
 
     {state.diamonds.map(diamond => <>
       <DiamondSVG
@@ -732,7 +736,7 @@ export function VisualEditor({setAST, rt, errors, setErrors, mode}: VisualEditor
         errors={errors
           .filter(({shapeUid}) => shapeUid === diamond.uid)
           .map(({message}) => message)}
-        active={active.has(diamond.uid)}/>
+        active={false}/>
     </>)}
 
     {state.history.map(history => <>

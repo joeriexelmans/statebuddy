@@ -1,4 +1,4 @@
-import { Dispatch, SetStateAction } from "react";
+import { Dispatch, Ref, SetStateAction } from "react";
 import { Statechart, stateDescription } from "../statecharts/abstract_syntax";
 import { BigStep, Environment, Mode, RaisedEvent } from "../statecharts/runtime_types";
 import { formatTime } from "./util";
@@ -10,23 +10,26 @@ type RTHistoryProps = {
   ast: Statechart,
   setRTIdx: Dispatch<SetStateAction<number|undefined>>,
   setTime: Dispatch<SetStateAction<TimeMode>>,
+  refRightSideBar: Ref<HTMLDivElement>,
 }
 
-export function RTHistory({rt, rtIdx, ast, setRTIdx, setTime}: RTHistoryProps) {
+export function RTHistory({rt, rtIdx, ast, setRTIdx, setTime, refRightSideBar}: RTHistoryProps) {
   function gotoRt(idx: number, timestamp: number) {
     setRTIdx(idx);
     setTime({kind: "paused", simtime: timestamp});
   }
 
-  return rt.map((rt, idx) => <>
-    <div className={"runtimeState"+(idx===rtIdx?" active":"")} onClick={() => gotoRt(idx, rt.simtime)}>
-      <div>({formatTime(rt.simtime)}, {rt.inputEvent || "<init>"})</div>
-      <ShowMode mode={rt.mode} statechart={ast}/>
-      <ShowEnvironment environment={rt.environment}/>
-      {rt.outputEvents.length>0 && <div>
-        {rt.outputEvents.map((e:RaisedEvent) => '^'+e.name).join(', ')}
-    </div>}
-  </div></>);
+  return <div>
+    {rt.map((r, idx) => <>
+    <div className={"runtimeState"+(idx===rtIdx?" active":"")} onClick={() => gotoRt(idx, r.simtime)}>
+      <div>({formatTime(r.simtime)}, {r.inputEvent || "<init>"})</div>
+      <ShowMode mode={r.mode} statechart={ast}/>
+      <ShowEnvironment environment={r.environment}/>
+      {r.outputEvents.length>0 && <div>
+        {r.outputEvents.map((e:RaisedEvent) => '^'+e.name).join(', ')}
+      </div>}
+    </div></>)}
+  </div>;
 }
 
 
@@ -45,13 +48,5 @@ function ShowMode(props: {mode: Mode, statechart: Statechart}) {
 }
 
 function getActiveLeafs(mode: Mode, sc: Statechart) {
-  const toDelete = [];
-  for (const stateA of mode) {
-    for (const stateB of mode) {
-      if (sc.uid2State.get(stateA)!.parent === sc.uid2State.get(stateB)) {
-        toDelete.push(stateB);
-      }
-    }
-  }
-  return mode.difference(new Set(toDelete));
+  return new Set([...mode].filter(uid => sc.uid2State.get(uid)?.children?.length === 0));
 }
