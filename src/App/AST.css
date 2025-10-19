@@ -26,6 +26,7 @@ details {
   padding-left: 2px;
   padding-right: 2px;
   background-color: rgb(230, 249, 255);
+  display: inline-block;
 }
 
 .activeState {
@@ -36,6 +37,7 @@ details {
   margin-left: 4px;
   padding-left: 2px;
   padding-right: 2px;
+  display: inline-block;
 }
 
 hr {

@@ -199,134 +199,128 @@ export function TopPanel({rt, rtIdx, time, setTime, onInit, onClear, onRaise, on
     onTimeScaleChange((timescale*2).toString(), Math.round(performance.now()));
   }
 
-  return <>
-    <div className="toolbar">
-      {/* shortcuts / about */}
-      <div className="toolbarGroup">
-        <KeyInfo keyInfo={<kbd>~</kbd>}>
-          <button title="show/hide keyboard shortcuts" className={showKeys?"active":""} onClick={() => setShowKeys(s => !s)}><KeyboardIcon fontSize="small"/></button>
-        </KeyInfo>
-        <button title="about StateBuddy" onClick={() => setModal(<About setModal={setModal}/>)}><InfoOutlineIcon fontSize="small"/></button>
-      </div>
+  return <div className="toolbar">
 
+    {/* shortcuts / about */}
+    <div className="toolbarGroup">
+      <KeyInfo keyInfo={<kbd>~</kbd>}>
+        <button title="show/hide keyboard shortcuts" className={showKeys?"active":""} onClick={() => setShowKeys(s => !s)}><KeyboardIcon fontSize="small"/></button>
+      </KeyInfo>
+      <button title="about StateBuddy" onClick={() => setModal(<About setModal={setModal}/>)}><InfoOutlineIcon fontSize="small"/></button>
       &emsp;
+    </div>
 
-      {/* undo / redo */}
-      <div className="toolbarGroup">
-        <KeyInfo keyInfo={<><kbd>Ctrl</kbd>+<kbd>Z</kbd></>}>
-          <button title="undo"><UndoIcon fontSize="small"/></button>
-        </KeyInfo>
-        <KeyInfo keyInfo={<><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd></>}>
-          <button title="redo"><RedoIcon fontSize="small"/></button>
-        </KeyInfo>
-      </div>
 
+    {/* undo / redo */}
+    <div className="toolbarGroup">
+      <KeyInfo keyInfo={<><kbd>Ctrl</kbd>+<kbd>Z</kbd></>}>
+        <button title="undo"><UndoIcon fontSize="small"/></button>
+      </KeyInfo>
+      <KeyInfo keyInfo={<><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd></>}>
+        <button title="redo"><RedoIcon fontSize="small"/></button>
+      </KeyInfo>
       &emsp;
+    </div>
 
-      {/* insert rountangle / arrow / ... */}
-      <div className="toolbarGroup">
-        {([
-          ["and", "AND-states", <RountangleIcon kind="and"/>, <kbd>A</kbd>],
-          ["or", "OR-states", <RountangleIcon kind="or"/>, <kbd>O</kbd>],
-          ["pseudo", "pseudo-states", <PseudoStateIcon/>, <kbd>P</kbd>],
-          ["shallow", "shallow history", <HistoryIcon kind="shallow"/>, <kbd>H</kbd>],
-          ["deep", "deep history", <HistoryIcon kind="deep"/>, <></>],
-          ["transition", "transitions", <TrendingFlatIcon fontSize="small"/>, <kbd>T</kbd>],
-          ["text", "text", <>&nbsp;T&nbsp;</>, <kbd>X</kbd>],
-        ] as [InsertMode, string, ReactElement, ReactElement][]).map(([m, hint, buttonTxt, keyInfo]) =>
-          <KeyInfo keyInfo={keyInfo}>
-          <button
-            title={"insert "+hint}
-            disabled={mode===m}
-            className={mode===m ? "active":""}
-            onClick={() => setMode(m)}
-          >{buttonTxt}</button></KeyInfo>)}
-      </div>
-
+    {/* insert rountangle / arrow / ... */}
+    <div className="toolbarGroup">
+      {([
+        ["and", "AND-states", <RountangleIcon kind="and"/>, <kbd>A</kbd>],
+        ["or", "OR-states", <RountangleIcon kind="or"/>, <kbd>O</kbd>],
+        ["pseudo", "pseudo-states", <PseudoStateIcon/>, <kbd>P</kbd>],
+        ["shallow", "shallow history", <HistoryIcon kind="shallow"/>, <kbd>H</kbd>],
+        ["deep", "deep history", <HistoryIcon kind="deep"/>, <></>],
+        ["transition", "transitions", <TrendingFlatIcon fontSize="small"/>, <kbd>T</kbd>],
+        ["text", "text", <>&nbsp;T&nbsp;</>, <kbd>X</kbd>],
+      ] as [InsertMode, string, ReactElement, ReactElement][]).map(([m, hint, buttonTxt, keyInfo]) =>
+        <KeyInfo keyInfo={keyInfo}>
+        <button
+          title={"insert "+hint}
+          disabled={mode===m}
+          className={mode===m ? "active":""}
+          onClick={() => setMode(m)}
+        >{buttonTxt}</button></KeyInfo>)}
       &emsp;
+    </div>
 
-      {/* execution */}
-      <div className="toolbarGroup">
-
-        {/* init / clear / pause / real time */}
-        <div className="toolbarGroup">
-          <KeyInfo keyInfo={<kbd>I</kbd>}>
-            <button title="(re)initialize simulation" onClick={onInit} ><PlayArrowIcon fontSize="small"/><CachedIcon fontSize="small"/></button>
-          </KeyInfo>
-          <KeyInfo keyInfo={<kbd>C</kbd>}>
-            <button title="clear the simulation" onClick={onClear} disabled={!rt}><StopIcon fontSize="small"/></button>
-          </KeyInfo>
-          &emsp;
-          <KeyInfo keyInfo={<><kbd>Space</kbd> toggles</>}>
-            <button title="pause the simulation" disabled={!rt || time.kind==="paused"} className={(rt && time.kind==="paused") ? "active":""} onClick={() => onChangePaused(true, Math.round(performance.now()))}><PauseIcon fontSize="small"/></button>
-            <button title="run the simulation in real time" disabled={!rt || time.kind==="realtime"} className={(rt && time.kind==="realtime") ? "active":""} onClick={() => onChangePaused(false, Math.round(performance.now()))}><PlayArrowIcon fontSize="small"/></button>
-          </KeyInfo>
-        </div>
-
-        &emsp;
-
-        {/* speed */}
-        <div className="toolbarGroup">
-          <label htmlFor="number-timescale">speed</label>&nbsp;
-          <KeyInfo keyInfo={<kbd>S</kbd>}>
-            <button title="slower" onClick={onSlower}>÷2</button>
-          </KeyInfo>
-          <input title="controls how fast the simulation should run in real time mode - larger than 1 means: faster than wall-clock time" id="number-timescale" value={timescale.toFixed(3)} style={{width:40}} readOnly onChange={e => onTimeScaleChange(e.target.value, Math.round(performance.now()))}/>
-          <KeyInfo keyInfo={<kbd>F</kbd>}>
-            <button title="faster" onClick={onFaster}>×2</button>
-          </KeyInfo>
-        </div>
-
-        &emsp;
-
-        {/* time, next */}
-        <div className="toolbarGroup">
-          <div className="toolbarGroup">
-            <label htmlFor="time">time (s)</label>&nbsp;
-            <input title="the current simulated time" id="time" disabled={!rt} value={displayTime} readOnly={true} className="readonlyTextBox" />
-            &emsp;
-          </div>
-          <div className="toolbarGroup">
-            <label htmlFor="next-timeout">next (s)</label>&nbsp;
-            <input title="next point in simulated time where a timed transition may fire" id="next-timeout" disabled={!rt} value={nextTimedTransition ? formatTime(nextTimedTransition[0]) : '+inf'} readOnly={true} className="readonlyTextBox"/>
-            <KeyInfo keyInfo={<kbd>Tab</kbd>}>
-              <button title="advance time just enough for the next timer to elapse" disabled={nextTimedTransition===undefined} onClick={onSkip}><SkipNextIcon fontSize="small"/><AccessAlarmIcon fontSize="small"/></button>
-            </KeyInfo>
-          </div>
-        </div>
-
-
-      </div>
-
+    {/* execution */}
     <div className="toolbarGroup">
 
-    {ast.inputEvents &&
-      <>
-        {ast.inputEvents.map(({event, paramName}) =>
-        <><button title={`raise input event '${event}'`} disabled={!rt} onClick={() => {
-          // @ts-ignore
-          const param = document.getElementById(`input-${event}-param`)?.value;
-          let paramParsed;
-          try {
-            if (param) {
-              paramParsed = JSON.parse(param); // may throw
-            }
-          }
-          catch (e) {
-            alert("invalid json");
-            return;
-          }
-          onRaise(event, paramParsed);
-        }}>
-          <BoltIcon fontSize="small"/>
-          {event}
-        </button>
-        {paramName && <><input id={`input-${event}-param`} style={{width: 20}} placeholder={paramName}/></>}
-        &nbsp;</>)}
-      </>
-    }
+      {/* init / clear / pause / real time */}
+      <div className="toolbarGroup">
+        <KeyInfo keyInfo={<kbd>I</kbd>}>
+          <button title="(re)initialize simulation" onClick={onInit} ><PlayArrowIcon fontSize="small"/><CachedIcon fontSize="small"/></button>
+        </KeyInfo>
+        <KeyInfo keyInfo={<kbd>C</kbd>}>
+          <button title="clear the simulation" onClick={onClear} disabled={!rt}><StopIcon fontSize="small"/></button>
+        </KeyInfo>
+        &emsp;
+        <KeyInfo keyInfo={<><kbd>Space</kbd> toggles</>}>
+          <button title="pause the simulation" disabled={!rt || time.kind==="paused"} className={(rt && time.kind==="paused") ? "active":""} onClick={() => onChangePaused(true, Math.round(performance.now()))}><PauseIcon fontSize="small"/></button>
+          <button title="run the simulation in real time" disabled={!rt || time.kind==="realtime"} className={(rt && time.kind==="realtime") ? "active":""} onClick={() => onChangePaused(false, Math.round(performance.now()))}><PlayArrowIcon fontSize="small"/></button>
+        </KeyInfo>
+        &emsp;
+      </div>
 
+      {/* speed */}
+      <div className="toolbarGroup">
+        <label htmlFor="number-timescale">speed</label>&nbsp;
+        <KeyInfo keyInfo={<kbd>S</kbd>}>
+          <button title="slower" onClick={onSlower}>÷2</button>
+        </KeyInfo>
+        <input title="controls how fast the simulation should run in real time mode - larger than 1 means: faster than wall-clock time" id="number-timescale" value={timescale.toFixed(3)} style={{width:40}} readOnly onChange={e => onTimeScaleChange(e.target.value, Math.round(performance.now()))}/>
+        <KeyInfo keyInfo={<kbd>F</kbd>}>
+          <button title="faster" onClick={onFaster}>×2</button>
+        </KeyInfo>
+        &emsp;
+      </div>
+
+      {/* time, next */}
+      <div className="toolbarGroup">
+        <div className="toolbarGroup">
+          <label htmlFor="time">time (s)</label>&nbsp;
+          <input title="the current simulated time" id="time" disabled={!rt} value={displayTime} readOnly={true} className="readonlyTextBox" />
+        </div>
+        &emsp;
+        <div className="toolbarGroup">
+          <label htmlFor="next-timeout">next (s)</label>&nbsp;
+          <input title="next point in simulated time where a timed transition may fire" id="next-timeout" disabled={!rt} value={nextTimedTransition ? formatTime(nextTimedTransition[0]) : '+inf'} readOnly={true} className="readonlyTextBox"/>
+          <KeyInfo keyInfo={<kbd>Tab</kbd>}>
+            <button title="advance time just enough for the next timer to elapse" disabled={nextTimedTransition===undefined} onClick={onSkip}><SkipNextIcon fontSize="small"/><AccessAlarmIcon fontSize="small"/></button>
+          </KeyInfo>
+          &emsp;
+        </div>
+      </div>
     </div>
-  </div>
-  </>;
+
+    {/* input events */}
+    <div className="toolbarGroup">
+      {ast.inputEvents &&
+        <>
+          {ast.inputEvents.map(({event, paramName}) =>
+          <div className="toolbarGroup"><button title={`raise input event '${event}'`} disabled={!rt} onClick={() => {
+            // @ts-ignore
+            const param = document.getElementById(`input-${event}-param`)?.value;
+            let paramParsed;
+            try {
+              if (param) {
+                paramParsed = JSON.parse(param); // may throw
+              }
+            }
+            catch (e) {
+              alert("invalid json");
+              return;
+            }
+            onRaise(event, paramParsed);
+          }}>
+            <BoltIcon fontSize="small"/>
+            {event}
+          </button>
+          {paramName && <><input id={`input-${event}-param`} style={{width: 20}} placeholder={paramName}/></>}
+          &nbsp;</div>)}
+        </>
+      }
+    </div>
+
+  </div>;
 }

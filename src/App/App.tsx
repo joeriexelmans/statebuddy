@@ -192,8 +192,9 @@ export function App() {
           borderLeft: 1,
           borderColor: "divider",
           flex: '0 0 content',
-          overflow: "auto",
-          maxWidth: '30vw',
+          overflowY: "auto",
+          overflowX: "visible",
+          maxWidth: 'min(300px, 30vw)',
         }}>
           <ShowAST {...{...ast, rt: rt.at(rtIdx!), highlightActive}}/>
           <ShowOutputEvents outputEvents={ast.outputEvents}/>
