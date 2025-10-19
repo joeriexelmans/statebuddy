@@ -13,10 +13,12 @@ import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
 import StopIcon from '@mui/icons-material/Stop';
 import UndoIcon from '@mui/icons-material/Undo';
 import RedoIcon from '@mui/icons-material/Redo';
+import InfoOutlineIcon from '@mui/icons-material/InfoOutline';
 
 import { formatTime } from "./util";
 import { InsertMode } from "../VisualEditor/VisualEditor";
 import { KeyInfoHidden, KeyInfoVisible } from "./KeyInfo";
+import { About } from "./About";
 
 export type TopPanelProps = {
   rt?: BigStep,
@@ -30,6 +32,7 @@ export type TopPanelProps = {
   ast: Statechart,
   mode: InsertMode,
   setMode: Dispatch<SetStateAction<InsertMode>>,
+  setModal: Dispatch<SetStateAction<ReactElement>>,
 }
 
 function RountangleIcon(props: {kind: string}) {
@@ -63,7 +66,7 @@ function HistoryIcon(props: {kind: "shallow"|"deep"}) {
 }
 
 
-export function TopPanel({rt, rtIdx, time, setTime, onInit, onClear, onRaise, onBack, ast, mode, setMode}: TopPanelProps) {
+export function TopPanel({rt, rtIdx, time, setTime, onInit, onClear, onRaise, onBack, ast, mode, setMode, setModal}: TopPanelProps) {
   const [displayTime, setDisplayTime] = useState("0.000");
   const [timescale, setTimescale] = useState(1);
   const [showKeys, setShowKeys] = useState(true);
@@ -321,6 +324,10 @@ export function TopPanel({rt, rtIdx, time, setTime, onInit, onClear, onRaise, on
     </div>
 
     </div>
+
+    &emsp;
+
+    <button onClick={() => setModal(<About setModal={setModal}/>)}><InfoOutlineIcon fontSize="small"/></button>
 
   </div></>;
 }

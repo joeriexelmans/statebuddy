@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { ReactElement, useEffect, useRef, useState } from "react";
 
 import { emptyStatechart, Statechart } from "../statecharts/abstract_syntax";
 import { handleInputEvent, initialize } from "../statecharts/interpreter";
@@ -24,6 +24,8 @@ export function App() {
   const [rt, setRT] = useState<BigStep[]>([]);
   const [rtIdx, setRTIdx] = useState<number|undefined>();
   const [time, setTime] = useState<TimeMode>({kind: "paused", simtime: 0});
+
+  const [modal, setModal] = useState<ReactElement|null>(null);
 
   const refRightSideBar = useRef<HTMLDivElement>(null);
 
@@ -144,7 +146,19 @@ export function App() {
 
   console.log(ast);
 
-  return <Stack sx={{height:'100vh'}}>
+  return <>
+  {/* Modal dialog */}
+  {modal && <div
+    onMouseDown={() => setModal(null)}
+    style={{width: '100%', height: '100%', position:'absolute', textAlign: 'center', backgroundColor: 'rgba(127,127,127,0.5)' }}>
+    <div
+      style={{position: 'relative', top: '50%', transform: 'translateY(-50%)'}}>
+      <span onMouseDown={e => e.stopPropagation()}>
+      {modal}
+      </span>
+    </div>
+  </div>}
+  <Stack sx={{height:'100vh'}}>
     {/* Top bar */}
     <Box
       sx={{
@@ -156,7 +170,7 @@ export function App() {
       }}>
       <TopPanel
         rt={rtIdx === undefined ? undefined : rt[rtIdx]}
-        {...{rtIdx, ast, time, setTime, onInit, onClear, onRaise, onBack, mode, setMode}}
+        {...{rtIdx, ast, time, setTime, onInit, onClear, onRaise, onBack, mode, setMode, setModal}}
       />
     </Box>
 
@@ -195,7 +209,8 @@ export function App() {
     }}>
       <BottomPanel {...{errors}}/>
     </Box>
-  </Stack>;
+  </Stack>
+  </>;
 }
 
 export default App;

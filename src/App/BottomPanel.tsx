@@ -6,7 +6,7 @@ import "./BottomPanel.css";
 import head from "../head.svg" ;
 
 export function BottomPanel(props: {errors: TraceableError[]}) {
-  const [greeting, setGreeting] = useState(<b><img src={head}/>&emsp;"Welcome to StateBuddy, buddy!"</b>);
+  const [greeting, setGreeting] = useState(<><b><img src={head}/>&emsp;"Welcome to StateBuddy, buddy!"</b></>);
 
   useEffect(() => {
     setTimeout(() => {
