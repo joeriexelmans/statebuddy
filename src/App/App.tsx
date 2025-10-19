@@ -43,7 +43,7 @@ export function App() {
 
   function onRaise(inputEvent: string, param: any) {
     if (rt.length>0 && rtIdx!==undefined && ast.inputEvents.some(e => e.event === inputEvent)) {
-      const simtime = getSimTime(time, performance.now());
+      const simtime = getSimTime(time, Math.round(performance.now()));
       const nextConfig = handleInputEvent(simtime, {kind: "input", name: inputEvent, param}, ast, rt[rtIdx]!);
       appendNewConfig(inputEvent, simtime, nextConfig);
     }
@@ -107,7 +107,7 @@ export function App() {
           appendNewConfig('<timer>', nextInterrupt, nextConfig);
         }
         if (time.kind === "realtime") {
-          const wallclkDelay = getWallClkDelay(time, nextInterrupt, performance.now());
+          const wallclkDelay = getWallClkDelay(time, nextInterrupt, Math.round(performance.now()));
           // console.log('scheduling timeout after', wallclkDelay);
           timeout = setTimeout(raiseTimeEvent, wallclkDelay);
         }

@@ -316,7 +316,7 @@ export function TopPanel({rt, rtIdx, time, setTime, onInit, onClear, onRaise, on
     <div style={{display:"inline-block"}}>
     <KeyInfo keyInfo={<kbd>~</kbd>}>
     <input id="checkbox-keys" type="checkbox" checked={showKeys} onChange={e => setShowKeys(e.target.checked)}></input>
-    <label for="checkbox-keys">see shortcuts</label>
+    <label htmlFor="checkbox-keys">see shortcuts</label>
     </KeyInfo>
     </div>
 

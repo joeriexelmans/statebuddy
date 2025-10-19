@@ -133,16 +133,29 @@ export function VisualEditor({ast, setAST, rt, errors, setErrors, mode, highligh
   const refSVG = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
-    const compressedState = window.location.hash.slice(1);
     try {
+      const compressedState = window.location.hash.slice(1);
+      console.log('get old state');
       const ds = new DecompressionStream("deflate");
       const writer = ds.writable.getWriter();
-      writer.write(Uint8Array.fromBase64(compressedState));
-      writer.close();
+      writer.write(Uint8Array.fromBase64(compressedState)).catch(e => {
+        console.error("could not recover state:", e);
+      });
+      writer.close().catch(e => {
+        console.error("could not recover state:", e);
+      });
 
       new Response(ds.readable).arrayBuffer().then(decompressedBuffer => {
-        const recoveredState = JSON.parse(new TextDecoder().decode(decompressedBuffer));
-        setState(recoveredState);
+        try {
+          console.log('recovering state');
+          const recoveredState = JSON.parse(new TextDecoder().decode(decompressedBuffer));
+          setState(recoveredState);
+        }
+        catch (e) {
+        console.error("could not recover state:", e);
+      }
+      }).catch(e => {
+        console.error("could not recover state:", e);
       });
     }
     catch (e) {
