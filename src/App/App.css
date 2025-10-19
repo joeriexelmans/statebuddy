@@ -53,6 +53,10 @@ summary {
   height: 26px;
 }
 
+.toolbarGroup {
+  display: inline-block;
+}
+
 button.active {
   border: solid blue 2px;
   background-color: rgba(0,0,255,0.2);
