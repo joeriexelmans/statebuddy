@@ -1,4 +1,4 @@
-![logo](.artwork/logo.svg)
+![logo](./artwork/logo.svg)
 
 # StateBuddy
 
