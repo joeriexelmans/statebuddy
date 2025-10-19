@@ -75,38 +75,40 @@ export function TopPanel({rt, rtIdx, time, setTime, onInit, onClear, onRaise, on
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === " ") {
-        e.preventDefault();
-        if (rt)
-        onChangePaused(time.kind !== "paused", Math.round(performance.now()));
-      };
-      if (e.key === "i") {
-        e.preventDefault();
-        onInit();
-      }
-      if (e.key === "c") {
-        e.preventDefault();
-        onClear();
-      }
-      if (e.key === "Tab") {
-        e.preventDefault();
-        onSkip();
-      }
-      if (e.key === "s") {
-        e.preventDefault();
-        onSlower();
-      }
-      if (e.key === "f") {
-        e.preventDefault();
-        onFaster();
-      }
-      if (e.key === "`") {
-        e.preventDefault();
-        setShowKeys(show => !show);
-      }
-      if (e.key === "Backspace") {
-        e.preventDefault();
-        onBack();
+      if (!e.ctrlKey) {
+        if (e.key === " ") {
+          e.preventDefault();
+          if (rt)
+          onChangePaused(time.kind !== "paused", Math.round(performance.now()));
+        };
+        if (e.key === "i") {
+          e.preventDefault();
+          onInit();
+        }
+        if (e.key === "c") {
+          e.preventDefault();
+          onClear();
+        }
+        if (e.key === "Tab") {
+          e.preventDefault();
+          onSkip();
+        }
+        if (e.key === "s") {
+          e.preventDefault();
+          onSlower();
+        }
+        if (e.key === "f") {
+          e.preventDefault();
+          onFaster();
+        }
+        if (e.key === "`") {
+          e.preventDefault();
+          setShowKeys(show => !show);
+        }
+        if (e.key === "Backspace") {
+          e.preventDefault();
+          onBack();
+        }
       }
     };
     window.addEventListener("keydown", onKeyDown);

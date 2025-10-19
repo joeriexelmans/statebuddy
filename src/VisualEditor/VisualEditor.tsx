@@ -1,4 +1,4 @@
-import { Dispatch, SetStateAction, useEffect, useMemo, useRef, useState } from "react";
+import { Dispatch, ReactElement, SetStateAction, useEffect, useMemo, useRef, useState } from "react";
 
 import { Statechart } from "../statecharts/abstract_syntax";
 import { Arrow, ArrowPart, Diamond, History, Rountangle, RountanglePart, Text, VisualEditorState, emptyState } from "../statecharts/concrete_syntax";
@@ -68,9 +68,10 @@ type VisualEditorProps = {
   mode: InsertMode,
   highlightActive: Set<string>,
   highlightTransitions: string[],
+  setModal: Dispatch<SetStateAction<ReactElement|null>>,
 };
 
-export function VisualEditor({ast, setAST, rt, errors, setErrors, mode, highlightActive, highlightTransitions}: VisualEditorProps) {
+export function VisualEditor({ast, setAST, rt, errors, setErrors, mode, highlightActive, highlightTransitions, setModal}: VisualEditorProps) {
   const [historyState, setHistoryState] = useState<HistoryState>({current: emptyState, history: [], future: []});
 
   const state = historyState.current;
@@ -324,7 +325,7 @@ export function VisualEditor({ast, setAST, rt, errors, setErrors, mode, highligh
     setSelection([]);
   };
 
-  const onMouseMove = (e: {pageX: number, pageY: number}) => {
+  const onMouseMove = (e: {pageX: number, pageY: number, movementX: number, movementY: number}) => {
     const currentPointer = getCurrentPointer(e);
     if (dragging) {
       // const pointerDelta = subtractV2D(currentPointer, dragging.lastMousePos);
@@ -812,6 +813,7 @@ export function VisualEditor({ast, setAST, rt, errors, setErrors, mode, highligh
         selected={Boolean(selection.find(s => s.uid === txt.uid)?.parts?.length)}
         highlight={textsToHighlight.hasOwnProperty(txt.uid)}
         onEdit={newText => onEditText(txt, newText)}
+        setModal={setModal}
       />
     })}
 

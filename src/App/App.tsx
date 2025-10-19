@@ -184,7 +184,7 @@ export function App() {
         flexGrow:1,
         overflow:'auto',
       }}>
-        <VisualEditor {...{ast, setAST, rt: rt.at(rtIdx!), setRT, errors, setErrors, mode, highlightActive, highlightTransitions}}/>
+        <VisualEditor {...{ast, setAST, rt: rt.at(rtIdx!), setRT, errors, setErrors, mode, highlightActive, highlightTransitions, setModal}}/>
       </Box>
 
       {/* right sidebar */}
