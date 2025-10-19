@@ -1,5 +1,7 @@
 import { Dispatch, ReactElement, SetStateAction, useState } from "react";
 
+import { parse as parseLabel, SyntaxError } from "../statecharts/label_parser";
+
 export function TextDialog(props: {setModal: Dispatch<SetStateAction<ReactElement|null>>, text: string, done: (newText: string|undefined) => void}) {
   const [text, setText] = useState(props.text);
   function onKeyDown(e: KeyboardEvent) {
@@ -16,11 +18,21 @@ export function TextDialog(props: {setModal: Dispatch<SetStateAction<ReactElemen
     }
     e.stopPropagation();
   }
-  return <span onKeyDown={onKeyDown} style={{backgroundColor:'white'}}>
-    <textarea style={{fontFamily: 'Roboto', width:500, height: 100}} onChange={e=>setText(e.target.value)}>{text}</textarea>
+
+  let error = "";
+  try {
+    const parsed = parseLabel(text);
+  } catch (e) {
+    error = e.message;
+  }
+
+  return <div onKeyDown={onKeyDown} style={{backgroundColor:'white', padding: 4, width: 520}}>
+    Edit text label:<br/>
+    <textarea autoFocus style={{fontFamily: 'Roboto', width:500, height: 100}} onChange={e=>setText(e.target.value)}>{text}</textarea>
     <br/>
-    <span style={{backgroundColor:'lightyellow'}}>
-    Tip: <kbd>Shift</kbd>+<kbd>Enter</kbd> to insert newline.
-    </span>
-  </span>;
+    <span style={{color: 'var(--error-color)'}}>{error}</span><br/>
+    <p><kbd>Enter</kbd> to confirm. <kbd>Escape</kbd> to cancel.
+    </p>
+    (Tip: <kbd>Shift</kbd>+<kbd>Enter</kbd> to insert newline.)
+  </div>;
 }
