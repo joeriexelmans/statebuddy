@@ -786,7 +786,7 @@ export function VisualEditor({ast, setAST, rt, errors, setErrors, mode, highligh
         highlight={arrowsToHighlight.hasOwnProperty(arrow.uid)}
         fired={highlightTransitions.includes(arrow.uid)}
         arc={arc}
-        initialMarker={initialMarker}
+        initialMarker={Boolean(initialMarker)}
         />;
       }
     )}

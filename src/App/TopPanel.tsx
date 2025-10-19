@@ -4,7 +4,6 @@ import { getSimTime, setPaused, setRealtime, TimeMode } from "../statecharts/tim
 import { Statechart } from "../statecharts/abstract_syntax";
 
 import CachedIcon from '@mui/icons-material/Cached';
-import ClearIcon from '@mui/icons-material/Clear';
 import PauseIcon from '@mui/icons-material/Pause';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import BoltIcon from '@mui/icons-material/Bolt';
@@ -63,6 +62,19 @@ export function TopPanel({rt, time, setTime, onInit, onClear, onRaise, ast, mode
   const [displayTime, setDisplayTime] = useState("0.000");
   const [timescale, setTimescale] = useState(1);
 
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === " ") {
+        e.preventDefault();
+        onChangePaused(time.kind !== "paused", performance.now());
+      };
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [time]);
+
   function updateDisplayedTime() {
     const now = performance.now();
     const timeMs = getSimTime(time, now);
@@ -81,7 +93,7 @@ export function TopPanel({rt, time, setTime, onInit, onClear, onRaise, ast, mode
   function onChangePaused(paused: boolean, wallclktime: number) {
     setTime(time => {
       if (paused) {
-        return setPaused(time, performance.now());
+        return setPaused(time, wallclktime);
       }
       else {
         return setRealtime(time, timescale, wallclktime);

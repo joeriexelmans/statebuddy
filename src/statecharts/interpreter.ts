@@ -5,13 +5,13 @@ import { BigStepOutput, Environment, initialRaised, Mode, RaisedEvents, RT_Event
 
 export function initialize(ast: Statechart): BigStepOutput {
   let history = new Map();
-  let enteredStates, environment, raised;
-  ({enteredStates, environment, history, ...raised} = enterDefault(0, ast.root, {
+  let enteredStates, environment, rest;
+  ({enteredStates, environment, history, ...rest} = enterDefault(0, ast.root, {
     environment: new Environment([new Map([["_timers", []]])]),
     history,
     ...initialRaised,
   }));
-  return handleInternalEvents(0, ast, {mode: enteredStates, environment, history,  ...raised});
+  return handleInternalEvents(0, ast, {mode: enteredStates, environment, history,  ...rest});
 }
 
 type ActionScope = {
@@ -121,8 +121,10 @@ export function enterDefault(simtime: number, state: ConcreteState, rt: ActionSc
       ({enteredStates: enteredChildren, firedTransitions, ...actionScope} = enterDefault(simtime, toEnter, {firedTransitions, ...actionScope}));
       enteredStates = enteredStates.union(enteredChildren);
     }
-    // console.warn(state.uid + ': no initial state');
-  }
+    else {
+      console.warn(state.uid + ': no initial state');
+    }
+  }  
 
   return {enteredStates, firedTransitions, ...actionScope};
 }
@@ -155,12 +157,7 @@ export function enterStates(simtime: number, state: ConcreteState, toEnter: Set<
     }
     else if (childToEnter.length === 0) {
       // also good, enter default child
-      for (const [_, defaultChild] of state.initial) {
-        let enteredChildren;
-        ({enteredStates: enteredChildren, ...actionScope} = enterDefault(simtime, defaultChild, actionScope));
-        enteredStates = enteredStates.union(enteredChildren);
-        break; // one is enough
-      }
+      return enterDefault(simtime, state, {...actionScope});
     }
     else {
       throw new Error("can only enter one child of an OR-state, stupid!");
@@ -184,6 +181,7 @@ export function exitCurrent(simtime: number, state: ConcreteState, rt: EnteredSc
     ({history, ...actionScope} = exitActions(simtime, state, {enteredStates, history, ...actionScope}));
 
     // record history
+    history = new Map(history); // defensive copy
     for (const h of state.history) {
       if (h.kind === "shallow") {
         history.set(h.uid, new Set(state.children
@@ -204,7 +202,7 @@ export function exitCurrent(simtime: number, state: ConcreteState, rt: EnteredSc
   return {history, ...actionScope};
 }
 
-export function handleEvent(simtime: number, event: RT_Event, statechart: Statechart, activeParent: StableState, {environment, mode, history, ...raised}: RT_Statechart & RaisedEvents): RT_Statechart & RaisedEvents {
+export function handleEvent(simtime: number, event: RT_Event, statechart: Statechart, activeParent: StableState, {environment, mode, ...rest}: RT_Statechart & RaisedEvents): RT_Statechart & RaisedEvents {
   const arenasFired = new Set<OrState>();
   for (const state of activeParent.children) {
     if (mode.has(state.uid)) {
@@ -256,7 +254,7 @@ export function handleEvent(simtime: number, event: RT_Event, statechart: Statec
               event.param,
             );
           }
-          ({mode, environment, history, ...raised} = fireTransition(simtime, t, statechart.transitions, l, arena, {mode, environment, history, ...raised}));
+          ({mode, environment, ...rest} = fireTransition(simtime, t, statechart.transitions, l, arena, {mode, environment, ...rest}));
           if (event.kind === "input" && event.param !== undefined) {
             environment = environment.popScope();
           }
@@ -268,11 +266,12 @@ export function handleEvent(simtime: number, event: RT_Event, statechart: Statec
       }
       else {
         // no enabled outgoing transitions, try the children:
-        ({environment, mode, history, ...raised} = handleEvent(simtime, event, statechart, state, {environment, mode, history, ...raised}));
+        ({environment, mode, ...rest} = handleEvent(simtime, event, statechart, state,
+          {environment, mode, ...rest}));
       }
     }
   }
-  return {environment, mode, history, ...raised};
+  return {environment, mode, ...rest};
 }
 
 export function handleInputEvent(simtime: number, event: RT_Event, statechart: Statechart, {mode, environment, history}: {mode: Mode, environment: Environment, history: RT_History}): BigStepOutput {
@@ -293,20 +292,20 @@ export function handleInternalEvents(simtime: number, statechart: Statechart, {i
   return rest;
 }
 
-export function fireTransition(simtime: number, t: Transition, ts: Map<string, Transition[]>, label: TransitionLabel, arena: OrState, {mode, environment, history, ...raised}: RT_Statechart & RaisedEvents): RT_Statechart & RaisedEvents {
+export function fireTransition(simtime: number, t: Transition, ts: Map<string, Transition[]>, label: TransitionLabel, arena: OrState, {mode, environment, history, ...rest}: RT_Statechart & RaisedEvents): RT_Statechart & RaisedEvents {
   console.log('fire', transitionDescription(t));
 
   const srcPath = computePath({ancestor: arena, descendant: t.src as ConcreteState}).reverse() as ConcreteState[];
 
   // exit src and other states up to arena
-  ({environment, history, ...raised} = exitCurrent(simtime, srcPath[0], {environment, enteredStates: mode, history, ...raised}))
+  ({environment, history, ...rest} = exitCurrent(simtime, srcPath[0], {environment, enteredStates: mode, history, ...rest}))
   const toExit = getDescendants(arena);
   toExit.delete(arena.uid); // do not exit the arena itself
   const exitedMode = mode.difference(toExit); // active states after exiting the states we need to exit
 
   // console.log({exitedMode});
 
-  return fireSecondHalfOfTransition(simtime, t, ts, label, arena, {mode: exitedMode, history, environment, ...raised});
+  return fireSecondHalfOfTransition(simtime, t, ts, label, arena, {mode: exitedMode, history, environment, ...rest});
 }
 
 // assuming we've already exited the source state of the transition, now enter the target state
@@ -350,7 +349,7 @@ export function fireSecondHalfOfTransition(simtime: number, t: Transition, ts: M
     
     // enter tgt
     let enteredStates;
-    ({enteredStates, environment, history, ...raised} = enterStates(simtime, state, toEnter, {environment, history, firedTransitions, ...raised}));
+    ({enteredStates, environment, history, firedTransitions, ...raised} = enterStates(simtime, state, toEnter, {environment, history, firedTransitions, ...raised}));
     const enteredMode = mode.union(enteredStates);
 
     // console.log({enteredMode});

@@ -105,10 +105,12 @@ export function App() {
     };
   }, []);
 
-  const highlightActive = (rtIdx !== undefined) && new Set([...rt[rtIdx].mode].filter(uid => {
-    const state = ast.uid2State.get(uid);
-    return state && state.parent?.kind !== "and";
-  })) || new Set();
+  // const highlightActive = (rtIdx !== undefined) && new Set([...rt[rtIdx].mode].filter(uid => {
+  //   const state = ast.uid2State.get(uid);
+  //   return state && state.parent?.kind !== "and";
+  // })) || new Set();
+
+  const highlightActive = (rtIdx === undefined) ? new Set() : rt[rtIdx].mode;
 
   const highlightTransitions = (rtIdx === undefined) ? [] : rt[rtIdx].firedTransitions;
 
