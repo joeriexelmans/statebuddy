@@ -314,7 +314,8 @@ export function VisualEditor({ast, setAST, rt, errors, setErrors, mode, highligh
   const onMouseMove = (e: {pageX: number, pageY: number}) => {
     const currentPointer = getCurrentPointer(e);
     if (dragging) {
-      const pointerDelta = subtractV2D(currentPointer, dragging.lastMousePos);
+      // const pointerDelta = subtractV2D(currentPointer, dragging.lastMousePos);
+      const pointerDelta = {x: e.movementX, y: e.movementY};
       setState(state => ({
         ...state,
         rountangles: state.rountangles.map(r => {

@@ -8,7 +8,7 @@ import PauseIcon from '@mui/icons-material/Pause';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import BoltIcon from '@mui/icons-material/Bolt';
 import SkipNextIcon from '@mui/icons-material/SkipNext';
-import TrendingFlatIcon from '@mui/icons-material/TrendingFlat';
+import SkipPreviousIcon from '@mui/icons-material/SkipPrevious';import TrendingFlatIcon from '@mui/icons-material/TrendingFlat';
 import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
 import StopIcon from '@mui/icons-material/Stop';
 import UndoIcon from '@mui/icons-material/Undo';
@@ -20,11 +20,13 @@ import { KeyInfoHidden, KeyInfoVisible } from "./KeyInfo";
 
 export type TopPanelProps = {
   rt?: BigStep,
+  rtIdx?: number,
   time: TimeMode,
   setTime: Dispatch<SetStateAction<TimeMode>>,
   onInit: () => void,
   onClear: () => void,
   onRaise: (e: string, p: any) => void,
+  onBack: () => void,
   ast: Statechart,
   mode: InsertMode,
   setMode: Dispatch<SetStateAction<InsertMode>>,
@@ -61,7 +63,7 @@ function HistoryIcon(props: {kind: "shallow"|"deep"}) {
 }
 
 
-export function TopPanel({rt, time, setTime, onInit, onClear, onRaise, ast, mode, setMode}: TopPanelProps) {
+export function TopPanel({rt, rtIdx, time, setTime, onInit, onClear, onRaise, onBack, ast, mode, setMode}: TopPanelProps) {
   const [displayTime, setDisplayTime] = useState("0.000");
   const [timescale, setTimescale] = useState(1);
   const [showKeys, setShowKeys] = useState(true);
@@ -98,6 +100,10 @@ export function TopPanel({rt, time, setTime, onInit, onClear, onRaise, ast, mode
       if (e.key === "`") {
         e.preventDefault();
         setShowKeys(show => !show);
+      }
+      if (e.key === "Backspace") {
+        e.preventDefault();
+        onBack();
       }
     };
     window.addEventListener("keydown", onKeyDown);
@@ -187,8 +193,19 @@ export function TopPanel({rt, time, setTime, onInit, onClear, onRaise, ast, mode
     <div className="toolbar">
 
     <div style={{display:'inline-block'}}>
-    <div style={{display:'inline-block'}}>
 
+    <div style={{display:'inline-block'}}>
+    <KeyInfo keyInfo={<><kbd>Ctrl</kbd>+<kbd>Z</kbd></>}>
+    <button title="undo"><UndoIcon fontSize="small"/></button>
+    </KeyInfo>
+    <KeyInfo keyInfo={<><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd></>}>
+    <button title="redo"><RedoIcon fontSize="small"/></button>
+    </KeyInfo>
+    </div>
+
+    &emsp;
+
+    <div style={{display:'inline-block'}}>
     {([
       ["and", "AND-states", <RountangleIcon kind="and"/>, <kbd>A</kbd>],
       ["or", "OR-states", <RountangleIcon kind="or"/>, <kbd>O</kbd>],
@@ -205,7 +222,6 @@ export function TopPanel({rt, time, setTime, onInit, onClear, onRaise, ast, mode
         className={mode===m ? "active":""}
         onClick={() => setMode(m)}
       >{buttonTxt}</button></KeyInfo>)}
-
     </div>
 
     &emsp;
@@ -221,7 +237,7 @@ export function TopPanel({rt, time, setTime, onInit, onClear, onRaise, ast, mode
 
     &emsp;
 
-    <KeyInfo keyInfo={<kbd>Space</kbd>}>
+    <KeyInfo keyInfo={<><kbd>Space</kbd> toggles</>}>
       <button title="pause the simulation" disabled={!rt || time.kind==="paused"} className={(rt && time.kind==="paused") ? "active":""} onClick={() => onChangePaused(true, performance.now())}><PauseIcon fontSize="small"/></button>
       <button title="run the simulation in real time" disabled={!rt || time.kind==="realtime"} className={(rt && time.kind==="realtime") ? "active":""} onClick={() => onChangePaused(false, performance.now())}><PlayArrowIcon fontSize="small"/></button>
     </KeyInfo>
@@ -251,6 +267,12 @@ export function TopPanel({rt, time, setTime, onInit, onClear, onRaise, ast, mode
     </KeyInfo>
     <KeyInfo keyInfo={<kbd>Tab</kbd>}>
     <button title="advance time just enough for the next timer to elapse" disabled={nextTimedTransition===undefined} onClick={onSkip}><SkipNextIcon fontSize="small"/><AccessAlarmIcon fontSize="small"/></button>
+    </KeyInfo>
+
+    &emsp; 
+    <KeyInfo keyInfo={<kbd>Backspace</kbd>}>
+      <button title="undo last step (go back in time)" 
+      disabled={rtIdx===undefined || rtIdx===0} onClick={onBack}><SkipPreviousIcon fontSize="small"/></button>
     </KeyInfo>
 
     </div>
@@ -291,7 +313,7 @@ export function TopPanel({rt, time, setTime, onInit, onClear, onRaise, ast, mode
     <div style={{display:"inline-block"}}>
     <KeyInfo keyInfo={<kbd>~</kbd>}>
     <input id="checkbox-keys" type="checkbox" checked={showKeys} onChange={e => setShowKeys(e.target.checked)}></input>
-    <label for="checkbox-keys">shortcuts</label>
+    <label for="checkbox-keys">see shortcuts</label>
     </KeyInfo>
     </div>
 

@@ -4,6 +4,11 @@ html, body {
   font-family: Roboto, sans-serif;
 }
 
+body {
+  /* --error-color: darkred; */
+  --error-color: rgb(163, 0, 0);
+}
+
 div#root {
   height: 100%;
 }
@@ -18,7 +23,7 @@ kbd {
   border: 0.8px solid #aaa;
   border-radius: 4px;
   background: linear-gradient(#ebebeb, #fff);
-  box-shadow: inset 0 -2px 0 #aaa;
+  box-shadow: inset 0 -1.5px 0 #aaa;
   vertical-align: middle;
   user-select: none;
 }

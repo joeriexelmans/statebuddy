@@ -56,6 +56,28 @@ export function App() {
     scrollDownSidebar();
   }
 
+  function onBack() {
+    setTime(() => {
+      if (rtIdx !== undefined) {
+        if (rtIdx > 0)
+          return {
+            kind: "paused",
+            simtime: rt[rtIdx-1].simtime,
+          }
+      }
+      return { kind: "paused", simtime: 0 };
+    });
+    setRTIdx(rtIdx => {
+      if (rtIdx !== undefined) {
+        if (rtIdx > 0)
+          return rtIdx - 1;
+        else
+          return 0;
+      }
+      else return undefined;
+    })
+  }
+
   function scrollDownSidebar() {
     if (refRightSideBar.current) {
       const el = refRightSideBar.current;
@@ -128,15 +150,21 @@ export function App() {
         borderBottom: 1,
         borderColor: "divider",
         alignItems: 'center',
+        flex: '0 0 content',
       }}>
       <TopPanel
         rt={rtIdx === undefined ? undefined : rt[rtIdx]}
-        {...{ast, time, setTime, onInit, onClear, onRaise, mode, setMode}}
+        {...{rtIdx, ast, time, setTime, onInit, onClear, onRaise, onBack, mode, setMode}}
       />
     </Box>
-    <Stack direction="row" sx={{height:'calc(100vh - 64px)'}}>
+    <Stack direction="row" sx={{
+      overflow: 'auto',
+      }}>
       {/* main */}
-      <Box sx={{flexGrow:1, overflow:'auto'}}>
+      <Box sx={{
+        flexGrow:1,
+        overflow:'auto',
+      }}>
         <VisualEditor {...{ast, setAST, rt: rt.at(rtIdx!), setRT, errors, setErrors, mode, highlightActive, highlightTransitions}}/>
       </Box>
       {/* right sidebar */}
@@ -145,7 +173,6 @@ export function App() {
           borderLeft: 1,
           borderColor: "divider",
           flex: '0 0 content',
-          height: 'calc(100vh-32px)',
           overflow: "auto",
         }}>
           <ShowAST {...{...ast, rt: rt.at(rtIdx!), highlightActive}}/>
@@ -155,7 +182,9 @@ export function App() {
           </div>
         </Box>
     </Stack>
-    <Box>
+    <Box sx={{
+      flex: '0 0 content',
+    }}>
       <BottomPanel {...{errors}}/>
     </Box>
   </Stack>;

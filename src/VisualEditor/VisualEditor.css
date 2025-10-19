@@ -39,19 +39,12 @@
   /* fill: rgba(0, 0, 255, 0.2); */
 }
 .rountangle.error {
-  stroke: rgb(230,0,0);
+  stroke: var(--error-color);
 }
 .rountangle.active {
-  /* fill: rgb(255, 140, 0); */
-  /* fill-opacity: 0.2; */
-  /* stroke: rgb(100, 149, 237); */
-  /* stroke:  */
   stroke: rgb(192, 125, 0);
   fill:rgb(255, 251, 244);
-  /* fill: lightgrey; */
-  /* color: white; */
-  filter: drop-shadow( 0px 0px 3px rgba(192, 125, 0, 0.856));
-  /* stroke-width: 3px; */
+  filter: drop-shadow( 0px 0px 3px rgba(192, 125, 0, 0.85));
 }
 
 .selected:hover:not(:active) {
@@ -166,7 +159,7 @@ text.helper:hover {
 }
 
 .arrow.error {
-  stroke: rgb(230,0,0);
+  stroke: var(--error-color);
 }
 .arrow.fired {
   stroke: rgb(192, 125, 0);
@@ -174,7 +167,7 @@ text.helper:hover {
 }
 
 text.error, tspan.error {
-  fill: rgb(230,0,0);
+  fill: var(--error-color);
   font-weight: 600;
 }
 
