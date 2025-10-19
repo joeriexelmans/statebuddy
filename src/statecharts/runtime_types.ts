@@ -101,6 +101,7 @@ export type RT_Statechart = {
 
 export type BigStepOutput = RT_Statechart & {
   outputEvents: RaisedEvent[],
+  firedTransitions: string[],
 };
 
 export type BigStep = {
@@ -117,6 +118,7 @@ export type RaisedEvent = {
 export type RaisedEvents = {
   internalEvents: RaisedEvent[];
   outputEvents: RaisedEvent[];
+  firedTransitions: string[]; // list of UIDs
 };
 
 // export type Timers = Map<string, number>; // transition uid -> timestamp
@@ -124,6 +126,8 @@ export type RaisedEvents = {
 export const initialRaised: RaisedEvents = {
   internalEvents: [],
   outputEvents: [],
+
+  firedTransitions: [],
 };
 
 export type Timers = [number, TimerElapseEvent][];

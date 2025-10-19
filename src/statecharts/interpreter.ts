@@ -94,10 +94,10 @@ export function exitActions(simtime: number, state: ConcreteState, {enteredState
 
 // recursively enter the given state's default state
 export function enterDefault(simtime: number, state: ConcreteState, rt: ActionScope): EnteredScope {
-  let actionScope = rt;
+  let {firedTransitions, ...actionScope} = rt;
 
   // execute entry actions
-  actionScope = entryActions(simtime, state, actionScope);
+  ({firedTransitions, ...actionScope} = entryActions(simtime, state, {firedTransitions, ...actionScope}));
 
   // enter children...
   let enteredStates = new Set([state.uid]);
@@ -105,7 +105,7 @@ export function enterDefault(simtime: number, state: ConcreteState, rt: ActionSc
     // enter every child
     for (const child of state.children) {
       let enteredChildren;
-      ({enteredStates: enteredChildren, ...actionScope} = enterDefault(simtime, child, actionScope));
+      ({enteredStates: enteredChildren, firedTransitions, ...actionScope} = enterDefault(simtime, child, {firedTransitions, ...actionScope}));
       enteredStates = enteredStates.union(enteredChildren);
     }
   }
@@ -115,14 +115,16 @@ export function enterDefault(simtime: number, state: ConcreteState, rt: ActionSc
       if (state.initial.length > 1) {
         console.warn(state.uid + ': multiple initial states, only entering one of them');
       }
+      const [arrowUid, toEnter] = state.initial[0];
+      firedTransitions = [...firedTransitions, arrowUid];
       let enteredChildren;
-      ({enteredStates: enteredChildren, ...actionScope} = enterDefault(simtime, state.initial[0][1], actionScope));
+      ({enteredStates: enteredChildren, firedTransitions, ...actionScope} = enterDefault(simtime, toEnter, {firedTransitions, ...actionScope}));
       enteredStates = enteredStates.union(enteredChildren);
     }
     // console.warn(state.uid + ': no initial state');
   }
 
-  return {enteredStates, ...actionScope};
+  return {enteredStates, firedTransitions, ...actionScope};
 }
 
 // recursively enter the given state and, if children need to be entered, preferrably those occurring in 'toEnter' will be entered. If no child occurs in 'toEnter', the default child will be entered.
@@ -281,14 +283,14 @@ export function handleInputEvent(simtime: number, event: RT_Event, statechart: S
   return handleInternalEvents(simtime, statechart, {mode, environment, history, ...raised});
 }
 
-export function handleInternalEvents(simtime: number, statechart: Statechart, {mode, environment, history, ...raised}: RT_Statechart & RaisedEvents): BigStepOutput {
-  while (raised.internalEvents.length > 0) {
-    const [internalEvent, ...rest] = raised.internalEvents;
-    ({mode, environment, ...raised} = handleEvent(simtime, 
-      {kind: "input", ...internalEvent}, // internal event becomes input event
-      statechart, statechart.root, {mode, environment, history, internalEvents: rest, outputEvents: raised.outputEvents}));
+export function handleInternalEvents(simtime: number, statechart: Statechart, {internalEvents, ...rest}: RT_Statechart & RaisedEvents): BigStepOutput {
+  while (internalEvents.length > 0) {
+    const [nextEvent, ...remainingEvents] = internalEvents;
+    ({internalEvents, ...rest} = handleEvent(simtime, 
+      {kind: "input", ...nextEvent}, // internal event becomes input event
+      statechart, statechart.root, {internalEvents: remainingEvents, ...rest}));
   }
-  return {mode, environment, history, outputEvents: raised.outputEvents};
+  return rest;
 }
 
 export function fireTransition(simtime: number, t: Transition, ts: Map<string, Transition[]>, label: TransitionLabel, arena: OrState, {mode, environment, history, ...raised}: RT_Statechart & RaisedEvents): RT_Statechart & RaisedEvents {
@@ -309,11 +311,13 @@ export function fireTransition(simtime: number, t: Transition, ts: Map<string, T
 
 // assuming we've already exited the source state of the transition, now enter the target state
 // IF however, the target is a pseudo-state, DON'T enter it (pseudo-states are NOT states), instead fire the first pseudo-outgoing transition.
-export function fireSecondHalfOfTransition(simtime: number, t: Transition, ts: Map<string, Transition[]>, label: TransitionLabel, arena: OrState, {mode, environment, history, ...raised}: RT_Statechart & RaisedEvents): RT_Statechart & RaisedEvents {
+export function fireSecondHalfOfTransition(simtime: number, t: Transition, ts: Map<string, Transition[]>, label: TransitionLabel, arena: OrState, {mode, environment, history, firedTransitions, ...raised}: RT_Statechart & RaisedEvents): RT_Statechart & RaisedEvents {
   // exec transition actions
   for (const action of label.actions) {
-    ({environment, history, ...raised} = execAction(action, {environment, history, ...raised}));
+    ({environment, history, firedTransitions, ...raised} = execAction(action, {environment, history, firedTransitions, ...raised}));
   }
+
+  firedTransitions = [...firedTransitions, t.uid];
 
   if (t.tgt.kind === "pseudo") {
     const outgoing = ts.get(t.tgt.uid) || [];
@@ -323,7 +327,7 @@ export function fireSecondHalfOfTransition(simtime: number, t: Transition, ts: M
           if (evalExpr(nextLabel.guard, environment)) {
             console.log('fire', transitionDescription(nextT));
             // found ourselves an enabled transition
-            return fireSecondHalfOfTransition(simtime, nextT, ts, nextLabel, arena, {mode, environment, history, ...raised});
+            return fireSecondHalfOfTransition(simtime, nextT, ts, nextLabel, arena, {mode, environment, history, firedTransitions, ...raised});
           }
         }
       }
@@ -346,11 +350,11 @@ export function fireSecondHalfOfTransition(simtime: number, t: Transition, ts: M
     
     // enter tgt
     let enteredStates;
-    ({enteredStates, environment, history, ...raised} = enterStates(simtime, state, toEnter, {environment, history, ...raised}));
+    ({enteredStates, environment, history, ...raised} = enterStates(simtime, state, toEnter, {environment, history, firedTransitions, ...raised}));
     const enteredMode = mode.union(enteredStates);
 
     // console.log({enteredMode});
 
-    return {mode: enteredMode, environment, history, ...raised};
+    return {mode: enteredMode, environment, history, firedTransitions, ...raised};
   }
 }

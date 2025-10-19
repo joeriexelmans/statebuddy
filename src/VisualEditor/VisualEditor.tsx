@@ -68,9 +68,10 @@ type VisualEditorProps = {
   setErrors: Dispatch<SetStateAction<TraceableError[]>>,
   mode: InsertMode,
   highlightActive: Set<string>,
+  highlightTransitions: string[],
 };
 
-export function VisualEditor({ast, setAST, rt, errors, setErrors, mode, highlightActive}: VisualEditorProps) {
+export function VisualEditor({ast, setAST, rt, errors, setErrors, mode, highlightActive, highlightTransitions}: VisualEditorProps) {
   const [historyState, setHistoryState] = useState<HistoryState>({current: emptyState, history: [], future: []});
 
   const state = historyState.current;
@@ -679,10 +680,7 @@ export function VisualEditor({ast, setAST, rt, errors, setErrors, mode, highligh
     }
   }
 
-
   const active = rt?.mode || new Set();
-
-  console.log(highlightActive);
 
   const rootErrors = errors.filter(({shapeUid}) => shapeUid === "root").map(({message}) => message);
 
@@ -701,6 +699,16 @@ export function VisualEditor({ast, setAST, rt, errors, setErrors, mode, highligh
     >
       <defs>
         <marker
+          id="initialMarker"
+          viewBox="0 0 9 9"
+          refX="4.5"
+          refY="4.5"
+          markerWidth="9"
+          markerHeight="9"
+          markerUnits="userSpaceOnUse">
+          <circle cx={4.5} cy={4.5} r={4.5}/>
+        </marker>
+        <marker
           id="arrowEnd"
           viewBox="0 0 10 10"
           refX="5"
@@ -709,7 +717,7 @@ export function VisualEditor({ast, setAST, rt, errors, setErrors, mode, highligh
           markerHeight="12"
           orient="auto-start-reverse"
           markerUnits="userSpaceOnUse">
-          <path d="M 0 0 L 10 5 L 0 10 z" />
+          <path d="M 0 0 L 10 5 L 0 10 z"/>
         </marker>
       </defs>
 
@@ -752,6 +760,7 @@ export function VisualEditor({ast, setAST, rt, errors, setErrors, mode, highligh
       if (sides && sides[0]?.uid === sides[1]?.uid && sides[0]!.uid !== undefined) {
         arc = arcDirection(sides[0]!.part, sides[1]!.part);
       }
+      const initialMarker = sides && sides[0] === undefined && sides[1] !== undefined;
       return <ArrowSVG
         key={arrow.uid}
         arrow={arrow}
@@ -760,7 +769,9 @@ export function VisualEditor({ast, setAST, rt, errors, setErrors, mode, highligh
           .filter(({shapeUid}) => shapeUid === arrow.uid)
           .map(({message}) => message)}
         highlight={arrowsToHighlight.hasOwnProperty(arrow.uid)}
+        fired={highlightTransitions.includes(arrow.uid)}
         arc={arc}
+        initialMarker={initialMarker}
         />;
       }
     )}

@@ -19,13 +19,10 @@ import { BottomPanel } from "./BottomPanel";
 
 export function App() {
   const [mode, setMode] = useState<InsertMode>("and");
-
   const [ast, setAST] = useState<Statechart>(emptyStatechart);
   const [errors, setErrors] = useState<TraceableError[]>([]);
-
   const [rt, setRT] = useState<BigStep[]>([]);
   const [rtIdx, setRTIdx] = useState<number|undefined>();
-
   const [time, setTime] = useState<TimeMode>({kind: "paused", simtime: 0});
 
   const refRightSideBar = useRef<HTMLDivElement>(null);
@@ -54,16 +51,21 @@ export function App() {
   function appendNewConfig(inputEvent: string, simtime: number, config: BigStepOutput) {
     setRT([...rt.slice(0, rtIdx!+1), {inputEvent, simtime, ...config}]);
     setRTIdx(rtIdx!+1);
-    // console.log('new config:', config);
+    console.log('new config:', config);
     if (refRightSideBar.current) {
-      
       const el = refRightSideBar.current;
-      console.log('scrolling to:', el);
       setTimeout(() => {
         el.scrollIntoView({block: "end", behavior: "smooth"});
       }, 100);
     }
   }
+
+  useEffect(() => {
+    console.log("Welcome to StateBuddy!");
+    () => {
+      console.log("Goodbye!");
+    }
+  }, []);
 
   useEffect(() => {
     let timeout: NodeJS.Timeout | undefined;
@@ -108,6 +110,8 @@ export function App() {
     return state && state.parent?.kind !== "and";
   })) || new Set();
 
+  const highlightTransitions = (rtIdx === undefined) ? [] : rt[rtIdx].firedTransitions;
+
   return <Stack sx={{height:'100vh'}}>
     {/* Top bar */}
     <Box
@@ -125,7 +129,7 @@ export function App() {
     <Stack direction="row" sx={{height:'calc(100vh - 64px)'}}>
       {/* main */}
       <Box sx={{flexGrow:1, overflow:'auto'}}>
-        <VisualEditor {...{ast, setAST, rt: rt.at(rtIdx!), setRT, errors, setErrors, mode, highlightActive}}/>
+        <VisualEditor {...{ast, setAST, rt: rt.at(rtIdx!), setRT, errors, setErrors, mode, highlightActive, highlightTransitions}}/>
       </Box>
       {/* right sidebar */}
       <Box

@@ -3,18 +3,25 @@ import { ArcDirection, euclideanDistance } from "./geometry";
 import { CORNER_HELPER_RADIUS } from "./parameters";
 
 
-export function ArrowSVG(props: { arrow: Arrow; selected: string[]; errors: string[]; highlight: boolean; arc: ArcDirection; }) {
+export function ArrowSVG(props: { arrow: Arrow; selected: string[]; errors: string[]; highlight: boolean; fired: boolean; arc: ArcDirection; initialMarker: boolean }) {
   const { start, end, uid } = props.arrow;
   const radius = euclideanDistance(start, end) / 1.6;
-  const largeArc = "1";
-  const arcOrLine = props.arc === "no" ? "L" :
+  let largeArc = "1";
+  let arcOrLine = props.arc === "no" ? "L" :
     `A ${radius} ${radius} 0 ${largeArc} ${props.arc === "ccw" ? "0" : "1"}`;
+  if (props.initialMarker) {
+    // largeArc = "0";
+    arcOrLine = `A ${radius*2} ${radius*2} 0 0 1`
+  }
   return <g>
     <path
       className={"arrow"
         + (props.selected.length === 2 ? " selected" : "")
         + (props.errors.length > 0 ? " error" : "")
-        + (props.highlight ? " highlight" : "")}
+        + (props.highlight ? " highlight" : "")
+        + (props.fired ? " fired" : "")
+      }
+      markerStart={props.initialMarker ? 'url(#initialMarker)' : undefined}
       markerEnd='url(#arrowEnd)'
       d={`M ${start.x} ${start.y}
             ${arcOrLine}
