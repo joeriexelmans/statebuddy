@@ -172,14 +172,16 @@ export function TopPanel({rt, rtIdx, time, setTime, onInit, onClear, onRaise, on
 
   function onSkip() {
     const now = performance.now();
-    setTime(time => {
-      if (time.kind === "paused") {
-        return {kind: "paused", simtime: nextTimedTransition[0]};
-      }
-      else {
-        return {kind: "realtime", scale: time.scale, since: {simtime: nextTimedTransition[0], wallclktime: now}};
-      }
-    });
+    if (nextTimedTransition) {
+      setTime(time => {
+        if (time.kind === "paused") {
+          return {kind: "paused", simtime: nextTimedTransition[0]};
+        }
+        else {
+          return {kind: "realtime", scale: time.scale, since: {simtime: nextTimedTransition[0], wallclktime: now}};
+        }
+      });
+    }
   }
 
   function onSlower() {
