@@ -75,7 +75,7 @@ export function TopPanel({rt, rtIdx, time, setTime, onInit, onClear, onRaise, on
       if (e.key === " ") {
         e.preventDefault();
         if (rt)
-        onChangePaused(time.kind !== "paused", performance.now());
+        onChangePaused(time.kind !== "paused", Math.round(performance.now()));
       };
       if (e.key === "i") {
         e.preventDefault();
@@ -122,15 +122,16 @@ export function TopPanel({rt, rtIdx, time, setTime, onInit, onClear, onRaise, on
   }, [])
 
   function updateDisplayedTime() {
-    const now = performance.now();
+    const now = Math.round(performance.now());
     const timeMs = getSimTime(time, now);
     setDisplayTime(formatTime(timeMs));
   }
 
   useEffect(() => {
+    // This has no effect on statechart execution. In between events, the statechart is doing nothing. However, by updating the displayed time, we give the illusion of continuous progress.
     const interval = setInterval(() => {
       updateDisplayedTime();
-    }, 20);
+    }, 43); // every X ms -> we want a value that makes the numbers 'dance' while not using too much CPU
     return () => {
       clearInterval(interval);
     }
@@ -171,7 +172,7 @@ export function TopPanel({rt, rtIdx, time, setTime, onInit, onClear, onRaise, on
   const nextTimedTransition: [number, TimerElapseEvent] | undefined = timers[0];
 
   function onSkip() {
-    const now = performance.now();
+    const now = Math.round(performance.now());
     if (nextTimedTransition) {
       setTime(time => {
         if (time.kind === "paused") {
@@ -185,10 +186,10 @@ export function TopPanel({rt, rtIdx, time, setTime, onInit, onClear, onRaise, on
   }
 
   function onSlower() {
-    onTimeScaleChange((timescale/2).toString(), performance.now());
+    onTimeScaleChange((timescale/2).toString(), Math.round(performance.now()));
   }
   function onFaster() {
-    onTimeScaleChange((timescale*2).toString(), performance.now());
+    onTimeScaleChange((timescale*2).toString(), Math.round(performance.now()));
   }
 
   return <>
@@ -240,8 +241,8 @@ export function TopPanel({rt, rtIdx, time, setTime, onInit, onClear, onRaise, on
     &emsp;
 
     <KeyInfo keyInfo={<><kbd>Space</kbd> toggles</>}>
-      <button title="pause the simulation" disabled={!rt || time.kind==="paused"} className={(rt && time.kind==="paused") ? "active":""} onClick={() => onChangePaused(true, performance.now())}><PauseIcon fontSize="small"/></button>
-      <button title="run the simulation in real time" disabled={!rt || time.kind==="realtime"} className={(rt && time.kind==="realtime") ? "active":""} onClick={() => onChangePaused(false, performance.now())}><PlayArrowIcon fontSize="small"/></button>
+      <button title="pause the simulation" disabled={!rt || time.kind==="paused"} className={(rt && time.kind==="paused") ? "active":""} onClick={() => onChangePaused(true, Math.round(performance.now()))}><PauseIcon fontSize="small"/></button>
+      <button title="run the simulation in real time" disabled={!rt || time.kind==="realtime"} className={(rt && time.kind==="realtime") ? "active":""} onClick={() => onChangePaused(false, Math.round(performance.now()))}><PlayArrowIcon fontSize="small"/></button>
     </KeyInfo>
 
     &emsp;
@@ -250,7 +251,7 @@ export function TopPanel({rt, rtIdx, time, setTime, onInit, onClear, onRaise, on
     <KeyInfo keyInfo={<kbd>S</kbd>}>
     <button title="slower" onClick={onSlower}>÷2</button>
     </KeyInfo>
-    <input title="controls how fast the simulation should run in real time mode - larger than 1 means: faster than wall-clock time" id="number-timescale" value={timescale.toFixed(3)} style={{width:40}} readOnly onChange={e => onTimeScaleChange(e.target.value, performance.now())}/>
+    <input title="controls how fast the simulation should run in real time mode - larger than 1 means: faster than wall-clock time" id="number-timescale" value={timescale.toFixed(3)} style={{width:40}} readOnly onChange={e => onTimeScaleChange(e.target.value, Math.round(performance.now()))}/>
     <KeyInfo keyInfo={<kbd>F</kbd>}>
     <button title="faster" onClick={onFaster}>×2</button>
     </KeyInfo>
