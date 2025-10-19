@@ -35,14 +35,22 @@ summary {
   text-align: "right";
 }
 
-
-
-.toolbar > * {
+.toolbar * {
   vertical-align: middle;
-  height: 26px;
 }
-.toolbar > input {
+
+.toolbar *:not(label) {
+  /* vertical-align: bottom; */
+}
+
+.toolbar input {
   height: 20px;
+}
+.toolbar div {
+  vertical-align: bottom;
+}
+.toolbar button {
+  height: 26px;
 }
 
 button.active {

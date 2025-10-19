@@ -11,9 +11,12 @@ import SkipNextIcon from '@mui/icons-material/SkipNext';
 import TrendingFlatIcon from '@mui/icons-material/TrendingFlat';
 import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
 import StopIcon from '@mui/icons-material/Stop';
+import UndoIcon from '@mui/icons-material/Undo';
+import RedoIcon from '@mui/icons-material/Redo';
 
 import { formatTime } from "./util";
 import { InsertMode } from "../VisualEditor/VisualEditor";
+import { KeyInfoHidden, KeyInfoVisible } from "./KeyInfo";
 
 export type TopPanelProps = {
   rt?: BigStep,
@@ -61,6 +64,9 @@ function HistoryIcon(props: {kind: "shallow"|"deep"}) {
 export function TopPanel({rt, time, setTime, onInit, onClear, onRaise, ast, mode, setMode}: TopPanelProps) {
   const [displayTime, setDisplayTime] = useState("0.000");
   const [timescale, setTimescale] = useState(1);
+  const [showKeys, setShowKeys] = useState(true);
+
+  const KeyInfo = showKeys ? KeyInfoVisible : KeyInfoHidden;
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -68,12 +74,25 @@ export function TopPanel({rt, time, setTime, onInit, onClear, onRaise, ast, mode
         e.preventDefault();
         onChangePaused(time.kind !== "paused", performance.now());
       };
+      if (e.key === "i") {
+        e.preventDefault();
+        onInit();
+      }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => {
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [time]);
+  }, [time, onInit]);
+
+  useEffect(() => {
+    setTimeout(() => localStorage.setItem("showKeys", showKeys?"1":"0"), 100);
+  }, [showKeys])
+
+  useEffect(() => {
+    const show = localStorage.getItem("showKeys") || "1";
+    setShowKeys(show==="1")
+  }, [])
 
   function updateDisplayedTime() {
     const now = performance.now();
@@ -126,53 +145,71 @@ export function TopPanel({rt, time, setTime, onInit, onClear, onRaise, ast, mode
 
   return <>
     <div className="toolbar">
+
+    <div style={{display:'inline-block'}}>
+    <div style={{display:'inline-block'}}>
+
     {([
-      ["and", "AND-states", <RountangleIcon kind="and"/>],
-      ["or", "OR-states", <RountangleIcon kind="or"/>],
-      ["pseudo", "pseudo-states", <PseudoStateIcon/>],
-      ["shallow", "shallow history", <HistoryIcon kind="shallow"/>],
-      ["deep", "deep history", <HistoryIcon kind="deep"/>],
-      ["transition", "transitions", <TrendingFlatIcon fontSize="small"/>],
-      ["text", "text", <>&nbsp;T&nbsp;</>],
-    ] as [InsertMode, string, ReactElement][]).map(([m, hint, buttonTxt]) =>
+      ["and", "AND-states", <RountangleIcon kind="and"/>, <kbd>A</kbd>],
+      ["or", "OR-states", <RountangleIcon kind="or"/>, <kbd>O</kbd>],
+      ["pseudo", "pseudo-states", <PseudoStateIcon/>, <kbd>P</kbd>],
+      ["shallow", "shallow history", <HistoryIcon kind="shallow"/>, <kbd>H</kbd>],
+      ["deep", "deep history", <HistoryIcon kind="deep"/>, <></>],
+      ["transition", "transitions", <TrendingFlatIcon fontSize="small"/>, <kbd>T</kbd>],
+      ["text", "text", <>&nbsp;T&nbsp;</>, <kbd>X</kbd>],
+    ] as [InsertMode, string, ReactElement, ReactElement][]).map(([m, hint, buttonTxt, keyInfo]) =>
+      <KeyInfo keyInfo={keyInfo}>
       <button
         title={"insert "+hint}
         disabled={mode===m}
         className={mode===m ? "active":""}
         onClick={() => setMode(m)}
-      >{buttonTxt}</button>)}
+      >{buttonTxt}</button></KeyInfo>)}
+
+    </div>
 
     &emsp;
 
+    <div style={{display:'inline-block'}}>
+
+    <KeyInfo keyInfo={<kbd>I</kbd>}>
     <button title="(re)initialize simulation" onClick={onInit} ><PlayArrowIcon fontSize="small"/><CachedIcon fontSize="small"/></button>
+    </KeyInfo>
     <button title="clear the simulation" onClick={onClear} disabled={!rt}><StopIcon fontSize="small"/></button>
 
     &emsp;
 
-    <button title="pause the simulation" disabled={!rt || time.kind==="paused"} className={(rt && time.kind==="paused") ? "active":""} onClick={() => onChangePaused(true, performance.now())}><PauseIcon fontSize="small"/></button>
-    <button title="run the simulation in real time" disabled={!rt || time.kind==="realtime"} className={(rt && time.kind==="realtime") ? "active":""} onClick={() => onChangePaused(false, performance.now())}><PlayArrowIcon fontSize="small"/></button>
-
-    {/* <ToggleButtonGroup value={time.kind} exclusive onChange={(_,newValue) => onChangePaused(newValue==="paused", performance.now())} size="small">
-      <ToggleButton disableRipple value="paused" disabled={!rt}><PauseIcon/></ToggleButton>
-      <ToggleButton disableRipple value="realtime" disabled={!rt}><PlayArrowIcon/></ToggleButton>
-    </ToggleButtonGroup> */}
+    <KeyInfo keyInfo={<kbd>Space</kbd>}>
+      <button title="pause the simulation" disabled={!rt || time.kind==="paused"} className={(rt && time.kind==="paused") ? "active":""} onClick={() => onChangePaused(true, performance.now())}><PauseIcon fontSize="small"/></button>
+      <button title="run the simulation in real time" disabled={!rt || time.kind==="realtime"} className={(rt && time.kind==="realtime") ? "active":""} onClick={() => onChangePaused(false, performance.now())}><PlayArrowIcon fontSize="small"/></button>
+    </KeyInfo>
 
     &emsp;
 
     <label htmlFor="number-timescale">timescale</label>&nbsp;
+    <KeyInfo keyInfo={<kbd>S</kbd>}>
     <button title="slower" onClick={() => onTimeScaleChange((timescale/2).toString(), performance.now())}>÷2</button>
+    </KeyInfo>
     <input title="controls how fast the simulation should run in real time mode - larger than 1 means: faster than wall-clock time" id="number-timescale" value={timescale.toFixed(3)} style={{width:40}} readOnly onChange={e => onTimeScaleChange(e.target.value, performance.now())}/>
+    <KeyInfo keyInfo={<kbd>F</kbd>}>
     <button title="faster" onClick={() => onTimeScaleChange((timescale*2).toString(), performance.now())}>×2</button>
+    </KeyInfo>
 
     &emsp;
 
+    <KeyInfo>
     <label htmlFor="time">time (s)</label>&nbsp;
     <input title="the current simulated time" id="time" disabled={!rt} value={displayTime} readOnly={true} className="readonlyTextBox" />
+    </KeyInfo>
+
 
     &emsp;
 
+    <KeyInfo>
     <label htmlFor="next-timeout">next (s)</label>&nbsp;
     <input title="next point in simulated time where a timed transition may fire" id="next-timeout" disabled={!rt} value={nextTimedTransition ? formatTime(nextTimedTransition[0]) : '+inf'} readOnly={true} className="readonlyTextBox"/>
+    </KeyInfo>
+    <KeyInfo keyInfo={<kbd>Tab</kbd>}>
     <button title="advance time just enough for the next timer to elapse" disabled={nextTimedTransition===undefined} onClick={() => {
       const now = performance.now();
       setTime(time => {
@@ -184,8 +221,14 @@ export function TopPanel({rt, time, setTime, onInit, onClear, onRaise, ast, mode
         }
       });
     }}><SkipNextIcon fontSize="small"/><AccessAlarmIcon fontSize="small"/></button>
+    </KeyInfo>
+
+    </div>
 
     &emsp;
+
+    </div>
+    <div style={{display:'inline-block'}}>
 
     {ast.inputEvents &&
       <>
@@ -207,9 +250,20 @@ export function TopPanel({rt, time, setTime, onInit, onClear, onRaise, ast, mode
         }}>
           <BoltIcon fontSize="small"/>
           {event}
-        </button>{paramName && <><input id={`input-${event}-param`} style={{width: 20}} placeholder={paramName}/></>}&nbsp;</>)}
+        </button>
+        {paramName && <><input id={`input-${event}-param`} style={{width: 20}} placeholder={paramName}/></>}
+        &nbsp;</>)}
       </>
     }
+
+    &emsp;
+
+    <div style={{display:"inline-block"}}>
+    <input id="checkbox-keys" type="checkbox" checked={showKeys} onChange={e => setShowKeys(e.target.checked)}></input>
+    <label for="checkbox-keys">shortcuts</label>
+    </div>
+
+    </div>
 
   </div></>;
 }

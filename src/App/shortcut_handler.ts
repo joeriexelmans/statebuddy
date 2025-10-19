@@ -18,5 +18,11 @@ export function getKeyHandler(setMode: Dispatch<SetStateAction<InsertMode>>) {
     if (e.key === "x") {
       setMode("text");
     }
+    if (e.key === "h") {
+      setMode(oldMode => {
+        if (oldMode === "shallow") return "deep";
+        return "shallow";
+      })
+    }
   }
 }
