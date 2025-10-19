@@ -1,4 +1,3 @@
-import * as lz4 from "@nick/lz4";
 import { Dispatch, SetStateAction, useEffect, useMemo, useRef, useState } from "react";
 
 import { Statechart } from "../statecharts/abstract_syntax";
@@ -136,9 +135,15 @@ export function VisualEditor({ast, setAST, rt, errors, setErrors, mode, highligh
   useEffect(() => {
     const compressedState = window.location.hash.slice(1);
     try {
-      const compressedBuffer = Uint8Array.fromBase64(compressedState);
-      const recoveredState = JSON.parse(new TextDecoder().decode(lz4.decompress(compressedBuffer)));
-      setState(recoveredState);
+      const ds = new DecompressionStream("deflate");
+      const writer = ds.writable.getWriter();
+      writer.write(Uint8Array.fromBase64(compressedState));
+      writer.close();
+
+      new Response(ds.readable).arrayBuffer().then(decompressedBuffer => {
+        const recoveredState = JSON.parse(new TextDecoder().decode(decompressedBuffer));
+        setState(recoveredState);
+      });
     }
     catch (e) {
       console.error("could not recover state:", e);
@@ -147,11 +152,21 @@ export function VisualEditor({ast, setAST, rt, errors, setErrors, mode, highligh
 
   useEffect(() => {
     const timeout = setTimeout(() => {
-      const stateBuffer = new TextEncoder().encode(JSON.stringify(state));
-      const compressedStateBuffer = lz4.compress(stateBuffer);
-      const compressedStateString = compressedStateBuffer.toBase64();
-      window.location.hash = "#"+compressedStateString;
-    }, 200);
+      const serializedState = JSON.stringify(state);
+      const stateBuffer = new TextEncoder().encode(serializedState);
+
+      const cs = new CompressionStream("deflate");
+      const writer = cs.writable.getWriter();
+      writer.write(stateBuffer);
+      writer.close();
+
+      // todo: cancel this promise handler when concurrently starting another compression job
+      new Response(cs.readable).arrayBuffer().then(compressedStateBuffer => {
+        const compressedStateString = new Uint8Array(compressedStateBuffer).toBase64();
+        console.log(compressedStateString.length, serializedState.length);
+        window.location.hash = "#"+compressedStateString;
+      });
+    }, 100);
     return () => clearTimeout(timeout);
   }, [state]);
 

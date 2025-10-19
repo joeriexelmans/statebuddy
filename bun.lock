@@ -8,7 +8,6 @@
         "@fontsource/roboto": "^5.2.8",
         "@mui/icons-material": "^7.3.4",
         "@mui/material": "^7.3.4",
-        "@nick/lz4": "npm:@jsr/nick__lz4",
         "react": "^19",
         "react-dom": "^19",
       },
@@ -93,8 +92,6 @@
     "@mui/types": ["@mui/types@7.4.7", "", { "dependencies": { "@babel/runtime": "^7.28.4" }, "peerDependencies": { "@types/react": "^17.0.0 || ^18.0.0 || ^19.0.0" }, "optionalPeers": ["@types/react"] }, "sha512-8vVje9rdEr1rY8oIkYgP+Su5Kwl6ik7O3jQ0wl78JGSmiZhRHV+vkjooGdKD8pbtZbutXFVTWQYshu2b3sG9zw=="],
 
     "@mui/utils": ["@mui/utils@7.3.3", "", { "dependencies": { "@babel/runtime": "^7.28.4", "@mui/types": "^7.4.7", "@types/prop-types": "^15.7.15", "clsx": "^2.1.1", "prop-types": "^15.8.1", "react-is": "^19.1.1" }, "peerDependencies": { "@types/react": "^17.0.0 || ^18.0.0 || ^19.0.0", "react": "^17.0.0 || ^18.0.0 || ^19.0.0" }, "optionalPeers": ["@types/react"] }, "sha512-kwNAUh7bLZ7mRz9JZ+6qfRnnxbE4Zuc+RzXnhSpRSxjTlSTj7b4JxRLXpG+MVtPVtqks5k/XC8No1Vs3x4Z2gg=="],
-
-    "@nick/lz4": ["@jsr/nick__lz4@0.3.4", "https://npm.jsr.io/~/11/@jsr/nick__lz4/0.3.4.tgz", {}, "sha512-ZNc+8lCMC8D/cIa9GrSxRcEQC/MyThBOXXlg6rhrvAWSUcKPODwvscsVA+v1UugiBzfJ2dvQIZ/j8484PMadkg=="],
 
     "@popperjs/core": ["@popperjs/core@2.11.8", "", {}, "sha512-P1st0aksCrn9sGZhp8GMYwBnQsbvAWsZAX44oXNNvLHGqAOcoVxmjZiohstwQ7SqKnbR47akdNi+uleWD8+g6A=="],
 
