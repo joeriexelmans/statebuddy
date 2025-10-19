@@ -72,18 +72,39 @@ export function TopPanel({rt, time, setTime, onInit, onClear, onRaise, ast, mode
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === " ") {
         e.preventDefault();
+        if (rt)
         onChangePaused(time.kind !== "paused", performance.now());
       };
       if (e.key === "i") {
         e.preventDefault();
         onInit();
       }
+      if (e.key === "c") {
+        e.preventDefault();
+        onClear();
+      }
+      if (e.key === "Tab") {
+        e.preventDefault();
+        onSkip();
+      }
+      if (e.key === "s") {
+        e.preventDefault();
+        onSlower();
+      }
+      if (e.key === "f") {
+        e.preventDefault();
+        onFaster();
+      }
+      if (e.key === "`") {
+        e.preventDefault();
+        setShowKeys(show => !show);
+      }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => {
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [time, onInit]);
+  }, [time, onInit, timescale]);
 
   useEffect(() => {
     setTimeout(() => localStorage.setItem("showKeys", showKeys?"1":"0"), 100);
@@ -143,6 +164,25 @@ export function TopPanel({rt, time, setTime, onInit, onClear, onRaise, ast, mode
   const timers: Timers = (rt?.environment.get("_timers") || []);
   const nextTimedTransition: [number, TimerElapseEvent] | undefined = timers[0];
 
+  function onSkip() {
+    const now = performance.now();
+    setTime(time => {
+      if (time.kind === "paused") {
+        return {kind: "paused", simtime: nextTimedTransition[0]};
+      }
+      else {
+        return {kind: "realtime", scale: time.scale, since: {simtime: nextTimedTransition[0], wallclktime: now}};
+      }
+    });
+  }
+
+  function onSlower() {
+    onTimeScaleChange((timescale/2).toString(), performance.now());
+  }
+  function onFaster() {
+    onTimeScaleChange((timescale*2).toString(), performance.now());
+  }
+
   return <>
     <div className="toolbar">
 
@@ -175,7 +215,9 @@ export function TopPanel({rt, time, setTime, onInit, onClear, onRaise, ast, mode
     <KeyInfo keyInfo={<kbd>I</kbd>}>
     <button title="(re)initialize simulation" onClick={onInit} ><PlayArrowIcon fontSize="small"/><CachedIcon fontSize="small"/></button>
     </KeyInfo>
+    <KeyInfo keyInfo={<kbd>C</kbd>}>
     <button title="clear the simulation" onClick={onClear} disabled={!rt}><StopIcon fontSize="small"/></button>
+    </KeyInfo>
 
     &emsp;
 
@@ -186,21 +228,19 @@ export function TopPanel({rt, time, setTime, onInit, onClear, onRaise, ast, mode
 
     &emsp;
 
-    <label htmlFor="number-timescale">timescale</label>&nbsp;
+    <label htmlFor="number-timescale">speed</label>&nbsp;
     <KeyInfo keyInfo={<kbd>S</kbd>}>
-    <button title="slower" onClick={() => onTimeScaleChange((timescale/2).toString(), performance.now())}>÷2</button>
+    <button title="slower" onClick={onSlower}>÷2</button>
     </KeyInfo>
     <input title="controls how fast the simulation should run in real time mode - larger than 1 means: faster than wall-clock time" id="number-timescale" value={timescale.toFixed(3)} style={{width:40}} readOnly onChange={e => onTimeScaleChange(e.target.value, performance.now())}/>
     <KeyInfo keyInfo={<kbd>F</kbd>}>
-    <button title="faster" onClick={() => onTimeScaleChange((timescale*2).toString(), performance.now())}>×2</button>
+    <button title="faster" onClick={onFaster}>×2</button>
     </KeyInfo>
 
     &emsp;
 
-    <KeyInfo>
     <label htmlFor="time">time (s)</label>&nbsp;
     <input title="the current simulated time" id="time" disabled={!rt} value={displayTime} readOnly={true} className="readonlyTextBox" />
-    </KeyInfo>
 
 
     &emsp;
@@ -210,17 +250,7 @@ export function TopPanel({rt, time, setTime, onInit, onClear, onRaise, ast, mode
     <input title="next point in simulated time where a timed transition may fire" id="next-timeout" disabled={!rt} value={nextTimedTransition ? formatTime(nextTimedTransition[0]) : '+inf'} readOnly={true} className="readonlyTextBox"/>
     </KeyInfo>
     <KeyInfo keyInfo={<kbd>Tab</kbd>}>
-    <button title="advance time just enough for the next timer to elapse" disabled={nextTimedTransition===undefined} onClick={() => {
-      const now = performance.now();
-      setTime(time => {
-        if (time.kind === "paused") {
-          return {kind: "paused", simtime: nextTimedTransition[0]};
-        }
-        else {
-          return {kind: "realtime", scale: time.scale, since: {simtime: nextTimedTransition[0], wallclktime: now}};
-        }
-      });
-    }}><SkipNextIcon fontSize="small"/><AccessAlarmIcon fontSize="small"/></button>
+    <button title="advance time just enough for the next timer to elapse" disabled={nextTimedTransition===undefined} onClick={onSkip}><SkipNextIcon fontSize="small"/><AccessAlarmIcon fontSize="small"/></button>
     </KeyInfo>
 
     </div>
@@ -259,8 +289,10 @@ export function TopPanel({rt, time, setTime, onInit, onClear, onRaise, ast, mode
     &emsp;
 
     <div style={{display:"inline-block"}}>
+    <KeyInfo keyInfo={<kbd>~</kbd>}>
     <input id="checkbox-keys" type="checkbox" checked={showKeys} onChange={e => setShowKeys(e.target.checked)}></input>
     <label for="checkbox-keys">shortcuts</label>
+    </KeyInfo>
     </div>
 
     </div>

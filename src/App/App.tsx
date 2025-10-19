@@ -32,6 +32,7 @@ export function App() {
     setRT([{inputEvent: null, simtime: 0, ...config}]);
     setRTIdx(0);
     setTime({kind: "paused", simtime: 0});
+    scrollDownSidebar();
  }
 
   function onClear() {
@@ -51,12 +52,17 @@ export function App() {
   function appendNewConfig(inputEvent: string, simtime: number, config: BigStepOutput) {
     setRT([...rt.slice(0, rtIdx!+1), {inputEvent, simtime, ...config}]);
     setRTIdx(rtIdx!+1);
-    console.log('new config:', config);
+    // console.log('new config:', config);
+    scrollDownSidebar();
+  }
+
+  function scrollDownSidebar() {
     if (refRightSideBar.current) {
       const el = refRightSideBar.current;
+      // hack: we want to scroll to the new element, but we have to wait until it is rendered...
       setTimeout(() => {
         el.scrollIntoView({block: "end", behavior: "smooth"});
-      }, 100);
+      }, 50);
     }
   }
 
