@@ -1,6 +1,6 @@
 import { Dispatch, ReactElement, SetStateAction, useState } from "react";
 
-import { parse as parseLabel, SyntaxError } from "../statecharts/label_parser";
+import { parse as parseLabel } from "../statecharts/label_parser";
 
 export function TextDialog(props: {setModal: Dispatch<SetStateAction<ReactElement|null>>, text: string, done: (newText: string|undefined) => void}) {
   const [text, setText] = useState(props.text);
@@ -26,12 +26,12 @@ export function TextDialog(props: {setModal: Dispatch<SetStateAction<ReactElemen
     error = e.message;
   }
 
-  return <div onKeyDown={onKeyDown} style={{backgroundColor:'white', padding: 4, width: 520}}>
-    Edit text label:<br/>
+  return <div onKeyDown={onKeyDown} style={{padding: 4, width: 520}}>
+    Text label:<br/>
     <textarea autoFocus style={{fontFamily: 'Roboto', width:500, height: 100}} onChange={e=>setText(e.target.value)}>{text}</textarea>
     <br/>
     <span style={{color: 'var(--error-color)'}}>{error}</span><br/>
-    <p><kbd>Enter</kbd> to confirm. <kbd>Escape</kbd> to cancel.
+    <p><kbd>Enter</kbd> to confirm. <kbd>Esc</kbd> to cancel.
     </p>
     (Tip: <kbd>Shift</kbd>+<kbd>Enter</kbd> to insert newline.)
   </div>;

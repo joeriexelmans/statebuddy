@@ -1,10 +1,19 @@
 import logo from "../../artwork/logo.svg";
 
 export function About() {
-  return <div style={{backgroundColor: 'white', width: 500, padding: 4}}>
+  return <div style={{width: 500, padding: 4}}>
     <p><img src={logo}/></p>
-    <p>StateBuddy is an <a target="_blank" href="https://deemz.org/git/research/statebuddy">open source</a> tool for <a target="_blank" href="https://dl.acm.org/doi/10.1016/0167-6423(87)90035-9">Statechart</a> editing, simulation, debugging and testing environment, inspired by <a target="_blank" href="https://dl.acm.org/doi/10.1145/3417990.3421401">CouchEdit</a>.</p>
-    <p>It was originally created for teaching Statecharts to university students, but likely is a useful tool for other purposes as well.</p>
-    <p>Commercial use: <a href="mailto:joeri.exelmans@gmail.com">e&#x2011;mail me</a> for permission.</p>
+
+    <p>StateBuddy is an <a target="_blank" href="https://deemz.org/git/research/statebuddy">open source</a> tool for <a target="_blank" href="https://dl.acm.org/doi/10.1016/0167-6423(87)90035-9">Statechart</a> editing, simulation, (omniscient) debugging and testing.</p>
+
+    <p>It was originally created for teaching Statecharts to university students.</p>
+
+    <p>The main novelty is in the way you deal with the visual concrete syntax: You just draw boxes, arrows and text. Connectedness or insideness are continuously figured out by a parser, but they do not influence what you can do with the shapes, which IMO is much more intuitive than editors that try to "help" you. This idea comes from <a target="_blank" href="https://dl.acm.org/doi/10.1145/3417990.3421401">CouchEdit</a>, which was in turn influenced by the very old tool <a target="_blank" href="https://en.wikipedia.org/wiki/I-Logix#History">StateMate</a>.</p>
+    
+    <p>Unique to StateBuddy is that sides of boxes, and endpoints of arrows can be independently selected for many boxes/arrows simultaneously, making editing even more powerful while remaining highly intuitive to both novice and expert users.</p>
+
+    <p>No commercial use without my written permission.</p>
+
+    <p>Contact: <a href="mailto:joeri.exelmans@gmail.com">joeri.exelmans@gmail.com</a></p>
     </div>;
 }

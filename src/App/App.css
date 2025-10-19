@@ -58,3 +58,22 @@ button.active {
   background-color: rgba(0,0,255,0.2);
   color: black;
 }
+
+.modalInner {
+  position: relative;
+  top: 50%;
+  transform: translateY(-50%);
+  text-align: center;
+  display: inline-block;
+  background-color: white;
+}
+
+.modalOuter {
+  width: 100%;
+  height: 100%;
+  position:absolute;
+  text-align: center;
+  background-color: rgba(200,200,200,0.7);
+  /* backdrop-filter: blur(2px) */
+}
+

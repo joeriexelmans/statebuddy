@@ -149,10 +149,9 @@ export function App() {
   return <>
   {/* Modal dialog */}
   {modal && <div
-    onMouseDown={() => setModal(null)}
-    style={{width: '100%', height: '100%', position:'absolute', textAlign: 'center', backgroundColor: 'rgba(127,127,127,0.5)' }}>
-    <div
-      style={{position: 'relative', top: '50%', transform: 'translateY(-50%)', textAlign: 'center', display: 'inline-block'}}>
+    className="modalOuter"
+    onMouseDown={() => setModal(null)}>
+    <div className="modalInner">
       <span onMouseDown={e => e.stopPropagation()}>
       {modal}
       </span>
