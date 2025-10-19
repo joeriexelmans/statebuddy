@@ -25,7 +25,7 @@ export function ShowExpr(props: {expr: Expression}) {
 
 export function ShowAction(props: {action: Action}) {
   if (props.action.kind === "raise") {
-    return <>^{props.action.event}</>;
+    return <>^<span className="outputEvent">{props.action.event}</span></>;
   }
   else if (props.action.kind === "assignment") {
     return <>{props.action.lhs} = <ShowExpr expr={props.action.rhs}/>;</>;
@@ -58,4 +58,13 @@ export function ShowAST(props: {root: ConcreteState | PseudoState, transitions: 
         outgoing.map(transition => <>&emsp;<ShowTransition transition={transition}/><br/></>)
     }
   </details>
+}
+
+export function ShowOutputEvents(props: {outputEvents: Set<string>}) {
+  return <div style={{whiteSpace: 'wrap'}}>
+    out:
+    {[...props.outputEvents].map(eventName => {
+      return <><span className="outputEvent">{eventName}</span> </>;
+    })}
+  </div>;
 }

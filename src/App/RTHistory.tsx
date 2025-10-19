@@ -21,13 +21,14 @@ export function RTHistory({rt, rtIdx, ast, setRTIdx, setTime, refRightSideBar}: 
 
   return <div>
     {rt.map((r, idx) => <>
+    <hr/>
     <div className={"runtimeState"+(idx===rtIdx?" active":"")} onClick={() => gotoRt(idx, r.simtime)}>
-      <div>({formatTime(r.simtime)}, {r.inputEvent || "<init>"})</div>
+      <div>{formatTime(r.simtime)}, {r.inputEvent || "<init>"}</div>
       <ShowMode mode={r.mode} statechart={ast}/>
       <ShowEnvironment environment={r.environment}/>
-      {r.outputEvents.length>0 && <div>
-        {r.outputEvents.map((e:RaisedEvent) => '^'+e.name).join(', ')}
-      </div>}
+      {r.outputEvents.length>0 && <>^
+        {r.outputEvents.map((e:RaisedEvent) => <span className="outputEvent">{e.name}</span>)}
+      </>}
     </div></>)}
   </div>;
 }
@@ -43,8 +44,8 @@ function ShowEnvironment(props: {environment: Environment}) {
 
 function ShowMode(props: {mode: Mode, statechart: Statechart}) {
   const activeLeafs = getActiveLeafs(props.mode, props.statechart);
-  return <div>mode: {[...activeLeafs].map(uid =>
-    stateDescription(props.statechart.uid2State.get(uid)!)).join(", ")}</div>;
+  return <div>{[...activeLeafs].map(uid =>
+    <span className="activeState">{stateDescription(props.statechart.uid2State.get(uid)!)}</span>)}</div>;
 }
 
 function getActiveLeafs(mode: Mode, sc: Statechart) {

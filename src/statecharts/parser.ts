@@ -286,18 +286,18 @@ export function parseStatechart(state: VisualEditorState, conns: Connections): [
           }
         }
 
-        // // raise-actions
-        // for (const action of parsed.actions) {
-        //   if (action.kind === "raise") {
-        //     const {event} = action;
-        //     if (event.startsWith("_")) {
-        //       internalEvents.add(event);
-        //     }
-        //     else {
-        //       outputEvents.add(event);
-        //     }
-        //   }
-        // }
+        // raise-actions
+        for (const action of parsed.actions) {
+          if (action.kind === "raise") {
+            const {event} = action;
+            if (event.startsWith("_")) {
+              // internalEvents.add(event);
+            }
+            else {
+              outputEvents.add(event);
+            }
+          }
+        }
 
         // collect variables
         variables = variables.union(findVariables(parsed.guard));

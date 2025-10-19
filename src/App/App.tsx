@@ -12,7 +12,7 @@ import "./App.css";
 import { Box, Stack } from "@mui/material";
 import { TopPanel } from "./TopPanel";
 import { RTHistory } from "./RTHistory";
-import { ShowAST } from "./ShowAST";
+import { ShowAST, ShowOutputEvents } from "./ShowAST";
 import { TraceableError } from "../statecharts/parser";
 import { getKeyHandler } from "./shortcut_handler";
 import { BottomPanel } from "./BottomPanel";
@@ -142,6 +142,8 @@ export function App() {
 
   const highlightTransitions = (rtIdx === undefined) ? [] : rt[rtIdx].firedTransitions;
 
+  console.log(ast);
+
   return <Stack sx={{height:'100vh'}}>
     {/* Top bar */}
     <Box
@@ -157,9 +159,12 @@ export function App() {
         {...{rtIdx, ast, time, setTime, onInit, onClear, onRaise, onBack, mode, setMode}}
       />
     </Box>
+
+    {/* Everything below the top bar */}
     <Stack direction="row" sx={{
       overflow: 'auto',
       }}>
+
       {/* main */}
       <Box sx={{
         flexGrow:1,
@@ -167,6 +172,7 @@ export function App() {
       }}>
         <VisualEditor {...{ast, setAST, rt: rt.at(rtIdx!), setRT, errors, setErrors, mode, highlightActive, highlightTransitions}}/>
       </Box>
+
       {/* right sidebar */}
       <Box
         sx={{
@@ -174,8 +180,10 @@ export function App() {
           borderColor: "divider",
           flex: '0 0 content',
           overflow: "auto",
+          maxWidth: 350,
         }}>
           <ShowAST {...{...ast, rt: rt.at(rtIdx!), highlightActive}}/>
+          <ShowOutputEvents outputEvents={ast.outputEvents}/>
           <br/>
           <div ref={refRightSideBar}>
           <RTHistory {...{ast, rt, rtIdx, setTime, setRTIdx, refRightSideBar}}/>
