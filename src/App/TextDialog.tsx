@@ -1,4 +1,4 @@
-import { Dispatch, ReactElement, SetStateAction, useState } from "react";
+import { Dispatch, ReactElement, SetStateAction, useState, KeyboardEvent } from "react";
 
 import { parse as parseLabel } from "../statecharts/label_parser";
 
@@ -23,6 +23,7 @@ export function TextDialog(props: {setModal: Dispatch<SetStateAction<ReactElemen
   try {
     const parsed = parseLabel(text);
   } catch (e) {
+    // @ts-ignore
     error = e.message;
   }
 

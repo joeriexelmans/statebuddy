@@ -44,11 +44,6 @@ type HistorySelectable = {
 type Selectable = RountangleSelectable | ArrowSelectable | TextSelectable | HistorySelectable;
 type Selection = Selectable[];
 
-type HistoryState = {
-  current: VisualEditorState,
-  history: VisualEditorState[],
-  future: VisualEditorState[],
-}
 
 export const sides: [RountanglePart, (r:Rect2D)=>Line2D][] = [
   ["left", getLeftSide],
@@ -60,6 +55,8 @@ export const sides: [RountanglePart, (r:Rect2D)=>Line2D][] = [
 export type InsertMode = "and"|"or"|"pseudo"|"shallow"|"deep"|"transition"|"text";
 
 type VisualEditorProps = {
+  state: VisualEditorState,
+  setState: Dispatch<(v:VisualEditorState) => VisualEditorState>,
   ast: Statechart,
   setAST: Dispatch<SetStateAction<Statechart>>,
   rt: BigStep|undefined,
@@ -69,59 +66,10 @@ type VisualEditorProps = {
   highlightActive: Set<string>,
   highlightTransitions: string[],
   setModal: Dispatch<SetStateAction<ReactElement|null>>,
+  makeCheckPoint: () => void;
 };
 
-export function VisualEditor({ast, setAST, rt, errors, setErrors, mode, highlightActive, highlightTransitions, setModal}: VisualEditorProps) {
-  const [historyState, setHistoryState] = useState<HistoryState>({current: emptyState, history: [], future: []});
-
-  const state = historyState.current;
-  const setState = (s: SetStateAction<VisualEditorState>) => {
-    setHistoryState(historyState => {
-      let newState;
-      if (typeof s === 'function') {
-        newState = s(historyState.current);
-      }
-      else {
-        newState = s;
-      }
-      return {
-        ...historyState,
-        current: newState,
-      };
-    });
-  }
-
-  function checkPoint() {
-    setHistoryState(historyState => ({
-      ...historyState,
-      history: [...historyState.history, historyState.current],
-      future: [],
-    }));
-  }
-  function undo() {
-    setHistoryState(historyState => {
-      if (historyState.history.length === 0) {
-        return historyState; // no change
-      }
-      return {
-        current: historyState.history.at(-1)!,
-        history: historyState.history.slice(0,-1),
-        future: [...historyState.future, historyState.current],
-      }
-    })
-  }
-  function redo() {
-    setHistoryState(historyState => {
-      if (historyState.future.length === 0) {
-        return historyState; // no change
-      }
-      return {
-        current: historyState.future.at(-1)!,
-        history: [...historyState.history, historyState.current],
-        future: historyState.future.slice(0,-1),
-      }
-    });
-  }
+export function VisualEditor({state, setState, ast, setAST, rt, errors, setErrors, mode, highlightActive, highlightTransitions, setModal, makeCheckPoint}: VisualEditorProps) {
 
   const [dragging, setDragging] = useState<DraggingState>(null);
 
@@ -136,7 +84,6 @@ export function VisualEditor({ast, setAST, rt, errors, setErrors, mode, highligh
   useEffect(() => {
     try {
       const compressedState = window.location.hash.slice(1);
-      console.log('get old state');
       const ds = new DecompressionStream("deflate");
       const writer = ds.writable.getWriter();
       writer.write(Uint8Array.fromBase64(compressedState)).catch(e => {
@@ -148,9 +95,8 @@ export function VisualEditor({ast, setAST, rt, errors, setErrors, mode, highligh
 
       new Response(ds.readable).arrayBuffer().then(decompressedBuffer => {
         try {
-          console.log('recovering state');
           const recoveredState = JSON.parse(new TextDecoder().decode(decompressedBuffer));
-          setState(recoveredState);
+          setState(() => recoveredState);
         }
         catch (e) {
         console.error("could not recover state:", e);
@@ -177,7 +123,6 @@ export function VisualEditor({ast, setAST, rt, errors, setErrors, mode, highligh
       // todo: cancel this promise handler when concurrently starting another compression job
       new Response(cs.readable).arrayBuffer().then(compressedStateBuffer => {
         const compressedStateString = new Uint8Array(compressedStateBuffer).toBase64();
-        console.log(compressedStateString.length, serializedState.length);
         window.location.hash = "#"+compressedStateString;
       });
     }, 100);
@@ -204,7 +149,7 @@ export function VisualEditor({ast, setAST, rt, errors, setErrors, mode, highligh
     const currentPointer = getCurrentPointer(e);
 
     if (e.button === 2) {
-      checkPoint();
+      makeCheckPoint();
       // ignore selection, middle mouse button always inserts
       setState(state => {
         const newID = state.nextID.toString();
@@ -283,7 +228,7 @@ export function VisualEditor({ast, setAST, rt, errors, setErrors, mode, highligh
       const uid = e.target?.dataset.uid;
       const parts: string[] = e.target?.dataset.parts?.split(' ').filter((p:string) => p!=="") || [];
       if (uid && parts.length > 0) {
-        checkPoint();
+        makeCheckPoint();
 
         // if the mouse button is pressed outside of the current selection, we reset the selection to whatever shape the mouse is on
         let allPartsInSelection = true;
@@ -473,7 +418,7 @@ export function VisualEditor({ast, setAST, rt, errors, setErrors, mode, highligh
     if (e.key === "Delete") {
       // delete selection
       if (selection.length > 0) {
-        checkPoint();
+        makeCheckPoint();
         deleteShapes(selection);
       }
     }
@@ -508,14 +453,6 @@ export function VisualEditor({ast, setAST, rt, errors, setErrors, mode, highligh
     //   });
     // }
     if (e.ctrlKey) {
-      if (e.key === "z") {
-        e.preventDefault();
-        undo();
-      }
-      if (e.key === "Z") {
-        e.preventDefault();
-        redo();
-      }
       if (e.key === "a") {
         e.preventDefault();
         setDragging(null);
@@ -778,9 +715,11 @@ export function VisualEditor({ast, setAST, rt, errors, setErrors, mode, highligh
     </>)}
 
     {state.history.map(history => <>
-      <HistorySVG {...history}
+      <HistorySVG
+        key={history.uid}
         selected={Boolean(selection.find(h => h.uid === history.uid))}
         highlight={Boolean(historyToHighlight[history.uid])}
+        {...history}
         />
     </>)}
 
@@ -808,6 +747,7 @@ export function VisualEditor({ast, setAST, rt, errors, setErrors, mode, highligh
 
     {state.texts.map(txt => {
       return <TextSVG
+        key={txt.uid}
         error={errors.find(({shapeUid}) => txt.uid === shapeUid)}
         text={txt}
         selected={Boolean(selection.find(s => s.uid === txt.uid)?.parts?.length)}

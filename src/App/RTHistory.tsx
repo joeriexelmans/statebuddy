@@ -23,8 +23,12 @@ export function RTHistory({rt, rtIdx, ast, setRTIdx, setTime, refRightSideBar}: 
     {rt.map((r, idx) => <>
     <hr/>
     <div className={"runtimeState"+(idx===rtIdx?" active":"")} onClick={() => gotoRt(idx, r.simtime)}>
-      <div>{formatTime(r.simtime)}, {r.inputEvent || "<init>"}</div>
-      <ShowMode mode={r.mode} statechart={ast}/>
+      <div>
+        {formatTime(r.simtime)}
+        &emsp;
+        <div className="inputEvent">{r.inputEvent || "<init>"}</div>
+      </div>
+      <ShowMode mode={r.mode.difference(rt[idx-1]?.mode || new Set())} statechart={ast}/>
       <ShowEnvironment environment={r.environment}/>
       {r.outputEvents.length>0 && <>^
         {r.outputEvents.map((e:RaisedEvent) => <span className="outputEvent">{e.name}</span>)}
@@ -49,5 +53,7 @@ function ShowMode(props: {mode: Mode, statechart: Statechart}) {
 }
 
 function getActiveLeafs(mode: Mode, sc: Statechart) {
-  return new Set([...mode].filter(uid => sc.uid2State.get(uid)?.children?.length === 0));
+  return new Set([...mode].filter(uid =>
+    sc.uid2State.get(uid)?.children?.length === 0
+  ));
 }

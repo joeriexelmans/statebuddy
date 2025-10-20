@@ -1,22 +1,42 @@
 details.active  {
-  /* background-color: rgba(128, 72, 0, 0.855);
-  color: white; */
   border: rgb(192, 125, 0);
   background-color:rgb(255, 251, 244);
   filter: drop-shadow( 0px 0px 3px rgba(192, 125, 0, 0.856));
 }
 
-details { 
-  border: 1px black solid;
-  /* border-radius: 5px; */
-  background-color: white;
+details > summary {
+  padding: 2px;
+}
+
+/* these two rules add a bit of padding to an opened <details> node */
+details:open > summary {
   margin-bottom: 4px;
-  padding-right: 2px;
-  padding-top: 2px;
-  padding-bottom: 2px;
-  color: black;
-  width: fit-content;
-  border-radius: 10px;
+}
+details:open {
+  padding-bottom: 8px;
+}
+
+details > summary:hover {
+  background-color: #eee;
+  cursor: pointer;
+}
+
+.stateTree > * { 
+  padding-left: 10px;
+  /* border: 1px black solid; */
+  background-color: white;
+  /* margin-bottom: 4px; */
+  /* padding-right: 2px; */
+  /* padding-top: 2px; */
+  /* padding-bottom: 2px; */
+  /* color: black; */
+  /* width: fit-content; */
+  /* border-radius: 10px; */
+}
+
+/* if <details> has no children (besides the obvious <summary> child), then hide the marker */
+details:not(:has(:not(summary))) > summary::marker {
+  content: "    ";
 }
 
 .outputEvent {
@@ -27,6 +47,25 @@ details {
   padding-right: 2px;
   background-color: rgb(230, 249, 255);
   display: inline-block;
+}
+
+.inputEvent {
+  border: 1px black solid;
+  border-radius: 6px;
+  margin-left: 4px;
+  padding-left: 2px;
+  padding-right: 2px;
+  background-color: rgb(224, 247, 209);
+  display: inline-block;
+}
+.inputEvent * {
+  vertical-align: middle;
+}
+button.inputEvent:hover:not(:disabled) {
+  background-color: rgb(195, 224, 176);
+}
+button.inputEvent:active:not(:disabled) {
+  background-color: rgb(176, 204, 158);
 }
 
 .activeState {
@@ -46,6 +85,33 @@ hr {
   border: 0;
   border-top: 1px solid #ccc;
   margin: 0;
-  margin-bottom: -3px;
+  margin-bottom: -1px;
   padding: 0;
+}
+
+ul {
+  list-style-type: circle;
+  margin-block-start: 0;
+  margin-block-end: 0;
+  padding-inline-start: 24px;
+  /* list-style-position: ; */
+}
+
+.insetParent {
+  position: relative;
+}
+
+.insetChild {
+  position: absolute;
+  box-shadow: inset 0 10px 10px -10px rgba(0, 0, 0, 0.75);
+  height: 20px;
+  z-index: 10;
+  pointer-events: none;
+  inset: 0;
+}
+
+
+.onTop {
+  box-shadow: 0 -10px 10px 10px rgba(0, 0, 0, 0.75);
+  z-index: 1;
 }

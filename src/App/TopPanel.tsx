@@ -20,13 +20,16 @@ import { formatTime } from "./util";
 import { InsertMode } from "../VisualEditor/VisualEditor";
 import { KeyInfoHidden, KeyInfoVisible } from "./KeyInfo";
 import { About } from "./About";
-import { Stack } from "@mui/material";
+import { usePersistentState } from "@/util/persistent_state";
+import { RountangleIcon, PseudoStateIcon, HistoryIcon } from "./Icons";
 
 export type TopPanelProps = {
   rt?: BigStep,
   rtIdx?: number,
   time: TimeMode,
   setTime: Dispatch<SetStateAction<TimeMode>>,
+  onUndo: () => void,
+  onRedo: () => void,
   onInit: () => void,
   onClear: () => void,
   onRaise: (e: string, p: any) => void,
@@ -34,44 +37,13 @@ export type TopPanelProps = {
   ast: Statechart,
   mode: InsertMode,
   setMode: Dispatch<SetStateAction<InsertMode>>,
-  setModal: Dispatch<SetStateAction<ReactElement>>,
+  setModal: Dispatch<SetStateAction<ReactElement|null>>,
 }
 
-function RountangleIcon(props: {kind: string}) {
-  return <svg width={20} height={20}>
-    <rect rx={7} ry={7}
-      x={1} y={1}
-      width={18} height={18}
-      className={`rountangle ${props.kind}`}
-      style={{...(props.kind === "or" ? {strokeDasharray: '3 2'}: {}), strokeWidth: 1.2}}
-    />
-  </svg>;
-}
-
-function PseudoStateIcon(props: {}) {
-  const w=20, h=20;
-  return <svg width={w} height={h}>
-    <polygon
-      points={`
-        ${w/2} ${1},
-        ${w-1} ${h/2},
-        ${w/2} ${h-1},
-        ${1}   ${h/2},
-      `} fill="white" stroke="black" strokeWidth={1.2}/>
-  </svg>;
-}
-
-function HistoryIcon(props: {kind: "shallow"|"deep"}) {
-  const w=20, h=20;
-  const text = props.kind === "shallow" ? "H" : "H*";
-  return <svg width={w} height={h}><circle cx={w/2} cy={h/2} r={Math.min(w,h)/2-1} fill="white" stroke="black"/><text x={w/2} y={h/2+4} textAnchor="middle" fontSize={11} fontWeight={400}>{text}</text></svg>;
-}
-
-
-export function TopPanel({rt, rtIdx, time, setTime, onInit, onClear, onRaise, onBack, ast, mode, setMode, setModal}: TopPanelProps) {
+export function TopPanel({rt, rtIdx, time, setTime, onUndo, onRedo, onInit, onClear, onRaise, onBack, ast, mode, setMode, setModal}: TopPanelProps) {
   const [displayTime, setDisplayTime] = useState("0.000");
   const [timescale, setTimescale] = useState(1);
-  const [showKeys, setShowKeys] = useState(true);
+  const [showKeys, setShowKeys] = usePersistentState("shortcuts", true);
 
   const KeyInfo = showKeys ? KeyInfoVisible : KeyInfoHidden;
 
@@ -92,8 +64,13 @@ export function TopPanel({rt, rtIdx, time, setTime, onInit, onClear, onRaise, on
           onClear();
         }
         if (e.key === "Tab") {
+          if (rtIdx === undefined) {
+            onInit();
+          }
+          else {
+            onSkip();
+          }
           e.preventDefault();
-          onSkip();
         }
         if (e.key === "s") {
           e.preventDefault();
@@ -112,21 +89,23 @@ export function TopPanel({rt, rtIdx, time, setTime, onInit, onClear, onRaise, on
           onBack();
         }
       }
+      else {
+        // ctrl is down
+        if (e.key === "z") {
+          e.preventDefault();
+          onUndo();
+        }
+        if (e.key === "Z") {
+          e.preventDefault();
+          onRedo();
+        }
+      }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => {
       window.removeEventListener("keydown", onKeyDown);
     };
   }, [time, onInit, timescale]);
-
-  useEffect(() => {
-    setTimeout(() => localStorage.setItem("showKeys", showKeys?"1":"0"), 100);
-  }, [showKeys])
-
-  useEffect(() => {
-    const show = localStorage.getItem("showKeys") || "1";
-    setShowKeys(show==="1")
-  }, [])
 
   function updateDisplayedTime() {
     const now = Math.round(performance.now());
@@ -214,10 +193,10 @@ export function TopPanel({rt, rtIdx, time, setTime, onInit, onClear, onRaise, on
     {/* undo / redo */}
     <div className="toolbarGroup">
       <KeyInfo keyInfo={<><kbd>Ctrl</kbd>+<kbd>Z</kbd></>}>
-        <button title="undo"><UndoIcon fontSize="small"/></button>
+        <button title="undo" onClick={onUndo}><UndoIcon fontSize="small"/></button>
       </KeyInfo>
       <KeyInfo keyInfo={<><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd></>}>
-        <button title="redo"><RedoIcon fontSize="small"/></button>
+        <button title="redo" onClick={onRedo}><RedoIcon fontSize="small"/></button>
       </KeyInfo>
       &emsp;
     </div>
@@ -233,7 +212,7 @@ export function TopPanel({rt, rtIdx, time, setTime, onInit, onClear, onRaise, on
         ["transition", "transitions", <TrendingFlatIcon fontSize="small"/>, <kbd>T</kbd>],
         ["text", "text", <>&nbsp;T&nbsp;</>, <kbd>X</kbd>],
       ] as [InsertMode, string, ReactElement, ReactElement][]).map(([m, hint, buttonTxt, keyInfo]) =>
-        <KeyInfo keyInfo={keyInfo}>
+        <KeyInfo key={m} keyInfo={keyInfo}>
         <button
           title={"insert "+hint}
           disabled={mode===m}
@@ -294,33 +273,42 @@ export function TopPanel({rt, rtIdx, time, setTime, onInit, onClear, onRaise, on
     </div>
 
     {/* input events */}
-    <div className="toolbarGroup">
+    {/* <div className="toolbarGroup">
       {ast.inputEvents &&
         <>
           {ast.inputEvents.map(({event, paramName}) =>
-          <div className="toolbarGroup"><button title={`raise input event '${event}'`} disabled={!rt} onClick={() => {
-            // @ts-ignore
-            const param = document.getElementById(`input-${event}-param`)?.value;
-            let paramParsed;
-            try {
-              if (param) {
-                paramParsed = JSON.parse(param); // may throw
+            <div key={event+'/'+paramName} className="toolbarGroup">
+              <button
+                className="inputEvent"
+                title={`raise this input event`}
+                disabled={!rt}
+                onClick={() => {
+                  // @ts-ignore
+                  const param = document.getElementById(`input-${event}-param`)?.value;
+                  let paramParsed;
+                  try {
+                    if (param) {
+                      paramParsed = JSON.parse(param); // may throw
+                    }
+                  }
+                  catch (e) {
+                    alert("invalid json");
+                    return;
+                  }
+                  onRaise(event, paramParsed);
+                }}>
+                <BoltIcon fontSize="small"/>
+                {event}
+              </button>
+              {paramName &&
+                <><input id={`input-${event}-param`} style={{width: 20}} placeholder={paramName}/></>
               }
-            }
-            catch (e) {
-              alert("invalid json");
-              return;
-            }
-            onRaise(event, paramParsed);
-          }}>
-            <BoltIcon fontSize="small"/>
-            {event}
-          </button>
-          {paramName && <><input id={`input-${event}-param`} style={{width: 20}} placeholder={paramName}/></>}
-          &nbsp;</div>)}
+              &nbsp;
+            </div>
+          )}
         </>
       }
-    </div>
+    </div> */}
 
   </div>;
 }

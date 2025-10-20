@@ -14,14 +14,14 @@ function lineGeometryProps(size: Vec2D): [RountanglePart, object][] {
 export function RectHelper(props: { uid: string, size: Vec2D, selected: string[], highlight: RountanglePart[] }) {
   const geomProps = lineGeometryProps(props.size);
   return <>
-    {geomProps.map(([side, ps]) => <>
+    {geomProps.map(([side, ps]) => <g key={side}>
       {(props.selected.includes(side) || props.highlight.includes(side)) && <line className={""
             + (props.selected.includes(side) ? " selected" : "")
             + (props.highlight.includes(side) ? " highlight" : "")}
             {...ps} data-uid={props.uid} data-parts={side}/>
       }
       <line className="helper" {...ps} data-uid={props.uid} data-parts={side}/>
-    </>)}
+    </g>)}
 
     {/* The corner-helpers have the DOM class 'corner' added to them, because we ignore them when the user is making a selection. Only if the user clicks directly on them, do we select their respective parts. */}
     <circle

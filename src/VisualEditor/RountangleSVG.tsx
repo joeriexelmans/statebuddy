@@ -36,7 +36,5 @@ export function RountangleSVG(props: { rountangle: Rountangle; selected: string[
     <RectHelper uid={uid} size={minSize}
       selected={props.selected}
       highlight={props.highlight} />
-
-
   </g>;
 }

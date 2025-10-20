@@ -1,10 +1,9 @@
-details {
+/* details {
   padding-left: 20;
-  /* margin-left: 30; */
 }
 summary {
   margin-left: -20;
-}
+} */
 
 .runtimeState {
   padding-left: 4px;
@@ -39,10 +38,6 @@ summary {
   vertical-align: middle;
 }
 
-.toolbar *:not(label) {
-  /* vertical-align: bottom; */
-}
-
 .toolbar input {
   height: 20px;
 }
@@ -67,15 +62,11 @@ button.active {
   position: absolute;
   width: 100%;
   height: 100%;
-
   display: flex;
   justify-content: center;
   align-items: center;
-
   text-align: center;
-
   background-color: rgba(200,200,200,0.7);
- /* backdrop-filter: blur(2px) */
 }
 
 .modalInner {
@@ -85,4 +76,20 @@ button.active {
   background-color: white;
   max-height: 100vh;
   overflow: auto;
+}
+
+
+
+.line {
+    border-bottom: solid 1px #000;
+    height: 10px;
+    line-height: 20px;
+    text-align: left;
+    margin-bottom: 14px;
+}
+.line .content {
+    background-color: #FFF;
+    display: inline;
+    padding: 0 10px;
+    margin-left: 10px;
 }

@@ -1,6 +1,7 @@
+import { Dispatch, ReactElement, SetStateAction } from "react";
 import logo from "../../artwork/logo.svg";
 
-export function About(props: {setModal}) {
+export function About(props: {setModal: Dispatch<SetStateAction<ReactElement|null>>}) {
   return <div style={{maxWidth: '500px', padding: 4}}>
     <p><img src={logo} style={{maxWidth:'100%'}}/></p>
 
