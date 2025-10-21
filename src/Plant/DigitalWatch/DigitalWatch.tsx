@@ -1,5 +1,3 @@
-import { useRef } from "react";
-
 import imgNote from "./noteSmall.png";
 import imgWatch from "./watch.png";
 import imgWatchLight from "./watch-light.png";
@@ -29,8 +27,7 @@ type DigitalWatchProps = DigitalWatchState & {
 }
 
 export function DigitalWatch({light, h, m, s, alarm, callbacks}: DigitalWatchProps) {
-  console.log(light, h, m);
-  const twoDigits = (n: number) => ("0"+n.toString()).slice(-2);
+  const twoDigits = (n: number) => n < 0 ? "  " : ("0"+n.toString()).slice(-2);
   const hhmmss = `${twoDigits(h)}:${twoDigits(m)}:${twoDigits(s)}`;
 
   return <>
@@ -46,7 +43,7 @@ export function DigitalWatch({light, h, m, s, alarm, callbacks}: DigitalWatchPro
       : <image width="222" height="236" xlinkHref={imgWatch}/>
       }
 
-      <text x="111" y="126" dominant-baseline="middle" text-anchor="middle" fontFamily="digital-font" fontSize={28}>{hhmmss}</text>
+      <text x="111" y="126" dominant-baseline="middle" text-anchor="middle" fontFamily="digital-font" fontSize={28} style={{whiteSpace:'preserve'}}>{hhmmss}</text>
     
       <rect x="0" y="59" width="16" height="16" fill="#fff" fill-opacity="0" 
         onMouseDown={() => callbacks.onTopLeftPressed()}
@@ -117,11 +114,17 @@ export const DigitalWatchPlant: Plant<DigitalWatchProps> = {
     if (inputEvent.name === "setS") {
       return { ...state, s: inputEvent.param };
     }
-    if (inputEvent.name === "setLight") {
-      return { ...state, light: inputEvent.param };
+    if (inputEvent.name === "lightOn") {
+      return { ...state, light: true };
+    }
+    if (inputEvent.name === "lightOff") {
+      return { ...state, light: false };
     }
     if (inputEvent.name === "setAlarm") {
-      return { ...state, alarm: inputEvent.param };
+      return { ...state, alarm: true };
+    }
+    if (inputEvent.name === "unsetAlarm") {
+      return { ...state, alarm: false };
     }
     return state; // unknown event - ignore it
   },

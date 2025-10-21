@@ -474,6 +474,7 @@ export function VisualEditor({state, setState, ast, setAST, rt, errors, setError
           // @ts-ignore
           selection: [
           ...state.rountangles.map(r => ({uid: r.uid, parts: ["left", "top", "right", "bottom"]})),
+          ...state.diamonds.map(d => ({uid: d.uid, parts: ["left", "top", "right", "bottom"]})),
           ...state.arrows.map(a => ({uid: a.uid, parts: ["start", "end"]})),
           ...state.texts.map(t => ({uid: t.uid, parts: ["text"]})),
         ]

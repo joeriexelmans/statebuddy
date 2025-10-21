@@ -69,7 +69,7 @@ compare = sum:sum rest:((_ ("==" / "!=" / "<=" / ">=" / "<" / ">") _) compare)? 
     };
 }
 
-sum = prod:product rest:((_ ("+" / "-") _) sum)? {
+sum = prod:product rest:((_ ("+" / "-" / "||") _) sum)? {
 	if (rest === null) {
     	return prod;
     }
@@ -81,7 +81,7 @@ sum = prod:product rest:((_ ("+" / "-") _) sum)? {
     };
 }
 
-product = atom:unary rest:((_ ("*" / "/" / "%" ) _) product)? {
+product = atom:unary rest:((_ ("*" / "/" / "%" / "&&" ) _) product)? {
 	if (rest === null) {
     	return atom;
     }

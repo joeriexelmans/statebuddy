@@ -206,7 +206,7 @@ export function App() {
 
   const plantStates = [];
   let ps = plant.initial(e => {
-    // ...
+    onRaise(e.name, e.param);
   });
   for (let i=0; i<rt.length; i++) {
     const r = rt[i];

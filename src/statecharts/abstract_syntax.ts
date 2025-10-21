@@ -142,7 +142,7 @@ export function getPossibleTargets(t: Transition, ts: Map<string, Transition[]>)
 export function computeArena2(t: Transition, ts: Map<string, Transition[]>): OrState {
   const tgts = getPossibleTargets(t, ts);
   let lca = computeLCA2([t.src as ConcreteState, ...tgts]);
-  while (lca.kind !== "or") {
+  while (lca.kind !== "or" || lca === t.src || lca === t.tgt) {
     lca = lca.parent!;
   }
   return lca as OrState;

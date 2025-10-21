@@ -19,6 +19,7 @@ const BINARY_OPERATOR_MAP: Map<string, (a: any, b: any) => any> = new Map([
   [">=", (a, b) => a >= b],
   ["<", (a, b) => a < b],
   [">", (a, b) => a > b],
+  ["%", (a, b) => a % b],
 ]);
 
 export function evalExpr(expr: Expression, environment: Environment): any {

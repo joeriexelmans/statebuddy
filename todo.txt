@@ -35,6 +35,8 @@ TODO
 
 - usability stuff:
     - show internal events
+    - hovering over event in side panel should highlight all occurrences of the event in the SC
+    - hovering over error in bottom panel should highlight that rror in the SC
     - highlight selected shapes while making a selection
     - comments sometimes snap to transitions even if they belong to a state
     - highlight fired transitions
