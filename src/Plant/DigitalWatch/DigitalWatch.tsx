@@ -4,6 +4,8 @@ import imgNote from "./noteSmall.png";
 import imgWatch from "./watch.png";
 import imgWatchLight from "./watch-light.png";
 import digitalFont from "./digital-font.ttf";
+import { Plant } from "../Plant";
+import { RaisedEvent } from "@/statecharts/runtime_types";
 
 type DigitalWatchProps = {
   light: boolean;
@@ -65,4 +67,43 @@ export function DigitalWatch({light, h, m, s, alarm, callbacks}: DigitalWatchPro
       }
     </svg>
   </>;
+}
+
+export const DigitalWatchPlant: Plant<DigitalWatchProps> = {
+  inputEvents: [
+    { kind: "event", event: "setH", paramName: 'h' },
+    { kind: "event", event: "setM", paramName: 'm' },
+    { kind: "event", event: "setS", paramName: 's' },
+    { kind: "event", event: "setLight", paramName: 'lightOn'},
+    { kind: "event", event: "setAlarm", paramName: 'alarmOn'},
+  ],
+  outputEvents: [
+    { kind: "event", event: "topLeftPressed" },
+    { kind: "event", event: "topRightPressed" },
+    { kind: "event", event: "bottomRightPressed" },
+    { kind: "event", event: "bottomLeftPressed" },
+    { kind: "event", event: "topLeftReleased" },
+    { kind: "event", event: "topRightReleased" },
+    { kind: "event", event: "bottomRightReleased" },
+    { kind: "event", event: "bottomLeftReleased" },
+  ],
+  reducer: (inputEvent: RaisedEvent, state: DigitalWatchProps) => {
+    if (inputEvent.name === "setH") {
+      return { ...state, h: inputEvent.param };
+    }
+    if (inputEvent.name === "setM") {
+      return { ...state, m: inputEvent.param };
+    }
+    if (inputEvent.name === "setS") {
+      return { ...state, s: inputEvent.param };
+    }
+    if (inputEvent.name === "setLight") {
+      return { ...state, light: inputEvent.param };
+    }
+    if (inputEvent.name === "setAlarm") {
+      return { ...state, alarm: inputEvent.param };
+    }
+    return state; // unknown event - ignore it
+  },
+  render: DigitalWatch,
 }
