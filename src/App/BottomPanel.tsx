@@ -4,7 +4,6 @@ import { TraceableError } from "../statecharts/parser";
 import "./BottomPanel.css";
 
 import head from "../head.svg" ;
-import { usePersistentState } from "@/util/persistent_state";
 import { PersistentDetails } from "./PersistentDetails";
 import { DigitalWatch } from "@/Plant/DigitalWatch/DigitalWatch";
 

@@ -53,6 +53,16 @@ details > summary:hover {
   display: inline-block;
 }
 
+.internalEvent {
+  border: 1px black solid;
+  border-radius: 6px;
+  margin-left: 4px;
+  padding-left: 2px;
+  padding-right: 2px;
+  background-color: rgb(255, 218, 252);
+  display: inline-block;
+}
+
 .inputEvent {
   border: 1px black solid;
   border-radius: 6px;

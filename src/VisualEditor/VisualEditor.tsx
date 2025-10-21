@@ -79,6 +79,8 @@ export function VisualEditor({state, setState, ast, setAST, rt, errors, setError
 
   const [dragging, setDragging] = useState(false);
 
+  console.log(ast);
+
   // uid's of selected rountangles
   // const [selection, setSelection] = useState<Selection>([]);
   const selection = state.selection || [];
@@ -122,14 +124,13 @@ export function VisualEditor({state, setState, ast, setAST, rt, errors, setError
   useEffect(() => {
     // bit of a hacky way to force the animation on fired transitions to replay, if the new 'rt' contains the same fired transitions as the previous one
     requestAnimationFrame(() => {
-      console.log('rt changed');
       document.querySelectorAll(".arrow.fired").forEach(el => {
+        // @ts-ignore
         el.style.animation = 'none';
         requestAnimationFrame(() => {
+          // @ts-ignore
           el.style.animation = ''; 
         })
-        setTimeout(() => {
-        }, 10); // <- small timeout seems to be necessary or the animation won't restart
       });
     })
   }, [rt]);

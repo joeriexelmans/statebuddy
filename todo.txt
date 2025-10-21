@@ -28,6 +28,7 @@
 TODO
 
 - must have:
+    - event parameters on output / internal events
     - explicit order of:
         - outgoing transitions
         - regions in AND-state

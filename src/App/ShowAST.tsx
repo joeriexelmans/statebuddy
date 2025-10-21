@@ -106,6 +106,13 @@ export function ShowInputEvents({inputEvents, onRaise, disabled}: {inputEvents: 
   )
 }
 
+export function ShowInternalEvents(props: {internalEvents: EventTrigger[]}) {
+  return [...props.internalEvents].map(({event, paramName}) => {
+      return <><div className="internalEvent">{event}{paramName===undefined?<></>:<>({paramName})</>}</div> </>;
+    });
+}
+
+
 export function ShowOutputEvents(props: {outputEvents: Set<string>}) {
   return [...props.outputEvents].map(eventName => {
       return <><div className="outputEvent">{eventName}</div> </>;

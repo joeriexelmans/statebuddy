@@ -13,7 +13,7 @@ import Stack from "@mui/material/Stack";
 import Box from "@mui/material/Box";
 import { TopPanel } from "./TopPanel";
 import { RTHistory } from "./RTHistory";
-import { ShowAST, ShowInputEvents, ShowOutputEvents } from "./ShowAST";
+import { ShowAST, ShowInputEvents, ShowInternalEvents, ShowOutputEvents } from "./ShowAST";
 import { TraceableError } from "../statecharts/parser";
 import { getKeyHandler } from "./shortcut_handler";
 import { BottomPanel } from "./BottomPanel";
@@ -257,6 +257,10 @@ export function App() {
             <PersistentDetails localStorageKey="showInputEvents" initiallyOpen={true}>
               <summary>input events</summary>
               <ShowInputEvents inputEvents={ast.inputEvents} onRaise={onRaise} disabled={rtIdx===undefined}/>
+            </PersistentDetails>
+            <PersistentDetails localStorageKey="showInternalEvents" initiallyOpen={true}>
+              <summary>internal events</summary>
+              <ShowInternalEvents internalEvents={ast.internalEvents}/>
             </PersistentDetails>
             <PersistentDetails localStorageKey="showOutputEvents" initiallyOpen={true}>
               <summary>output events</summary>

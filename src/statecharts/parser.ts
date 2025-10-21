@@ -286,25 +286,6 @@ export function parseStatechart(state: VisualEditorState, conns: Connections): [
             errors.push({shapeUid: text.uid, message: "triggerless transitions only allowed on pseudo-states"});
           }
         }
-
-        // raise-actions
-        for (const action of parsed.actions) {
-          if (action.kind === "raise") {
-            const {event} = action;
-            if (event.startsWith("_")) {
-              // internalEvents.add(event);
-            }
-            else {
-              outputEvents.add(event);
-            }
-          }
-        }
-
-        // collect variables
-        variables = variables.union(findVariables(parsed.guard));
-        for (const action of parsed.actions) {
-          variables = variables.union(findVariablesAction(action));
-        }
       }
     }
     else {
@@ -332,6 +313,26 @@ export function parseStatechart(state: VisualEditorState, conns: Connections): [
       else if (parsed.kind === "comment") {
         // just append comments to their respective states
         belongsToState.comments.push([text.uid, parsed.text]);
+      }
+    }
+
+    if (parsed.kind === "transitionLabel") {
+      // collect output events
+      for (const action of parsed.actions) {
+        if (action.kind === "raise") {
+          const {event} = action;
+          if (event.startsWith("_")) {
+            // internalEvents.add({event: event});
+          }
+          else {
+            outputEvents.add(event);
+          }
+        }
+      }
+      // collect variables
+      variables = variables.union(findVariables(parsed.guard));
+      for (const action of parsed.actions) {
+        variables = variables.union(findVariablesAction(action));
       }
     }
   }
