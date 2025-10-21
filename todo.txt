@@ -1,0 +1,47 @@
+- implemented:
+    abstract syntax
+    - and/or states
+    - pseudo-states
+    - enter/exit trigger
+    - shallow/deep history
+    - transitions
+        - event/after trigger
+        - event parameters
+        - guard expressions
+    - action language
+        expressions:
+            - arithmetic, logic
+            - variable references
+            - function calls
+        actions:
+            - variable assignment
+            - raising output events
+    semantics
+    - initialization
+    - raising input events
+    - time:
+        - paused / step-wise
+        - (scaled) real time
+    - omniscient debugging
+
+
+TODO
+
+- must have:
+    - explicit order of:
+        - outgoing transitions
+        - regions in AND-state
+
+- usability stuff:
+    - highlight selected shapes while making a selection
+    - comments sometimes snap to transitions even if they belong to a state
+    - highlight fired transitions
+    - when there is a runtime error, e.g.,
+        - variable not found
+        - stuck in pseudo-state
+        - ???
+      don't crash and show the error
+
+- experimental features:
+    - multiverse execution history
+    - local scopes
