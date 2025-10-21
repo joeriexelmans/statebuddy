@@ -1,9 +1,10 @@
-import { Dispatch, ReactElement, SetStateAction, useState, KeyboardEvent } from "react";
+import { Dispatch, ReactElement, SetStateAction, useState, KeyboardEvent, useEffect, useRef } from "react";
 
 import { parse as parseLabel } from "../statecharts/label_parser";
 
 export function TextDialog(props: {setModal: Dispatch<SetStateAction<ReactElement|null>>, text: string, done: (newText: string|undefined) => void}) {
   const [text, setText] = useState(props.text);
+
   function onKeyDown(e: KeyboardEvent) {
     if (e.key === "Enter") {
       if (!e.shiftKey) {
@@ -19,19 +20,19 @@ export function TextDialog(props: {setModal: Dispatch<SetStateAction<ReactElemen
     e.stopPropagation();
   }
 
-  let error = "";
+  let parseError = "";
   try {
-    const parsed = parseLabel(text);
+    parseLabel(text);
   } catch (e) {
     // @ts-ignore
-    error = e.message;
+    parseError = e.message;
   }
 
   return <div onKeyDown={onKeyDown} style={{padding: 4}}>
     Text label:<br/>
-    <textarea autoFocus style={{fontFamily: 'Roboto', width:'calc(100%-10px)', height: 60}} onChange={e=>setText(e.target.value)} value={text}/>
+    <textarea autoFocus style={{fontFamily: 'Roboto', width: 400, height: 60}} onChange={e=>setText(e.target.value)} value={text} onFocus={e => e.target.select()}/>
     <br/>
-    <span style={{color: 'var(--error-color)'}}>{error}</span><br/>
+    <span style={{color: 'var(--error-color)'}}>{parseError}</span><br/>
     <p><kbd>Enter</kbd> to confirm. <kbd>Esc</kbd> to cancel.
     </p>
     (Tip: <kbd>Shift</kbd>+<kbd>Enter</kbd> to insert newline.)

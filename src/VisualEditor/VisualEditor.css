@@ -161,17 +161,18 @@ text.helper:hover {
 }
 .arrow.fired {
   stroke: rgb(160, 0, 168);
-  stroke-width: 4px;
-  /* animation: blinkTransition 1s infinite; */
+  stroke-width: 3px;
+  animation: blinkTransition 1s;
 }
 
 @keyframes blinkTransition {
-  100%,
   0% {
-    stroke: rgb(231, 111, 0);
+    stroke: rgb(255, 128, 9);
+    stroke-width: 6px;
+    filter: drop-shadow(0 0 5px rgba(255, 128, 9, 1));
   }
   100% {
-    stroke: rgb(160, 0, 168);
+    stroke: rgb(160 0 168);
   }
 }
 

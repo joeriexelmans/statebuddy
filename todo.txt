@@ -33,6 +33,7 @@ TODO
         - regions in AND-state
 
 - usability stuff:
+    - show internal events
     - highlight selected shapes while making a selection
     - comments sometimes snap to transitions even if they belong to a state
     - highlight fired transitions

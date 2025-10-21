@@ -35,7 +35,7 @@ export function DigitalWatch({light, h, m, s, alarm, callbacks}: DigitalWatchPro
         src: url(${digitalFont});
       }
     `}</style>
-    <svg version="1.1" width="222" height="236">
+    <svg version="1.1" width="222" height="236" style={{userSelect: 'none'}}>
       {light ?
         <image width="222" height="236" xlinkHref={imgWatchLight}/>
       : <image width="222" height="236" xlinkHref={imgWatch}/>

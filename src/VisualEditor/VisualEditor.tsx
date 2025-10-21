@@ -120,6 +120,21 @@ export function VisualEditor({state, setState, ast, setAST, rt, errors, setError
   }, []);
 
   useEffect(() => {
+    // bit of a hacky way to force the animation on fired transitions to replay, if the new 'rt' contains the same fired transitions as the previous one
+    requestAnimationFrame(() => {
+      console.log('rt changed');
+      document.querySelectorAll(".arrow.fired").forEach(el => {
+        el.style.animation = 'none';
+        requestAnimationFrame(() => {
+          el.style.animation = ''; 
+        })
+        setTimeout(() => {
+        }, 10); // <- small timeout seems to be necessary or the animation won't restart
+      });
+    })
+  }, [rt]);
+
+  useEffect(() => {
     const timeout = setTimeout(() => {
       const serializedState = JSON.stringify(state);
       const stateBuffer = new TextEncoder().encode(serializedState);
