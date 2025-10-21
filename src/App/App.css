@@ -77,19 +77,3 @@ button.active {
   max-height: 100vh;
   overflow: auto;
 }
-
-
-
-.line {
-    border-bottom: solid 1px #000;
-    height: 10px;
-    line-height: 20px;
-    text-align: left;
-    margin-bottom: 14px;
-}
-.line .content {
-    background-color: #FFF;
-    display: inline;
-    padding: 0 10px;
-    margin-left: 10px;
-}

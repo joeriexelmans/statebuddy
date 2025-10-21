@@ -39,9 +39,10 @@
   stroke: var(--error-color);
 }
 .rountangle.active {
-  stroke: rgb(192, 125, 0);
-  fill:rgb(255, 251, 244);
-  filter: drop-shadow( 0px 0px 3px rgba(192, 125, 0, 0.85));
+  stroke: rgb(205, 133, 0);
+  /* stroke: none; */
+  fill:rgb(255, 240, 214);
+  /* filter: drop-shadow( 2px 2px 2px rgba(124, 37, 10, 0.729)); */
 }
 
 .selected:hover:not(:active) {
@@ -159,11 +160,21 @@ text.helper:hover {
   stroke: var(--error-color);
 }
 .arrow.fired {
-  stroke: rgb(231, 111, 0);
-  stroke-width: 3px;
-
-  filter: drop-shadow( 0px 0px 5px rgb(186, 5, 195));
+  stroke: rgb(160, 0, 168);
+  stroke-width: 4px;
+  /* animation: blinkTransition 1s infinite; */
 }
+
+@keyframes blinkTransition {
+  100%,
+  0% {
+    stroke: rgb(231, 111, 0);
+  }
+  100% {
+    stroke: rgb(160, 0, 168);
+  }
+}
+
 
 text.error, tspan.error {
   fill: var(--error-color);
