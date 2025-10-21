@@ -81,7 +81,7 @@ sum = prod:product rest:((_ ("+" / "-") _) sum)? {
     };
 }
 
-product = atom:atom rest:((_ ("*" / "/") _) product)? {
+product = atom:unary rest:((_ ("*" / "/" / "%" ) _) product)? {
 	if (rest === null) {
     	return atom;
     }
@@ -91,6 +91,17 @@ product = atom:atom rest:((_ ("*" / "/") _) product)? {
         lhs: atom,
         rhs: rest[1],
     };
+}
+
+unary = operator:("!" / "-")? atom:atom {
+	if (operator === null) {
+       return atom;
+    }
+    return {
+    	kind: "unaryExpr",
+        operator,
+        expr: atom,
+    }
 }
 
 atom = fnCall / nested / literal / ref
