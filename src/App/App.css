@@ -78,6 +78,7 @@ button.active {
   align-items: center;
   text-align: center;
   background-color: rgba(200,200,200,0.7);
+  z-index: 1000;
 }
 
 .modalInner {
