@@ -314,7 +314,6 @@ export function App() {
                 )}
               </select>
               {rtIdx!==undefined && <plant.render {...plantStates[rtIdx]}/>}
-              {/* <DigitalWatch alarm={true} light={true}  h={12} m={30} s={33}/> */}
             </PersistentDetails>
           </Box>
         </Stack>

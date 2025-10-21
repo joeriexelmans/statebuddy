@@ -79,8 +79,6 @@ export function VisualEditor({state, setState, ast, setAST, rt, errors, setError
 
   const [dragging, setDragging] = useState(false);
 
-  console.log(ast);
-
   // uid's of selected rountangles
   // const [selection, setSelection] = useState<Selection>([]);
   const selection = state.selection || [];

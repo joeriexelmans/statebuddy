@@ -43,7 +43,7 @@ export function DigitalWatch({light, h, m, s, alarm, callbacks}: DigitalWatchPro
       : <image width="222" height="236" xlinkHref={imgWatch}/>
       }
 
-      <text x="111" y="126" dominant-baseline="middle" text-anchor="middle" fontFamily="digital-font" fontSize={28} style={{whiteSpace:'preserve'}}>{hhmmss}</text>
+      <text x="111" y="126" dominantBaseline="middle" textAnchor="middle" fontFamily="digital-font" fontSize={28} style={{whiteSpace:'preserve'}}>{hhmmss}</text>
     
       <rect x="0" y="59" width="16" height="16" fill="#fff" fill-opacity="0" 
         onMouseDown={() => callbacks.onTopLeftPressed()}

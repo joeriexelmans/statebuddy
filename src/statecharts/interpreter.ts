@@ -169,7 +169,6 @@ export function enterStates(simtime: number, state: ConcreteState, toEnter: Set<
 
 // exit the given state and all its active descendants
 export function exitCurrent(simtime: number, state: ConcreteState, rt: EnteredScope): ActionScope {
-  console.log('exitCurrent', state);
   let {enteredStates, history, ...actionScope} = rt;
 
   if (enteredStates.has(state.uid)) {
@@ -298,7 +297,7 @@ export function fireTransition(simtime: number, t: Transition, ts: Map<string, T
 
   const srcPath = computePath({ancestor: arena, descendant: t.src as ConcreteState}).reverse() as ConcreteState[];
 
-  console.log('arena:', arena, 'srcPath:', srcPath);
+  // console.log('arena:', arena, 'srcPath:', srcPath);
 
   // exit src and other states up to arena
   ({environment, history, ...rest} = exitCurrent(simtime, srcPath[0], {environment, enteredStates: mode, history, ...rest}))
