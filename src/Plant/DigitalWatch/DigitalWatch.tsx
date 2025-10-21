@@ -7,12 +7,15 @@ import digitalFont from "./digital-font.ttf";
 import { Plant } from "../Plant";
 import { RaisedEvent } from "@/statecharts/runtime_types";
 
-type DigitalWatchProps = {
+type DigitalWatchState = {
   light: boolean;
   h: number;
   m: number;
   s: number;
   alarm: boolean;
+}
+
+type DigitalWatchProps = DigitalWatchState & {
   callbacks: {
     onTopLeftPressed: () => void;
     onTopRightPressed: () => void;
@@ -26,7 +29,7 @@ type DigitalWatchProps = {
 }
 
 export function DigitalWatch({light, h, m, s, alarm, callbacks}: DigitalWatchProps) {
-  const refText = useRef(null);
+  console.log(light, h, m);
   const twoDigits = (n: number) => ("0"+n.toString()).slice(-2);
   const hhmmss = `${twoDigits(h)}:${twoDigits(m)}:${twoDigits(s)}`;
 
@@ -43,7 +46,7 @@ export function DigitalWatch({light, h, m, s, alarm, callbacks}: DigitalWatchPro
       : <image width="222" height="236" xlinkHref={imgWatch}/>
       }
 
-      <text ref={refText} x="111" y="126" dominant-baseline="middle" text-anchor="middle" fontFamily="digital-font" fontSize={28}>{hhmmss}</text>
+      <text x="111" y="126" dominant-baseline="middle" text-anchor="middle" fontFamily="digital-font" fontSize={28}>{hhmmss}</text>
     
       <rect x="0" y="59" width="16" height="16" fill="#fff" fill-opacity="0" 
         onMouseDown={() => callbacks.onTopLeftPressed()}
@@ -87,6 +90,23 @@ export const DigitalWatchPlant: Plant<DigitalWatchProps> = {
     { kind: "event", event: "bottomRightReleased" },
     { kind: "event", event: "bottomLeftReleased" },
   ],
+  initial: (raise: (event: RaisedEvent) => void) => ({
+    light: false,
+    alarm: false,
+    h: 12,
+    m: 0,
+    s: 0,
+    callbacks: {
+      onTopLeftPressed: () => raise({ name: "topLeftPressed" }),
+      onTopRightPressed: () => raise({ name: "topRightPressed" }),
+      onBottomRightPressed: () => raise({ name: "bottomRightPressed" }),
+      onBottomLeftPressed: () => raise({ name: "bottomLeftPressed" }),
+      onTopLeftReleased: () => raise({ name: "topLeftReleased" }),
+      onTopRightReleased: () => raise({ name: "topRightReleased" }),
+      onBottomRightReleased: () => raise({ name: "bottomRightReleased" }),
+      onBottomLeftReleased: () => raise({ name: "bottomLeftReleased" }),
+    },
+  }),
   reducer: (inputEvent: RaisedEvent, state: DigitalWatchProps) => {
     if (inputEvent.name === "setH") {
       return { ...state, h: inputEvent.param };

@@ -1,4 +1,4 @@
-import { Dispatch, ReactElement, SetStateAction, useEffect, useRef, useState } from "react";
+import { createElement, Dispatch, ReactElement, SetStateAction, useEffect, useRef, useState } from "react";
 
 import { emptyStatechart, Statechart } from "../statecharts/abstract_syntax";
 import { handleInputEvent, initialize } from "../statecharts/interpreter";
@@ -18,14 +18,22 @@ import { TraceableError } from "../statecharts/parser";
 import { getKeyHandler } from "./shortcut_handler";
 import { BottomPanel } from "./BottomPanel";
 import { emptyState } from "@/statecharts/concrete_syntax";
-import { usePersistentState } from "@/util/persistent_state";
 import { PersistentDetails } from "./PersistentDetails";
+import { DigitalWatch, DigitalWatchPlant } from "@/Plant/DigitalWatch/DigitalWatch";
+import { DummyPlant } from "@/Plant/Dummy/Dummy";
+import { Plant } from "@/Plant/Plant";
+import { usePersistentState } from "@/util/persistent_state";
 
 type EditHistory = {
   current: VisualEditorState,
   history: VisualEditorState[],
   future: VisualEditorState[],
 }
+
+const plants: [string, Plant<any>][] = [
+  ["dummy", DummyPlant],
+  ["digital watch", DigitalWatchPlant],
+]
 
 export function App() {
   const [mode, setMode] = useState<InsertMode>("and");
@@ -36,6 +44,9 @@ export function App() {
   const [rtIdx, setRTIdx] = useState<number|undefined>();
   const [time, setTime] = useState<TimeMode>({kind: "paused", simtime: 0});
   const [modal, setModal] = useState<ReactElement|null>(null);
+  const [plantName, setPlantName] = usePersistentState("plant", "dummy");
+
+  const plant = plants.find(([pn, p]) => pn === plantName)![1];
 
   const editorState = historyState.current;
   const setEditorState = (cb: (value: VisualEditorState) => VisualEditorState) => {
@@ -192,6 +203,19 @@ export function App() {
 
   const highlightTransitions = (rtIdx === undefined) ? [] : rt[rtIdx].firedTransitions;
 
+
+  const plantStates = [];
+  let ps = plant.initial(e => {
+    // ...
+  });
+  for (let i=0; i<rt.length; i++) {
+    const r = rt[i];
+    for (const o of r.outputEvents) {
+      ps = plant.reducer(o, ps);
+    }
+    plantStates.push(ps);
+  }
+
   return <>
 
   {/* Modal dialog */}
@@ -270,13 +294,28 @@ export function App() {
           <Box sx={{
             flexGrow:1,
             overflow:'auto',
-            minHeight: '75%', // <-- allows us to always scroll down the sidebar far enough such that the execution history is enough in view
+            minHeight: 400,
+            // minHeight: '75%', // <-- allows us to always scroll down the sidebar far enough such that the execution history is enough in view
             }}>
             <Box sx={{ height: '100%'}}>
               <div ref={refRightSideBar}>
                 <RTHistory {...{ast, rt, rtIdx, setTime, setRTIdx, refRightSideBar}}/>
               </div>
             </Box>
+          </Box>
+          <Box sx={{flex: '0 0 content'}}>
+            <PersistentDetails localStorageKey="showPlant" initiallyOpen={true}>
+              <summary>plant</summary>
+              <select
+                value={plantName}
+                onChange={e => setPlantName(() => e.target.value)}>
+                {plants.map(([plantName, p]) =>
+                  <option>{plantName}</option>
+                )}
+              </select>
+              {rtIdx!==undefined && <plant.render {...plantStates[rtIdx]}/>}
+              {/* <DigitalWatch alarm={true} light={true}  h={12} m={30} s={33}/> */}
+            </PersistentDetails>
           </Box>
         </Stack>
       </Box>
