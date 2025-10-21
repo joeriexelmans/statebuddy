@@ -22,10 +22,12 @@ export function BottomPanel(props: {errors: TraceableError[]}) {
       <div className="errorStatus">
         <PersistentDetails initiallyOpen={false} localStorageKey="errorsExpanded">
           <summary>{props.errors.length} errors</summary>
-          {props.errors.map(({message})=>
+          <div style={{maxHeight: '25vh', overflow: 'auto'}}>
+          {props.errors.map(({message, shapeUid})=>
             <div>
-              {message}
+              {shapeUid}: {message}
             </div>)}
+          </div>
         </PersistentDetails>
       </div>
     }
