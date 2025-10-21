@@ -54,6 +54,7 @@ function ShowMode(props: {mode: Mode, statechart: Statechart}) {
 
 function getActiveLeafs(mode: Mode, sc: Statechart) {
   return new Set([...mode].filter(uid =>
+    // @ts-ignore
     sc.uid2State.get(uid)?.children?.length === 0
   ));
 }

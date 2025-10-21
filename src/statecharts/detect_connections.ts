@@ -1,4 +1,5 @@
-import { findNearestArrow, findNearestHistory, findNearestSide, findRountangle, RountanglePart, VisualEditorState } from "./concrete_syntax";
+import { VisualEditorState } from "@/VisualEditor/VisualEditor";
+import { findNearestArrow, findNearestHistory, findNearestSide, findRountangle, RountanglePart } from "./concrete_syntax";
 
 export type Connections = {
   arrow2SideMap: Map<string,[{ uid: string; part: RountanglePart; } | undefined, { uid: string; part: RountanglePart; } | undefined]>,

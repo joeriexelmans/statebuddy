@@ -36,7 +36,7 @@ export function ShowAST(props: {root: ConcreteState | PseudoState, transitions: 
   const description = stateDescription(props.root);
   // const outgoing = props.transitions.get(props.root.uid) || [];
 
-  return <li>{props.root.kind}: {description}
+  return <li >{props.root.kind}: {description}
     {props.root.kind !== "pseudo" && props.root.children.length>0 &&
       <ul>
         {props.root.children.map(child => 
@@ -46,29 +46,29 @@ export function ShowAST(props: {root: ConcreteState | PseudoState, transitions: 
     }
   </li>;
 
-  return <details open={true} className={"stateTree" + (props.highlightActive.has(props.root.uid) ? " active" : "")}>
-    <summary>{props.root.kind}: {description}</summary>
+  // return <details open={true} className={"stateTree" + (props.highlightActive.has(props.root.uid) ? " active" : "")}>
+  //   <summary>{props.root.kind}: {description}</summary>
 
-    {/* {props.root.kind !== "pseudo" && props.root.entryActions.length>0 &&
-        props.root.entryActions.map(action =>
-          <div>&emsp;entry / <ShowAction action={action}/></div>
-        )
-    }
-    {props.root.kind !== "pseudo" && props.root.exitActions.length>0 &&
-        props.root.exitActions.map(action =>
-          <div>&emsp;exit / <ShowAction action={action}/></div>
-        )
-    } */}
+  //   {/* {props.root.kind !== "pseudo" && props.root.entryActions.length>0 &&
+  //       props.root.entryActions.map(action =>
+  //         <div>&emsp;entry / <ShowAction action={action}/></div>
+  //       )
+  //   }
+  //   {props.root.kind !== "pseudo" && props.root.exitActions.length>0 &&
+  //       props.root.exitActions.map(action =>
+  //         <div>&emsp;exit / <ShowAction action={action}/></div>
+  //       )
+  //   } */}
 
-    {props.root.kind !== "pseudo" && props.root.children.length>0 &&
-          props.root.children.map(child => 
-            <ShowAST key={child.uid} root={child} transitions={props.transitions} rt={props.rt} highlightActive={props.highlightActive} />
-          )
-    }
-    {/* {outgoing.length>0 &&
-        outgoing.map(transition => <>&emsp;<ShowTransition transition={transition}/><br/></>)
-    } */}
-  </details>;
+  //   {props.root.kind !== "pseudo" && props.root.children.length>0 &&
+  //         props.root.children.map(child => 
+  //           <ShowAST key={child.uid} root={child} transitions={props.transitions} rt={props.rt} highlightActive={props.highlightActive} />
+  //         )
+  //   }
+  //   {/* {outgoing.length>0 &&
+  //       outgoing.map(transition => <>&emsp;<ShowTransition transition={transition}/><br/></>)
+  //   } */}
+  // </details>;
 }
 
 import BoltIcon from '@mui/icons-material/Bolt';

@@ -29,7 +29,7 @@ export function TextDialog(props: {setModal: Dispatch<SetStateAction<ReactElemen
 
   return <div onKeyDown={onKeyDown} style={{padding: 4}}>
     Text label:<br/>
-    <textarea autoFocus style={{fontFamily: 'Roboto', width:'calc(100%-10px)', height: 60}} onChange={e=>setText(e.target.value)}>{text}</textarea>
+    <textarea autoFocus style={{fontFamily: 'Roboto', width:'calc(100%-10px)', height: 60}} onChange={e=>setText(e.target.value)} value={text}/>
     <br/>
     <span style={{color: 'var(--error-color)'}}>{error}</span><br/>
     <p><kbd>Enter</kbd> to confirm. <kbd>Esc</kbd> to cancel.

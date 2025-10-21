@@ -1,6 +1,6 @@
 import { Rect2D, Vec2D, Line2D, euclideanDistance, intersectLines, isWithin, lineBBox, subtractV2D } from "../VisualEditor/geometry";
 import { ARROW_SNAP_THRESHOLD, HISTORY_RADIUS, TEXT_SNAP_THRESHOLD } from "../VisualEditor/parameters";
-import {  sides } from "../VisualEditor/VisualEditor";
+import {  sides, VisualEditorState } from "../VisualEditor/VisualEditor";
 
 export type Rountangle = {
   uid: string;
@@ -25,15 +25,6 @@ export type History = {
   uid: string;
   kind: "shallow" | "deep";
   topLeft: Vec2D;
-};
-
-export type VisualEditorState = {
-  rountangles: Rountangle[];
-  texts: Text[];
-  arrows: Arrow[];
-  diamonds: Diamond[];
-  history: History[];
-  nextID: number;
 };
 
 // independently moveable parts of our shapes:

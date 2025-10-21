@@ -1,7 +1,7 @@
 import { Dispatch, ReactElement, SetStateAction, useEffect, useMemo, useRef, useState } from "react";
 
 import { Statechart } from "../statecharts/abstract_syntax";
-import { Arrow, ArrowPart, Diamond, History, Rountangle, RountanglePart, Text, VisualEditorState, emptyState } from "../statecharts/concrete_syntax";
+import { Arrow, ArrowPart, Diamond, History, Rountangle, RountanglePart, Text } from "../statecharts/concrete_syntax";
 import { parseStatechart, TraceableError } from "../statecharts/parser";
 import { BigStep } from "../statecharts/runtime_types";
 import { ArcDirection, Line2D, Rect2D, Vec2D, addV2D, arcDirection, area, getBottomSide, getLeftSide, getRightSide, getTopSide, isEntirelyWithin, normalizeRect, subtractV2D, transformLine, transformRect } from "./geometry";
@@ -15,6 +15,16 @@ import { HistorySVG } from "./HistorySVG";
 import { detectConnections } from "../statecharts/detect_connections";
 
 import "./VisualEditor.css";
+
+export type VisualEditorState = {
+  rountangles: Rountangle[];
+  texts: Text[];
+  arrows: Arrow[];
+  diamonds: Diamond[];
+  history: History[];
+  nextID: number;
+  selection: Selection;
+};
 
 
 type DraggingState = {
@@ -42,6 +52,7 @@ type HistorySelectable = {
   uid: string;
 }
 type Selectable = RountangleSelectable | ArrowSelectable | TextSelectable | HistorySelectable;
+
 type Selection = Selectable[];
 
 
@@ -74,7 +85,10 @@ export function VisualEditor({state, setState, ast, setAST, rt, errors, setError
   const [dragging, setDragging] = useState<DraggingState>(null);
 
   // uid's of selected rountangles
-  const [selection, setSelection] = useState<Selection>([]);
+  // const [selection, setSelection] = useState<Selection>([]);
+  const selection = state.selection || [];
+  const setSelection = (cb: (oldSelection: Selection) => Selection) =>
+    setState(oldState => ({...oldState, selection: cb(oldState.selection)}));
 
   // not null while the user is making a selection
   const [selectingState, setSelectingState] = useState<SelectingState>(null);
@@ -155,7 +169,6 @@ export function VisualEditor({state, setState, ast, setAST, rt, errors, setError
         const newID = state.nextID.toString();
         if (mode === "and" || mode === "or") {
           // insert rountangle
-          setSelection([{uid: newID, parts: ["bottom", "right"]}]);
           return {
             ...state,
             rountangles: [...state.rountangles, {
@@ -165,10 +178,10 @@ export function VisualEditor({state, setState, ast, setAST, rt, errors, setError
               kind: mode,
             }],
             nextID: state.nextID+1,
+            selection: [{uid: newID, parts: ["bottom", "right"]}],
           };
         }
         else if (mode === "pseudo") {
-          setSelection([{uid: newID, parts: ["bottom", "right"]}]);
           return {
             ...state,
             diamonds: [...state.diamonds, {
@@ -177,10 +190,10 @@ export function VisualEditor({state, setState, ast, setAST, rt, errors, setError
               size: MIN_ROUNTANGLE_SIZE,
             }],
             nextID: state.nextID+1,
+            selection: [{uid: newID, parts: ["bottom", "right"]}],
           };
         }
         else if (mode === "shallow" || mode === "deep") {
-          setSelection([{uid: newID, parts: ["history"]}]);
           return {
             ...state,
             history: [...state.history, {
@@ -189,10 +202,10 @@ export function VisualEditor({state, setState, ast, setAST, rt, errors, setError
               topLeft: currentPointer,
             }],
             nextID: state.nextID+1,
+            selection: [{uid: newID, parts: ["history"]}],
           }
         }
         else if (mode === "transition") {
-          setSelection([{uid: newID, parts: ["end"]}]);
           return {
             ...state,
             arrows: [...state.arrows, {
@@ -201,10 +214,10 @@ export function VisualEditor({state, setState, ast, setAST, rt, errors, setError
               end: currentPointer,
             }],
             nextID: state.nextID+1,
+            selection: [{uid: newID, parts: ["end"]}],
           }
         }
         else if (mode === "text") {
-          setSelection([{uid: newID, parts: ["text"]}]);
           return {
             ...state,
             texts: [...state.texts, {
@@ -213,6 +226,7 @@ export function VisualEditor({state, setState, ast, setAST, rt, errors, setError
               topLeft: currentPointer,
             }],
             nextID: state.nextID+1,
+            selection: [{uid: newID, parts: ["text"]}],
           }
         }
         throw new Error("unreachable, mode=" + mode); // shut up typescript
@@ -240,7 +254,7 @@ export function VisualEditor({state, setState, ast, setAST, rt, errors, setError
         }
         if (!allPartsInSelection) {
           if (e.target.classList.contains("helper")) {
-            setSelection([{uid, parts}] as Selection);
+            setSelection(() => [{uid, parts}] as Selection);
           }
           else {
             setDragging(null);
@@ -248,7 +262,7 @@ export function VisualEditor({state, setState, ast, setAST, rt, errors, setError
               topLeft: currentPointer,
               size: {x: 0, y: 0},
             });
-            setSelection([]);
+            setSelection(() => []);
             return;
           }
         }
@@ -267,7 +281,7 @@ export function VisualEditor({state, setState, ast, setAST, rt, errors, setError
       topLeft: currentPointer,
       size: {x: 0, y: 0},
     });
-    setSelection([]);
+    setSelection(() => []);
   };
 
   const onMouseMove = (e: {pageX: number, pageY: number, movementX: number, movementY: number}) => {
@@ -410,8 +424,8 @@ export function VisualEditor({state, setState, ast, setAST, rt, errors, setError
       history: state.history.filter(h => !selection.some(hs => hs.uid === h.uid)),
       arrows: state.arrows.filter(a => !selection.some(as => as.uid === a.uid)),
       texts: state.texts.filter(t => !selection.some(ts => ts.uid === t.uid)),
+      selection: [],
     }));
-    setSelection([]);
   }
 
   const onKeyDown = (e: KeyboardEvent) => {
@@ -564,15 +578,6 @@ export function VisualEditor({state, setState, ast, setAST, rt, errors, setError
           uid: (nextID++).toString(),
           topLeft: addV2D(h.topLeft, offset),
         }))
-        setState(state => ({
-          ...state,
-          rountangles: [...state.rountangles, ...copiedRountangles],
-          diamonds: [...state.diamonds, ...copiedDiamonds],
-          arrows: [...state.arrows, ...copiedArrows],
-          texts: [...state.texts, ...copiedTexts],
-          history: [...state.history, ...copiedHistories],
-          nextID: nextID,
-        }));
         // @ts-ignore
         const newSelection: Selection = [
           ...copiedRountangles.map(r => ({uid: r.uid, parts: ["left", "top", "right", "bottom"]})),
@@ -581,7 +586,16 @@ export function VisualEditor({state, setState, ast, setAST, rt, errors, setError
           ...copiedTexts.map(t => ({uid: t.uid, parts: ["text"]})),
           ...copiedHistories.map(h => ({uid: h.uid, parts: ["history"]})),
         ];
-        setSelection(newSelection);
+        setState(state => ({
+          ...state,
+          rountangles: [...state.rountangles, ...copiedRountangles],
+          diamonds: [...state.diamonds, ...copiedDiamonds],
+          arrows: [...state.arrows, ...copiedArrows],
+          texts: [...state.texts, ...copiedTexts],
+          history: [...state.history, ...copiedHistories],
+          nextID: nextID,
+          selection: newSelection,
+        }));
         // copyInternal(newSelection, e); // doesn't work
         e.preventDefault();
       }

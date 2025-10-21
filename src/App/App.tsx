@@ -3,7 +3,7 @@ import { Dispatch, ReactElement, SetStateAction, useEffect, useRef, useState } f
 import { emptyStatechart, Statechart } from "../statecharts/abstract_syntax";
 import { handleInputEvent, initialize } from "../statecharts/interpreter";
 import { BigStep, BigStepOutput } from "../statecharts/runtime_types";
-import { InsertMode, VisualEditor } from "../VisualEditor/VisualEditor";
+import { InsertMode, VisualEditor, VisualEditorState } from "../VisualEditor/VisualEditor";
 import { getSimTime, getWallClkDelay, TimeMode } from "../statecharts/time";
 
 import "../index.css";
@@ -17,7 +17,7 @@ import { ShowAST, ShowInputEvents, ShowOutputEvents } from "./ShowAST";
 import { TraceableError } from "../statecharts/parser";
 import { getKeyHandler } from "./shortcut_handler";
 import { BottomPanel } from "./BottomPanel";
-import { emptyState, VisualEditorState } from "@/statecharts/concrete_syntax";
+import { emptyState } from "@/statecharts/concrete_syntax";
 import { usePersistentState } from "@/util/persistent_state";
 
 type EditHistory = {
