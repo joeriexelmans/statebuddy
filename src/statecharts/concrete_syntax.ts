@@ -32,7 +32,7 @@ export type RountanglePart = "left" | "top" | "right" | "bottom";
 export type ArrowPart = "start" | "end";
 
 export const emptyState: VisualEditorState = {
-  rountangles: [], texts: [], arrows: [], diamonds: [], history: [], nextID: 0,
+  rountangles: [], texts: [], arrows: [], diamonds: [], history: [], nextID: 0, selection: [],
 };
 
 // used to find which rountangle an arrow connects to (src/tgt)

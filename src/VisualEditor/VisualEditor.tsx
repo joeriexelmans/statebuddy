@@ -1,4 +1,4 @@
-import { Dispatch, ReactElement, SetStateAction, useEffect, useMemo, useRef, useState } from "react";
+import { ClipboardEvent, Dispatch, ReactElement, SetStateAction, useEffect, useMemo, useRef, useState } from "react";
 
 import { Statechart } from "../statecharts/abstract_syntax";
 import { Arrow, ArrowPart, Diamond, History, Rountangle, RountanglePart, Text } from "../statecharts/concrete_syntax";
@@ -25,11 +25,6 @@ export type VisualEditorState = {
   nextID: number;
   selection: Selection;
 };
-
-
-type DraggingState = {
-  lastMousePos: Vec2D;
-} | null; // null means: not dragging
 
 type SelectingState = Rect2D | null;
 
@@ -82,7 +77,7 @@ type VisualEditorProps = {
 
 export function VisualEditor({state, setState, ast, setAST, rt, errors, setErrors, mode, highlightActive, highlightTransitions, setModal, makeCheckPoint}: VisualEditorProps) {
 
-  const [dragging, setDragging] = useState<DraggingState>(null);
+  const [dragging, setDragging] = useState(false);
 
   // uid's of selected rountangles
   // const [selection, setSelection] = useState<Selection>([]);
@@ -231,9 +226,7 @@ export function VisualEditor({state, setState, ast, setAST, rt, errors, setError
         }
         throw new Error("unreachable, mode=" + mode); // shut up typescript
       });
-      setDragging({
-        lastMousePos: currentPointer,
-      });
+      setDragging(true);
       return;
     }
 
@@ -257,7 +250,7 @@ export function VisualEditor({state, setState, ast, setAST, rt, errors, setError
             setSelection(() => [{uid, parts}] as Selection);
           }
           else {
-            setDragging(null);
+            setDragging(false);
             setSelectingState({
               topLeft: currentPointer,
               size: {x: 0, y: 0},
@@ -268,15 +261,13 @@ export function VisualEditor({state, setState, ast, setAST, rt, errors, setError
         }
 
         // start dragging
-        setDragging({
-          lastMousePos: currentPointer,
-        });
+        setDragging(true);
         return;
       }
     }
 
     // otherwise, just start making a selection
-    setDragging(null);
+    setDragging(false);
     setSelectingState({
       topLeft: currentPointer,
       size: {x: 0, y: 0},
@@ -343,7 +334,7 @@ export function VisualEditor({state, setState, ast, setAST, rt, errors, setError
           }
         }),
       }));
-      setDragging({lastMousePos: currentPointer});
+      setDragging(true);
     }
     else if (selectingState) {
       setSelectingState(ss => {
@@ -358,7 +349,7 @@ export function VisualEditor({state, setState, ast, setAST, rt, errors, setError
 
   const onMouseUp = (e: {target: any, pageX: number, pageY: number}) => {
     if (dragging) {
-      setDragging(null);
+      setDragging(false);
       // do not persist sizes smaller than 40x40
       setState(state => {
         return {
@@ -416,14 +407,14 @@ export function VisualEditor({state, setState, ast, setAST, rt, errors, setError
     setSelectingState(null); // no longer making a selection
   };
 
-  function deleteShapes(selection: Selection) {
+  function deleteSelection() {
     setState(state => ({
       ...state,
-      rountangles: state.rountangles.filter(r => !selection.some(rs => rs.uid === r.uid)),
-      diamonds: state.diamonds.filter(d => !selection.some(ds => ds.uid === d.uid)),
-      history: state.history.filter(h => !selection.some(hs => hs.uid === h.uid)),
-      arrows: state.arrows.filter(a => !selection.some(as => as.uid === a.uid)),
-      texts: state.texts.filter(t => !selection.some(ts => ts.uid === t.uid)),
+      rountangles: state.rountangles.filter(r => !state.selection.some(rs => rs.uid === r.uid)),
+      diamonds: state.diamonds.filter(d => !state.selection.some(ds => ds.uid === d.uid)),
+      history: state.history.filter(h => !state.selection.some(hs => hs.uid === h.uid)),
+      arrows: state.arrows.filter(a => !state.selection.some(as => as.uid === a.uid)),
+      texts: state.texts.filter(t => !state.selection.some(ts => ts.uid === t.uid)),
       selection: [],
     }));
   }
@@ -431,30 +422,22 @@ export function VisualEditor({state, setState, ast, setAST, rt, errors, setError
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.key === "Delete") {
       // delete selection
-      if (selection.length > 0) {
-        makeCheckPoint();
-        deleteShapes(selection);
-      }
+      makeCheckPoint();
+      deleteSelection();
     }
     if (e.key === "o") {
       // selected states become OR-states
-      setSelection(selection => {
-        setState(state => ({
-          ...state,
-          rountangles: state.rountangles.map(r => selection.some(rs => rs.uid === r.uid) ? ({...r, kind: "or"}) : r),
-        }));
-        return selection;
-      })
+      setState(state => ({
+        ...state,
+        rountangles: state.rountangles.map(r => state.selection.some(rs => rs.uid === r.uid) ? ({...r, kind: "or"}) : r),
+      }));
     }
     if (e.key === "a") {
       // selected states become AND-states
-      setSelection(selection => {
-        setState(state => ({
-          ...state,
-          rountangles: state.rountangles.map(r => selection.some(rs => rs.uid === r.uid) ? ({...r, kind: "and"}) : r),
-        }));
-        return selection;
-      });
+      setState(state => ({
+        ...state,
+        rountangles: state.rountangles.map(r => state.selection.some(rs => rs.uid === r.uid) ? ({...r, kind: "and"}) : r),
+      }));
     }
     // if (e.key === "p") {
     //   // selected states become pseudo-states
@@ -469,13 +452,16 @@ export function VisualEditor({state, setState, ast, setAST, rt, errors, setError
     if (e.ctrlKey) {
       if (e.key === "a") {
         e.preventDefault();
-        setDragging(null);
-        // @ts-ignore
-        setSelection([
+        setDragging(false);
+        setState(state => ({
+          ...state,
+          // @ts-ignore
+          selection: [
           ...state.rountangles.map(r => ({uid: r.uid, parts: ["left", "top", "right", "bottom"]})),
           ...state.arrows.map(a => ({uid: a.uid, parts: ["start", "end"]})),
           ...state.texts.map(t => ({uid: t.uid, parts: ["text"]})),
-        ]);
+        ]
+        }))
       }
     }
   };
@@ -630,7 +616,7 @@ export function VisualEditor({state, setState, ast, setAST, rt, errors, setError
   function onCut(e: ClipboardEvent) {
     if (selection.length > 0) {
       copyInternal(selection, e);
-      deleteShapes(selection);
+      deleteSelection();
       e.preventDefault();
     }
   }
@@ -666,16 +652,13 @@ export function VisualEditor({state, setState, ast, setAST, rt, errors, setError
   const rootErrors = errors.filter(({shapeUid}) => shapeUid === "root").map(({message}) => message);
 
   return <svg width="4000px" height="4000px"
-      className={"svgCanvas"+(active.has("root")?" active":"")+(dragging!==null?" dragging":"")}
+      className={"svgCanvas"+(active.has("root")?" active":"")+(dragging ? " dragging" : "")}
       onMouseDown={onMouseDown}
       onContextMenu={e => e.preventDefault()}
       ref={refSVG}
 
-      // @ts-ignore
       onCopy={onCopy}
-      // @ts-ignore
       onPaste={onPaste}
-      // @ts-ignore
       onCut={onCut}
     >
       <defs>

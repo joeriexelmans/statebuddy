@@ -18,7 +18,11 @@ details:open {
 
 details > summary:hover {
   background-color: #eee;
-  cursor: pointer;
+  cursor: default;
+}
+
+.errorStatus details > summary:hover {
+  background-color: rgb(102, 0, 0);
 }
 
 .stateTree > * { 
@@ -35,9 +39,9 @@ details > summary:hover {
 }
 
 /* if <details> has no children (besides the obvious <summary> child), then hide the marker */
-details:not(:has(:not(summary))) > summary::marker {
+/* details:not(:has(:not(summary))) > summary::marker {
   content: "    ";
-}
+} */
 
 .outputEvent {
   border: 1px black solid;

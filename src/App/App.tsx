@@ -19,6 +19,7 @@ import { getKeyHandler } from "./shortcut_handler";
 import { BottomPanel } from "./BottomPanel";
 import { emptyState } from "@/statecharts/concrete_syntax";
 import { usePersistentState } from "@/util/persistent_state";
+import { PersistentDetails } from "./PersistentDetails";
 
 type EditHistory = {
   current: VisualEditorState,
@@ -191,10 +192,6 @@ export function App() {
 
   const highlightTransitions = (rtIdx === undefined) ? [] : rt[rtIdx].firedTransitions;
 
-  const [showStateTree, setShowStateTree] = usePersistentState("showStateTree", true);
-  const [showInputEvents, setShowInputEvents] = usePersistentState("showInputEvents", true);
-  const [showOutputEvents, setShowOutputEvents] = usePersistentState("showOutputEvents", true);
-
   return <>
 
   {/* Modal dialog */}
@@ -245,25 +242,22 @@ export function App() {
       }}>
         <Stack sx={{height:'100%'}}>
           <Box className="onTop" sx={{flex: '0 0 content', backgroundColor: ''}}>
-            <details open={showStateTree}
-              onToggle={e => setShowStateTree(e.newState === "open")}>
+            <PersistentDetails localStorageKey="showStateTree" initiallyOpen={true}>
               <summary>state tree</summary>
               <ul>
                 <ShowAST {...{...ast, rt: rt.at(rtIdx!), highlightActive}}/>
               </ul>
-            </details>
+            </PersistentDetails>
             <hr/>
-            <details open={showInputEvents}
-              onToggle={e => setShowInputEvents(e.newState === "open")}>
+            <PersistentDetails localStorageKey="showInputEvents" initiallyOpen={true}>
               <summary>input events</summary>
               <ShowInputEvents inputEvents={ast.inputEvents} onRaise={onRaise} disabled={rtIdx===undefined}/>
-            </details>
+            </PersistentDetails>
             <hr/>
-            <details open={showOutputEvents}
-              onToggle={e => setShowOutputEvents(e.newState === "open")}>
+            <PersistentDetails localStorageKey="showOutputEvents" initiallyOpen={true}>
               <summary>output events</summary>
               <ShowOutputEvents outputEvents={ast.outputEvents}/>
-            </details>
+            </PersistentDetails>
           </Box>
           <Box sx={{
             flexGrow:1,
