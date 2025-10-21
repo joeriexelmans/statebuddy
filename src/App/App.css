@@ -5,12 +5,23 @@ summary {
   margin-left: -20;
 } */
 
+details:has(+ details) {
+  border-bottom: 1px lightgrey solid;
+}
+
 .runtimeState {
-  padding-left: 4px;
+  padding: 4px;
+  /* padding-left: 4px;
   padding-right: 4px;
   padding-top: 2px;
-  padding-bottom: 2px;
-  margin-top: 2px;
+  padding-bottom: 2px; */
+}
+
+.runtimeState:has(+.runtimeState) {
+  border-bottom: 1px lightgrey solid;
+}
+.runtimeState:has(+.runtimeState.active) {
+  border-bottom: 0;
 }
 
 .runtimeState:hover {
@@ -22,7 +33,7 @@ summary {
   /* background-color: rgba(255, 140, 0, 0.2); */
   background-color: rgba(0,0,255,0.2);
   /* border: solid black 3px; */
-  border: solid blue 2px;
+  border: solid blue 1px;
 }
 /* details:not(:has(details)) > summary::marker {
   color: white;

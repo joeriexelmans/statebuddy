@@ -21,8 +21,9 @@ export function RTHistory({rt, rtIdx, ast, setRTIdx, setTime, refRightSideBar}: 
 
   return <div>
     {rt.map((r, idx) => <>
-    <hr/>
-    <div className={"runtimeState"+(idx===rtIdx?" active":"")} onClick={() => gotoRt(idx, r.simtime)}>
+    <div
+      className={"runtimeState"+(idx===rtIdx?" active":"")}
+      onClick={() => gotoRt(idx, r.simtime)}>
       <div>
         {formatTime(r.simtime)}
         &emsp;
@@ -33,6 +34,7 @@ export function RTHistory({rt, rtIdx, ast, setRTIdx, setTime, refRightSideBar}: 
       {r.outputEvents.length>0 && <>^
         {r.outputEvents.map((e:RaisedEvent) => <span className="outputEvent">{e.name}</span>)}
       </>}
+    {/* <hr/> */}
     </div></>)}
   </div>;
 }

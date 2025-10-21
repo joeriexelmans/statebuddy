@@ -83,15 +83,17 @@ button.inputEvent:active:not(:disabled) {
   display: inline-block;
 }
 
-hr {
+/* hr {
   display: block;
   height: 1px;
   border: 0;
   border-top: 1px solid #ccc;
   margin: 0;
-  margin-bottom: -1px;
+  margin-top: -1px;
+  margin-bottom: -5px;
   padding: 0;
-}
+  z-index: -1;
+} */
 
 ul {
   list-style-type: circle;
@@ -101,7 +103,7 @@ ul {
   /* list-style-position: ; */
 }
 
-.onTop {
-  box-shadow: 0 -10px 20px 10px rgba(0, 0, 0, 0.75);
+.shadowBelow {
+  box-shadow: 0 -15px 15px 15px rgba(0, 0, 0, 0.4);
   z-index: 1;
 }

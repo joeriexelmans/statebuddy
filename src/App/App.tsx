@@ -212,13 +212,16 @@ export function App() {
       <Box sx={{flexGrow:1, overflow: "auto"}}>
         <Stack sx={{height:'100%'}}>
           {/* Top bar */}
-          <Box sx={{
-            display: "flex",
-            borderBottom: 1,
-            borderColor: "divider",
-            alignItems: 'center',
-            flex: '0 0 content',
-          }}>
+          <Box
+            className="shadowBelow"
+            sx={{
+              display: "flex",
+              borderBottom: 1,
+              borderColor: "divider",
+              alignItems: 'center',
+              flex: '0 0 content',
+            }}
+          >
             <TopPanel
               rt={rtIdx === undefined ? undefined : rt[rtIdx]}
               {...{rtIdx, ast, time, setTime, onUndo, onRedo, onInit, onClear, onRaise, onBack, mode, setMode, setModal}}
@@ -241,19 +244,20 @@ export function App() {
         maxWidth: 'min(300px, 30vw)',
       }}>
         <Stack sx={{height:'100%'}}>
-          <Box className="onTop" sx={{flex: '0 0 content', backgroundColor: ''}}>
+          <Box
+            className="shadowBelow"
+            sx={{flex: '0 0 content', backgroundColor: ''}}
+          >
             <PersistentDetails localStorageKey="showStateTree" initiallyOpen={true}>
               <summary>state tree</summary>
               <ul>
                 <ShowAST {...{...ast, rt: rt.at(rtIdx!), highlightActive}}/>
               </ul>
             </PersistentDetails>
-            <hr/>
             <PersistentDetails localStorageKey="showInputEvents" initiallyOpen={true}>
               <summary>input events</summary>
               <ShowInputEvents inputEvents={ast.inputEvents} onRaise={onRaise} disabled={rtIdx===undefined}/>
             </PersistentDetails>
-            <hr/>
             <PersistentDetails localStorageKey="showOutputEvents" initiallyOpen={true}>
               <summary>output events</summary>
               <ShowOutputEvents outputEvents={ast.outputEvents}/>
