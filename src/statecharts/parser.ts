@@ -1,4 +1,4 @@
-import {  ConcreteState, HistoryState, OrState, PseudoState, Statechart, Transition } from "./abstract_syntax";
+import {  ConcreteState, HistoryState, OrState, PseudoState, Statechart, stateDescription, Transition } from "./abstract_syntax";
 import { Rountangle } from "./concrete_syntax";
 import { isEntirelyWithin, Rect2D } from "../VisualEditor/geometry";
 import { Action, EventTrigger, Expression, ParsedText } from "./label_ast";
@@ -349,6 +349,13 @@ export function parseStatechart(state: VisualEditorState, conns: Connections): [
         shapeUid: transition.uid,
         message: "multiple labels",
       });
+    }
+  }
+
+  // sort children by their label
+  for (const state of uid2State.values()) {
+    if (state.kind === "and") {
+      state.children.sort((a, b) => stateDescription(a).localeCompare(stateDescription(b)));
     }
   }
 

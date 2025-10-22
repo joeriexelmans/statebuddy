@@ -7,7 +7,10 @@ export function initialize(ast: Statechart): BigStepOutput {
   let history = new Map();
   let enteredStates, environment, rest;
   ({enteredStates, environment, history, ...rest} = enterDefault(0, ast.root, {
-    environment: new Environment([new Map([["_timers", []]])]),
+    environment: new Environment([new Map<string, any>([
+      ["_timers", []],
+      ["_log", (str: string) => console.log(str)],
+    ])]),
     history,
     ...initialRaised,
   }));
