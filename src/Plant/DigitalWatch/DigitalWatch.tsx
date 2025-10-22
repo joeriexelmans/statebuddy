@@ -1,6 +1,5 @@
 import imgNote from "./noteSmall.png";
 import imgWatch from "./watch.png";
-import imgWatchLight from "./watch-light.png";
 import digitalFont from "./digital-font.ttf";
 import { Plant } from "../Plant";
 import { RaisedEvent } from "@/statecharts/runtime_types";
@@ -38,10 +37,10 @@ export function DigitalWatch({light, h, m, s, alarm, callbacks}: DigitalWatchPro
       }
     `}</style>
     <svg version="1.1" width="222" height="236" style={{userSelect: 'none'}}>
-      {light ?
-        <image width="222" height="236" xlinkHref={imgWatchLight}/>
-      : <image width="222" height="236" xlinkHref={imgWatch}/>
-      }
+      <image width="222" height="236" xlinkHref={imgWatch}/>
+
+      {light &&
+        <rect x={52} y={98} width={120} height={52} fill="#deeaffff" rx={5} ry={5} />}
 
       <text x="111" y="126" dominantBaseline="middle" textAnchor="middle" fontFamily="digital-font" fontSize={28} style={{whiteSpace:'preserve'}}>{hhmmss}</text>
     
