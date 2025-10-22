@@ -24,6 +24,7 @@ import { KeyInfoHidden, KeyInfoVisible } from "./KeyInfo";
 import { About } from "./About";
 import { usePersistentState } from "@/util/persistent_state";
 import { RountangleIcon, PseudoStateIcon, HistoryIcon } from "./Icons";
+import { ZOOM_MAX, ZOOM_MIN, ZOOM_STEP } from "@/VisualEditor/parameters";
 
 export type TopPanelProps = {
   rt?: BigStep,
@@ -136,10 +137,10 @@ export function TopPanel({rt, rtIdx, time, setTime, onUndo, onRedo, onInit, onCl
   }, [time]);
 
   function onZoomIn() {
-    setZoom(zoom => Math.min(zoom * 1.25, (1.25)**6));
+    setZoom(zoom => Math.min(zoom * ZOOM_STEP, ZOOM_MAX));
   }
   function onZoomOut() {
-    setZoom(zoom => Math.max(zoom / 1.25, (1/1.25)**6));
+    setZoom(zoom => Math.max(zoom / ZOOM_STEP, ZOOM_MIN));
   }
 
   function onChangePaused(paused: boolean, wallclktime: number) {
@@ -211,11 +212,11 @@ export function TopPanel({rt, rtIdx, time, setTime, onUndo, onRedo, onInit, onCl
     {/* zoom */}
     <div className="toolbarGroup">
       <KeyInfo keyInfo={<><kbd>Ctrl</kbd>+<kbd>-</kbd></>}>
-        <button title="zoom out" onClick={onZoomOut}><ZoomOutIcon fontSize="small"/></button>
+        <button title="zoom out" onClick={onZoomOut} disabled={zoom <= ZOOM_MIN}><ZoomOutIcon fontSize="small"/></button>
       </KeyInfo>
       <input title="current zoom level" value={zoom.toFixed(3)} style={{width:40}} readOnly/>
       <KeyInfo keyInfo={<><kbd>Ctrl</kbd>+<kbd>+</kbd></>}>
-        <button title="zoom in" onClick={onZoomIn}><ZoomInIcon fontSize="small"/></button>
+        <button title="zoom in" onClick={onZoomIn} disabled={zoom >= ZOOM_MAX}><ZoomInIcon fontSize="small"/></button>
       </KeyInfo>
       &emsp;
     </div>
