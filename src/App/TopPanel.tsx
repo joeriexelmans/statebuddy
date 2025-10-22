@@ -43,12 +43,13 @@ export type TopPanelProps = {
   setModal: Dispatch<SetStateAction<ReactElement|null>>,
   zoom: number,
   setZoom: Dispatch<SetStateAction<number>>,
+  showKeys: boolean,
+  setShowKeys: Dispatch<SetStateAction<boolean>>,
 }
 
-export function TopPanel({rt, rtIdx, time, setTime, onUndo, onRedo, onInit, onClear, onRaise, onBack, ast, mode, setMode, setModal, zoom, setZoom}: TopPanelProps) {
+export function TopPanel({rt, rtIdx, time, setTime, onUndo, onRedo, onInit, onClear, onRaise, onBack, ast, mode, setMode, setModal, zoom, setZoom, showKeys, setShowKeys}: TopPanelProps) {
   const [displayTime, setDisplayTime] = useState("0.000");
   const [timescale, setTimescale] = useState(1);
-  const [showKeys, setShowKeys] = usePersistentState("shortcuts", true);
 
   const KeyInfo = showKeys ? KeyInfoVisible : KeyInfoHidden;
 

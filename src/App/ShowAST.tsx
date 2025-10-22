@@ -72,38 +72,60 @@ export function ShowAST(props: {root: ConcreteState | PseudoState, transitions: 
 }
 
 import BoltIcon from '@mui/icons-material/Bolt';
+import { KeyInfoHidden, KeyInfoVisible } from "./KeyInfo";
+import { useEffect } from "react";
 
-export function ShowInputEvents({inputEvents, onRaise, disabled}: {inputEvents: EventTrigger[], onRaise: (e: string, p: any) => void, disabled: boolean}) {
-  return inputEvents.map(({event, paramName}) =>
-    <div key={event+'/'+paramName} className="toolbarGroup">
-      <button
-        className="inputEvent"
-        title={`raise this input event`}
-        disabled={disabled}
-        onClick={() => {
-          // @ts-ignore
-          const param = document.getElementById(`input-${event}-param`)?.value;
-          let paramParsed;
-          try {
-            if (param) {
-              paramParsed = JSON.parse(param); // may throw
-            }
-          }
-          catch (e) {
-            alert("invalid json");
-            return;
-          }
-          onRaise(event, paramParsed);
-        }}>
-        <BoltIcon fontSize="small"/>
-        {event}
-      </button>
+export function ShowInputEvents({inputEvents, onRaise, disabled, showKeys}: {inputEvents: EventTrigger[], onRaise: (e: string, p: any) => void, disabled: boolean, showKeys: boolean}) {
+  const raiseHandlers = inputEvents.map(({event}) => {
+    return () => {
+      // @ts-ignore
+      const param = document.getElementById(`input-${event}-param`)?.value;
+      let paramParsed;
+      try {
+        if (param) {
+          paramParsed = JSON.parse(param); // may throw
+        }
+      }
+      catch (e) {
+        alert("invalid json");
+        return;
+      }
+      onRaise(event, paramParsed);
+    };
+  });
+  const onKeyDown = (e: KeyboardEvent) => {
+    const n = (parseInt(e.key)+9) % 10;
+    if (raiseHandlers[n] !== undefined) {
+      raiseHandlers[n]();
+      e.stopPropagation();
+      e.preventDefault();
+    }
+  }
+  useEffect(() => {
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [raiseHandlers]);
+  const KeyInfo = showKeys ? KeyInfoVisible : KeyInfoHidden;
+  return inputEvents.map(({event, paramName}, i) => {
+    const shortcut = (i+1)%10;
+    const KI = (i <= 10) ? KeyInfo : KeyInfoHidden;
+    return <div key={event+'/'+paramName} className="toolbarGroup">
+      <KI keyInfo={<kbd>{shortcut}</kbd>}>
+        <button
+          className="inputEvent"
+          title={`raise this input event`}
+          disabled={disabled}
+          onClick={raiseHandlers[i]}>
+          <BoltIcon fontSize="small"/>
+          {event}
+        </button>
+      </KI>
       {paramName &&
         <><input id={`input-${event}-param`} style={{width: 20}} placeholder={paramName}/></>
       }
       &nbsp;
-    </div>
-  )
+    </div>;
+  })
 }
 
 export function ShowInternalEvents(props: {internalEvents: EventTrigger[]}) {

@@ -44,8 +44,10 @@ export function App() {
   const [rtIdx, setRTIdx] = useState<number|undefined>();
   const [time, setTime] = useState<TimeMode>({kind: "paused", simtime: 0});
   const [modal, setModal] = useState<ReactElement|null>(null);
+
   const [plantName, setPlantName] = usePersistentState("plant", "dummy");
   const [zoom, setZoom] = usePersistentState("zoom", 1);
+  const [showKeys, setShowKeys] = usePersistentState("shortcuts", true);
 
   const plant = plants.find(([pn, p]) => pn === plantName)![1];
 
@@ -249,7 +251,7 @@ export function App() {
           >
             <TopPanel
               rt={rtIdx === undefined ? undefined : rt[rtIdx]}
-              {...{rtIdx, ast, time, setTime, onUndo, onRedo, onInit, onClear, onRaise, onBack, mode, setMode, setModal, zoom, setZoom}}
+              {...{rtIdx, ast, time, setTime, onUndo, onRedo, onInit, onClear, onRaise, onBack, mode, setMode, setModal, zoom, setZoom, showKeys, setShowKeys}}
             />
           </Box>
           {/* Below the top bar: Editor */}
@@ -281,7 +283,7 @@ export function App() {
             </PersistentDetails>
             <PersistentDetails localStorageKey="showInputEvents" initiallyOpen={true}>
               <summary>input events</summary>
-              <ShowInputEvents inputEvents={ast.inputEvents} onRaise={onRaise} disabled={rtIdx===undefined}/>
+              <ShowInputEvents inputEvents={ast.inputEvents} onRaise={onRaise} disabled={rtIdx===undefined} showKeys={showKeys}/>
             </PersistentDetails>
             <PersistentDetails localStorageKey="showInternalEvents" initiallyOpen={true}>
               <summary>internal events</summary>
