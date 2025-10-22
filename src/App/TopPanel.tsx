@@ -136,10 +136,10 @@ export function TopPanel({rt, rtIdx, time, setTime, onUndo, onRedo, onInit, onCl
   }, [time]);
 
   function onZoomIn() {
-    setZoom(zoom => Math.min(zoom * 1.25, 4));
+    setZoom(zoom => Math.min(zoom * 1.25, (1.25)**6));
   }
   function onZoomOut() {
-    setZoom(zoom => Math.max(zoom / 1.25, 1/4));
+    setZoom(zoom => Math.max(zoom / 1.25, (1/1.25)**6));
   }
 
   function onChangePaused(paused: boolean, wallclktime: number) {
@@ -210,11 +210,12 @@ export function TopPanel({rt, rtIdx, time, setTime, onUndo, onRedo, onInit, onCl
 
     {/* zoom */}
     <div className="toolbarGroup">
-      <KeyInfo keyInfo={<><kbd>Ctrl</kbd>+<kbd>+</kbd></>}>
-        <button title="zoom in" onClick={onZoomIn}><ZoomInIcon fontSize="small"/></button>
-      </KeyInfo>
       <KeyInfo keyInfo={<><kbd>Ctrl</kbd>+<kbd>-</kbd></>}>
         <button title="zoom out" onClick={onZoomOut}><ZoomOutIcon fontSize="small"/></button>
+      </KeyInfo>
+      <input title="current zoom level" value={zoom.toFixed(3)} style={{width:40}} readOnly/>
+      <KeyInfo keyInfo={<><kbd>Ctrl</kbd>+<kbd>+</kbd></>}>
+        <button title="zoom in" onClick={onZoomIn}><ZoomInIcon fontSize="small"/></button>
       </KeyInfo>
       &emsp;
     </div>
