@@ -15,6 +15,8 @@ import UndoIcon from '@mui/icons-material/Undo';
 import RedoIcon from '@mui/icons-material/Redo';
 import InfoOutlineIcon from '@mui/icons-material/InfoOutline';
 import KeyboardIcon from '@mui/icons-material/Keyboard';
+import ZoomInIcon from '@mui/icons-material/ZoomIn';
+import ZoomOutIcon from '@mui/icons-material/ZoomOut';
 
 import { formatTime } from "./util";
 import { InsertMode } from "../VisualEditor/VisualEditor";
@@ -38,9 +40,11 @@ export type TopPanelProps = {
   mode: InsertMode,
   setMode: Dispatch<SetStateAction<InsertMode>>,
   setModal: Dispatch<SetStateAction<ReactElement|null>>,
+  zoom: number,
+  setZoom: Dispatch<SetStateAction<number>>,
 }
 
-export function TopPanel({rt, rtIdx, time, setTime, onUndo, onRedo, onInit, onClear, onRaise, onBack, ast, mode, setMode, setModal}: TopPanelProps) {
+export function TopPanel({rt, rtIdx, time, setTime, onUndo, onRedo, onInit, onClear, onRaise, onBack, ast, mode, setMode, setModal, zoom, setZoom}: TopPanelProps) {
   const [displayTime, setDisplayTime] = useState("0.000");
   const [timescale, setTimescale] = useState(1);
   const [showKeys, setShowKeys] = usePersistentState("shortcuts", true);
@@ -99,6 +103,14 @@ export function TopPanel({rt, rtIdx, time, setTime, onUndo, onRedo, onInit, onCl
           e.preventDefault();
           onRedo();
         }
+        if (e.key === "+") {
+          e.preventDefault();
+          onZoomIn();
+        }
+        if (e.key === "-") {
+          e.preventDefault();
+          onZoomOut();
+        }
       }
     };
     window.addEventListener("keydown", onKeyDown);
@@ -122,6 +134,13 @@ export function TopPanel({rt, rtIdx, time, setTime, onUndo, onRedo, onInit, onCl
       clearInterval(interval);
     }
   }, [time]);
+
+  function onZoomIn() {
+    setZoom(zoom => Math.min(zoom * 1.25, 4));
+  }
+  function onZoomOut() {
+    setZoom(zoom => Math.max(zoom / 1.25, 1/4));
+  }
 
   function onChangePaused(paused: boolean, wallclktime: number) {
     setTime(time => {
@@ -189,6 +208,16 @@ export function TopPanel({rt, rtIdx, time, setTime, onUndo, onRedo, onInit, onCl
       &emsp;
     </div>
 
+    {/* zoom */}
+    <div className="toolbarGroup">
+      <KeyInfo keyInfo={<><kbd>Ctrl</kbd>+<kbd>+</kbd></>}>
+        <button title="zoom in" onClick={onZoomIn}><ZoomInIcon fontSize="small"/></button>
+      </KeyInfo>
+      <KeyInfo keyInfo={<><kbd>Ctrl</kbd>+<kbd>-</kbd></>}>
+        <button title="zoom out" onClick={onZoomOut}><ZoomOutIcon fontSize="small"/></button>
+      </KeyInfo>
+      &emsp;
+    </div>
 
     {/* undo / redo */}
     <div className="toolbarGroup">

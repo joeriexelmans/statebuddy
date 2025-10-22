@@ -45,6 +45,7 @@ TODO
         - stuck in pseudo-state
         - ???
       don't crash and show the error
+    - buttons to rotate selection 90 degrees
 
 - experimental features:
     - multiverse execution history

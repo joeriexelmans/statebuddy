@@ -4,7 +4,7 @@ import { Statechart } from "../statecharts/abstract_syntax";
 import { Arrow, ArrowPart, Diamond, History, Rountangle, RountanglePart, Text } from "../statecharts/concrete_syntax";
 import { parseStatechart, TraceableError } from "../statecharts/parser";
 import { BigStep } from "../statecharts/runtime_types";
-import { ArcDirection, Line2D, Rect2D, Vec2D, addV2D, arcDirection, area, getBottomSide, getLeftSide, getRightSide, getTopSide, isEntirelyWithin, normalizeRect, subtractV2D, transformLine, transformRect } from "./geometry";
+import { ArcDirection, Line2D, Rect2D, Vec2D, addV2D, arcDirection, area, getBottomSide, getLeftSide, getRightSide, getTopSide, isEntirelyWithin, normalizeRect, scaleV2D, subtractV2D, transformLine, transformRect } from "./geometry";
 import { MIN_ROUNTANGLE_SIZE } from "./parameters";
 import { getBBoxInSvgCoords } from "./svg_helper";
 import { ArrowSVG } from "./ArrowSVG";
@@ -73,9 +73,10 @@ type VisualEditorProps = {
   highlightTransitions: string[],
   setModal: Dispatch<SetStateAction<ReactElement|null>>,
   makeCheckPoint: () => void;
+  zoom: number;
 };
 
-export function VisualEditor({state, setState, ast, setAST, rt, errors, setErrors, mode, highlightActive, highlightTransitions, setModal, makeCheckPoint}: VisualEditorProps) {
+export function VisualEditor({state, setState, ast, setAST, rt, errors, setErrors, mode, highlightActive, highlightTransitions, setModal, makeCheckPoint, zoom}: VisualEditorProps) {
 
   const [dragging, setDragging] = useState(false);
 
@@ -163,8 +164,8 @@ export function VisualEditor({state, setState, ast, setAST, rt, errors, setError
   function getCurrentPointer(e: {pageX: number, pageY: number}) {
     const bbox = refSVG.current!.getBoundingClientRect();
     return {
-      x: e.pageX - bbox.left,
-      y: e.pageY - bbox.top,
+      x: (e.pageX - bbox.left)/zoom,
+      y: (e.pageY - bbox.top)/zoom,
     }
   }
 
@@ -293,7 +294,7 @@ export function VisualEditor({state, setState, ast, setAST, rt, errors, setError
     const currentPointer = getCurrentPointer(e);
     if (dragging) {
       // const pointerDelta = subtractV2D(currentPointer, dragging.lastMousePos);
-      const pointerDelta = {x: e.movementX, y: e.movementY};
+      const pointerDelta = {x: e.movementX/zoom, y: e.movementY/zoom};
       setState(state => ({
         ...state,
         rountangles: state.rountangles.map(r => {
@@ -398,7 +399,11 @@ export function VisualEditor({state, setState, ast, setAST, rt, errors, setError
         const shapes = Array.from(refSVG.current?.querySelectorAll("rect, line, circle, text") || []) as SVGGraphicsElement[];
         const shapesInSelection = shapes.filter(el => {
           const bbox = getBBoxInSvgCoords(el, refSVG.current!);
-          return isEntirelyWithin(bbox, normalizedSS);
+          const scaledBBox = {
+            topLeft: scaleV2D(bbox.topLeft, 1/zoom),
+            size: scaleV2D(bbox.size, 1/zoom),
+          }
+          return isEntirelyWithin(scaledBBox, normalizedSS);
         }).filter(el => !el.classList.contains("corner"));
         
         const uidToParts = new Map();
@@ -666,11 +671,15 @@ export function VisualEditor({state, setState, ast, setAST, rt, errors, setError
 
   const rootErrors = errors.filter(({shapeUid}) => shapeUid === "root").map(({message}) => message);
 
-  return <svg width="4000px" height="4000px"
+  const size = 4000*zoom;
+
+  return <svg width={size} height={size}
       className={"svgCanvas"+(active.has("root")?" active":"")+(dragging ? " dragging" : "")}
       onMouseDown={onMouseDown}
       onContextMenu={e => e.preventDefault()}
       ref={refSVG}
+
+      viewBox={`0 0 4000 4000`}
 
       onCopy={onCopy}
       onPaste={onPaste}

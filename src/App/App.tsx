@@ -45,6 +45,7 @@ export function App() {
   const [time, setTime] = useState<TimeMode>({kind: "paused", simtime: 0});
   const [modal, setModal] = useState<ReactElement|null>(null);
   const [plantName, setPlantName] = usePersistentState("plant", "dummy");
+  const [zoom, setZoom] = usePersistentState("zoom", 1);
 
   const plant = plants.find(([pn, p]) => pn === plantName)![1];
 
@@ -248,12 +249,12 @@ export function App() {
           >
             <TopPanel
               rt={rtIdx === undefined ? undefined : rt[rtIdx]}
-              {...{rtIdx, ast, time, setTime, onUndo, onRedo, onInit, onClear, onRaise, onBack, mode, setMode, setModal}}
+              {...{rtIdx, ast, time, setTime, onUndo, onRedo, onInit, onClear, onRaise, onBack, mode, setMode, setModal, zoom, setZoom}}
             />
           </Box>
           {/* Below the top bar: Editor */}
           <Box sx={{flexGrow:1, overflow: "auto"}}>
-            <VisualEditor {...{state: editorState, setState: setEditorState, ast, setAST, rt: rt.at(rtIdx!), setRT, errors, setErrors, mode, highlightActive, highlightTransitions, setModal, makeCheckPoint}}/>
+            <VisualEditor {...{state: editorState, setState: setEditorState, ast, setAST, rt: rt.at(rtIdx!), setRT, errors, setErrors, mode, highlightActive, highlightTransitions, setModal, makeCheckPoint, zoom}}/>
           </Box>
         </Stack>
       </Box>

@@ -45,19 +45,19 @@ export function DigitalWatch({light, h, m, s, alarm, callbacks}: DigitalWatchPro
 
       <text x="111" y="126" dominantBaseline="middle" textAnchor="middle" fontFamily="digital-font" fontSize={28} style={{whiteSpace:'preserve'}}>{hhmmss}</text>
     
-      <rect x="0" y="59" width="16" height="16" fill="#fff" fill-opacity="0" 
+      <rect x="0" y="59" width="16" height="16" fill="#fff" fillOpacity="0" 
         onMouseDown={() => callbacks.onTopLeftPressed()}
         onMouseUp={() => callbacks.onTopLeftReleased()}
       />
-      <rect x="206" y="57" width="16" height="16" fill="#fff" fill-opacity="0"
+      <rect x="206" y="57" width="16" height="16" fill="#fff" fillOpacity="0"
         onMouseDown={() => callbacks.onTopRightPressed()}
         onMouseUp={() => callbacks.onTopRightReleased()}
       />
-      <rect x="0" y="158" width="16" height="16" fill="#fff" fill-opacity="0"
+      <rect x="0" y="158" width="16" height="16" fill="#fff" fillOpacity="0"
         onMouseDown={() => callbacks.onBottomLeftPressed()}
         onMouseUp={() => callbacks.onBottomLeftReleased()}
       />
-      <rect x="208" y="158" width="16" height="16" fill="#fff" fill-opacity="0"
+      <rect x="208" y="158" width="16" height="16" fill="#fff" fillOpacity="0"
         onMouseDown={() => callbacks.onBottomRightPressed()}
         onMouseUp={() => callbacks.onBottomRightReleased()}
       />
