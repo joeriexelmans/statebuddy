@@ -117,6 +117,6 @@ ul {
 }
 
 .shadowBelow {
-  box-shadow: 0 -15px 15px 15px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 -5px 5px 5px rgba(0, 0, 0, 0.4);
   z-index: 1;
 }

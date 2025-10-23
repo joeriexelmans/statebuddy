@@ -30,7 +30,7 @@ export function RTHistory({trace, setTrace, ast, setTime}: RTHistoryProps) {
         const newStates = item.mode.difference(trace.trace[i-1]?.mode || new Set());
         return <div
           className={"runtimeState" + (i === trace.idx ? " active" : "")}
-          onClick={() => gotoRt(i, item.simtime)}>
+          onMouseDown={() => gotoRt(i, item.simtime)}>
           <div>
             {formatTime(item.simtime)}
             &emsp;

@@ -200,7 +200,6 @@ export function App() {
       const nextConfig = handleInputEvent(simtime, event, ast, config as BigStep); // may throw
       let plantState = config.plantState;
       for (const o of nextConfig.outputEvents) {
-        console.log(o);
         plantState = plant.reduce(o, plantState);
       }
       console.log({plantState});
