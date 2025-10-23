@@ -1,9 +1,9 @@
 import { memo } from "react";
-import { RountanglePart } from "../statecharts/concrete_syntax";
+import { RectSide } from "../statecharts/concrete_syntax";
 import { Vec2D } from "./geometry";
 import { CORNER_HELPER_OFFSET, CORNER_HELPER_RADIUS } from "./parameters";
 
-function lineGeometryProps(size: Vec2D): [RountanglePart, object][] {
+function lineGeometryProps(size: Vec2D): [RectSide, object][] {
   return [
     ["top",    {x1: 0,      y1: 0,      x2: size.x, y2: 0     }],
     ["right",  {x1: size.x, y1: 0,      x2: size.x, y2: size.y}],
@@ -13,7 +13,7 @@ function lineGeometryProps(size: Vec2D): [RountanglePart, object][] {
 }
 
 // no need to memo() this component, the parent component is already memoized
-export const RectHelper = function RectHelper(props: { uid: string, size: Vec2D, selected: RountanglePart[], highlight: string[] }) {
+export const RectHelper = function RectHelper(props: { uid: string, size: Vec2D, selected: RectSide[], highlight: string[] }) {
   const geomProps = lineGeometryProps(props.size);
   return <>
     {geomProps.map(([side, ps]) => <g key={side}>

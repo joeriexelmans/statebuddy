@@ -1,7 +1,7 @@
 import { ClipboardEvent, Dispatch, memo, ReactElement, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Statechart } from "../statecharts/abstract_syntax";
-import { Arrow, ArrowPart, Diamond, History, Rountangle, RountanglePart, Text } from "../statecharts/concrete_syntax";
+import { Arrow, ArrowPart, Diamond, History, Rountangle, RectSide, Text } from "../statecharts/concrete_syntax";
 import { parseStatechart, TraceableError } from "../statecharts/parser";
 import { ArcDirection, Line2D, Rect2D, Vec2D, addV2D, arcDirection, area, getBottomSide, getLeftSide, getRightSide, getTopSide, isEntirelyWithin, normalizeRect, scaleV2D, subtractV2D, transformLine, transformRect } from "./geometry";
 import { MIN_ROUNTANGLE_SIZE } from "./parameters";
@@ -11,7 +11,7 @@ import { RountangleSVG } from "./RountangleSVG";
 import { TextSVG } from "./TextSVG";
 import { DiamondSVG } from "./DiamondSVG";
 import { HistorySVG } from "./HistorySVG";
-import { detectConnections } from "../statecharts/detect_connections";
+import { Connections, detectConnections } from "../statecharts/detect_connections";
 
 import "./VisualEditor.css";
 import { TraceState } from "@/App/App";
@@ -30,7 +30,7 @@ type SelectingState = Rect2D | null;
 
 export type RountangleSelectable = {
   // kind: "rountangle";
-  parts: RountanglePart[];
+  parts: RectSide[];
   uid: string;
 }
 type ArrowSelectable = {
@@ -51,7 +51,7 @@ type Selectable = RountangleSelectable | ArrowSelectable | TextSelectable | Hist
 type Selection = Selectable[];
 
 
-export const sides: [RountanglePart, (r:Rect2D)=>Line2D][] = [
+export const sides: [RectSide, (r:Rect2D)=>Line2D][] = [
   ["left", getLeftSide],
   ["top", getTopSide],
   ["right", getRightSide],
@@ -63,12 +63,10 @@ export type InsertMode = "and"|"or"|"pseudo"|"shallow"|"deep"|"transition"|"text
 type VisualEditorProps = {
   state: VisualEditorState,
   setState: Dispatch<(v:VisualEditorState) => VisualEditorState>,
-  // ast: Statechart,
-  setAST: Dispatch<SetStateAction<Statechart>>,
+  conns: Connections,
+  syntaxErrors: TraceableError[],
   trace: TraceState | null,
-  errors: TraceableError[],
-  setErrors: Dispatch<SetStateAction<TraceableError[]>>,
-  mode: InsertMode,
+  insertMode: InsertMode,
   highlightActive: Set<string>,
   highlightTransitions: string[],
   setModal: Dispatch<SetStateAction<ReactElement|null>>,
@@ -76,7 +74,7 @@ type VisualEditorProps = {
   zoom: number;
 };
 
-export const VisualEditor = memo(function VisualEditor({state, setState, setAST, trace, errors, setErrors, mode, highlightActive, highlightTransitions, setModal, makeCheckPoint, zoom}: VisualEditorProps) {
+export const VisualEditor = memo(function VisualEditor({state, setState, trace, conns, syntaxErrors: errors, insertMode, highlightActive, highlightTransitions, setModal, makeCheckPoint, zoom}: VisualEditorProps) {
 
   const [dragging, setDragging] = useState(false);
 
@@ -153,31 +151,22 @@ export const VisualEditor = memo(function VisualEditor({state, setState, setAST,
     return () => clearTimeout(timeout);
   }, [state]);
 
-  const conns = useMemo(() => detectConnections(state), [state]);
-
-  useEffect(() => {
-    const [statechart, errors] = parseStatechart(state, conns);
-    setErrors(errors);
-    setAST(statechart);
-  }, [state])
-
-  function getCurrentPointer(e: {pageX: number, pageY: number}) {
+  const getCurrentPointer = useCallback((e: {pageX: number, pageY: number}) => {
     const bbox = refSVG.current!.getBoundingClientRect();
     return {
       x: (e.pageX - bbox.left)/zoom,
       y: (e.pageY - bbox.top)/zoom,
     }
-  }
+  }, [refSVG.current]);
 
-  const onMouseDown = (e: {button: number, target: any, pageX: number, pageY: number}) => {
+  const onMouseDown = useCallback((e: {button: number, target: any, pageX: number, pageY: number}) => {
     const currentPointer = getCurrentPointer(e);
-
     if (e.button === 2) {
       makeCheckPoint();
       // ignore selection, middle mouse button always inserts
       setState(state => {
         const newID = state.nextID.toString();
-        if (mode === "and" || mode === "or") {
+        if (insertMode === "and" || insertMode === "or") {
           // insert rountangle
           return {
             ...state,
@@ -185,13 +174,13 @@ export const VisualEditor = memo(function VisualEditor({state, setState, setAST,
               uid: newID,
               topLeft: currentPointer,
               size: MIN_ROUNTANGLE_SIZE,
-              kind: mode,
+              kind: insertMode,
             }],
             nextID: state.nextID+1,
             selection: [{uid: newID, parts: ["bottom", "right"]}],
           };
         }
-        else if (mode === "pseudo") {
+        else if (insertMode === "pseudo") {
           return {
             ...state,
             diamonds: [...state.diamonds, {
@@ -203,19 +192,19 @@ export const VisualEditor = memo(function VisualEditor({state, setState, setAST,
             selection: [{uid: newID, parts: ["bottom", "right"]}],
           };
         }
-        else if (mode === "shallow" || mode === "deep") {
+        else if (insertMode === "shallow" || insertMode === "deep") {
           return {
             ...state,
             history: [...state.history, {
               uid: newID,
-              kind: mode,
+              kind: insertMode,
               topLeft: currentPointer,
             }],
             nextID: state.nextID+1,
             selection: [{uid: newID, parts: ["history"]}],
           }
         }
-        else if (mode === "transition") {
+        else if (insertMode === "transition") {
           return {
             ...state,
             arrows: [...state.arrows, {
@@ -227,7 +216,7 @@ export const VisualEditor = memo(function VisualEditor({state, setState, setAST,
             selection: [{uid: newID, parts: ["end"]}],
           }
         }
-        else if (mode === "text") {
+        else if (insertMode === "text") {
           return {
             ...state,
             texts: [...state.texts, {
@@ -239,7 +228,7 @@ export const VisualEditor = memo(function VisualEditor({state, setState, setAST,
             selection: [{uid: newID, parts: ["text"]}],
           }
         }
-        throw new Error("unreachable, mode=" + mode); // shut up typescript
+        throw new Error("unreachable, mode=" + insertMode); // shut up typescript
       });
       setDragging(true);
       return;
@@ -288,9 +277,9 @@ export const VisualEditor = memo(function VisualEditor({state, setState, setAST,
       size: {x: 0, y: 0},
     });
     setSelection(() => []);
-  };
+  }, [getCurrentPointer, makeCheckPoint, insertMode, selection]);
 
-  const onMouseMove = (e: {pageX: number, pageY: number, movementX: number, movementY: number}) => {
+  const onMouseMove = useCallback((e: {pageX: number, pageY: number, movementX: number, movementY: number}) => {
     const currentPointer = getCurrentPointer(e);
     if (dragging) {
       // const pointerDelta = subtractV2D(currentPointer, dragging.lastMousePos);
@@ -298,7 +287,7 @@ export const VisualEditor = memo(function VisualEditor({state, setState, setAST,
       setState(state => ({
         ...state,
         rountangles: state.rountangles.map(r => {
-          const parts = selection.find(selected => selected.uid === r.uid)?.parts || [];
+          const parts = state.selection.find(selected => selected.uid === r.uid)?.parts || [];
           if (parts.length === 0) {
             return r;
           }
@@ -309,7 +298,7 @@ export const VisualEditor = memo(function VisualEditor({state, setState, setAST,
         })
         .toSorted((a,b) => area(b) - area(a)), // sort: smaller rountangles are drawn on top
         diamonds: state.diamonds.map(d => {
-          const parts = selection.find(selected => selected.uid === d.uid)?.parts || [];
+          const parts = state.selection.find(selected => selected.uid === d.uid)?.parts || [];
           if (parts.length === 0) {
             return d;
           }
@@ -319,7 +308,7 @@ export const VisualEditor = memo(function VisualEditor({state, setState, setAST,
           }
         }),
         history: state.history.map(h => {
-          const parts = selection.find(selected => selected.uid === h.uid)?.parts || [];
+          const parts = state.selection.find(selected => selected.uid === h.uid)?.parts || [];
           if (parts.length === 0) {
             return h;
           }
@@ -329,7 +318,7 @@ export const VisualEditor = memo(function VisualEditor({state, setState, setAST,
           }
         }),
         arrows: state.arrows.map(a => {
-          const parts = selection.find(selected => selected.uid === a.uid)?.parts || [];
+          const parts = state.selection.find(selected => selected.uid === a.uid)?.parts || [];
           if (parts.length === 0) {
             return a;
           }
@@ -339,7 +328,7 @@ export const VisualEditor = memo(function VisualEditor({state, setState, setAST,
           }
         }),
         texts: state.texts.map(t => {
-          const parts = selection.find(selected => selected.uid === t.uid)?.parts || [];
+          const parts = state.selection.find(selected => selected.uid === t.uid)?.parts || [];
           if (parts.length === 0) {
             return t;
           }
@@ -360,9 +349,9 @@ export const VisualEditor = memo(function VisualEditor({state, setState, setAST,
         };
       });
     }
-  };
+  }, [getCurrentPointer, selectingState, dragging]);
 
-  const onMouseUp = (e: {target: any, pageX: number, pageY: number}) => {
+  const onMouseUp = useCallback((e: {target: any, pageX: number, pageY: number}) => {
     if (dragging) {
       setDragging(false);
       // do not persist sizes smaller than 40x40
@@ -424,7 +413,7 @@ export const VisualEditor = memo(function VisualEditor({state, setState, setAST,
       }
     }
     setSelectingState(null); // no longer making a selection
-  };
+  }, [dragging, selectingState, refSVG.current]);
 
   function deleteSelection() {
     setState(state => ({
@@ -499,7 +488,7 @@ export const VisualEditor = memo(function VisualEditor({state, setState, setAST,
   }, [selectingState, dragging]);
 
   // for visual feedback, when selecting/moving one thing, we also highlight (in green) all the things that belong to the thing we selected.
-  const sidesToHighlight: {[key: string]: RountanglePart[]} = {};
+  const sidesToHighlight: {[key: string]: RectSide[]} = {};
   const arrowsToHighlight: {[key: string]: boolean} = {};
   const textsToHighlight: {[key: string]: boolean} = {};
   const rountanglesToHighlight: {[key: string]: boolean} = {};
@@ -716,8 +705,8 @@ export const VisualEditor = memo(function VisualEditor({state, setState, setAST,
       return <RountangleSVG
         key={rountangle.uid}
         rountangle={rountangle}
-        selected={selection.find(r => r.uid === rountangle.uid)?.parts || []}
-        highlight={[...(sidesToHighlight[rountangle.uid] || []), ...(rountanglesToHighlight[rountangle.uid]?["left","right","top","bottom"]:[]) as RountanglePart[]]}
+        selected={selection.find(r => r.uid === rountangle.uid)?.parts as RectSide[] || []}
+        highlight={[...(sidesToHighlight[rountangle.uid] || []), ...(rountanglesToHighlight[rountangle.uid]?["left","right","top","bottom"]:[]) as RectSide[]]}
         error={errors
           .filter(({shapeUid}) => shapeUid === rountangle.uid)
           .map(({message}) => message).join(', ')}
@@ -728,8 +717,8 @@ export const VisualEditor = memo(function VisualEditor({state, setState, setAST,
       <DiamondSVG
         key={diamond.uid}
         diamond={diamond}
-        selected={selection.find(r => r.uid === diamond.uid)?.parts || []}
-        highlight={[...(sidesToHighlight[diamond.uid] || []), ...(rountanglesToHighlight[diamond.uid]?["left","right","top","bottom"]:[]) as RountanglePart[]]}
+        selected={selection.find(r => r.uid === diamond.uid)?.parts as RectSide[] || []}
+        highlight={[...(sidesToHighlight[diamond.uid] || []), ...(rountanglesToHighlight[diamond.uid]?["left","right","top","bottom"]:[]) as RectSide[]]}
         error={errors
           .filter(({shapeUid}) => shapeUid === diamond.uid)
           .map(({message}) => message).join(', ')}

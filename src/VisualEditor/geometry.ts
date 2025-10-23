@@ -1,4 +1,4 @@
-import { RountanglePart } from "../statecharts/concrete_syntax";
+import { RectSide } from "../statecharts/concrete_syntax";
 
 export type Vec2D = {
   x: number;
@@ -166,7 +166,7 @@ export function getBottomSide(rect: Rect2D): Line2D {
 
 export type ArcDirection = "no" | "cw" | "ccw";
 
-export function arcDirection(start: RountanglePart, end: RountanglePart): ArcDirection {
+export function arcDirection(start: RectSide, end: RectSide): ArcDirection {
   if (start === end) {
     if (start === "left" || start === "top") {
       return "ccw";

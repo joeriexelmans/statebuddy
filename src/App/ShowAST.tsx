@@ -32,7 +32,7 @@ export function ShowAction(props: {action: Action}) {
   }
 }
 
-export const ShowAST = memo(function ShowAST(props: {root: ConcreteState | PseudoState, transitions: Map<string, Transition[]>, trace: TraceState | null, highlightActive: Set<string>}) {
+export const ShowAST = memo(function ShowASTx(props: {root: ConcreteState | PseudoState}) {
   const description = stateDescription(props.root);
   // const outgoing = props.transitions.get(props.root.uid) || [];
 
@@ -40,7 +40,7 @@ export const ShowAST = memo(function ShowAST(props: {root: ConcreteState | Pseud
     {props.root.kind !== "pseudo" && props.root.children.length>0 &&
       <ul>
         {props.root.children.map(child => 
-          <ShowAST key={child.uid} root={child} transitions={props.transitions} trace={props.trace} highlightActive={props.highlightActive} />
+          <ShowAST key={child.uid} root={child} />
         )}
       </ul>
     }

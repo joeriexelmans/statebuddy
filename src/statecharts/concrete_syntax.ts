@@ -28,7 +28,7 @@ export type History = {
 };
 
 // independently moveable parts of our shapes:
-export type RountanglePart = "left" | "top" | "right" | "bottom";
+export type RectSide = "left" | "top" | "right" | "bottom";
 export type ArrowPart = "start" | "end";
 
 export const emptyState: VisualEditorState = {
@@ -36,9 +36,9 @@ export const emptyState: VisualEditorState = {
 };
 
 // used to find which rountangle an arrow connects to (src/tgt)
-export function findNearestSide(arrow: Line2D, arrowPart: "start" | "end", candidates: (Rountangle|Diamond)[]): {uid: string, part: RountanglePart} | undefined {
+export function findNearestSide(arrow: Line2D, arrowPart: "start" | "end", candidates: (Rountangle|Diamond)[]): {uid: string, part: RectSide} | undefined {
   let best = Infinity;
-  let bestSide: undefined | {uid: string, part: RountanglePart};
+  let bestSide: undefined | {uid: string, part: RectSide};
   for (const rountangle of candidates) {
     for (const [side, getSide] of sides) {
       const asLine = getSide(rountangle);

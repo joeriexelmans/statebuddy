@@ -1,8 +1,8 @@
 import { VisualEditorState } from "@/VisualEditor/VisualEditor";
-import { findNearestArrow, findNearestHistory, findNearestSide, findRountangle, RountanglePart } from "./concrete_syntax";
+import { findNearestArrow, findNearestHistory, findNearestSide, findRountangle, RectSide } from "./concrete_syntax";
 
 export type Connections = {
-  arrow2SideMap: Map<string,[{ uid: string; part: RountanglePart; } | undefined, { uid: string; part: RountanglePart; } | undefined]>,
+  arrow2SideMap: Map<string,[{ uid: string; part: RectSide; } | undefined, { uid: string; part: RectSide; } | undefined]>,
   side2ArrowMap: Map<string, Set<["start"|"end", string]>>,
   text2ArrowMap: Map<string,string>,
   arrow2TextMap: Map<string,string[]>,
@@ -14,7 +14,7 @@ export type Connections = {
 
 export function detectConnections(state: VisualEditorState): Connections {
   // detect what is 'connected'
-  const arrow2SideMap = new Map<string,[{ uid: string; part: RountanglePart; } | undefined, { uid: string; part: RountanglePart; } | undefined]>();
+  const arrow2SideMap = new Map<string,[{ uid: string; part: RectSide; } | undefined, { uid: string; part: RectSide; } | undefined]>();
   const side2ArrowMap = new Map<string, Set<["start"|"end", string]>>();
   const text2ArrowMap = new Map<string,string>();
   const arrow2TextMap = new Map<string,string[]>();

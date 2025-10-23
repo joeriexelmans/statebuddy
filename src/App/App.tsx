@@ -1,8 +1,7 @@
 import { ReactElement, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { emptyStatechart, Statechart, Transition } from "../statecharts/abstract_syntax";
 import { handleInputEvent, initialize, RuntimeError } from "../statecharts/interpreter";
-import { BigStep, BigStepOutput, RT_Event } from "../statecharts/runtime_types";
+import { BigStep, RT_Event } from "../statecharts/runtime_types";
 import { InsertMode, VisualEditor, VisualEditorState } from "../VisualEditor/VisualEditor";
 import { getSimTime, getWallClkDelay, TimeMode } from "../statecharts/time";
 
@@ -13,7 +12,7 @@ import Stack from "@mui/material/Stack";
 import Box from "@mui/material/Box";
 import { TopPanel } from "./TopPanel";
 import { ShowAST, ShowInputEvents, ShowInternalEvents, ShowOutputEvents } from "./ShowAST";
-import { TraceableError } from "../statecharts/parser";
+import { parseStatechart } from "../statecharts/parser";
 import { getKeyHandler } from "./shortcut_handler";
 import { BottomPanel } from "./BottomPanel";
 import { emptyState } from "@/statecharts/concrete_syntax";
@@ -23,6 +22,7 @@ import { DummyPlant } from "@/Plant/Dummy/Dummy";
 import { Plant } from "@/Plant/Plant";
 import { usePersistentState } from "@/util/persistent_state";
 import { RTHistory } from "./RTHistory";
+import { detectConnections } from "@/statecharts/detect_connections";
 
 export type EditHistory = {
   current: VisualEditorState,
@@ -70,10 +70,8 @@ function getPlantState<T>(plant: Plant<T>, trace: TraceItem[], idx: number): T |
 }
 
 export function App() {
-  const [mode, setMode] = useState<InsertMode>("and");
+  const [insertMode, setInsertMode] = useState<InsertMode>("and");
   const [historyState, setHistoryState] = useState<EditHistory>({current: emptyState, history: [], future: []});
-  const [ast, setAST] = useState<Statechart>(emptyStatechart);
-  const [errors, setErrors] = useState<TraceableError[]>([]);
   const [trace, setTrace] = useState<TraceState|null>(null);
   const [time, setTime] = useState<TimeMode>({kind: "paused", simtime: 0});
   const [modal, setModal] = useState<ReactElement|null>(null);
@@ -90,6 +88,10 @@ export function App() {
   }, [setHistoryState]);
 
   const refRightSideBar = useRef<HTMLDivElement>(null);
+
+  // parse concrete syntax always:
+  const conns = useMemo(() => detectConnections(editorState), [editorState]);
+  const [ast, syntaxErrors] = useMemo(() => parseStatechart(editorState, conns), [editorState, conns]);
 
   // append editor state to undo history
   const makeCheckPoint = useCallback(() => {
@@ -261,7 +263,7 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    const onKeyDown = getKeyHandler(setMode);
+    const onKeyDown = getKeyHandler(setInsertMode);
     window.addEventListener("keydown", onKeyDown);
     return () => {
       window.removeEventListener("keydown", onKeyDown);
@@ -322,12 +324,12 @@ export function App() {
             }}
           >
             <TopPanel
-              {...{trace, ast, time, setTime, onUndo, onRedo, onInit, onClear, onRaise, onBack, mode, setMode, setModal, zoom, setZoom, showKeys, setShowKeys, history: historyState}}
+              {...{trace, ast, time, setTime, onUndo, onRedo, onInit, onClear, onRaise, onBack, insertMode, setInsertMode, setModal, zoom, setZoom, showKeys, setShowKeys, history: historyState}}
             />
           </Box>
           {/* Below the top bar: Editor */}
           <Box sx={{flexGrow:1, overflow: "auto"}}>
-            <VisualEditor {...{state: editorState, setState: setEditorState, ast, setAST, trace, setTrace, errors, setErrors, mode, highlightActive, highlightTransitions, setModal, makeCheckPoint, zoom}}/>
+            <VisualEditor {...{state: editorState, setState: setEditorState, conns, trace, setTrace, syntaxErrors, insertMode, highlightActive, highlightTransitions, setModal, makeCheckPoint, zoom}}/>
           </Box>
         </Stack>
       </Box>
@@ -408,7 +410,7 @@ export function App() {
 
     {/* Bottom panel */}
     <Box sx={{flex: '0 0 content'}}>
-      <BottomPanel {...{errors}}/>
+      <BottomPanel {...{errors: syntaxErrors}}/>
     </Box>
   </Stack>
   </>;

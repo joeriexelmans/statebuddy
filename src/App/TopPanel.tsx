@@ -34,8 +34,8 @@ export type TopPanelProps = {
   // onRaise: (e: string, p: any) => void,
   onBack: () => void,
   // ast: Statechart,
-  mode: InsertMode,
-  setMode: Dispatch<SetStateAction<InsertMode>>,
+  insertMode: InsertMode,
+  setInsertMode: Dispatch<SetStateAction<InsertMode>>,
   setModal: Dispatch<SetStateAction<ReactElement|null>>,
   zoom: number,
   setZoom: Dispatch<SetStateAction<number>>,
@@ -56,7 +56,7 @@ const insertModes: [InsertMode, string, ReactElement, ReactElement][] = [
   ["text", "text", <>&nbsp;T&nbsp;</>, <kbd>X</kbd>],
 ];
 
-export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, onRedo, onInit, onClear, onBack, mode, setMode, setModal, zoom, setZoom, showKeys, setShowKeys, history}: TopPanelProps) {
+export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, onRedo, onInit, onClear, onBack, insertMode, setInsertMode, setModal, zoom, setZoom, showKeys, setShowKeys, history}: TopPanelProps) {
   const [displayTime, setDisplayTime] = useState("0.000");
   const [timescale, setTimescale] = useState(1);
 
@@ -226,9 +226,9 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
         <KeyInfo key={m} keyInfo={keyInfo}>
         <button
           title={"insert "+hint}
-          disabled={mode===m}
-          className={mode===m ? "active":""}
-          onClick={() => setMode(m)}
+          disabled={insertMode===m}
+          className={insertMode===m ? "active":""}
+          onClick={() => setInsertMode(m)}
         >{buttonTxt}</button></KeyInfo>)}
       &emsp;
     </div>

@@ -1,14 +1,12 @@
 import { memo } from "react";
-import { Rountangle, RountanglePart } from "../statecharts/concrete_syntax";
+import { Rountangle, RectSide } from "../statecharts/concrete_syntax";
 import { ROUNTANGLE_RADIUS } from "./parameters";
 import { RectHelper } from "./RectHelpers";
 import { rountangleMinSize } from "./VisualEditor";
 import { arraysEqual } from "@/App/util";
 
 
-export const RountangleSVG = memo(function RountangleSVG(props: {rountangle: Rountangle; selected: RountanglePart[]; highlight: RountanglePart[]; error?: string; active: boolean; }) {
-  console.log('render rountangle', props.rountangle.uid);
-  
+export const RountangleSVG = memo(function RountangleSVG(props: {rountangle: Rountangle; selected: RectSide[]; highlight: RectSide[]; error?: string; active: boolean; }) {
   const { topLeft, size, uid } = props.rountangle;
   // always draw a rountangle with a minimum size
   // during resizing, rountangle can be smaller than this size and even have a negative size, but we don't show it

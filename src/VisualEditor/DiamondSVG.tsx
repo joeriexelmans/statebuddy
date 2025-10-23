@@ -1,4 +1,4 @@
-import { Diamond, RountanglePart } from "@/statecharts/concrete_syntax";
+import { Diamond, RectSide } from "@/statecharts/concrete_syntax";
 import { rountangleMinSize } from "./VisualEditor";
 import { Vec2D } from "./geometry";
 import { RectHelper } from "./RectHelpers";
@@ -21,8 +21,7 @@ export const DiamondShape = memo(function DiamondShape(props: {size: Vec2D, extr
   />;
 });
 
-export const DiamondSVG = memo(function DiamondSVG(props: { diamond: Diamond; selected: RountanglePart[]; highlight: RountanglePart[]; error?: string; active: boolean; }) {
-  console.log('render diamond', props.diamond.uid);
+export const DiamondSVG = memo(function DiamondSVG(props: { diamond: Diamond; selected: RectSide[]; highlight: RectSide[]; error?: string; active: boolean; }) {
   const minSize = rountangleMinSize(props.diamond.size);
   const extraAttrs = {
     className: ''
