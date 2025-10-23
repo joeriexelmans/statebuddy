@@ -114,7 +114,7 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
 
   const onSlower = useCallback(() => {
     onTimeScaleChange((timescale/2).toString(), Math.round(performance.now()));
-  }, [onTimeScaleChange]);
+  }, [onTimeScaleChange, timescale]);
   const onFaster = useCallback(() => {
     onTimeScaleChange((timescale*2).toString(), Math.round(performance.now()));
   }, [onTimeScaleChange, timescale]);
