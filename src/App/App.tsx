@@ -92,14 +92,14 @@ export function App() {
   const refRightSideBar = useRef<HTMLDivElement>(null);
 
   // append editor state to undo history
-  function makeCheckPoint() {
+  const makeCheckPoint = useCallback(() => {
     setHistoryState(historyState => ({
       ...historyState,
       history: [...historyState.history, historyState.current],
       future: [],
     }));
-  }
-  function onUndo() {
+  }, [setHistoryState]);
+  const onUndo = useCallback(() => {
     setHistoryState(historyState => {
       if (historyState.history.length === 0) {
         return historyState; // no change
@@ -110,8 +110,8 @@ export function App() {
         future: [...historyState.future, historyState.current],
       }
     })
-  }
-  function onRedo() {
+  }, [setHistoryState]);
+  const onRedo = useCallback(() => {
     setHistoryState(historyState => {
       if (historyState.future.length === 0) {
         return historyState; // no change
@@ -122,7 +122,7 @@ export function App() {
         future: historyState.future.slice(0,-1),
       }
     });
-  }
+  }, [setHistoryState]);
   
   function onInit() {
     const timestampedEvent = {simtime: 0, inputEvent: "<init>"};
@@ -143,12 +143,11 @@ export function App() {
     }
     setTime({kind: "paused", simtime: 0});
     scrollDownSidebar();
- }
-
-  function onClear() {
+  }
+  const onClear = useCallback(() => {
     setTrace(null);
     setTime({kind: "paused", simtime: 0});
-  }
+  }, [setTrace, setTime]);
 
   // raise input event, producing a new runtime configuration (or a runtime error)
   function onRaise(inputEvent: string, param: any) {
@@ -225,7 +224,6 @@ export function App() {
     scrollDownSidebar();
   }
 
-
   function onBack() {
     if (trace !== null) {
       setTime(() => {
@@ -244,7 +242,7 @@ export function App() {
     }
   }
 
-  function scrollDownSidebar() {
+  const scrollDownSidebar = useCallback(() => {
     if (refRightSideBar.current) {
       const el = refRightSideBar.current;
       // hack: we want to scroll to the new element, but we have to wait until it is rendered...
@@ -252,7 +250,7 @@ export function App() {
         el.scrollIntoView({block: "end", behavior: "smooth"});
       }, 50);
     }
-  }
+  }, []);
 
   useEffect(() => {
     console.log("Welcome to StateBuddy!");
