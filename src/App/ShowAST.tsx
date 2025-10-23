@@ -74,7 +74,6 @@ export const ShowAST = memo(function ShowASTx(props: {root: ConcreteState | Pseu
 import BoltIcon from '@mui/icons-material/Bolt';
 import { KeyInfoHidden, KeyInfoVisible } from "./KeyInfo";
 import { memo, useEffect } from "react";
-import { TraceState } from "./App";
 
 export function ShowInputEvents({inputEvents, onRaise, disabled, showKeys}: {inputEvents: EventTrigger[], onRaise: (e: string, p: any) => void, disabled: boolean, showKeys: boolean}) {
   const raiseHandlers = inputEvents.map(({event}) => {
@@ -106,7 +105,8 @@ export function ShowInputEvents({inputEvents, onRaise, disabled, showKeys}: {inp
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [raiseHandlers]);
-  const KeyInfo = showKeys ? KeyInfoVisible : KeyInfoHidden;
+  // const KeyInfo = showKeys ? KeyInfoVisible : KeyInfoHidden;
+  const KeyInfo = KeyInfoVisible; // always show keyboard shortcuts on input events, we can't expect the user to remember them
   return inputEvents.map(({event, paramName}, i) => {
     const shortcut = (i+1)%10;
     const KI = (i <= 10) ? KeyInfo : KeyInfoHidden;
