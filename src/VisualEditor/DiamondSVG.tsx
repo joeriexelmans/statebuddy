@@ -3,6 +3,7 @@ import { rountangleMinSize } from "./VisualEditor";
 import { Vec2D } from "./geometry";
 import { RectHelper } from "./RectHelpers";
 import { memo } from "react";
+import { arraysEqual } from "@/App/util";
 
 export const DiamondShape = memo(function DiamondShape(props: {size: Vec2D, extraAttrs: object}) {
   const minSize = rountangleMinSize(props.size);
@@ -20,12 +21,13 @@ export const DiamondShape = memo(function DiamondShape(props: {size: Vec2D, extr
   />;
 });
 
-export const DiamondSVG = memo(function DiamondSVG(props: { diamond: Diamond; selected: string[]; highlight: RountanglePart[]; errors: string[]; active: boolean; }) {
+export const DiamondSVG = memo(function DiamondSVG(props: { diamond: Diamond; selected: RountanglePart[]; highlight: RountanglePart[]; error?: string; active: boolean; }) {
+  console.log('render diamond', props.diamond.uid);
   const minSize = rountangleMinSize(props.diamond.size);
   const extraAttrs = {
     className: ''
       + (props.selected.length === 4 ? " selected" : "")
-      + (props.errors.length > 0 ? " error" : "")
+      + (props.error ? " error" : "")
       + (props.active ? " active" : ""),
     "data-uid": props.diamond.uid,
     "data-parts": "left top right bottom",
@@ -39,4 +41,10 @@ export const DiamondSVG = memo(function DiamondSVG(props: { diamond: Diamond; se
 
     <RectHelper uid={props.diamond.uid} size={minSize} highlight={props.highlight} selected={props.selected} />
   </g>;
+}, (prevProps, nextProps) => {
+  return prevProps.diamond === nextProps.diamond
+    && arraysEqual(prevProps.selected, nextProps.selected)
+    && arraysEqual(prevProps.highlight, nextProps.highlight)
+    && prevProps.error === nextProps.error
+    && prevProps.active === nextProps.active
 });

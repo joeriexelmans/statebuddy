@@ -718,9 +718,9 @@ export const VisualEditor = memo(function VisualEditor({state, setState, setAST,
         rountangle={rountangle}
         selected={selection.find(r => r.uid === rountangle.uid)?.parts || []}
         highlight={[...(sidesToHighlight[rountangle.uid] || []), ...(rountanglesToHighlight[rountangle.uid]?["left","right","top","bottom"]:[]) as RountanglePart[]]}
-        errors={errors
+        error={errors
           .filter(({shapeUid}) => shapeUid === rountangle.uid)
-          .map(({message}) => message)}
+          .map(({message}) => message).join(', ')}
         active={highlightActive.has(rountangle.uid)}
       />})}
 
@@ -730,9 +730,9 @@ export const VisualEditor = memo(function VisualEditor({state, setState, setAST,
         diamond={diamond}
         selected={selection.find(r => r.uid === diamond.uid)?.parts || []}
         highlight={[...(sidesToHighlight[diamond.uid] || []), ...(rountanglesToHighlight[diamond.uid]?["left","right","top","bottom"]:[]) as RountanglePart[]]}
-        errors={errors
+        error={errors
           .filter(({shapeUid}) => shapeUid === diamond.uid)
-          .map(({message}) => message)}
+          .map(({message}) => message).join(', ')}
         active={false}/>
     </>)}
 

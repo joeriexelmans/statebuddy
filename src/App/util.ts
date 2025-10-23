@@ -23,3 +23,18 @@ export function memoize<InType,OutType>(fn: (i: InType) => OutType) {
     return result;
   }
 }
+
+// compare arrays by value
+export function arraysEqual<T>(a: T[], b: T[], cmp: (a: T, b: T) => boolean = (a,b)=>a===b): boolean {
+  if (a === b)
+    return true;
+
+  if (a.length !== b.length)
+    return false;
+
+  for (let i=0; i<a.length; i++)
+    if (!cmp(a[i],b[i]))
+      return false;
+
+  return true;
+}

@@ -12,7 +12,8 @@ function lineGeometryProps(size: Vec2D): [RountanglePart, object][] {
   ];
 }
 
-export const RectHelper = memo(function RectHelper(props: { uid: string, size: Vec2D, selected: string[], highlight: RountanglePart[] }) {
+// no need to memo() this component, the parent component is already memoized
+export const RectHelper = function RectHelper(props: { uid: string, size: Vec2D, selected: RountanglePart[], highlight: string[] }) {
   const geomProps = lineGeometryProps(props.size);
   return <>
     {geomProps.map(([side, ps]) => <g key={side}>
@@ -54,4 +55,4 @@ export const RectHelper = memo(function RectHelper(props: { uid: string, size: V
       data-uid={props.uid}
       data-parts="bottom left" />
   </>;
-});
+};

@@ -3,9 +3,12 @@ import { Rountangle, RountanglePart } from "../statecharts/concrete_syntax";
 import { ROUNTANGLE_RADIUS } from "./parameters";
 import { RectHelper } from "./RectHelpers";
 import { rountangleMinSize } from "./VisualEditor";
+import { arraysEqual } from "@/App/util";
 
 
-export const RountangleSVG = memo(function RountangleSVG(props: {rountangle: Rountangle; selected: string[]; highlight: RountanglePart[]; errors: string[]; active: boolean; }) {
+export const RountangleSVG = memo(function RountangleSVG(props: {rountangle: Rountangle; selected: RountanglePart[]; highlight: RountanglePart[]; error?: string; active: boolean; }) {
+  console.log('render rountangle', props.rountangle.uid);
+  
   const { topLeft, size, uid } = props.rountangle;
   // always draw a rountangle with a minimum size
   // during resizing, rountangle can be smaller than this size and even have a negative size, but we don't show it
@@ -14,7 +17,7 @@ export const RountangleSVG = memo(function RountangleSVG(props: {rountangle: Rou
     className: 'rountangle'
       + (props.selected.length === 4 ? " selected" : "")
       + (' ' + props.rountangle.kind)
-      + (props.errors.length > 0 ? " error" : "")
+      + (props.error ? " error" : "")
       + (props.active ? " active" : ""),
     "data-uid": uid,
     "data-parts": "left top right bottom",
@@ -31,11 +34,17 @@ export const RountangleSVG = memo(function RountangleSVG(props: {rountangle: Rou
 
     <text x={10} y={20} className="uid">{props.rountangle.uid}</text>
 
-    {(props.errors.length > 0) &&
-      <text className="error" x={10} y={40} data-uid={uid} data-parts="left top right bottom">{props.errors.join(' ')}</text>}
+    {props.error &&
+      <text className="error" x={10} y={40} data-uid={uid} data-parts="left top right bottom">{props.error}</text>}
 
     <RectHelper uid={uid} size={minSize}
       selected={props.selected}
       highlight={props.highlight} />
   </g>;
+}, (prevProps, nextProps) => {
+  return prevProps.rountangle === nextProps.rountangle
+    && arraysEqual(prevProps.selected, nextProps.selected)
+    && arraysEqual(prevProps.highlight, nextProps.highlight)
+    && prevProps.error === nextProps.error
+    && prevProps.active === nextProps.active
 })
