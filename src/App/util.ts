@@ -38,3 +38,31 @@ export function arraysEqual<T>(a: T[], b: T[], cmp: (a: T, b: T) => boolean = (a
 
   return true;
 }
+
+export function setsEqual<T>(a: Set<T>, b: Set<T>): boolean {
+  if (a === b)
+    return true;
+
+  if (a.size !== b.size)
+    return false;
+
+  for (const itemA of a)
+    if (!b.has(itemA))
+      return false;
+
+  return true;
+}
+
+export function objectsEqual<T>(a: {[key: string]: T}, b: {[key: string]: T}, cmp: (a: T, b: T) => boolean = (a,b)=>a===b): boolean {
+  if (a === b)
+    return true;
+
+  if (Object.keys(a).length !== Object.keys(b).length)
+    return false;
+
+  for (const [keyA, valueA] of Object.entries(a))
+    if (!cmp(b[keyA], valueA))
+      return false;
+
+  return true;
+}

@@ -15,6 +15,8 @@ import { Connections, detectConnections } from "../statecharts/detect_connection
 
 import "./VisualEditor.css";
 import { TraceState } from "@/App/App";
+import { Mode } from "@/statecharts/runtime_types";
+import { arraysEqual, objectsEqual, setsEqual } from "@/App/util";
 
 export type VisualEditorState = {
   rountangles: Rountangle[];
@@ -701,29 +703,8 @@ export const VisualEditor = memo(function VisualEditor({state, setState, trace, 
 
     {(rootErrors.length>0) && <text className="error" x={5} y={20}>{rootErrors.join(' ')}</text>}
 
-    {state.rountangles.map(rountangle => {
-      return <RountangleSVG
-        key={rountangle.uid}
-        rountangle={rountangle}
-        selected={selection.find(r => r.uid === rountangle.uid)?.parts as RectSide[] || []}
-        highlight={[...(sidesToHighlight[rountangle.uid] || []), ...(rountanglesToHighlight[rountangle.uid]?["left","right","top","bottom"]:[]) as RectSide[]]}
-        error={errors
-          .filter(({shapeUid}) => shapeUid === rountangle.uid)
-          .map(({message}) => message).join(', ')}
-        active={highlightActive.has(rountangle.uid)}
-      />})}
-
-    {state.diamonds.map(diamond => <>
-      <DiamondSVG
-        key={diamond.uid}
-        diamond={diamond}
-        selected={selection.find(r => r.uid === diamond.uid)?.parts as RectSide[] || []}
-        highlight={[...(sidesToHighlight[diamond.uid] || []), ...(rountanglesToHighlight[diamond.uid]?["left","right","top","bottom"]:[]) as RectSide[]]}
-        error={errors
-          .filter(({shapeUid}) => shapeUid === diamond.uid)
-          .map(({message}) => message).join(', ')}
-        active={false}/>
-    </>)}
+    <Rountangles rountangles={state.rountangles} {...{selection, sidesToHighlight, rountanglesToHighlight, errors, highlightActive}}/>
+    <Diamonds diamonds={state.diamonds} {...{selection, sidesToHighlight, rountanglesToHighlight, errors}}/>
 
     {state.history.map(history => <>
       <HistorySVG
@@ -756,17 +737,7 @@ export const VisualEditor = memo(function VisualEditor({state, setState, trace, 
       }
     )}
 
-    {state.texts.map(txt => {
-      return <TextSVG
-        key={txt.uid}
-        error={errors.find(({shapeUid}) => txt.uid === shapeUid)}
-        text={txt}
-        selected={Boolean(selection.find(s => s.uid === txt.uid)?.parts?.length)}
-        highlight={textsToHighlight.hasOwnProperty(txt.uid)}
-        onEdit={onEditText}
-        setModal={setModal}
-      />
-    })}
+    <Texts texts={state.texts} {...{selection, textsToHighlight, errors, onEditText, setModal}}/>
 
     {selectingState && <Selecting {...selectingState} />}
   </svg>;
@@ -781,6 +752,68 @@ export function rountangleMinSize(size: Vec2D): Vec2D {
     y: Math.max(40, size.y),
   };
 }
+
+const Rountangles = memo(function Rountangles({rountangles, selection, sidesToHighlight, rountanglesToHighlight, errors, highlightActive}: {rountangles: Rountangle[], selection: Selection, sidesToHighlight: {[key: string]: RectSide[]}, rountanglesToHighlight: {[key: string]: boolean}, errors: TraceableError[], highlightActive: Mode}) {
+  return <>{rountangles.map(rountangle => {
+    return <RountangleSVG
+      key={rountangle.uid}
+      rountangle={rountangle}
+      selected={selection.find(r => r.uid === rountangle.uid)?.parts as RectSide[] || []}
+      highlight={[...(sidesToHighlight[rountangle.uid] || []), ...(rountanglesToHighlight[rountangle.uid]?["left","right","top","bottom"]:[]) as RectSide[]]}
+      error={errors
+        .filter(({shapeUid}) => shapeUid === rountangle.uid)
+        .map(({message}) => message).join(', ')}
+      active={highlightActive.has(rountangle.uid)}
+    />})}</>;
+}, (p, n) => {
+  return arraysEqual(p.rountangles, n.rountangles)
+    && arraysEqual(p.selection, n.selection)
+    && objectsEqual(p.sidesToHighlight, n.sidesToHighlight)
+    && objectsEqual(p.rountanglesToHighlight, n.rountanglesToHighlight)
+    && arraysEqual(p.errors, n.errors)
+    && setsEqual(p.highlightActive, n.highlightActive);
+});
+
+const Diamonds = memo(function Diamonds({diamonds, selection, sidesToHighlight, rountanglesToHighlight, errors}: {diamonds: Diamond[], selection: Selection, sidesToHighlight: {[key: string]: RectSide[]}, rountanglesToHighlight: {[key: string]: boolean}, errors: TraceableError[]}) {
+  return <>{diamonds.map(diamond => <>
+    <DiamondSVG
+      key={diamond.uid}
+      diamond={diamond}
+      selected={selection.find(r => r.uid === diamond.uid)?.parts as RectSide[] || []}
+      highlight={[...(sidesToHighlight[diamond.uid] || []), ...(rountanglesToHighlight[diamond.uid]?["left","right","top","bottom"]:[]) as RectSide[]]}
+      error={errors
+        .filter(({shapeUid}) => shapeUid === diamond.uid)
+        .map(({message}) => message).join(', ')}
+      active={false}/>
+  </>)}</>;
+}, (p, n) => {
+  return arraysEqual(p.diamonds, n.diamonds)
+    && arraysEqual(p.selection, n.selection)
+    && objectsEqual(p.sidesToHighlight, n.sidesToHighlight)
+    && objectsEqual(p.rountanglesToHighlight, n.rountanglesToHighlight)
+    && arraysEqual(p.errors, n.errors);
+});
+
+const Texts = memo(function Texts({texts, selection, textsToHighlight, errors, onEditText, setModal}: {texts: Text[], selection: Selection, textsToHighlight: {[key: string]: boolean}, errors: TraceableError[], onEditText: (text: Text, newText: string) => void, setModal: Dispatch<SetStateAction<ReactElement|null>>}) {
+  return <>{texts.map(txt => {
+    return <TextSVG
+      key={txt.uid}
+      error={errors.find(({shapeUid}) => txt.uid === shapeUid)}
+      text={txt}
+      selected={Boolean(selection.find(s => s.uid === txt.uid)?.parts?.length)}
+      highlight={textsToHighlight.hasOwnProperty(txt.uid)}
+      onEdit={onEditText}
+      setModal={setModal}
+    />
+  })}</>;
+}, (p, n) => {
+  return arraysEqual(p.texts, n.texts)
+    && arraysEqual(p.selection, n.selection)
+    && objectsEqual(p.textsToHighlight, n.textsToHighlight)
+    && arraysEqual(p.errors, n.errors)
+    && p.onEditText === n.onEditText
+    && p.setModal === n.setModal;
+});
 
 export function Selecting(props: SelectingState) {
   const normalizedRect = normalizeRect(props!);
