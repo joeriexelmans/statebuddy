@@ -160,7 +160,7 @@ text.helper:hover {
   stroke: var(--error-color);
 }
 .arrow.fired {
-  stroke: rgb(160, 0, 168);
+    stroke: rgb(160 0 168);
   stroke-width: 3px;
   animation: blinkTransition 1s;
 }

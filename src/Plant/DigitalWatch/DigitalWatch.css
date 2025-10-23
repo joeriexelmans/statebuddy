@@ -1,0 +1,14 @@
+.watchButtonHelper {
+  fill-opacity: 0;
+}
+
+.watchButtonHelper:hover {
+  fill: beige;
+  fill-opacity: 0.5;
+}
+
+.watchButtonHelper:active {
+  fill: red;
+  fill-opacity: 1;
+}
+

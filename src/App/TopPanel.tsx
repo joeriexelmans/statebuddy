@@ -25,10 +25,12 @@ import { About } from "./About";
 import { usePersistentState } from "@/util/persistent_state";
 import { RountangleIcon, PseudoStateIcon, HistoryIcon } from "./Icons";
 import { ZOOM_MAX, ZOOM_MIN, ZOOM_STEP } from "@/VisualEditor/parameters";
+import { EditHistory, TraceState } from "./App";
 
 export type TopPanelProps = {
-  rt?: BigStep,
-  rtIdx?: number,
+  trace: TraceState | null,
+  // rt?: BigStep,
+  // rtIdx?: number,
   time: TimeMode,
   setTime: Dispatch<SetStateAction<TimeMode>>,
   onUndo: () => void,
@@ -45,11 +47,14 @@ export type TopPanelProps = {
   setZoom: Dispatch<SetStateAction<number>>,
   showKeys: boolean,
   setShowKeys: Dispatch<SetStateAction<boolean>>,
+  history: EditHistory,
 }
 
-export function TopPanel({rt, rtIdx, time, setTime, onUndo, onRedo, onInit, onClear, onRaise, onBack, ast, mode, setMode, setModal, zoom, setZoom, showKeys, setShowKeys}: TopPanelProps) {
+export function TopPanel({trace, time, setTime, onUndo, onRedo, onInit, onClear, onRaise, onBack, ast, mode, setMode, setModal, zoom, setZoom, showKeys, setShowKeys, history}: TopPanelProps) {
   const [displayTime, setDisplayTime] = useState("0.000");
   const [timescale, setTimescale] = useState(1);
+
+  const config = trace && trace.trace[trace.idx];
 
   const KeyInfo = showKeys ? KeyInfoVisible : KeyInfoHidden;
 
@@ -58,8 +63,9 @@ export function TopPanel({rt, rtIdx, time, setTime, onUndo, onRedo, onInit, onCl
       if (!e.ctrlKey) {
         if (e.key === " ") {
           e.preventDefault();
-          if (rt)
-          onChangePaused(time.kind !== "paused", Math.round(performance.now()));
+          if (config) {
+            onChangePaused(time.kind !== "paused", Math.round(performance.now()));
+          }
         };
         if (e.key === "i") {
           e.preventDefault();
@@ -70,7 +76,7 @@ export function TopPanel({rt, rtIdx, time, setTime, onUndo, onRedo, onInit, onCl
           onClear();
         }
         if (e.key === "Tab") {
-          if (rtIdx === undefined) {
+          if (trace === null) {
             onInit();
           }
           else {
@@ -175,7 +181,7 @@ export function TopPanel({rt, rtIdx, time, setTime, onUndo, onRedo, onInit, onCl
   }
 
   // timestamp of next timed transition, in simulated time
-  const timers: Timers = (rt?.environment.get("_timers") || []);
+  const timers: Timers = config?.kind === "bigstep" && config.environment.get("_timers") || [];
   const nextTimedTransition: [number, TimerElapseEvent] | undefined = timers[0];
 
   function onSkip() {
@@ -225,10 +231,10 @@ export function TopPanel({rt, rtIdx, time, setTime, onUndo, onRedo, onInit, onCl
     {/* undo / redo */}
     <div className="toolbarGroup">
       <KeyInfo keyInfo={<><kbd>Ctrl</kbd>+<kbd>Z</kbd></>}>
-        <button title="undo" onClick={onUndo}><UndoIcon fontSize="small"/></button>
+        <button title="undo" onClick={onUndo} disabled={history.history.length === 0}><UndoIcon fontSize="small"/>&nbsp;({history.history.length})</button>
       </KeyInfo>
       <KeyInfo keyInfo={<><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd></>}>
-        <button title="redo" onClick={onRedo}><RedoIcon fontSize="small"/></button>
+        <button title="redo" onClick={onRedo} disabled={history.future.length === 0}><RedoIcon fontSize="small"/>&nbsp;({history.future.length})</button>
       </KeyInfo>
       &emsp;
     </div>
@@ -263,12 +269,12 @@ export function TopPanel({rt, rtIdx, time, setTime, onUndo, onRedo, onInit, onCl
           <button title="(re)initialize simulation" onClick={onInit} ><PlayArrowIcon fontSize="small"/><CachedIcon fontSize="small"/></button>
         </KeyInfo>
         <KeyInfo keyInfo={<kbd>C</kbd>}>
-          <button title="clear the simulation" onClick={onClear} disabled={!rt}><StopIcon fontSize="small"/></button>
+          <button title="clear the simulation" onClick={onClear} disabled={!config}><StopIcon fontSize="small"/></button>
         </KeyInfo>
         &emsp;
         <KeyInfo keyInfo={<><kbd>Space</kbd> toggles</>}>
-          <button title="pause the simulation" disabled={!rt || time.kind==="paused"} className={(rt && time.kind==="paused") ? "active":""} onClick={() => onChangePaused(true, Math.round(performance.now()))}><PauseIcon fontSize="small"/></button>
-          <button title="run the simulation in real time" disabled={!rt || time.kind==="realtime"} className={(rt && time.kind==="realtime") ? "active":""} onClick={() => onChangePaused(false, Math.round(performance.now()))}><PlayArrowIcon fontSize="small"/></button>
+          <button title="pause the simulation" disabled={!config || time.kind==="paused"} className={(config && time.kind==="paused") ? "active":""} onClick={() => onChangePaused(true, Math.round(performance.now()))}><PauseIcon fontSize="small"/></button>
+          <button title="run the simulation in real time" disabled={!config || time.kind==="realtime"} className={(config && time.kind==="realtime") ? "active":""} onClick={() => onChangePaused(false, Math.round(performance.now()))}><PlayArrowIcon fontSize="small"/></button>
         </KeyInfo>
         &emsp;
       </div>
@@ -290,12 +296,12 @@ export function TopPanel({rt, rtIdx, time, setTime, onUndo, onRedo, onInit, onCl
       <div className="toolbarGroup">
         <div className="toolbarGroup">
           <label htmlFor="time">time (s)</label>&nbsp;
-          <input title="the current simulated time" id="time" disabled={!rt} value={displayTime} readOnly={true} className="readonlyTextBox" />
+          <input title="the current simulated time" id="time" disabled={!config} value={displayTime} readOnly={true} className="readonlyTextBox" />
         </div>
         &emsp;
         <div className="toolbarGroup">
           <label htmlFor="next-timeout">next (s)</label>&nbsp;
-          <input title="next point in simulated time where a timed transition may fire" id="next-timeout" disabled={!rt} value={nextTimedTransition ? formatTime(nextTimedTransition[0]) : '+inf'} readOnly={true} className="readonlyTextBox"/>
+          <input title="next point in simulated time where a timed transition may fire" id="next-timeout" disabled={!config} value={nextTimedTransition ? formatTime(nextTimedTransition[0]) : '+inf'} readOnly={true} className="readonlyTextBox"/>
           <KeyInfo keyInfo={<kbd>Tab</kbd>}>
             <button title="advance time just enough for the next timer to elapse" disabled={nextTimedTransition===undefined} onClick={onSkip}><SkipNextIcon fontSize="small"/><AccessAlarmIcon fontSize="small"/></button>
           </KeyInfo>

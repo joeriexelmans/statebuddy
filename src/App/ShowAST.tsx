@@ -32,7 +32,7 @@ export function ShowAction(props: {action: Action}) {
   }
 }
 
-export function ShowAST(props: {root: ConcreteState | PseudoState, transitions: Map<string, Transition[]>, rt: RT_Statechart | undefined, highlightActive: Set<string>}) {
+export function ShowAST(props: {root: ConcreteState | PseudoState, transitions: Map<string, Transition[]>, trace: TraceState | null, highlightActive: Set<string>}) {
   const description = stateDescription(props.root);
   // const outgoing = props.transitions.get(props.root.uid) || [];
 
@@ -40,7 +40,7 @@ export function ShowAST(props: {root: ConcreteState | PseudoState, transitions: 
     {props.root.kind !== "pseudo" && props.root.children.length>0 &&
       <ul>
         {props.root.children.map(child => 
-          <ShowAST key={child.uid} root={child} transitions={props.transitions} rt={props.rt} highlightActive={props.highlightActive} />
+          <ShowAST key={child.uid} root={child} transitions={props.transitions} trace={props.trace} highlightActive={props.highlightActive} />
         )}
       </ul>
     }
@@ -74,6 +74,7 @@ export function ShowAST(props: {root: ConcreteState | PseudoState, transitions: 
 import BoltIcon from '@mui/icons-material/Bolt';
 import { KeyInfoHidden, KeyInfoVisible } from "./KeyInfo";
 import { useEffect } from "react";
+import { TraceState } from "./App";
 
 export function ShowInputEvents({inputEvents, onRaise, disabled, showKeys}: {inputEvents: EventTrigger[], onRaise: (e: string, p: any) => void, disabled: boolean, showKeys: boolean}) {
   const raiseHandlers = inputEvents.map(({event}) => {
@@ -110,7 +111,7 @@ export function ShowInputEvents({inputEvents, onRaise, disabled, showKeys}: {inp
     const shortcut = (i+1)%10;
     const KI = (i <= 10) ? KeyInfo : KeyInfoHidden;
     return <div key={event+'/'+paramName} className="toolbarGroup">
-      <KI keyInfo={<kbd>{shortcut}</kbd>}>
+      <KI keyInfo={<kbd>{shortcut}</kbd>} horizontal={true}>
         <button
           className="inputEvent"
           title={`raise this input event`}

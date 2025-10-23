@@ -9,12 +9,12 @@ details > summary {
 }
 
 /* these two rules add a bit of padding to an opened <details> node */
-details:open > summary {
+/* details:open > summary:has(+ *) {
   margin-bottom: 4px;
 }
-details:open {
+details:open:has(>summary:has(+ *)) {
   padding-bottom: 8px;
-}
+} */
 
 details > summary:hover {
   background-color: #eee;
@@ -46,30 +46,33 @@ details > summary:hover {
 .outputEvent {
   border: 1px black solid;
   border-radius: 6px;
-  margin-left: 4px;
+  /* margin-left: 4px; */
   padding-left: 2px;
   padding-right: 2px;
   background-color: rgb(230, 249, 255);
+  color: black;
   display: inline-block;
 }
 
 .internalEvent {
   border: 1px black solid;
   border-radius: 6px;
-  margin-left: 4px;
+  /* margin-left: 4px; */
   padding-left: 2px;
   padding-right: 2px;
   background-color: rgb(255, 218, 252);
+  color: black;
   display: inline-block;
 }
 
 .inputEvent {
   border: 1px black solid;
   border-radius: 6px;
-  margin-left: 4px;
+  /* margin-left: 4px; */
   padding-left: 2px;
   padding-right: 2px;
   background-color: rgb(224, 247, 209);
+  color: black;
   display: inline-block;
 }
 .inputEvent * {

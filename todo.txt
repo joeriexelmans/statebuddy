@@ -27,19 +27,23 @@
 
 TODO
 
-- must have:
-    - event parameters on output / internal events
+- digital watch:
+    highlight when watch button pressed/released
+
+- maybe support:
     - explicit order of:
-        - outgoing transitions
-        - regions in AND-state
+        - outgoing transitions?
 
 - usability stuff:
-    - show internal events
+    - ability to hide statechart and only show the plant?
     - hovering over event in side panel should highlight all occurrences of the event in the SC
     - hovering over error in bottom panel should highlight that rror in the SC
     - highlight selected shapes while making a selection
     - comments sometimes snap to transitions even if they belong to a state
+
     - highlight fired transitions
+    - highlight about-to-fire transitions
+
     - when there is a runtime error, e.g.,
         - variable not found
         - stuck in pseudo-state
@@ -50,3 +54,12 @@ TODO
 - experimental features:
     - multiverse execution history
     - local scopes
+
+
+
+for the assignment:
+    *ALL* features
+        add history (look at original Harel paper)
+
+Publish StateBuddy paper(s):
+    compare CS approach to other tools, not only YAKINDU

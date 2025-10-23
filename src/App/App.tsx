@@ -1,8 +1,8 @@
-import { createElement, Dispatch, ReactElement, SetStateAction, useEffect, useRef, useState } from "react";
+import { ReactElement, useEffect, useMemo, useRef, useState } from "react";
 
-import { emptyStatechart, Statechart } from "../statecharts/abstract_syntax";
-import { handleInputEvent, initialize } from "../statecharts/interpreter";
-import { BigStep, BigStepOutput } from "../statecharts/runtime_types";
+import { emptyStatechart, Statechart, Transition } from "../statecharts/abstract_syntax";
+import { handleInputEvent, initialize, RuntimeError } from "../statecharts/interpreter";
+import { BigStep, BigStepOutput, RT_Event } from "../statecharts/runtime_types";
 import { InsertMode, VisualEditor, VisualEditorState } from "../VisualEditor/VisualEditor";
 import { getSimTime, getWallClkDelay, TimeMode } from "../statecharts/time";
 
@@ -12,19 +12,19 @@ import "./App.css";
 import Stack from "@mui/material/Stack";
 import Box from "@mui/material/Box";
 import { TopPanel } from "./TopPanel";
-import { RTHistory } from "./RTHistory";
 import { ShowAST, ShowInputEvents, ShowInternalEvents, ShowOutputEvents } from "./ShowAST";
 import { TraceableError } from "../statecharts/parser";
 import { getKeyHandler } from "./shortcut_handler";
 import { BottomPanel } from "./BottomPanel";
 import { emptyState } from "@/statecharts/concrete_syntax";
 import { PersistentDetails } from "./PersistentDetails";
-import { DigitalWatch, DigitalWatchPlant } from "@/Plant/DigitalWatch/DigitalWatch";
+import { DigitalWatchPlant } from "@/Plant/DigitalWatch/DigitalWatch";
 import { DummyPlant } from "@/Plant/Dummy/Dummy";
 import { Plant } from "@/Plant/Plant";
 import { usePersistentState } from "@/util/persistent_state";
+import { RTHistory } from "./RTHistory";
 
-type EditHistory = {
+export type EditHistory = {
   current: VisualEditorState,
   history: VisualEditorState[],
   future: VisualEditorState[],
@@ -35,13 +35,46 @@ const plants: [string, Plant<any>][] = [
   ["digital watch", DigitalWatchPlant],
 ]
 
+export type BigStepError = {
+  inputEvent: string,
+  simtime: number,
+  error: RuntimeError,
+}
+
+export type TraceItem = { kind: "error" } & BigStepError | { kind: "bigstep", plantState: any } & BigStep;
+
+export type TraceState = {
+  trace: [TraceItem, ...TraceItem[]], // non-empty
+  idx: number,
+}; // <-- null if there is no trace
+
+function current(ts: TraceState) {
+  return ts.trace[ts.idx]!;
+}
+
+function getPlantState<T>(plant: Plant<T>, trace: TraceItem[], idx: number): T | null {
+  if (idx === -1) {
+    return plant.initial;
+  }
+  let plantState = getPlantState(plant, trace, idx-1);
+  if (plantState !== null) {
+    const currentConfig = trace[idx];
+    if (currentConfig.kind === "bigstep") {
+      for (const o of currentConfig.outputEvents) {
+        plantState = plant.reduce(o, plantState);
+      }
+    }
+    return plantState;
+  }
+  return null;
+}
+
 export function App() {
   const [mode, setMode] = useState<InsertMode>("and");
   const [historyState, setHistoryState] = useState<EditHistory>({current: emptyState, history: [], future: []});
   const [ast, setAST] = useState<Statechart>(emptyStatechart);
   const [errors, setErrors] = useState<TraceableError[]>([]);
-  const [rt, setRT] = useState<BigStep[]>([]);
-  const [rtIdx, setRTIdx] = useState<number|undefined>();
+  const [trace, setTrace] = useState<TraceState|null>(null);
   const [time, setTime] = useState<TimeMode>({kind: "paused", simtime: 0});
   const [modal, setModal] = useState<ReactElement|null>(null);
 
@@ -58,7 +91,7 @@ export function App() {
 
   const refRightSideBar = useRef<HTMLDivElement>(null);
 
-
+  // append editor state to undo history
   function makeCheckPoint() {
     setHistoryState(historyState => ({
       ...historyState,
@@ -92,54 +125,124 @@ export function App() {
   }
   
   function onInit() {
-    const config = initialize(ast);
-    setRT([{inputEvent: null, simtime: 0, ...config}]);
-    setRTIdx(0);
+    const timestampedEvent = {simtime: 0, inputEvent: "<init>"};
+    let config;
+    try {
+      config = initialize(ast);
+      const item = {kind: "bigstep", ...timestampedEvent, ...config};
+      const plantState = getPlantState(plant, [item], 0);
+      setTrace({trace: [{...item, plantState}], idx: 0});
+    }
+    catch (error) {
+      if (error instanceof RuntimeError) {
+        setTrace({trace: [{kind: "error", ...timestampedEvent, error}], idx: 0});
+      }
+      else {
+        throw error; // probably a bug in the interpreter
+      }
+    }
     setTime({kind: "paused", simtime: 0});
     scrollDownSidebar();
  }
 
   function onClear() {
-    setRT([]);
-    setRTIdx(undefined);
+    setTrace(null);
     setTime({kind: "paused", simtime: 0});
   }
 
+  // raise input event, producing a new runtime configuration (or a runtime error)
   function onRaise(inputEvent: string, param: any) {
-    if (rt.length>0 && rtIdx!==undefined && ast.inputEvents.some(e => e.event === inputEvent)) {
-      const simtime = getSimTime(time, Math.round(performance.now()));
-      const nextConfig = handleInputEvent(simtime, {kind: "input", name: inputEvent, param}, ast, rt[rtIdx]!);
-      appendNewConfig(inputEvent, simtime, nextConfig);
+    if (trace !== null && ast.inputEvents.some(e => e.event === inputEvent)) {
+      const config = current(trace);
+      if (config.kind === "bigstep") {
+        const simtime = getSimTime(time, Math.round(performance.now()));
+        produceNextConfig(simtime, {kind: "input", name: inputEvent, param}, config);
+      }
     }
   }
+  // timer elapse events are triggered by a change of the simulated time (possibly as a scheduled JS event loop timeout)
+  useEffect(() => {
+    let timeout: NodeJS.Timeout | undefined;
+    if (trace !== null) {
+      const config = current(trace);
+      if (config.kind === "bigstep") {
+        const timers = config.environment.get("_timers") || [];
+        if (timers.length > 0) {
+          const [nextInterrupt, timeElapsedEvent] = timers[0];
+          const raiseTimeEvent = () => {
+            produceNextConfig(nextInterrupt, timeElapsedEvent, config);
+          }
+          // depending on whether paused or realtime, raise immediately or in the future:
+          if (time.kind === "realtime") {
+            const wallclkDelay = getWallClkDelay(time, nextInterrupt, Math.round(performance.now()));
+            timeout = setTimeout(raiseTimeEvent, wallclkDelay);
+          }
+          else if (time.kind === "paused") {
+            if (nextInterrupt <= time.simtime) {
+              raiseTimeEvent();
+            }
+          }
+        }
+      }
+    }
+    return () => {
+      if (timeout) clearTimeout(timeout);
+    }
+  }, [time, trace]); // <-- todo: is this really efficient?
+  function produceNextConfig(simtime: number, event: RT_Event, config: TraceItem) {
+    const timedEvent = {
+      simtime,
+      inputEvent: event.kind === "timer" ? "<timer>" : event.name,
+    };
 
-  function appendNewConfig(inputEvent: string, simtime: number, config: BigStepOutput) {
-    setRT([...rt.slice(0, rtIdx!+1), {inputEvent, simtime, ...config}]);
-    setRTIdx(rtIdx!+1);
-    // console.log('new config:', config);
+    let newItem: TraceItem;
+    try {
+      const nextConfig = handleInputEvent(simtime, event, ast, config as BigStep); // may throw
+      let plantState = config.plantState;
+      for (const o of nextConfig.outputEvents) {
+        console.log(o);
+        plantState = plant.reduce(o, plantState);
+      }
+      console.log({plantState});
+      newItem = {kind: "bigstep", plantState, ...timedEvent, ...nextConfig};
+    }
+    catch (error) {
+      if (error instanceof RuntimeError) {
+        newItem = {kind: "error", ...timedEvent, error};
+      }
+      else {
+        throw error;
+      }
+    }
+
+    // @ts-ignore
+    setTrace(trace => ({
+      trace: [
+        ...trace!.trace.slice(0, trace!.idx+1), // remove everything after current item
+        newItem,
+      ],
+      idx: trace!.idx+1,
+    }));
     scrollDownSidebar();
   }
 
+
   function onBack() {
-    setTime(() => {
-      if (rtIdx !== undefined) {
-        if (rtIdx > 0)
+    if (trace !== null) {
+      setTime(() => {
+        if (trace !== null) {
           return {
             kind: "paused",
-            simtime: rt[rtIdx-1].simtime,
+            simtime: trace.trace[trace.idx-1].simtime,
           }
-      }
-      return { kind: "paused", simtime: 0 };
-    });
-    setRTIdx(rtIdx => {
-      if (rtIdx !== undefined) {
-        if (rtIdx > 0)
-          return rtIdx - 1;
-        else
-          return 0;
-      }
-      else return undefined;
-    })
+        }
+        return { kind: "paused", simtime: 0 };
+      });
+      setTrace({
+        ...trace,
+        idx: trace.idx-1,
+      });
+    }
   }
 
   function scrollDownSidebar() {
@@ -160,36 +263,6 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    let timeout: NodeJS.Timeout | undefined;
-    if (rtIdx !== undefined) {
-      const currentRt = rt[rtIdx]!;
-      const timers = currentRt.environment.get("_timers") || [];
-      if (timers.length > 0) {
-        const [nextInterrupt, timeElapsedEvent] = timers[0];
-        const raiseTimeEvent = () => {
-          const nextConfig = handleInputEvent(nextInterrupt, timeElapsedEvent, ast, currentRt);
-          appendNewConfig('<timer>', nextInterrupt, nextConfig);
-        }
-        if (time.kind === "realtime") {
-          const wallclkDelay = getWallClkDelay(time, nextInterrupt, Math.round(performance.now()));
-          // console.log('scheduling timeout after', wallclkDelay);
-          timeout = setTimeout(raiseTimeEvent, wallclkDelay);
-        }
-        else if (time.kind === "paused") {
-          if (nextInterrupt <= time.simtime) {
-            raiseTimeEvent();
-          }
-        }
-      }
-    }
-
-    return () => {
-      if (timeout) clearTimeout(timeout);
-    }
-
-  }, [time, rtIdx]);
-
-  useEffect(() => {
     const onKeyDown = getKeyHandler(setMode);
     window.addEventListener("keydown", onKeyDown);
     return () => {
@@ -197,27 +270,28 @@ export function App() {
     };
   }, []);
 
-  // const highlightActive = (rtIdx !== undefined) && new Set([...rt[rtIdx].mode].filter(uid => {
-  //   const state = ast.uid2State.get(uid);
-  //   return state && state.parent?.kind !== "and";
-  // })) || new Set();
-
-  const highlightActive: Set<string> = (rtIdx === undefined) ? new Set() : rt[rtIdx].mode;
-
-  const highlightTransitions = (rtIdx === undefined) ? [] : rt[rtIdx].firedTransitions;
-
-
-  const plantStates = [];
-  let ps = plant.initial(e => {
-    onRaise(e.name, e.param);
-  });
-  for (let i=0; i<rt.length; i++) {
-    const r = rt[i];
-    for (const o of r.outputEvents) {
-      ps = plant.reducer(o, ps);
-    }
-    plantStates.push(ps);
+  let highlightActive: Set<string>;
+  let highlightTransitions: string[];
+  if (trace === null) {
+    highlightActive = new Set();
+    highlightTransitions = [];
   }
+  else {
+    const item = current(trace);
+    console.log(trace);
+    if (item.kind === "bigstep") {
+      highlightActive = item.mode;
+      highlightTransitions = item.firedTransitions;
+    }
+    else {
+      highlightActive = new Set();
+      highlightTransitions = [];
+    }
+  }
+
+  // const plantState = trace && getPlantState(plant, trace.trace, trace.idx);
+
+  const [showExecutionTrace, setShowExecutionTrace] = usePersistentState("showExecutionTrace", true);
 
   return <>
 
@@ -250,13 +324,12 @@ export function App() {
             }}
           >
             <TopPanel
-              rt={rtIdx === undefined ? undefined : rt[rtIdx]}
-              {...{rtIdx, ast, time, setTime, onUndo, onRedo, onInit, onClear, onRaise, onBack, mode, setMode, setModal, zoom, setZoom, showKeys, setShowKeys}}
+              {...{trace, ast, time, setTime, onUndo, onRedo, onInit, onClear, onRaise, onBack, mode, setMode, setModal, zoom, setZoom, showKeys, setShowKeys, history: historyState}}
             />
           </Box>
           {/* Below the top bar: Editor */}
           <Box sx={{flexGrow:1, overflow: "auto"}}>
-            <VisualEditor {...{state: editorState, setState: setEditorState, ast, setAST, rt: rt.at(rtIdx!), setRT, errors, setErrors, mode, highlightActive, highlightTransitions, setModal, makeCheckPoint, zoom}}/>
+            <VisualEditor {...{state: editorState, setState: setEditorState, ast, setAST, trace, setTrace, errors, setErrors, mode, highlightActive, highlightTransitions, setModal, makeCheckPoint, zoom}}/>
           </Box>
         </Stack>
       </Box>
@@ -272,18 +345,22 @@ export function App() {
       }}>
         <Stack sx={{height:'100%'}}>
           <Box
-            className="shadowBelow"
+            className={showExecutionTrace ? "shadowBelow" : ""}
             sx={{flex: '0 0 content', backgroundColor: ''}}
           >
             <PersistentDetails localStorageKey="showStateTree" initiallyOpen={true}>
               <summary>state tree</summary>
               <ul>
-                <ShowAST {...{...ast, rt: rt.at(rtIdx!), highlightActive}}/>
+                <ShowAST {...{...ast, trace, highlightActive}}/>
               </ul>
             </PersistentDetails>
             <PersistentDetails localStorageKey="showInputEvents" initiallyOpen={true}>
               <summary>input events</summary>
-              <ShowInputEvents inputEvents={ast.inputEvents} onRaise={onRaise} disabled={rtIdx===undefined} showKeys={showKeys}/>
+              <ShowInputEvents
+                inputEvents={ast.inputEvents}
+                onRaise={onRaise}
+                disabled={trace===null || trace.trace[trace.idx].kind === "error"}
+                showKeys={showKeys}/>
             </PersistentDetails>
             <PersistentDetails localStorageKey="showInternalEvents" initiallyOpen={true}>
               <summary>internal events</summary>
@@ -293,20 +370,6 @@ export function App() {
               <summary>output events</summary>
               <ShowOutputEvents outputEvents={ast.outputEvents}/>
             </PersistentDetails>
-          </Box>
-          <Box sx={{
-            flexGrow:1,
-            overflow:'auto',
-            minHeight: 400,
-            // minHeight: '75%', // <-- allows us to always scroll down the sidebar far enough such that the execution history is enough in view
-            }}>
-            <Box sx={{ height: '100%'}}>
-              <div ref={refRightSideBar}>
-                <RTHistory {...{ast, rt, rtIdx, setTime, setRTIdx, refRightSideBar}}/>
-              </div>
-            </Box>
-          </Box>
-          <Box sx={{flex: '0 0 content'}}>
             <PersistentDetails localStorageKey="showPlant" initiallyOpen={true}>
               <summary>plant</summary>
               <select
@@ -316,8 +379,28 @@ export function App() {
                   <option>{plantName}</option>
                 )}
               </select>
-              {rtIdx!==undefined && <plant.render {...plantStates[rtIdx]}/>}
+              {trace !== null &&
+                plant.render(trace.trace[trace.idx].plantState, event => onRaise(event.name, event.param))}
             </PersistentDetails>
+            <details open={showExecutionTrace} onToggle={e => setShowExecutionTrace(e.newState === "open")}><summary>execution trace</summary></details>
+          </Box>
+
+          {showExecutionTrace &&
+            <Box sx={{
+              flexGrow:1,
+              overflow:'auto',
+              minHeight: '50vh',
+              // minHeight: '75%', // <-- allows us to always scroll down the sidebar far enough such that the execution history is enough in view
+              }}>
+                {/* <PersistentDetails localStorageKey="showExecutionTrace" initiallyOpen={true}> */}
+                  {/* <summary>execution trace</summary> */}
+                  <div ref={refRightSideBar}>
+                    <RTHistory {...{ast, trace, setTrace, setTime}}/>
+                  </div>
+                {/* </PersistentDetails> */}
+            </Box>}
+
+          <Box sx={{flex: '0 0 content'}}>
           </Box>
         </Stack>
       </Box>

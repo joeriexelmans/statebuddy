@@ -1,41 +1,61 @@
 import { Dispatch, Ref, SetStateAction } from "react";
 import { Statechart, stateDescription } from "../statecharts/abstract_syntax";
-import { BigStep, Environment, Mode, RaisedEvent } from "../statecharts/runtime_types";
+import { BigStep, Environment, Mode, RaisedEvent, RT_Event } from "../statecharts/runtime_types";
 import { formatTime } from "./util";
 import { TimeMode } from "../statecharts/time";
+import { TraceState } from "./App";
 
 type RTHistoryProps = {
-  rt: BigStep[],
-  rtIdx: number | undefined,
+  trace: TraceState|null,
+  setTrace: Dispatch<SetStateAction<TraceState|null>>;
   ast: Statechart,
-  setRTIdx: Dispatch<SetStateAction<number|undefined>>,
   setTime: Dispatch<SetStateAction<TimeMode>>,
-  refRightSideBar: Ref<HTMLDivElement>,
 }
 
-export function RTHistory({rt, rtIdx, ast, setRTIdx, setTime, refRightSideBar}: RTHistoryProps) {
+export function RTHistory({trace, setTrace, ast, setTime}: RTHistoryProps) {
   function gotoRt(idx: number, timestamp: number) {
-    setRTIdx(idx);
+    setTrace(trace => trace && {
+      ...trace,
+      idx,
+    });
     setTime({kind: "paused", simtime: timestamp});
   }
 
+  if (trace === null) {
+    return <></>;
+  }
   return <div>
-    {rt.map((r, idx) => <>
-    <div
-      className={"runtimeState"+(idx===rtIdx?" active":"")}
-      onClick={() => gotoRt(idx, r.simtime)}>
-      <div>
-        {formatTime(r.simtime)}
-        &emsp;
-        <div className="inputEvent">{r.inputEvent || "<init>"}</div>
-      </div>
-      <ShowMode mode={r.mode.difference(rt[idx-1]?.mode || new Set())} statechart={ast}/>
-      <ShowEnvironment environment={r.environment}/>
-      {r.outputEvents.length>0 && <>^
-        {r.outputEvents.map((e:RaisedEvent) => <span className="outputEvent">{e.name}</span>)}
-      </>}
-    {/* <hr/> */}
-    </div></>)}
+    {trace.trace.map((item, i) => {
+      if (item.kind === "bigstep") {
+        const newStates = item.mode.difference(trace.trace[i-1]?.mode || new Set());
+        return <div
+          className={"runtimeState" + (i === trace.idx ? " active" : "")}
+          onClick={() => gotoRt(i, item.simtime)}>
+          <div>
+            {formatTime(item.simtime)}
+            &emsp;
+            <div className="inputEvent">{item.inputEvent || "<init>"}</div>
+          </div>
+          <ShowMode mode={newStates} statechart={ast}/>
+          <ShowEnvironment environment={item.environment}/>
+          {item.outputEvents.length>0 && <>^
+            {item.outputEvents.map((e:RaisedEvent) => <span className="outputEvent">{e.name}</span>)}
+          </>}
+        </div>;
+      }
+      else {
+        return <div className="runtimeState runtimeError">
+          <div>
+            {formatTime(item.simtime)}
+            &emsp;
+            <div className="inputEvent">{item.inputEvent}</div>
+          </div>
+          <div>
+            {item.error.message}
+          </div>
+        </div>;
+      }
+    })}
   </div>;
 }
 

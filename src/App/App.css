@@ -35,6 +35,11 @@ details:has(+ details) {
   /* border: solid black 3px; */
   border: solid blue 1px;
 }
+
+.runtimeState.runtimeError {
+  background-color: lightpink;
+  color: darkred;
+}
 /* details:not(:has(details)) > summary::marker {
   color: white;
 } */

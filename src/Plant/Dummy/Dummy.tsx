@@ -5,6 +5,6 @@ export const DummyPlant: Plant<{}> = {
   inputEvents: [],
   outputEvents: [],
   initial: () => ({}),
-  reducer: (_inputEvent: RaisedEvent, _state: {}) => ({}),
-  render: (_state: {}) => <></>,
+  reduce: (_inputEvent: RaisedEvent, _state: {}) => ({}),
+  render: (_state: {}, _raise: (event: RaisedEvent) => void) => <></>,
 }

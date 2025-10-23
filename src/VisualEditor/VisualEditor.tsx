@@ -15,6 +15,7 @@ import { HistorySVG } from "./HistorySVG";
 import { detectConnections } from "../statecharts/detect_connections";
 
 import "./VisualEditor.css";
+import { TraceState } from "@/App/App";
 
 export type VisualEditorState = {
   rountangles: Rountangle[];
@@ -65,7 +66,7 @@ type VisualEditorProps = {
   setState: Dispatch<(v:VisualEditorState) => VisualEditorState>,
   ast: Statechart,
   setAST: Dispatch<SetStateAction<Statechart>>,
-  rt: BigStep|undefined,
+  trace: TraceState | null,
   errors: TraceableError[],
   setErrors: Dispatch<SetStateAction<TraceableError[]>>,
   mode: InsertMode,
@@ -76,7 +77,7 @@ type VisualEditorProps = {
   zoom: number;
 };
 
-export function VisualEditor({state, setState, ast, setAST, rt, errors, setErrors, mode, highlightActive, highlightTransitions, setModal, makeCheckPoint, zoom}: VisualEditorProps) {
+export function VisualEditor({state, setState, ast, setAST, trace, errors, setErrors, mode, highlightActive, highlightTransitions, setModal, makeCheckPoint, zoom}: VisualEditorProps) {
 
   const [dragging, setDragging] = useState(false);
 
@@ -132,7 +133,7 @@ export function VisualEditor({state, setState, ast, setAST, rt, errors, setError
         })
       });
     })
-  }, [rt]);
+  }, [trace && trace.idx]);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -667,7 +668,7 @@ export function VisualEditor({state, setState, ast, setAST, rt, errors, setError
     }
   }
 
-  const active = rt?.mode || new Set();
+  const active = trace && trace.trace[trace.idx].mode || new Set();
 
   const rootErrors = errors.filter(({shapeUid}) => shapeUid === "root").map(({message}) => message);
 

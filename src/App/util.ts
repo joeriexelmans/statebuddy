@@ -11,3 +11,15 @@ export function compactTime(timeMs: number) {
   return `${timeMs} ms`;
 }
 
+export function memoize<InType,OutType>(fn: (i: InType) => OutType) {
+  const cache = new Map();
+  return (i: InType) => {
+    const found = cache.get(i);
+    if (found) {
+      return found;
+    }
+    const result = fn(i);
+    cache.set(i, result);
+    return result;
+  }
+}

@@ -24,6 +24,16 @@ type ActionScope = {
 
 type EnteredScope = { enteredStates: Mode } & ActionScope;
 
+export class RuntimeError extends Error {
+  highlight: string[];
+  constructor(message: string, highlight: string[]) {
+    super(message);
+    this.highlight = highlight;
+  }
+}
+
+export class NonDeterminismError extends RuntimeError {}
+
 export function execAction(action: Action, rt: ActionScope): ActionScope {
   if (action.kind === "assignment") {
     const rhs = evalExpr(action.rhs, rt.environment);
@@ -116,7 +126,7 @@ export function enterDefault(simtime: number, state: ConcreteState, rt: ActionSc
     // same as AND-state, but we only enter the initial state(s)
     if (state.initial.length > 0) {
       if (state.initial.length > 1) {
-        console.warn(state.uid + ': multiple initial states, only entering one of them');
+        throw new NonDeterminismError(`Non-determinism: state '${stateDescription(state)} has multiple (${state.initial.length}) initial states.`, [...state.initial.map(i => i[0]), state.uid]);
       }
       const [arrowUid, toEnter] = state.initial[0];
       firedTransitions = [...firedTransitions, arrowUid];
@@ -237,7 +247,7 @@ export function handleEvent(simtime: number, event: RT_Event, statechart: Statec
         evalExpr(l.guard, guardEnvironment));
       if (enabled.length > 0) {
         if (enabled.length > 1) {
-          console.warn('nondeterminism!!!!');
+          throw new NonDeterminismError(`Non-determinism: state '${stateDescription(state)}' has multiple (${enabled.length}) enabled outgoing transitions: ${enabled.map(([t]) => transitionDescription(t)).join(', ')}`, [...enabled.map(([t]) => t.uid), state.uid]);
         }
         const [t,l] = enabled[0]; // just pick one transition
         const arena = computeArena2(t, statechart.transitions);

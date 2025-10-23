@@ -4,6 +4,8 @@ import digitalFont from "./digital-font.ttf";
 import { Plant } from "../Plant";
 import { RaisedEvent } from "@/statecharts/runtime_types";
 
+import "./DigitalWatch.css";
+
 type DigitalWatchState = {
   light: boolean;
   h: number;
@@ -12,7 +14,8 @@ type DigitalWatchState = {
   alarm: boolean;
 }
 
-type DigitalWatchProps = DigitalWatchState & {
+type DigitalWatchProps = {
+  state: DigitalWatchState,
   callbacks: {
     onTopLeftPressed: () => void;
     onTopRightPressed: () => void;
@@ -25,7 +28,7 @@ type DigitalWatchProps = DigitalWatchState & {
   },
 }
 
-export function DigitalWatch({light, h, m, s, alarm, callbacks}: DigitalWatchProps) {
+export function DigitalWatch({state: {light, h, m, s, alarm}, callbacks}: DigitalWatchProps) {
   const twoDigits = (n: number) => n < 0 ? "  " : ("0"+n.toString()).slice(-2);
   const hhmmss = `${twoDigits(h)}:${twoDigits(m)}:${twoDigits(s)}`;
 
@@ -44,19 +47,19 @@ export function DigitalWatch({light, h, m, s, alarm, callbacks}: DigitalWatchPro
 
       <text x="111" y="126" dominantBaseline="middle" textAnchor="middle" fontFamily="digital-font" fontSize={28} style={{whiteSpace:'preserve'}}>{hhmmss}</text>
     
-      <rect x="0" y="59" width="16" height="16" fill="#fff" fillOpacity="0" 
+      <rect className="watchButtonHelper" x={0} y={54} width={24} height={24} 
         onMouseDown={() => callbacks.onTopLeftPressed()}
         onMouseUp={() => callbacks.onTopLeftReleased()}
       />
-      <rect x="206" y="57" width="16" height="16" fill="#fff" fillOpacity="0"
+      <rect className="watchButtonHelper" x={198} y={54} width={24} height={24}
         onMouseDown={() => callbacks.onTopRightPressed()}
         onMouseUp={() => callbacks.onTopRightReleased()}
       />
-      <rect x="0" y="158" width="16" height="16" fill="#fff" fillOpacity="0"
+      <rect className="watchButtonHelper" x={0} y={154} width={24} height={24}
         onMouseDown={() => callbacks.onBottomLeftPressed()}
         onMouseUp={() => callbacks.onBottomLeftReleased()}
       />
-      <rect x="208" y="158" width="16" height="16" fill="#fff" fillOpacity="0"
+      <rect className="watchButtonHelper" x={198} y={154} width={24} height={24}
         onMouseDown={() => callbacks.onBottomRightPressed()}
         onMouseUp={() => callbacks.onBottomRightReleased()}
       />
@@ -68,7 +71,7 @@ export function DigitalWatch({light, h, m, s, alarm, callbacks}: DigitalWatchPro
   </>;
 }
 
-export const DigitalWatchPlant: Plant<DigitalWatchProps> = {
+export const DigitalWatchPlant: Plant<DigitalWatchState> = {
   inputEvents: [
     { kind: "event", event: "setH", paramName: 'h' },
     { kind: "event", event: "setM", paramName: 'm' },
@@ -86,24 +89,14 @@ export const DigitalWatchPlant: Plant<DigitalWatchProps> = {
     { kind: "event", event: "bottomRightReleased" },
     { kind: "event", event: "bottomLeftReleased" },
   ],
-  initial: (raise: (event: RaisedEvent) => void) => ({
+  initial: {
     light: false,
     alarm: false,
     h: 12,
     m: 0,
     s: 0,
-    callbacks: {
-      onTopLeftPressed: () => raise({ name: "topLeftPressed" }),
-      onTopRightPressed: () => raise({ name: "topRightPressed" }),
-      onBottomRightPressed: () => raise({ name: "bottomRightPressed" }),
-      onBottomLeftPressed: () => raise({ name: "bottomLeftPressed" }),
-      onTopLeftReleased: () => raise({ name: "topLeftReleased" }),
-      onTopRightReleased: () => raise({ name: "topRightReleased" }),
-      onBottomRightReleased: () => raise({ name: "bottomRightReleased" }),
-      onBottomLeftReleased: () => raise({ name: "bottomLeftReleased" }),
-    },
-  }),
-  reducer: (inputEvent: RaisedEvent, state: DigitalWatchProps) => {
+  },
+  reduce: (inputEvent: RaisedEvent, state: DigitalWatchState) => {
     if (inputEvent.name === "setH") {
       return { ...state, h: inputEvent.param };
     }
@@ -127,5 +120,14 @@ export const DigitalWatchPlant: Plant<DigitalWatchProps> = {
     }
     return state; // unknown event - ignore it
   },
-  render: DigitalWatch,
+  render: (state, raiseEvent) => <DigitalWatch state={state} callbacks={{
+    onTopLeftPressed: () => raiseEvent({name: "topLeftPressed"}),
+    onTopRightPressed: () => raiseEvent({name: "topRightPressed"}),
+    onBottomRightPressed: () => raiseEvent({name: "bottomRightPressed"}),
+    onBottomLeftPressed: () => raiseEvent({name: "bottomLeftPressed"}),
+    onTopLeftReleased: () => raiseEvent({name: "topLeftReleased"}),
+    onTopRightReleased: () => raiseEvent({name: "topRightReleased"}),
+    onBottomRightReleased: () => raiseEvent({name: "bottomRightReleased"}),
+    onBottomLeftReleased: () => raiseEvent({name: "bottomLeftReleased"}),
+  }}/>,
 }
