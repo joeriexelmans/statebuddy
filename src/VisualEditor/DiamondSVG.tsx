@@ -1,9 +1,10 @@
 import { Diamond, RountanglePart } from "@/statecharts/concrete_syntax";
 import { rountangleMinSize } from "./VisualEditor";
-import { Rect2D, Vec2D } from "./geometry";
+import { Vec2D } from "./geometry";
 import { RectHelper } from "./RectHelpers";
+import { memo } from "react";
 
-export function DiamondShape(props: {size: Vec2D, extraAttrs: object}) {
+export const DiamondShape = memo(function DiamondShape(props: {size: Vec2D, extraAttrs: object}) {
   const minSize = rountangleMinSize(props.size);
   return <polygon
     points={`
@@ -17,9 +18,9 @@ export function DiamondShape(props: {size: Vec2D, extraAttrs: object}) {
     strokeWidth={2}
     {...props.extraAttrs}
   />;
-}
+});
 
-export function DiamondSVG(props: { diamond: Diamond; selected: string[]; highlight: RountanglePart[]; errors: string[]; active: boolean; }) {
+export const DiamondSVG = memo(function DiamondSVG(props: { diamond: Diamond; selected: string[]; highlight: RountanglePart[]; errors: string[]; active: boolean; }) {
   const minSize = rountangleMinSize(props.diamond.size);
   const extraAttrs = {
     className: ''
@@ -38,4 +39,4 @@ export function DiamondSVG(props: { diamond: Diamond; selected: string[]; highli
 
     <RectHelper uid={props.diamond.uid} size={minSize} highlight={props.highlight} selected={props.selected} />
   </g>;
-}
+});

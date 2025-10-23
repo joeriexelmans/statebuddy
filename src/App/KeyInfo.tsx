@@ -1,6 +1,6 @@
-import { Box, Stack } from "@mui/material";
+import { memo, PropsWithChildren, ReactElement } from "react";
 
-export function KeyInfoVisible(props: {keyInfo, children, horizontal?: boolean}) {
+export const KeyInfoVisible = memo(function KeyInfoVisible(props: PropsWithChildren<{keyInfo: ReactElement, horizontal?: boolean}>) {
   return <div style={{display: 'inline-block'}}>
     {/* <Stack direction={props.horizontal ? "row" : "column"}> */}
       <div style={{display: props.horizontal ? 'inline-block' : '', fontSize:11, height: 18, textAlign:"center", paddingLeft: 3, paddingRight: 3}}>
@@ -11,8 +11,8 @@ export function KeyInfoVisible(props: {keyInfo, children, horizontal?: boolean})
       </div>
     {/* </Stack> */}
   </div>
-}
+});
 
-export function KeyInfoHidden(props: {children}) {
+export const KeyInfoHidden = memo(function KeyInfoHidden(props: PropsWithChildren<{}>) {
   return <>{props.children}</>;
-}
+});

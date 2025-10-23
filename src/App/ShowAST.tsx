@@ -32,7 +32,7 @@ export function ShowAction(props: {action: Action}) {
   }
 }
 
-export function ShowAST(props: {root: ConcreteState | PseudoState, transitions: Map<string, Transition[]>, trace: TraceState | null, highlightActive: Set<string>}) {
+export const ShowAST = memo(function ShowAST(props: {root: ConcreteState | PseudoState, transitions: Map<string, Transition[]>, trace: TraceState | null, highlightActive: Set<string>}) {
   const description = stateDescription(props.root);
   // const outgoing = props.transitions.get(props.root.uid) || [];
 
@@ -69,11 +69,11 @@ export function ShowAST(props: {root: ConcreteState | PseudoState, transitions: 
   //       outgoing.map(transition => <>&emsp;<ShowTransition transition={transition}/><br/></>)
   //   } */}
   // </details>;
-}
+});
 
 import BoltIcon from '@mui/icons-material/Bolt';
 import { KeyInfoHidden, KeyInfoVisible } from "./KeyInfo";
-import { useEffect } from "react";
+import { memo, useEffect } from "react";
 import { TraceState } from "./App";
 
 export function ShowInputEvents({inputEvents, onRaise, disabled, showKeys}: {inputEvents: EventTrigger[], onRaise: (e: string, p: any) => void, disabled: boolean, showKeys: boolean}) {

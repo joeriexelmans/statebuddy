@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { RountanglePart } from "../statecharts/concrete_syntax";
 import { Vec2D } from "./geometry";
 import { CORNER_HELPER_OFFSET, CORNER_HELPER_RADIUS } from "./parameters";
@@ -11,7 +12,7 @@ function lineGeometryProps(size: Vec2D): [RountanglePart, object][] {
   ];
 }
 
-export function RectHelper(props: { uid: string, size: Vec2D, selected: string[], highlight: RountanglePart[] }) {
+export const RectHelper = memo(function RectHelper(props: { uid: string, size: Vec2D, selected: string[], highlight: RountanglePart[] }) {
   const geomProps = lineGeometryProps(props.size);
   return <>
     {geomProps.map(([side, ps]) => <g key={side}>
@@ -53,4 +54,4 @@ export function RectHelper(props: { uid: string, size: Vec2D, selected: string[]
       data-uid={props.uid}
       data-parts="bottom left" />
   </>;
-}
+});

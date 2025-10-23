@@ -1,7 +1,8 @@
+import { memo } from "react";
 import { Vec2D } from "./geometry";
 import { HISTORY_RADIUS } from "./parameters";
 
-export function HistorySVG(props: {uid: string, topLeft: Vec2D, kind: "shallow"|"deep", selected: boolean, highlight: boolean}) {
+export const HistorySVG = memo(function HistorySVG(props: {uid: string, topLeft: Vec2D, kind: "shallow"|"deep", selected: boolean, highlight: boolean}) {
   const text = props.kind === "shallow" ? "H" : "H*";
   return <>
     <circle
@@ -38,4 +39,4 @@ export function HistorySVG(props: {uid: string, topLeft: Vec2D, kind: "shallow"|
         data-parts="history"
       />}
   </>;
-}
+});

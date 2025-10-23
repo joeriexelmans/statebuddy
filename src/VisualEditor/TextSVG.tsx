@@ -1,9 +1,9 @@
 import { TextDialog } from "@/App/TextDialog";
 import { TraceableError } from "..//statecharts/parser";
 import {Text} from "../statecharts/concrete_syntax";
-import { Dispatch, ReactElement, SetStateAction } from "react";
+import { Dispatch, memo, ReactElement, SetStateAction } from "react";
 
-export function TextSVG(props: {text: Text, error: TraceableError|undefined, selected: boolean, highlight: boolean, onEdit: (newText: string) => void, setModal: Dispatch<SetStateAction<ReactElement|null>>}) {
+export const TextSVG = memo(function TextSVG(props: {text: Text, error: TraceableError|undefined, selected: boolean, highlight: boolean, onEdit: (text: Text, newText: string) => void, setModal: Dispatch<SetStateAction<ReactElement|null>>}) {
   const commonProps = {
     "data-uid": props.text.uid,
     "data-parts": "text",
@@ -37,11 +37,11 @@ export function TextSVG(props: {text: Text, error: TraceableError|undefined, sel
     onDoubleClick={() => {
       props.setModal(<TextDialog setModal={props.setModal} text={props.text.text} done={newText => {
           if (newText) {
-            props.onEdit(newText);
+            props.onEdit(props.text, newText);
           }
       }} />)
     }}>
       {textNode}
       <text className="draggableText helper" textAnchor="middle" data-uid={props.text.uid} data-parts="text" style={{whiteSpace: "preserve"}}>{props.text.text}</text>
     </g>;
-}
+});

@@ -1,9 +1,8 @@
-import { ClipboardEvent, Dispatch, ReactElement, SetStateAction, useEffect, useMemo, useRef, useState } from "react";
+import { ClipboardEvent, Dispatch, memo, ReactElement, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Statechart } from "../statecharts/abstract_syntax";
 import { Arrow, ArrowPart, Diamond, History, Rountangle, RountanglePart, Text } from "../statecharts/concrete_syntax";
 import { parseStatechart, TraceableError } from "../statecharts/parser";
-import { BigStep } from "../statecharts/runtime_types";
 import { ArcDirection, Line2D, Rect2D, Vec2D, addV2D, arcDirection, area, getBottomSide, getLeftSide, getRightSide, getTopSide, isEntirelyWithin, normalizeRect, scaleV2D, subtractV2D, transformLine, transformRect } from "./geometry";
 import { MIN_ROUNTANGLE_SIZE } from "./parameters";
 import { getBBoxInSvgCoords } from "./svg_helper";
@@ -64,7 +63,7 @@ export type InsertMode = "and"|"or"|"pseudo"|"shallow"|"deep"|"transition"|"text
 type VisualEditorProps = {
   state: VisualEditorState,
   setState: Dispatch<(v:VisualEditorState) => VisualEditorState>,
-  ast: Statechart,
+  // ast: Statechart,
   setAST: Dispatch<SetStateAction<Statechart>>,
   trace: TraceState | null,
   errors: TraceableError[],
@@ -77,7 +76,7 @@ type VisualEditorProps = {
   zoom: number;
 };
 
-export function VisualEditor({state, setState, ast, setAST, trace, errors, setErrors, mode, highlightActive, highlightTransitions, setModal, makeCheckPoint, zoom}: VisualEditorProps) {
+export const VisualEditor = memo(function VisualEditor({state, setState, setAST, trace, errors, setErrors, mode, highlightActive, highlightTransitions, setModal, makeCheckPoint, zoom}: VisualEditorProps) {
 
   const [dragging, setDragging] = useState(false);
 
@@ -642,7 +641,7 @@ export function VisualEditor({state, setState, ast, setAST, trace, errors, setEr
     }
   }
 
-  function onEditText(text: Text, newText: string) {
+  const onEditText = useCallback((text: Text, newText: string) => {
     if (newText === "") {
       // delete text node
       setState(state => ({
@@ -666,8 +665,9 @@ export function VisualEditor({state, setState, ast, setAST, trace, errors, setEr
         }),
       }));
     }
-  }
+  }, [setState]);
 
+  // @ts-ignore
   const active = trace && trace.trace[trace.idx].mode || new Set();
 
   const rootErrors = errors.filter(({shapeUid}) => shapeUid === "root").map(({message}) => message);
@@ -774,14 +774,14 @@ export function VisualEditor({state, setState, ast, setAST, trace, errors, setEr
         text={txt}
         selected={Boolean(selection.find(s => s.uid === txt.uid)?.parts?.length)}
         highlight={textsToHighlight.hasOwnProperty(txt.uid)}
-        onEdit={newText => onEditText(txt, newText)}
+        onEdit={onEditText}
         setModal={setModal}
       />
     })}
 
     {selectingState && <Selecting {...selectingState} />}
   </svg>;
-}
+});
 
 export function rountangleMinSize(size: Vec2D): Vec2D {
   if (size.x >= 40 && size.y >= 40) {

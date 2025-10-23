@@ -1,4 +1,4 @@
-import { Dispatch, ReactElement, SetStateAction, useEffect, useState } from "react";
+import { Dispatch, memo, ReactElement, SetStateAction, useEffect, useState } from "react";
 import { BigStep, TimerElapseEvent, Timers } from "../statecharts/runtime_types";
 import { getSimTime, setPaused, setRealtime, TimeMode } from "../statecharts/time";
 import { Statechart } from "../statecharts/abstract_syntax";
@@ -11,12 +11,8 @@ import SkipNextIcon from '@mui/icons-material/SkipNext';
 import SkipPreviousIcon from '@mui/icons-material/SkipPrevious';import TrendingFlatIcon from '@mui/icons-material/TrendingFlat';
 import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
 import StopIcon from '@mui/icons-material/Stop';
-import UndoIcon from '@mui/icons-material/Undo';
-import RedoIcon from '@mui/icons-material/Redo';
 import InfoOutlineIcon from '@mui/icons-material/InfoOutline';
 import KeyboardIcon from '@mui/icons-material/Keyboard';
-import ZoomInIcon from '@mui/icons-material/ZoomIn';
-import ZoomOutIcon from '@mui/icons-material/ZoomOut';
 
 import { formatTime } from "./util";
 import { InsertMode } from "../VisualEditor/VisualEditor";
@@ -26,20 +22,20 @@ import { usePersistentState } from "@/util/persistent_state";
 import { RountangleIcon, PseudoStateIcon, HistoryIcon } from "./Icons";
 import { ZOOM_MAX, ZOOM_MIN, ZOOM_STEP } from "@/VisualEditor/parameters";
 import { EditHistory, TraceState } from "./App";
+import { ZoomButtons } from "./TopPanel/ZoomButtons";
+import { UndoRedoButtons } from "./TopPanel/UndoRedoButtons";
 
 export type TopPanelProps = {
   trace: TraceState | null,
-  // rt?: BigStep,
-  // rtIdx?: number,
   time: TimeMode,
   setTime: Dispatch<SetStateAction<TimeMode>>,
   onUndo: () => void,
   onRedo: () => void,
   onInit: () => void,
   onClear: () => void,
-  onRaise: (e: string, p: any) => void,
+  // onRaise: (e: string, p: any) => void,
   onBack: () => void,
-  ast: Statechart,
+  // ast: Statechart,
   mode: InsertMode,
   setMode: Dispatch<SetStateAction<InsertMode>>,
   setModal: Dispatch<SetStateAction<ReactElement|null>>,
@@ -50,7 +46,7 @@ export type TopPanelProps = {
   history: EditHistory,
 }
 
-export function TopPanel({trace, time, setTime, onUndo, onRedo, onInit, onClear, onRaise, onBack, ast, mode, setMode, setModal, zoom, setZoom, showKeys, setShowKeys, history}: TopPanelProps) {
+export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, onRedo, onInit, onClear, onBack, mode, setMode, setModal, zoom, setZoom, showKeys, setShowKeys, history}: TopPanelProps) {
   const [displayTime, setDisplayTime] = useState("0.000");
   const [timescale, setTimescale] = useState(1);
 
@@ -111,14 +107,6 @@ export function TopPanel({trace, time, setTime, onUndo, onRedo, onInit, onClear,
           e.preventDefault();
           onRedo();
         }
-        if (e.key === "+") {
-          e.preventDefault();
-          onZoomIn();
-        }
-        if (e.key === "-") {
-          e.preventDefault();
-          onZoomOut();
-        }
       }
     };
     window.addEventListener("keydown", onKeyDown);
@@ -143,12 +131,6 @@ export function TopPanel({trace, time, setTime, onUndo, onRedo, onInit, onClear,
     }
   }, [time]);
 
-  function onZoomIn() {
-    setZoom(zoom => Math.min(zoom * ZOOM_STEP, ZOOM_MAX));
-  }
-  function onZoomOut() {
-    setZoom(zoom => Math.max(zoom / ZOOM_STEP, ZOOM_MIN));
-  }
 
   function onChangePaused(paused: boolean, wallclktime: number) {
     setTime(time => {
@@ -218,24 +200,13 @@ export function TopPanel({trace, time, setTime, onUndo, onRedo, onInit, onClear,
 
     {/* zoom */}
     <div className="toolbarGroup">
-      <KeyInfo keyInfo={<><kbd>Ctrl</kbd>+<kbd>-</kbd></>}>
-        <button title="zoom out" onClick={onZoomOut} disabled={zoom <= ZOOM_MIN}><ZoomOutIcon fontSize="small"/></button>
-      </KeyInfo>
-      <input title="current zoom level" value={zoom.toFixed(3)} style={{width:40}} readOnly/>
-      <KeyInfo keyInfo={<><kbd>Ctrl</kbd>+<kbd>+</kbd></>}>
-        <button title="zoom in" onClick={onZoomIn} disabled={zoom >= ZOOM_MAX}><ZoomInIcon fontSize="small"/></button>
-      </KeyInfo>
+      <ZoomButtons showKeys={showKeys} zoom={zoom} setZoom={setZoom}/>
       &emsp;
     </div>
 
     {/* undo / redo */}
     <div className="toolbarGroup">
-      <KeyInfo keyInfo={<><kbd>Ctrl</kbd>+<kbd>Z</kbd></>}>
-        <button title="undo" onClick={onUndo} disabled={history.history.length === 0}><UndoIcon fontSize="small"/>&nbsp;({history.history.length})</button>
-      </KeyInfo>
-      <KeyInfo keyInfo={<><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd></>}>
-        <button title="redo" onClick={onRedo} disabled={history.future.length === 0}><RedoIcon fontSize="small"/>&nbsp;({history.future.length})</button>
-      </KeyInfo>
+      <UndoRedoButtons showKeys={showKeys} onUndo={onUndo} onRedo={onRedo} historyLength={history.history.length} futureLength={history.future.length}/>
       &emsp;
     </div>
 
@@ -349,4 +320,4 @@ export function TopPanel({trace, time, setTime, onUndo, onRedo, onInit, onClear,
     </div> */}
 
   </div>;
-}
+});

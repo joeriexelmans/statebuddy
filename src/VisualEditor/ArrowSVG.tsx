@@ -1,9 +1,10 @@
+import { memo } from "react";
 import { Arrow } from "../statecharts/concrete_syntax";
 import { ArcDirection, euclideanDistance } from "./geometry";
 import { CORNER_HELPER_RADIUS } from "./parameters";
 
 
-export function ArrowSVG(props: { arrow: Arrow; selected: string[]; errors: string[]; highlight: boolean; fired: boolean; arc: ArcDirection; initialMarker: boolean }) {
+export const ArrowSVG = memo(function(props: { arrow: Arrow; selected: string[]; errors: string[]; highlight: boolean; fired: boolean; arc: ArcDirection; initialMarker: boolean }) {
   const { start, end, uid } = props.arrow;
   const radius = euclideanDistance(start, end) / 1.6;
   let largeArc = "1";
@@ -78,4 +79,4 @@ export function ArrowSVG(props: { arrow: Arrow; selected: string[]; errors: stri
       data-parts="end" />}
 
   </g>;
-}
+});

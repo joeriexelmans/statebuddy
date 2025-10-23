@@ -1,4 +1,4 @@
-import { ReactElement, useEffect, useMemo, useRef, useState } from "react";
+import { ReactElement, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { emptyStatechart, Statechart, Transition } from "../statecharts/abstract_syntax";
 import { handleInputEvent, initialize, RuntimeError } from "../statecharts/interpreter";
@@ -85,9 +85,9 @@ export function App() {
   const plant = plants.find(([pn, p]) => pn === plantName)![1];
 
   const editorState = historyState.current;
-  const setEditorState = (cb: (value: VisualEditorState) => VisualEditorState) => {
+  const setEditorState = useCallback((cb: (value: VisualEditorState) => VisualEditorState) => {
     setHistoryState(historyState => ({...historyState, current: cb(historyState.current)}));
-  }
+  }, [setHistoryState]);
 
   const refRightSideBar = useRef<HTMLDivElement>(null);
 
