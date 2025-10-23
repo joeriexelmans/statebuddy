@@ -150,7 +150,7 @@ export function App() {
   }, [setTrace, setTime]);
 
   // raise input event, producing a new runtime configuration (or a runtime error)
-  function onRaise(inputEvent: string, param: any) {
+  const onRaise = (inputEvent: string, param: any) => {
     if (trace !== null && ast.inputEvents.some(e => e.event === inputEvent)) {
       const config = current(trace);
       if (config.kind === "bigstep") {
@@ -158,7 +158,7 @@ export function App() {
         produceNextConfig(simtime, {kind: "input", name: inputEvent, param}, config);
       }
     }
-  }
+  };
   // timer elapse events are triggered by a change of the simulated time (possibly as a scheduled JS event loop timeout)
   useEffect(() => {
     let timeout: NodeJS.Timeout | undefined;
@@ -219,6 +219,7 @@ export function App() {
         ...trace!.trace.slice(0, trace!.idx+1), // remove everything after current item
         newItem,
       ],
+      // idx: 0,
       idx: trace!.idx+1,
     }));
     scrollDownSidebar();

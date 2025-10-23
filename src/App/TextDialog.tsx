@@ -1,6 +1,6 @@
 import { Dispatch, ReactElement, SetStateAction, useState, KeyboardEvent, useEffect, useRef } from "react";
 
-import { parse as parseLabel } from "../statecharts/label_parser";
+import { cachedParseLabel } from "@/statecharts/parser";
 
 export function TextDialog(props: {setModal: Dispatch<SetStateAction<ReactElement|null>>, text: string, done: (newText: string|undefined) => void}) {
   const [text, setText] = useState(props.text);
@@ -22,7 +22,7 @@ export function TextDialog(props: {setModal: Dispatch<SetStateAction<ReactElemen
 
   let parseError = "";
   try {
-    parseLabel(text);
+    cachedParseLabel(text);
   } catch (e) {
     // @ts-ignore
     parseError = e.message;

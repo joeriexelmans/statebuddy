@@ -6,12 +6,15 @@ import { parse as parseLabel, SyntaxError } from "./label_parser";
 import { Connections } from "./detect_connections";
 import { HISTORY_RADIUS } from "../VisualEditor/parameters";
 import { VisualEditorState } from "@/VisualEditor/VisualEditor";
+import { memoize } from "@/App/util";
 
 export type TraceableError = {
   shapeUid: string;
   message: string;
   data?: any;
 }
+
+export const cachedParseLabel = memoize(parseLabel);
 
 function addEvent(events: EventTrigger[], e: EventTrigger, textUid: string) {
   const haveEvent = events.find(({event}) => event === e.event);
@@ -229,7 +232,7 @@ export function parseStatechart(state: VisualEditorState, conns: Connections): [
   for (const text of textsSorted) {
     let parsed: ParsedText;
     try {
-      parsed = parseLabel(text.text); // may throw
+      parsed = cachedParseLabel(text.text); // may throw
       parsed.uid = text.uid;
     } catch (e) {
       if (e instanceof SyntaxError) {
