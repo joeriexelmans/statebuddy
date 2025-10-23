@@ -81,44 +81,14 @@ export const VisualEditor = memo(function VisualEditor({state, setState, trace, 
   const [dragging, setDragging] = useState(false);
 
   // uid's of selected rountangles
-  // const [selection, setSelection] = useState<Selection>([]);
   const selection = state.selection || [];
-  const setSelection = (cb: (oldSelection: Selection) => Selection) =>
-    setState(oldState => ({...oldState, selection: cb(oldState.selection)}));
+  const setSelection = useCallback((cb: (oldSelection: Selection) => Selection) =>
+    setState(oldState => ({...oldState, selection: cb(oldState.selection)})),[setState]);
 
   // not null while the user is making a selection
   const [selectingState, setSelectingState] = useState<SelectingState>(null);
 
   const refSVG = useRef<SVGSVGElement>(null);
-
-  useEffect(() => {
-    try {
-      const compressedState = window.location.hash.slice(1);
-      const ds = new DecompressionStream("deflate");
-      const writer = ds.writable.getWriter();
-      writer.write(Uint8Array.fromBase64(compressedState)).catch(e => {
-        console.error("could not recover state:", e);
-      });
-      writer.close().catch(e => {
-        console.error("could not recover state:", e);
-      });
-
-      new Response(ds.readable).arrayBuffer().then(decompressedBuffer => {
-        try {
-          const recoveredState = JSON.parse(new TextDecoder().decode(decompressedBuffer));
-          setState(() => recoveredState);
-        }
-        catch (e) {
-        console.error("could not recover state:", e);
-      }
-      }).catch(e => {
-        console.error("could not recover state:", e);
-      });
-    }
-    catch (e) {
-      console.error("could not recover state:", e);
-    }
-  }, []);
 
   useEffect(() => {
     // bit of a hacky way to force the animation on fired transitions to replay, if the new 'rt' contains the same fired transitions as the previous one
@@ -133,25 +103,6 @@ export const VisualEditor = memo(function VisualEditor({state, setState, trace, 
       });
     })
   }, [trace && trace.idx]);
-
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      const serializedState = JSON.stringify(state);
-      const stateBuffer = new TextEncoder().encode(serializedState);
-
-      const cs = new CompressionStream("deflate");
-      const writer = cs.writable.getWriter();
-      writer.write(stateBuffer);
-      writer.close();
-
-      // todo: cancel this promise handler when concurrently starting another compression job
-      new Response(cs.readable).arrayBuffer().then(compressedStateBuffer => {
-        const compressedStateString = new Uint8Array(compressedStateBuffer).toBase64();
-        window.location.hash = "#"+compressedStateString;
-      });
-    }, 100);
-    return () => clearTimeout(timeout);
-  }, [state]);
 
   const getCurrentPointer = useCallback((e: {pageX: number, pageY: number}) => {
     const bbox = refSVG.current!.getBoundingClientRect();
@@ -417,7 +368,7 @@ export const VisualEditor = memo(function VisualEditor({state, setState, trace, 
     setSelectingState(null); // no longer making a selection
   }, [dragging, selectingState, refSVG.current]);
 
-  function deleteSelection() {
+  const deleteSelection = useCallback(() => {
     setState(state => ({
       ...state,
       rountangles: state.rountangles.filter(r => !state.selection.some(rs => rs.uid === r.uid)),
@@ -427,9 +378,9 @@ export const VisualEditor = memo(function VisualEditor({state, setState, trace, 
       texts: state.texts.filter(t => !state.selection.some(ts => ts.uid === t.uid)),
       selection: [],
     }));
-  }
+  }, [setState]);
 
-  const onKeyDown = (e: KeyboardEvent) => {
+  const onKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === "Delete") {
       // delete selection
       makeCheckPoint();
@@ -475,7 +426,7 @@ export const VisualEditor = memo(function VisualEditor({state, setState, trace, 
         }))
       }
     }
-  };
+  }, [makeCheckPoint, deleteSelection, setState, setDragging]);
 
   useEffect(() => {
     // mousemove and mouseup are global event handlers so they keep working when pointer is outside of browser window
@@ -535,7 +486,7 @@ export const VisualEditor = memo(function VisualEditor({state, setState, trace, 
     }
   }
 
-  function onPaste(e: ClipboardEvent) {
+  const onPaste = useCallback((e: ClipboardEvent) => {
     const data = e.clipboardData?.getData("text/plain");
     if (data) {
       let parsed;
@@ -547,8 +498,8 @@ export const VisualEditor = memo(function VisualEditor({state, setState, trace, 
       }
       // const offset = {x: 40, y: 40};
       const offset = {x: 0, y: 0};
-      let nextID = state.nextID;
-      try {
+      setState(state => {
+        let nextID = state.nextID;
         const copiedRountangles: Rountangle[] = parsed.rountangles.map((r: Rountangle) => ({
           ...r,
           uid: (nextID++).toString(),
@@ -583,7 +534,7 @@ export const VisualEditor = memo(function VisualEditor({state, setState, trace, 
           ...copiedTexts.map(t => ({uid: t.uid, parts: ["text"]})),
           ...copiedHistories.map(h => ({uid: h.uid, parts: ["history"]})),
         ];
-        setState(state => ({
+        return {
           ...state,
           rountangles: [...state.rountangles, ...copiedRountangles],
           diamonds: [...state.diamonds, ...copiedDiamonds],
@@ -592,16 +543,14 @@ export const VisualEditor = memo(function VisualEditor({state, setState, trace, 
           history: [...state.history, ...copiedHistories],
           nextID: nextID,
           selection: newSelection,
-        }));
-        // copyInternal(newSelection, e); // doesn't work
-        e.preventDefault();
-      }
-      catch (e) {
-      }
+        };
+      });
+      // copyInternal(newSelection, e); // doesn't work
+      e.preventDefault();
     }
-  }
+  }, [setState]);
 
-  function copyInternal(selection: Selection, e: ClipboardEvent) {
+  const copyInternal = useCallback((state: VisualEditorState, selection: Selection, e: ClipboardEvent) => {
     const uidsToCopy = new Set(selection.map(shape => shape.uid));
     const rountanglesToCopy = state.rountangles.filter(r => uidsToCopy.has(r.uid));
     const diamondsToCopy = state.diamonds.filter(d => uidsToCopy.has(d.uid));
@@ -615,22 +564,22 @@ export const VisualEditor = memo(function VisualEditor({state, setState, trace, 
       arrows: arrowsToCopy,
       texts: textsToCopy,
     }));
-  }
+  }, []);
 
-  function onCopy(e: ClipboardEvent) {
+  const onCopy = useCallback((e: ClipboardEvent) => {
     if (selection.length > 0) {
       e.preventDefault();
-      copyInternal(selection, e);
+      copyInternal(state, selection, e);
     }
-  }
+  }, [state, selection]);
 
-  function onCut(e: ClipboardEvent) {
+  const onCut = useCallback((e: ClipboardEvent) => {
     if (selection.length > 0) {
-      copyInternal(selection, e);
+      copyInternal(state, selection, e);
       deleteSelection();
       e.preventDefault();
     }
-  }
+  }, [state, selection]);
 
   const onEditText = useCallback((text: Text, newText: string) => {
     if (newText === "") {

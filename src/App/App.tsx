@@ -71,7 +71,7 @@ function getPlantState<T>(plant: Plant<T>, trace: TraceItem[], idx: number): T |
 
 export function App() {
   const [insertMode, setInsertMode] = useState<InsertMode>("and");
-  const [historyState, setHistoryState] = useState<EditHistory>({current: emptyState, history: [], future: []});
+  const [editHistory, setEditHistory] = useState<EditHistory>({current: emptyState, history: [], future: []});
   const [trace, setTrace] = useState<TraceState|null>(null);
   const [time, setTime] = useState<TimeMode>({kind: "paused", simtime: 0});
   const [modal, setModal] = useState<ReactElement|null>(null);
@@ -82,10 +82,57 @@ export function App() {
 
   const plant = plants.find(([pn, p]) => pn === plantName)![1];
 
-  const editorState = historyState.current;
+  const editorState = editHistory.current;
   const setEditorState = useCallback((cb: (value: VisualEditorState) => VisualEditorState) => {
-    setHistoryState(historyState => ({...historyState, current: cb(historyState.current)}));
-  }, [setHistoryState]);
+    setEditHistory(historyState => ({...historyState, current: cb(historyState.current)}));
+  }, [setEditHistory]);
+
+  // recover editor state from URL - we need an effect here because decompression is asynchronous
+  useEffect(() => {
+    try {
+      const compressedState = window.location.hash.slice(1);
+      const ds = new DecompressionStream("deflate");
+      const writer = ds.writable.getWriter();
+      writer.write(Uint8Array.fromBase64(compressedState)).catch(e => {
+        console.error("could not recover state:", e);
+      });
+      writer.close().catch(e => {
+        console.error("could not recover state:", e);
+      });
+      new Response(ds.readable).arrayBuffer().then(decompressedBuffer => {
+        try {
+          const recoveredState = JSON.parse(new TextDecoder().decode(decompressedBuffer));
+          setEditorState(() => recoveredState);
+        }
+        catch (e) {
+        console.error("could not recover state:", e);
+      }
+      }).catch(e => {
+        console.error("could not recover state:", e);
+      });
+    }
+    catch (e) {
+      console.error("could not recover state:", e);
+    }
+  }, []);
+
+  // save editor state in URL
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      const serializedState = JSON.stringify(editorState);
+      const stateBuffer = new TextEncoder().encode(serializedState);
+      const cs = new CompressionStream("deflate");
+      const writer = cs.writable.getWriter();
+      writer.write(stateBuffer);
+      writer.close();
+      // todo: cancel this promise handler when concurrently starting another compression job
+      new Response(cs.readable).arrayBuffer().then(compressedStateBuffer => {
+        const compressedStateString = new Uint8Array(compressedStateBuffer).toBase64();
+        window.location.hash = "#"+compressedStateString;
+      });
+    }, 100);
+    return () => clearTimeout(timeout);
+  }, [editorState]);
 
   const refRightSideBar = useRef<HTMLDivElement>(null);
 
@@ -93,16 +140,18 @@ export function App() {
   const conns = useMemo(() => detectConnections(editorState), [editorState]);
   const [ast, syntaxErrors] = useMemo(() => parseStatechart(editorState, conns), [editorState, conns]);
 
+  console.log('render App', ast);
+
   // append editor state to undo history
   const makeCheckPoint = useCallback(() => {
-    setHistoryState(historyState => ({
+    setEditHistory(historyState => ({
       ...historyState,
       history: [...historyState.history, historyState.current],
       future: [],
     }));
-  }, [setHistoryState]);
+  }, [setEditHistory]);
   const onUndo = useCallback(() => {
-    setHistoryState(historyState => {
+    setEditHistory(historyState => {
       if (historyState.history.length === 0) {
         return historyState; // no change
       }
@@ -112,9 +161,9 @@ export function App() {
         future: [...historyState.future, historyState.current],
       }
     })
-  }, [setHistoryState]);
+  }, [setEditHistory]);
   const onRedo = useCallback(() => {
-    setHistoryState(historyState => {
+    setEditHistory(historyState => {
       if (historyState.future.length === 0) {
         return historyState; // no change
       }
@@ -124,9 +173,19 @@ export function App() {
         future: historyState.future.slice(0,-1),
       }
     });
-  }, [setHistoryState]);
-  
-  function onInit() {
+  }, [setEditHistory]);
+
+  const scrollDownSidebar = useCallback(() => {
+    if (refRightSideBar.current) {
+      const el = refRightSideBar.current;
+      // hack: we want to scroll to the new element, but we have to wait until it is rendered...
+      setTimeout(() => {
+        el.scrollIntoView({block: "end", behavior: "smooth"});
+      }, 50);
+    }
+  }, [refRightSideBar.current]);
+
+  const onInit = useCallback(() => {
     const timestampedEvent = {simtime: 0, inputEvent: "<init>"};
     let config;
     try {
@@ -145,7 +204,8 @@ export function App() {
     }
     setTime({kind: "paused", simtime: 0});
     scrollDownSidebar();
-  }
+  }, [ast, scrollDownSidebar, setTime, setTrace]);
+
   const onClear = useCallback(() => {
     setTrace(null);
     setTime({kind: "paused", simtime: 0});
@@ -245,16 +305,6 @@ export function App() {
     }
   }
 
-  const scrollDownSidebar = useCallback(() => {
-    if (refRightSideBar.current) {
-      const el = refRightSideBar.current;
-      // hack: we want to scroll to the new element, but we have to wait until it is rendered...
-      setTimeout(() => {
-        el.scrollIntoView({block: "end", behavior: "smooth"});
-      }, 50);
-    }
-  }, []);
-
   useEffect(() => {
     console.log("Welcome to StateBuddy!");
     () => {
@@ -324,7 +374,7 @@ export function App() {
             }}
           >
             <TopPanel
-              {...{trace, ast, time, setTime, onUndo, onRedo, onInit, onClear, onRaise, onBack, insertMode, setInsertMode, setModal, zoom, setZoom, showKeys, setShowKeys, history: historyState}}
+              {...{trace, time, setTime, onUndo, onRedo, onInit, onClear, onBack, insertMode, setInsertMode, setModal, zoom, setZoom, showKeys, setShowKeys, editHistory}}
             />
           </Box>
           {/* Below the top bar: Editor */}

@@ -1,27 +1,23 @@
-import { Dispatch, memo, ReactElement, SetStateAction, useEffect, useState } from "react";
-import { BigStep, TimerElapseEvent, Timers } from "../statecharts/runtime_types";
+import { Dispatch, memo, ReactElement, SetStateAction, useCallback, useEffect, useState } from "react";
+import { TimerElapseEvent, Timers } from "../statecharts/runtime_types";
 import { getSimTime, setPaused, setRealtime, TimeMode } from "../statecharts/time";
-import { Statechart } from "../statecharts/abstract_syntax";
+import { InsertMode } from "../VisualEditor/VisualEditor";
+import { About } from "./About";
+import { EditHistory, TraceState } from "./App";
+import { KeyInfoHidden, KeyInfoVisible } from "./KeyInfo";
+import { UndoRedoButtons } from "./TopPanel/UndoRedoButtons";
+import { ZoomButtons } from "./TopPanel/ZoomButtons";
+import { formatTime } from "./util";
 
-import CachedIcon from '@mui/icons-material/Cached';
-import PauseIcon from '@mui/icons-material/Pause';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import BoltIcon from '@mui/icons-material/Bolt';
-import SkipNextIcon from '@mui/icons-material/SkipNext';
-import SkipPreviousIcon from '@mui/icons-material/SkipPrevious';import TrendingFlatIcon from '@mui/icons-material/TrendingFlat';
 import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
-import StopIcon from '@mui/icons-material/Stop';
+import CachedIcon from '@mui/icons-material/Cached';
 import InfoOutlineIcon from '@mui/icons-material/InfoOutline';
 import KeyboardIcon from '@mui/icons-material/Keyboard';
-
-import { formatTime } from "./util";
-import { InsertMode } from "../VisualEditor/VisualEditor";
-import { KeyInfoHidden, KeyInfoVisible } from "./KeyInfo";
-import { About } from "./About";
-import { RountangleIcon, PseudoStateIcon, HistoryIcon } from "./Icons";
-import { EditHistory, TraceState } from "./App";
-import { ZoomButtons } from "./TopPanel/ZoomButtons";
-import { UndoRedoButtons } from "./TopPanel/UndoRedoButtons";
+import PauseIcon from '@mui/icons-material/Pause';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import SkipNextIcon from '@mui/icons-material/SkipNext';
+import StopIcon from '@mui/icons-material/Stop';
+import { InsertModes } from "./TopPanel/InsertModes";
 
 export type TopPanelProps = {
   trace: TraceState | null,
@@ -31,9 +27,7 @@ export type TopPanelProps = {
   onRedo: () => void,
   onInit: () => void,
   onClear: () => void,
-  // onRaise: (e: string, p: any) => void,
   onBack: () => void,
-  // ast: Statechart,
   insertMode: InsertMode,
   setInsertMode: Dispatch<SetStateAction<InsertMode>>,
   setModal: Dispatch<SetStateAction<ReactElement|null>>,
@@ -41,28 +35,89 @@ export type TopPanelProps = {
   setZoom: Dispatch<SetStateAction<number>>,
   showKeys: boolean,
   setShowKeys: Dispatch<SetStateAction<boolean>>,
-  history: EditHistory,
+  editHistory: EditHistory,
 }
 
 const ShortCutShowKeys = <kbd>~</kbd>;
 
-const insertModes: [InsertMode, string, ReactElement, ReactElement][] = [
-  ["and", "AND-states", <RountangleIcon kind="and"/>, <kbd>A</kbd>],
-  ["or", "OR-states", <RountangleIcon kind="or"/>, <kbd>O</kbd>],
-  ["pseudo", "pseudo-states", <PseudoStateIcon/>, <kbd>P</kbd>],
-  ["shallow", "shallow history", <HistoryIcon kind="shallow"/>, <kbd>H</kbd>],
-  ["deep", "deep history", <HistoryIcon kind="deep"/>, <></>],
-  ["transition", "transitions", <TrendingFlatIcon fontSize="small"/>, <kbd>T</kbd>],
-  ["text", "text", <>&nbsp;T&nbsp;</>, <kbd>X</kbd>],
-];
-
-export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, onRedo, onInit, onClear, onBack, insertMode, setInsertMode, setModal, zoom, setZoom, showKeys, setShowKeys, history}: TopPanelProps) {
+export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, onRedo, onInit, onClear, onBack, insertMode, setInsertMode, setModal, zoom, setZoom, showKeys, setShowKeys, editHistory}: TopPanelProps) {
   const [displayTime, setDisplayTime] = useState("0.000");
   const [timescale, setTimescale] = useState(1);
 
   const config = trace && trace.trace[trace.idx];
 
   const KeyInfo = showKeys ? KeyInfoVisible : KeyInfoHidden;
+
+  const updateDisplayedTime = useCallback(() => {
+    const now = Math.round(performance.now());
+    const timeMs = getSimTime(time, now);
+    setDisplayTime(formatTime(timeMs));
+  }, [time, setDisplayTime]);
+
+  useEffect(() => {
+    // This has no effect on statechart execution. In between events, the statechart is doing nothing. However, by updating the displayed time, we give the illusion of continuous progress.
+    const interval = setInterval(() => {
+      updateDisplayedTime();
+    }, 43); // every X ms -> we want a value that makes the numbers 'dance' while not using too much CPU
+    return () => {
+      clearInterval(interval);
+    }
+  }, [time, updateDisplayedTime]);
+
+  const onChangePaused = useCallback((paused: boolean, wallclktime: number) => {
+    setTime(time => {
+      if (paused) {
+        return setPaused(time, wallclktime);
+      }
+      else {
+        return setRealtime(time, timescale, wallclktime);
+      }
+    });
+    updateDisplayedTime();
+  }, [setTime, updateDisplayedTime]);
+
+  const onTimeScaleChange = useCallback((newValue: string, wallclktime: number) => {
+    const asFloat = parseFloat(newValue);
+    if (Number.isNaN(asFloat)) {
+      return;
+    }
+    const maxed = Math.min(asFloat, 64);
+    const mined = Math.max(maxed, 1/64);
+    setTimescale(mined);
+    setTime(time => {
+      if (time.kind === "paused") {
+        return time;
+      }
+      else {
+        return setRealtime(time, mined, wallclktime);
+      }
+    });
+  }, [setTime, setTimescale]);
+
+  // timestamp of next timed transition, in simulated time
+  const timers: Timers = config?.kind === "bigstep" && config.environment.get("_timers") || [];
+  const nextTimedTransition: [number, TimerElapseEvent] | undefined = timers[0];
+
+  const onSkip = useCallback(() => {
+    const now = Math.round(performance.now());
+    if (nextTimedTransition) {
+      setTime(time => {
+        if (time.kind === "paused") {
+          return {kind: "paused", simtime: nextTimedTransition[0]};
+        }
+        else {
+          return {kind: "realtime", scale: time.scale, since: {simtime: nextTimedTransition[0], wallclktime: now}};
+        }
+      });
+    }
+  }, [nextTimedTransition, setTime]);
+
+  const onSlower = useCallback(() => {
+    onTimeScaleChange((timescale/2).toString(), Math.round(performance.now()));
+  }, [onTimeScaleChange]);
+  const onFaster = useCallback(() => {
+    onTimeScaleChange((timescale*2).toString(), Math.round(performance.now()));
+  }, [onTimeScaleChange, timescale]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -123,86 +178,13 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
     return () => {
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [time, onInit, timescale]);
-
-  function updateDisplayedTime() {
-    const now = Math.round(performance.now());
-    const timeMs = getSimTime(time, now);
-    setDisplayTime(formatTime(timeMs));
-  }
-
-  useEffect(() => {
-    // This has no effect on statechart execution. In between events, the statechart is doing nothing. However, by updating the displayed time, we give the illusion of continuous progress.
-    const interval = setInterval(() => {
-      updateDisplayedTime();
-    }, 43); // every X ms -> we want a value that makes the numbers 'dance' while not using too much CPU
-    return () => {
-      clearInterval(interval);
-    }
-  }, [time]);
-
-
-  function onChangePaused(paused: boolean, wallclktime: number) {
-    setTime(time => {
-      if (paused) {
-        return setPaused(time, wallclktime);
-      }
-      else {
-        return setRealtime(time, timescale, wallclktime);
-      }
-    });
-    updateDisplayedTime();
-  }
-
-  function onTimeScaleChange(newValue: string, wallclktime: number) {
-    const asFloat = parseFloat(newValue);
-    if (Number.isNaN(asFloat)) {
-      return;
-    }
-    const maxed = Math.min(asFloat, 64);
-    const mined = Math.max(maxed, 1/64);
-    setTimescale(mined);
-    setTime(time => {
-      if (time.kind === "paused") {
-        return time;
-      }
-      else {
-        return setRealtime(time, mined, wallclktime);
-      }
-    });
-  }
-
-  // timestamp of next timed transition, in simulated time
-  const timers: Timers = config?.kind === "bigstep" && config.environment.get("_timers") || [];
-  const nextTimedTransition: [number, TimerElapseEvent] | undefined = timers[0];
-
-  function onSkip() {
-    const now = Math.round(performance.now());
-    if (nextTimedTransition) {
-      setTime(time => {
-        if (time.kind === "paused") {
-          return {kind: "paused", simtime: nextTimedTransition[0]};
-        }
-        else {
-          return {kind: "realtime", scale: time.scale, since: {simtime: nextTimedTransition[0], wallclktime: now}};
-        }
-      });
-    }
-  }
-
-  function onSlower() {
-    onTimeScaleChange((timescale/2).toString(), Math.round(performance.now()));
-  }
-  function onFaster() {
-    onTimeScaleChange((timescale*2).toString(), Math.round(performance.now()));
-  }
+  }, [trace, config, time, onInit, timescale, onChangePaused, setShowKeys, onUndo, onRedo, onSlower, onFaster, onSkip, onBack, onClear]);
 
   return <div className="toolbar">
-
     {/* shortcuts / about */}
     <div className="toolbarGroup">
       <KeyInfo keyInfo={ShortCutShowKeys}>
-        <button title="show/hide keyboard shortcuts" className={showKeys?"active":""} onClick={() => setShowKeys(s => !s)}><KeyboardIcon fontSize="small"/></button>
+        <button title="show/hide keyboard shortcuts" className={showKeys?"active":""} onClick={useCallback(() => setShowKeys(s => !s), [setShowKeys])}><KeyboardIcon fontSize="small"/></button>
       </KeyInfo>
       <button title="about StateBuddy" onClick={() => setModal(<About setModal={setModal}/>)}><InfoOutlineIcon fontSize="small"/></button>
       &emsp;
@@ -216,28 +198,21 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
 
     {/* undo / redo */}
     <div className="toolbarGroup">
-      <UndoRedoButtons showKeys={showKeys} onUndo={onUndo} onRedo={onRedo} historyLength={history.history.length} futureLength={history.future.length}/>
+      <UndoRedoButtons showKeys={showKeys} onUndo={onUndo} onRedo={onRedo} historyLength={editHistory.history.length} futureLength={editHistory.future.length}/>
       &emsp;
     </div>
 
     {/* insert rountangle / arrow / ... */}
     <div className="toolbarGroup">
-      {insertModes.map(([m, hint, buttonTxt, keyInfo]) =>
-        <KeyInfo key={m} keyInfo={keyInfo}>
-        <button
-          title={"insert "+hint}
-          disabled={insertMode===m}
-          className={insertMode===m ? "active":""}
-          onClick={() => setInsertMode(m)}
-        >{buttonTxt}</button></KeyInfo>)}
+      <InsertModes insertMode={insertMode} setInsertMode={setInsertMode} showKeys={showKeys}/>
       &emsp;
     </div>
 
     {/* execution */}
     <div className="toolbarGroup">
 
-      {/* init / clear / pause / real time */}
       <div className="toolbarGroup">
+        {/* init / clear */}
         <KeyInfo keyInfo={<kbd>I</kbd>}>
           <button title="(re)initialize simulation" onClick={onInit} ><PlayArrowIcon fontSize="small"/><CachedIcon fontSize="small"/></button>
         </KeyInfo>
@@ -245,6 +220,7 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
           <button title="clear the simulation" onClick={onClear} disabled={!config}><StopIcon fontSize="small"/></button>
         </KeyInfo>
         &emsp;
+        {/* pause / real time */}
         <KeyInfo keyInfo={<><kbd>Space</kbd> toggles</>}>
           <button title="pause the simulation" disabled={!config || time.kind==="paused"} className={(config && time.kind==="paused") ? "active":""} onClick={() => onChangePaused(true, Math.round(performance.now()))}><PauseIcon fontSize="small"/></button>
           <button title="run the simulation in real time" disabled={!config || time.kind==="realtime"} className={(config && time.kind==="realtime") ? "active":""} onClick={() => onChangePaused(false, Math.round(performance.now()))}><PlayArrowIcon fontSize="small"/></button>
@@ -282,44 +258,5 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
         </div>
       </div>
     </div>
-
-    {/* input events */}
-    {/* <div className="toolbarGroup">
-      {ast.inputEvents &&
-        <>
-          {ast.inputEvents.map(({event, paramName}) =>
-            <div key={event+'/'+paramName} className="toolbarGroup">
-              <button
-                className="inputEvent"
-                title={`raise this input event`}
-                disabled={!rt}
-                onClick={() => {
-                  // @ts-ignore
-                  const param = document.getElementById(`input-${event}-param`)?.value;
-                  let paramParsed;
-                  try {
-                    if (param) {
-                      paramParsed = JSON.parse(param); // may throw
-                    }
-                  }
-                  catch (e) {
-                    alert("invalid json");
-                    return;
-                  }
-                  onRaise(event, paramParsed);
-                }}>
-                <BoltIcon fontSize="small"/>
-                {event}
-              </button>
-              {paramName &&
-                <><input id={`input-${event}-param`} style={{width: 20}} placeholder={paramName}/></>
-              }
-              &nbsp;
-            </div>
-          )}
-        </>
-      }
-    </div> */}
-
   </div>;
 });
