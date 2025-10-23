@@ -5,6 +5,9 @@ import { KeyInfoHidden, KeyInfoVisible } from "../KeyInfo";
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import ZoomOutIcon from '@mui/icons-material/ZoomOut';
 
+const shortcutZoomIn = <><kbd>Ctrl</kbd>+<kbd>-</kbd></>;
+const shortcutZoomOut = <><kbd>Ctrl</kbd>+<kbd>+</kbd></>;
+
 export const ZoomButtons = memo(function ZoomButtons({showKeys, zoom, setZoom}: {showKeys: boolean, zoom: number, setZoom: Dispatch<SetStateAction<number>>}) {
 
   const KeyInfo = showKeys ? KeyInfoVisible : KeyInfoHidden;
@@ -36,11 +39,11 @@ export const ZoomButtons = memo(function ZoomButtons({showKeys, zoom, setZoom}: 
   }, []);
 
   return <>
-    <KeyInfo keyInfo={<><kbd>Ctrl</kbd>+<kbd>-</kbd></>}>
+    <KeyInfo keyInfo={shortcutZoomOut}>
       <button title="zoom out" onClick={onZoomOut} disabled={zoom <= ZOOM_MIN}><ZoomOutIcon fontSize="small"/></button>
     </KeyInfo>
     <input title="current zoom level" value={zoom.toFixed(3)} style={{width:40}} readOnly/>
-    <KeyInfo keyInfo={<><kbd>Ctrl</kbd>+<kbd>+</kbd></>}>
+    <KeyInfo keyInfo={shortcutZoomIn}>
       <button title="zoom in" onClick={onZoomIn} disabled={zoom >= ZOOM_MAX}><ZoomInIcon fontSize="small"/></button>
     </KeyInfo>
   </>;

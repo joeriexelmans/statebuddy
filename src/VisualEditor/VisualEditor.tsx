@@ -755,10 +755,10 @@ export const VisualEditor = memo(function VisualEditor({state, setState, setAST,
       return <ArrowSVG
         key={arrow.uid}
         arrow={arrow}
-        selected={selection.find(a => a.uid === arrow.uid)?.parts || []}
-        errors={errors
+        selected={selection.find(a => a.uid === arrow.uid)?.parts as ArrowPart[] || []}
+        error={errors
           .filter(({shapeUid}) => shapeUid === arrow.uid)
-          .map(({message}) => message)}
+          .map(({message}) => message).join(', ')}
         highlight={arrowsToHighlight.hasOwnProperty(arrow.uid)}
         fired={highlightTransitions.includes(arrow.uid)}
         arc={arc}

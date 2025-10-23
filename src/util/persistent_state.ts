@@ -1,4 +1,4 @@
-import { Dispatch, SetStateAction, useState } from "react";
+import { Dispatch, SetStateAction, useCallback, useState } from "react";
 
 // like useState, but it is persisted in localStorage
 // important: values must be JSON-(de-)serializable
@@ -18,7 +18,7 @@ export function usePersistentState<T>(key: string, initial: T): [T, Dispatch<Set
     return initial;
   });
 
-  function setStateWrapped(val: SetStateAction<T>) {
+  const setStateWrapped = useCallback((val: SetStateAction<T>) => {
     setState((oldState: T) => {
       let newVal;
       if (typeof val === 'function') {
@@ -32,7 +32,7 @@ export function usePersistentState<T>(key: string, initial: T): [T, Dispatch<Set
       localStorage.setItem(key, serialized);
       return newVal;
     });
-  }
+  }, [setState]);
 
   return [state, setStateWrapped];
 }

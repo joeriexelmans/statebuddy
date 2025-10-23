@@ -18,9 +18,7 @@ import { formatTime } from "./util";
 import { InsertMode } from "../VisualEditor/VisualEditor";
 import { KeyInfoHidden, KeyInfoVisible } from "./KeyInfo";
 import { About } from "./About";
-import { usePersistentState } from "@/util/persistent_state";
 import { RountangleIcon, PseudoStateIcon, HistoryIcon } from "./Icons";
-import { ZOOM_MAX, ZOOM_MIN, ZOOM_STEP } from "@/VisualEditor/parameters";
 import { EditHistory, TraceState } from "./App";
 import { ZoomButtons } from "./TopPanel/ZoomButtons";
 import { UndoRedoButtons } from "./TopPanel/UndoRedoButtons";
@@ -45,6 +43,18 @@ export type TopPanelProps = {
   setShowKeys: Dispatch<SetStateAction<boolean>>,
   history: EditHistory,
 }
+
+const ShortCutShowKeys = <kbd>~</kbd>;
+
+const insertModes: [InsertMode, string, ReactElement, ReactElement][] = [
+  ["and", "AND-states", <RountangleIcon kind="and"/>, <kbd>A</kbd>],
+  ["or", "OR-states", <RountangleIcon kind="or"/>, <kbd>O</kbd>],
+  ["pseudo", "pseudo-states", <PseudoStateIcon/>, <kbd>P</kbd>],
+  ["shallow", "shallow history", <HistoryIcon kind="shallow"/>, <kbd>H</kbd>],
+  ["deep", "deep history", <HistoryIcon kind="deep"/>, <></>],
+  ["transition", "transitions", <TrendingFlatIcon fontSize="small"/>, <kbd>T</kbd>],
+  ["text", "text", <>&nbsp;T&nbsp;</>, <kbd>X</kbd>],
+];
 
 export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, onRedo, onInit, onClear, onBack, mode, setMode, setModal, zoom, setZoom, showKeys, setShowKeys, history}: TopPanelProps) {
   const [displayTime, setDisplayTime] = useState("0.000");
@@ -191,7 +201,7 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
 
     {/* shortcuts / about */}
     <div className="toolbarGroup">
-      <KeyInfo keyInfo={<kbd>~</kbd>}>
+      <KeyInfo keyInfo={ShortCutShowKeys}>
         <button title="show/hide keyboard shortcuts" className={showKeys?"active":""} onClick={() => setShowKeys(s => !s)}><KeyboardIcon fontSize="small"/></button>
       </KeyInfo>
       <button title="about StateBuddy" onClick={() => setModal(<About setModal={setModal}/>)}><InfoOutlineIcon fontSize="small"/></button>
@@ -212,15 +222,7 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
 
     {/* insert rountangle / arrow / ... */}
     <div className="toolbarGroup">
-      {([
-        ["and", "AND-states", <RountangleIcon kind="and"/>, <kbd>A</kbd>],
-        ["or", "OR-states", <RountangleIcon kind="or"/>, <kbd>O</kbd>],
-        ["pseudo", "pseudo-states", <PseudoStateIcon/>, <kbd>P</kbd>],
-        ["shallow", "shallow history", <HistoryIcon kind="shallow"/>, <kbd>H</kbd>],
-        ["deep", "deep history", <HistoryIcon kind="deep"/>, <></>],
-        ["transition", "transitions", <TrendingFlatIcon fontSize="small"/>, <kbd>T</kbd>],
-        ["text", "text", <>&nbsp;T&nbsp;</>, <kbd>X</kbd>],
-      ] as [InsertMode, string, ReactElement, ReactElement][]).map(([m, hint, buttonTxt, keyInfo]) =>
+      {insertModes.map(([m, hint, buttonTxt, keyInfo]) =>
         <KeyInfo key={m} keyInfo={keyInfo}>
         <button
           title={"insert "+hint}

@@ -1,10 +1,11 @@
 import { memo } from "react";
-import { Arrow } from "../statecharts/concrete_syntax";
+import { Arrow, ArrowPart } from "../statecharts/concrete_syntax";
 import { ArcDirection, euclideanDistance } from "./geometry";
 import { CORNER_HELPER_RADIUS } from "./parameters";
+import { arraysEqual } from "@/App/util";
 
 
-export const ArrowSVG = memo(function(props: { arrow: Arrow; selected: string[]; errors: string[]; highlight: boolean; fired: boolean; arc: ArcDirection; initialMarker: boolean }) {
+export const ArrowSVG = memo(function(props: { arrow: Arrow; selected: ArrowPart[]; error: string; highlight: boolean; fired: boolean; arc: ArcDirection; initialMarker: boolean }) {
   const { start, end, uid } = props.arrow;
   const radius = euclideanDistance(start, end) / 1.6;
   let largeArc = "1";
@@ -18,7 +19,7 @@ export const ArrowSVG = memo(function(props: { arrow: Arrow; selected: string[];
     <path
       className={"arrow"
         + (props.selected.length === 2 ? " selected" : "")
-        + (props.errors.length > 0 ? " error" : "")
+        + (props.error ? " error" : "")
         + (props.highlight ? " highlight" : "")
         + (props.fired ? " fired" : "")
       }
@@ -30,13 +31,13 @@ export const ArrowSVG = memo(function(props: { arrow: Arrow; selected: string[];
       data-uid={uid}
       data-parts="start end" />
 
-    {props.errors.length > 0 && <text
+    {props.error && <text
       className="error"
       x={(start.x + end.x) / 2 + 5}
       y={(start.y + end.y) / 2}
       textAnchor="middle"
       data-uid={uid}
-      data-parts="start end">{props.errors.join(', ')}</text>}
+      data-parts="start end">{props.error}</text>}
 
     <path
       className="helper"
@@ -79,4 +80,12 @@ export const ArrowSVG = memo(function(props: { arrow: Arrow; selected: string[];
       data-parts="end" />}
 
   </g>;
-});
+}, (prevProps, nextProps) => {
+  return prevProps.arrow === nextProps.arrow
+    && arraysEqual(prevProps.selected, nextProps.selected)
+    && prevProps.highlight === nextProps.highlight
+    && prevProps.error === nextProps.error
+    && prevProps.fired === nextProps.fired
+    && prevProps.arc === nextProps.arc
+    && prevProps.initialMarker === nextProps.initialMarker
+})
