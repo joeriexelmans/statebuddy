@@ -71,7 +71,7 @@ function getPlantState<T>(plant: Plant<T>, trace: TraceItem[], idx: number): T |
 
 export function App() {
   const [insertMode, setInsertMode] = useState<InsertMode>("and");
-  const [editHistory, setEditHistory] = useState<EditHistory>({current: emptyState, history: [], future: []});
+  const [editHistory, setEditHistory] = useState<EditHistory|null>(null);
   const [trace, setTrace] = useState<TraceState|null>(null);
   const [time, setTime] = useState<TimeMode>({kind: "paused", simtime: 0});
   const [modal, setModal] = useState<ReactElement|null>(null);
@@ -82,43 +82,50 @@ export function App() {
 
   const plant = plants.find(([pn, p]) => pn === plantName)![1];
 
-  const editorState = editHistory.current;
+  const editorState = editHistory && editHistory.current;
   const setEditorState = useCallback((cb: (value: VisualEditorState) => VisualEditorState) => {
-    setEditHistory(historyState => ({...historyState, current: cb(historyState.current)}));
+    setEditHistory(historyState => historyState && ({...historyState, current: cb(historyState.current)}));
   }, [setEditHistory]);
 
   // recover editor state from URL - we need an effect here because decompression is asynchronous
   useEffect(() => {
+    console.log('recovering state...');
+    const compressedState = window.location.hash.slice(1);
+    if (compressedState.length === 0) {
+      console.log("no state to recover");
+      setEditHistory(() => ({current: emptyState, history: [], future: []}));
+      return;
+    }
+    let compressedBuffer;
     try {
-      const compressedState = window.location.hash.slice(1);
-      const ds = new DecompressionStream("deflate");
-      const writer = ds.writable.getWriter();
-      writer.write(Uint8Array.fromBase64(compressedState)).catch(e => {
-        console.error("could not recover state:", e);
-      });
-      writer.close().catch(e => {
-        console.error("could not recover state:", e);
-      });
-      new Response(ds.readable).arrayBuffer().then(decompressedBuffer => {
-        try {
-          const recoveredState = JSON.parse(new TextDecoder().decode(decompressedBuffer));
-          setEditorState(() => recoveredState);
-        }
-        catch (e) {
-        console.error("could not recover state:", e);
-      }
-      }).catch(e => {
-        console.error("could not recover state:", e);
-      });
+      compressedBuffer = Uint8Array.fromBase64(compressedState); // may throw
+    } catch (e) {
+      console.error("failed to recover state:", e);
+      setEditHistory(() => ({current: emptyState, history: [], future: []}));
+      return;
     }
-    catch (e) {
-      console.error("could not recover state:", e);
-    }
+    const ds = new DecompressionStream("deflate");
+    const writer = ds.writable.getWriter();
+    writer.write(compressedBuffer).catch(() => {}); // any promise rejections will be detected when we try to read
+    writer.close().catch(() => {});
+    new Response(ds.readable).arrayBuffer()
+      .then(decompressedBuffer => {
+        const recoveredState = JSON.parse(new TextDecoder().decode(decompressedBuffer));
+        setEditHistory(() => ({current: recoveredState, history: [], future: []}));
+      })
+      .catch(e => {
+        console.error("failed to recover state:", e);
+        setEditHistory({current: emptyState, history: [], future: []});
+      });
   }, []);
 
   // save editor state in URL
   useEffect(() => {
     const timeout = setTimeout(() => {
+      if (editorState === null) {
+        window.location.hash = "#";
+        return;
+      }
       const serializedState = JSON.stringify(editorState);
       const stateBuffer = new TextEncoder().encode(serializedState);
       const cs = new CompressionStream("deflate");
@@ -137,14 +144,16 @@ export function App() {
   const refRightSideBar = useRef<HTMLDivElement>(null);
 
   // parse concrete syntax always:
-  const conns = useMemo(() => detectConnections(editorState), [editorState]);
-  const [ast, syntaxErrors] = useMemo(() => parseStatechart(editorState, conns), [editorState, conns]);
+  const conns = useMemo(() => editorState && detectConnections(editorState), [editorState]);
+  const parsed = useMemo(() => editorState && conns && parseStatechart(editorState, conns), [editorState, conns]);
+  const ast = parsed && parsed[0];
+  const syntaxErrors = parsed && parsed[1];
 
   console.log('render App', ast);
 
   // append editor state to undo history
   const makeCheckPoint = useCallback(() => {
-    setEditHistory(historyState => ({
+    setEditHistory(historyState => historyState && ({
       ...historyState,
       history: [...historyState.history, historyState.current],
       future: [],
@@ -152,6 +161,7 @@ export function App() {
   }, [setEditHistory]);
   const onUndo = useCallback(() => {
     setEditHistory(historyState => {
+      if (historyState === null) return null;
       if (historyState.history.length === 0) {
         return historyState; // no change
       }
@@ -164,6 +174,7 @@ export function App() {
   }, [setEditHistory]);
   const onRedo = useCallback(() => {
     setEditHistory(historyState => {
+      if (historyState === null) return null;
       if (historyState.future.length === 0) {
         return historyState; // no change
       }
@@ -186,6 +197,7 @@ export function App() {
   }, [refRightSideBar.current]);
 
   const onInit = useCallback(() => {
+    if (ast === null) return;
     const timestampedEvent = {simtime: 0, inputEvent: "<init>"};
     let config;
     try {
@@ -213,6 +225,7 @@ export function App() {
 
   // raise input event, producing a new runtime configuration (or a runtime error)
   const onRaise = (inputEvent: string, param: any) => {
+    if (ast === null) return;
     if (trace !== null && ast.inputEvents.some(e => e.event === inputEvent)) {
       const config = current(trace);
       if (config.kind === "bigstep") {
@@ -251,6 +264,7 @@ export function App() {
     }
   }, [time, trace]); // <-- todo: is this really efficient?
   function produceNextConfig(simtime: number, event: RT_Event, config: TraceItem) {
+    if (ast === null) return;
     const timedEvent = {
       simtime,
       inputEvent: event.kind === "timer" ? "<timer>" : event.name,
@@ -373,13 +387,13 @@ export function App() {
               flex: '0 0 content',
             }}
           >
-            <TopPanel
+            {editHistory && <TopPanel
               {...{trace, time, setTime, onUndo, onRedo, onInit, onClear, onBack, insertMode, setInsertMode, setModal, zoom, setZoom, showKeys, setShowKeys, editHistory}}
-            />
+            />}
           </Box>
           {/* Below the top bar: Editor */}
           <Box sx={{flexGrow:1, overflow: "auto"}}>
-            <VisualEditor {...{state: editorState, setState: setEditorState, conns, trace, setTrace, syntaxErrors, insertMode, highlightActive, highlightTransitions, setModal, makeCheckPoint, zoom}}/>
+            {editorState && conns && syntaxErrors && <VisualEditor {...{state: editorState, setState: setEditorState, conns, trace, setTrace, syntaxErrors, insertMode, highlightActive, highlightTransitions, setModal, makeCheckPoint, zoom}}/>}
           </Box>
         </Stack>
       </Box>
@@ -401,24 +415,24 @@ export function App() {
             <PersistentDetails localStorageKey="showStateTree" initiallyOpen={true}>
               <summary>state tree</summary>
               <ul>
-                <ShowAST {...{...ast, trace, highlightActive}}/>
+                {ast && <ShowAST {...{...ast, trace, highlightActive}}/>}
               </ul>
             </PersistentDetails>
             <PersistentDetails localStorageKey="showInputEvents" initiallyOpen={true}>
               <summary>input events</summary>
-              <ShowInputEvents
+              {ast && <ShowInputEvents
                 inputEvents={ast.inputEvents}
                 onRaise={onRaise}
                 disabled={trace===null || trace.trace[trace.idx].kind === "error"}
-                showKeys={showKeys}/>
+                showKeys={showKeys}/>}
             </PersistentDetails>
             <PersistentDetails localStorageKey="showInternalEvents" initiallyOpen={true}>
               <summary>internal events</summary>
-              <ShowInternalEvents internalEvents={ast.internalEvents}/>
+              {ast && <ShowInternalEvents internalEvents={ast.internalEvents}/>}
             </PersistentDetails>
             <PersistentDetails localStorageKey="showOutputEvents" initiallyOpen={true}>
               <summary>output events</summary>
-              <ShowOutputEvents outputEvents={ast.outputEvents}/>
+              {ast && <ShowOutputEvents outputEvents={ast.outputEvents}/>}
             </PersistentDetails>
             <PersistentDetails localStorageKey="showPlant" initiallyOpen={true}>
               <summary>plant</summary>
@@ -445,7 +459,7 @@ export function App() {
                 {/* <PersistentDetails localStorageKey="showExecutionTrace" initiallyOpen={true}> */}
                   {/* <summary>execution trace</summary> */}
                   <div ref={refRightSideBar}>
-                    <RTHistory {...{ast, trace, setTrace, setTime}}/>
+                    {ast && <RTHistory {...{ast, trace, setTrace, setTime}}/>}
                   </div>
                 {/* </PersistentDetails> */}
             </Box>}
@@ -460,7 +474,7 @@ export function App() {
 
     {/* Bottom panel */}
     <Box sx={{flex: '0 0 content'}}>
-      <BottomPanel {...{errors: syntaxErrors}}/>
+      {syntaxErrors && <BottomPanel {...{errors: syntaxErrors}}/>}
     </Box>
   </Stack>
   </>;
