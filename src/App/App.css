@@ -94,3 +94,13 @@ button.active {
   max-height: 100vh;
   overflow: auto;
 }
+
+div.stackVertical {
+  display: flex;
+  flex-direction: column;
+}
+
+div.stackHorizontal {
+  display: flex;
+  flex-direction: row;
+}

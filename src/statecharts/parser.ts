@@ -78,6 +78,8 @@ export function parseStatechart(state: VisualEditorState, conns: Connections): [
 
   // step 1: figure out state hierarchy
 
+  const startTime = performance.now();
+
   // IMPORTANT ASSUMPTION: state.rountangles is sorted from big to small surface area:
   for (const rt of state.rountangles) {
     const parent = findParent(rt);
@@ -131,6 +133,11 @@ export function parseStatechart(state: VisualEditorState, conns: Connections): [
     parent.history.push(historyState);
     historyStates.push(historyState);
   }
+
+  const endTime = performance.now();
+
+  // currently seems to be quite fast:
+  // console.log('built state tree', endTime-startTime);
 
   // step 2: figure out transitions
 

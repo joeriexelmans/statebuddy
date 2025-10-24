@@ -3,11 +3,16 @@ import { TraceableError } from "../statecharts/parser";
 
 import "./BottomPanel.css";
 
-import head from "../head.svg" ;
+import logo from "../../artwork/logo-playful.svg";
 import { PersistentDetails } from "./PersistentDetails";
 
 export function BottomPanel(props: {errors: TraceableError[]}) {
-  const [greeting, setGreeting] = useState(<><b><img src={head} style={{transform: "scaleX(-1)"}}/>&emsp;"Welcome to StateBuddy, buddy!"</b><br/></>);
+  const [greeting, setGreeting] = useState(
+    <div style={{textAlign:'center'}}>
+      <span style={{fontSize: 18, fontStyle: 'italic'}}>
+        Welcome to <img src={logo} style={{maxWidth:'100%'}}/>
+      </span>
+    </div>);
 
   useEffect(() => {
     setTimeout(() => {

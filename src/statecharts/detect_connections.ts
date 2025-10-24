@@ -13,6 +13,7 @@ export type Connections = {
 }
 
 export function detectConnections(state: VisualEditorState): Connections {
+  const startTime = performance.now();
   // detect what is 'connected'
   const arrow2SideMap = new Map<string,[{ uid: string; part: RectSide; } | undefined, { uid: string; part: RectSide; } | undefined]>();
   const side2ArrowMap = new Map<string, Set<["start"|"end", string]>>();
@@ -71,6 +72,11 @@ export function detectConnections(state: VisualEditorState): Connections {
       }
     }
   }
+
+  const endTime = performance.now();
+
+  // rather slow, about 10ms for a large model:
+  // console.debug("connection detection took", endTime-startTime);
 
   return {
     arrow2SideMap,

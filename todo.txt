@@ -27,8 +27,9 @@
 
 TODO
 
-- digital watch:
-    highlight when watch button pressed/released
+- testing
+    use STL for testing
+        https://github.com/mvcisback/py-metric-temporal-logic
 
 - maybe support:
     - explicit order of:
@@ -51,17 +52,21 @@ TODO
       don't crash and show the error
     - buttons to rotate selection 90 degrees
 
+- performance:
+    maybe try this for rendering the execution trace:
+        https://legacy.reactjs.org/docs/optimizing-performance.html#virtualize-long-lists
+
 - experimental features:
     - multiverse execution history
         stable tree layout?
             https://pub.dev/packages/ploeg_tree_layout
     - local scopes
 
-
-
 for the assignment:
     *ALL* features
         add history (look at original Harel paper)
+    add microwave oven
+    add traffic light
 
 Publish StateBuddy paper(s):
     compare CS approach to other tools, not only YAKINDU

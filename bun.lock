@@ -4,10 +4,8 @@
     "": {
       "name": "bun-react-template",
       "dependencies": {
-        "@emotion/styled": "^11.14.1",
         "@fontsource/roboto": "^5.2.8",
         "@mui/icons-material": "^7.3.4",
-        "@mui/material": "^7.3.4",
         "react": "^19",
         "react-dom": "^19",
       },

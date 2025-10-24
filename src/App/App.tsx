@@ -8,8 +8,6 @@ import { getSimTime, getWallClkDelay, TimeMode } from "../statecharts/time";
 import "../index.css";
 import "./App.css";
 
-import Stack from "@mui/material/Stack";
-import Box from "@mui/material/Box";
 import { TopPanel } from "./TopPanel";
 import { ShowAST, ShowInputEvents, ShowInternalEvents, ShowOutputEvents } from "./ShowAST";
 import { parseStatechart } from "../statecharts/parser";
@@ -92,6 +90,7 @@ export function App() {
     console.log('recovering state...');
     const compressedState = window.location.hash.slice(1);
     if (compressedState.length === 0) {
+      // empty URL hash
       console.log("no state to recover");
       setEditHistory(() => ({current: emptyState, history: [], future: []}));
       return;
@@ -100,6 +99,7 @@ export function App() {
     try {
       compressedBuffer = Uint8Array.fromBase64(compressedState); // may throw
     } catch (e) {
+      // probably invalid base64
       console.error("failed to recover state:", e);
       setEditHistory(() => ({current: emptyState, history: [], future: []}));
       return;
@@ -114,6 +114,7 @@ export function App() {
         setEditHistory(() => ({current: recoveredState, history: [], future: []}));
       })
       .catch(e => {
+        // any other error: invalid JSON, or decompression failed.
         console.error("failed to recover state:", e);
         setEditHistory({current: emptyState, history: [], future: []});
       });
@@ -370,16 +371,16 @@ export function App() {
     </div>
   </div>}
 
-  <Stack sx={{height:'100%'}}>
-    <Stack direction="row" sx={{flexGrow:1, overflow: "auto"}}>
+  <div className="stackVertical" style={{height:'100%'}}>
+    <div className="stackHorizontal" style={{flexGrow:1, overflow: "auto"}}>
 
       {/* Left: top bar and main editor */}
-      <Box sx={{flexGrow:1, overflow: "auto"}}>
-        <Stack sx={{height:'100%'}}>
+      <div style={{flexGrow:1, overflow: "auto"}}>
+        <div style={{height:'100%'}}>
           {/* Top bar */}
-          <Box
+          <div
             className="shadowBelow"
-            sx={{
+            style={{
               display: "flex",
               borderBottom: 1,
               borderColor: "divider",
@@ -390,16 +391,16 @@ export function App() {
             {editHistory && <TopPanel
               {...{trace, time, setTime, onUndo, onRedo, onInit, onClear, onBack, insertMode, setInsertMode, setModal, zoom, setZoom, showKeys, setShowKeys, editHistory}}
             />}
-          </Box>
+          </div>
           {/* Below the top bar: Editor */}
-          <Box sx={{flexGrow:1, overflow: "auto"}}>
+          <div style={{flexGrow:1, overflow: "auto"}}>
             {editorState && conns && syntaxErrors && <VisualEditor {...{state: editorState, setState: setEditorState, conns, trace, setTrace, syntaxErrors, insertMode, highlightActive, highlightTransitions, setModal, makeCheckPoint, zoom}}/>}
-          </Box>
-        </Stack>
-      </Box>
+          </div>
+        </div>
+      </div>
 
       {/* Right: sidebar */}
-      <Box sx={{
+      <div style={{
         borderLeft: 1,
         borderColor: "divider",
         flex: '0 0 content',
@@ -407,10 +408,10 @@ export function App() {
         overflowX: "visible",
         maxWidth: 'min(300px, 30vw)',
       }}>
-        <Stack sx={{height:'100%'}}>
-          <Box
+        <div className="stackVertical" style={{height:'100%'}}>
+          <div
             className={showExecutionTrace ? "shadowBelow" : ""}
-            sx={{flex: '0 0 content', backgroundColor: ''}}
+            style={{flex: '0 0 content', backgroundColor: ''}}
           >
             <PersistentDetails localStorageKey="showStateTree" initiallyOpen={true}>
               <summary>state tree</summary>
@@ -447,36 +448,34 @@ export function App() {
                 plant.render(trace.trace[trace.idx].plantState, event => onRaise(event.name, event.param))}
             </PersistentDetails>
             <details open={showExecutionTrace} onToggle={e => setShowExecutionTrace(e.newState === "open")}><summary>execution trace</summary></details>
-          </Box>
+          </div>
 
+          {/* We cheat a bit, and render the execution trace depending on whether the <details> above is 'open' or not, rather than putting it as a child of the <details>. We do this because only then can we get the execution trace to scroll without the rest scrolling as well. */}
           {showExecutionTrace &&
-            <Box sx={{
+            <div style={{
               flexGrow:1,
               overflow:'auto',
               minHeight: '50vh',
               // minHeight: '75%', // <-- allows us to always scroll down the sidebar far enough such that the execution history is enough in view
               }}>
-                {/* <PersistentDetails localStorageKey="showExecutionTrace" initiallyOpen={true}> */}
-                  {/* <summary>execution trace</summary> */}
-                  <div ref={refRightSideBar}>
-                    {ast && <RTHistory {...{ast, trace, setTrace, setTime}}/>}
-                  </div>
-                {/* </PersistentDetails> */}
-            </Box>}
+                <div ref={refRightSideBar}>
+                  {ast && <RTHistory {...{ast, trace, setTrace, setTime}}/>}
+                </div>
+            </div>}
 
-          <Box sx={{flex: '0 0 content'}}>
-          </Box>
-        </Stack>
-      </Box>
+          <div style={{flex: '0 0 content'}}>
+          </div>
+        </div>
+      </div>
 
 
-    </Stack>
+    </div>
 
     {/* Bottom panel */}
-    <Box sx={{flex: '0 0 content'}}>
+    <div style={{flex: '0 0 content'}}>
       {syntaxErrors && <BottomPanel {...{errors: syntaxErrors}}/>}
-    </Box>
-  </Stack>
+    </div>
+  </div>
   </>;
 }
 
