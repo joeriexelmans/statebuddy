@@ -41,37 +41,20 @@ export function getWallClkDelay(realtime: TimeRealTime, simtime: number, wallclk
 
 // given a current simulated clock (paused or real time), switch to real time with given time scale
 export function setRealtime(currentMode: TimeMode, scale: number, wallclktime: number): TimeRealTime {
-  if (currentMode.kind === "paused") {
-    return {
-      kind: "realtime",
-      scale,
-      since: {
-        simtime: currentMode.simtime,
-        wallclktime,
-      },
-    };
-  }
-  else {
-    return {
-      kind: "realtime",
-      scale,
-      since: {
-        simtime: getSimTime(currentMode, wallclktime),
-        wallclktime,
-      },
-    };
-  }
+  return {
+    kind: "realtime",
+    scale,
+    since: {
+      simtime: getSimTime(currentMode, wallclktime),
+      wallclktime,
+    },
+  };
 }
 
 // given a current simulated clock (paused or real time), switch to paused
 export function setPaused(currentMode: TimeMode, wallclktime: number): TimePaused {
-  if (currentMode.kind === "paused") {
-    return currentMode; // no change
-  }
-  else {
-    return {
-      kind: "paused",
-      simtime: getSimTime(currentMode, wallclktime),
-    };
-  }
+  return {
+    kind: "paused",
+    simtime: getSimTime(currentMode, wallclktime),
+  };
 }
