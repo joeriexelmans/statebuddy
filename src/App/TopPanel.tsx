@@ -18,6 +18,7 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import SkipNextIcon from '@mui/icons-material/SkipNext';
 import StopIcon from '@mui/icons-material/Stop';
 import { InsertModes } from "./TopPanel/InsertModes";
+import { usePersistentState } from "@/util/persistent_state";
 
 export type TopPanelProps = {
   trace: TraceState | null,
@@ -42,7 +43,7 @@ const ShortCutShowKeys = <kbd>~</kbd>;
 
 export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, onRedo, onInit, onClear, onBack, insertMode, setInsertMode, setModal, zoom, setZoom, showKeys, setShowKeys, editHistory}: TopPanelProps) {
   const [displayTime, setDisplayTime] = useState("0.000");
-  const [timescale, setTimescale] = useState(1);
+  const [timescale, setTimescale] = usePersistentState("timescale", 1);
 
   const config = trace && trace.trace[trace.idx];
 
@@ -74,7 +75,7 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
       }
     });
     updateDisplayedTime();
-  }, [setTime, updateDisplayedTime]);
+  }, [setTime, timescale, updateDisplayedTime]);
 
   const onTimeScaleChange = useCallback((newValue: string, wallclktime: number) => {
     const asFloat = parseFloat(newValue);

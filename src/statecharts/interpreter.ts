@@ -72,7 +72,7 @@ export function execAction(action: Action, rt: ActionScope): ActionScope {
 }
 
 export function entryActions(simtime: number, state: TransitionSrcTgt, actionScope: ActionScope): ActionScope {
-  console.log('enter', stateDescription(state), '...');
+  // console.log('enter', stateDescription(state), '...');
 
   let {environment, ...rest} = actionScope;
 
@@ -99,7 +99,7 @@ export function entryActions(simtime: number, state: TransitionSrcTgt, actionSco
 }
 
 export function exitActions(simtime: number, state: TransitionSrcTgt, {enteredStates, ...actionScope}: EnteredScope): ActionScope {
-  console.log('exit', stateDescription(state), '...');
+  // console.log('exit', stateDescription(state), '...');
 
   for (const action of state.exitActions) {
     (actionScope = execAction(action, actionScope));
@@ -194,7 +194,7 @@ export function enterStates(simtime: number, state: ConcreteState, toEnter: Set<
 
 // exit the given state and all its active descendants
 export function exitCurrent(simtime: number, state: ConcreteState, rt: EnteredScope): ActionScope {
-  console.log('exitCurrent', stateDescription(state));
+  // console.log('exitCurrent', stateDescription(state));
   let {enteredStates, history, ...actionScope} = rt;
 
   if (enteredStates.has(state.uid)) {
@@ -241,7 +241,7 @@ function allowedToFire(arena: OrState, alreadyFiredArenas: OrState[]) {
 }
 
 function attemptSrcState(simtime: number, sourceState: AbstractState, event: RT_Event|undefined, statechart: Statechart, {environment, mode, arenasFired, ...rest}: RT_Statechart & RaisedEvents): (RT_Statechart & RaisedEvents) | undefined {
-  console.log('attemptSrcState', stateDescription(sourceState), arenasFired);
+  // console.log('attemptSrcState', stateDescription(sourceState), arenasFired);
   const outgoing = statechart.transitions.get(sourceState.uid) || [];
   const labels = outgoing.flatMap(t =>
     t.label
@@ -295,7 +295,7 @@ function attemptSrcState(simtime: number, sourceState: AbstractState, event: RT_
       for (const activeState of mode) {
         const s = statechart.uid2State.get(activeState);
         if (s?.kind === "pseudo") {
-          console.log('fire pseudo-state...');
+          // console.log('fire pseudo-state...');
           const newConfig = attemptSrcState(simtime, s, undefined, statechart, {environment, mode, arenasFired: [], ...rest});
           if (newConfig === undefined) {
             throw new RuntimeError("Stuck in choice-state.", [activeState]);
@@ -311,7 +311,7 @@ function attemptSrcState(simtime: number, sourceState: AbstractState, event: RT_
 
 // A fair step is a response to one (input|internal) event, where possibly multiple transitions are made as long as their arenas do not overlap. A reasonably accurate and more intuitive explanation is that every orthogonal region is allowed to fire at most one transition.
 export function fairStep(simtime: number, event: RT_Event, statechart: Statechart, activeParent: StableState, {arenasFired, ...config}: RT_Statechart & RaisedEvents): RT_Statechart & RaisedEvents {
-  console.log('fairStep', arenasFired);
+  // console.log('fairStep', arenasFired);
   for (const state of activeParent.children) {
     if (config.mode.has(state.uid)) {
       const didFire = attemptSrcState(simtime, state, event, statechart, {...config, arenasFired});
@@ -320,7 +320,7 @@ export function fairStep(simtime: number, event: RT_Event, statechart: Statechar
       }
       else {
         // no enabled outgoing transitions, try the children:
-        console.log('attempt children');
+        // console.log('attempt children');
         ({arenasFired, ...config} = fairStep(simtime, event, statechart, state, {...config, arenasFired}));
       }
     }
@@ -358,11 +358,11 @@ function resolveHistory(tgt: AbstractState, history: RT_History): Set<string> {
 }
 
 export function fire(simtime: number, t: Transition, ts: Map<string, Transition[]>, label: TransitionLabel, arena: OrState, {mode, environment, history, ...rest}: RT_Statechart & RaisedEvents): RT_Statechart & RaisedEvents {
-  console.log('will now fire', transitionDescription(t), 'arena', arena);
+  // console.log('will now fire', transitionDescription(t), 'arena', arena);
 
   const srcPath = computePath({ancestor: arena, descendant: t.src as ConcreteState}) as ConcreteState[];
 
-  console.log(srcPath);
+  // console.log(srcPath);
   // console.log('arena:', arena, 'srcPath:', srcPath);
 
   // exit src and other states up to arena
@@ -371,8 +371,8 @@ export function fire(simtime: number, t: Transition, ts: Map<string, Transition[
   toExit.delete(arena.uid); // do not exit the arena itself
   const exitedMode = mode.difference(toExit); // active states after exiting
 
-  console.log('toExit', toExit);
-  console.log('exitedMode', exitedMode);
+  // console.log('toExit', toExit);
+  // console.log('exitedMode', exitedMode);
 
   // transition actions
   for (const action of label.actions) {
@@ -388,9 +388,9 @@ export function fire(simtime: number, t: Transition, ts: Map<string, Transition[
   ({enteredStates, environment, history, ...rest} = enterStates(simtime, state, toEnter, {environment, history, ...rest}));
   const enteredMode = exitedMode.union(enteredStates);
 
-  console.log('new mode', enteredMode);
+  // console.log('new mode', enteredMode);
 
-  console.log('done firing', transitionDescription(t));
+  // console.log('done firing', transitionDescription(t));
 
   return {mode: enteredMode, environment, history, ...rest};
 }

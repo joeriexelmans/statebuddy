@@ -10,7 +10,7 @@ import sndBell from "./bell.wav";
 import sndRunning from "./running.wav";
 import { Plant } from "../Plant";
 import { RaisedEvent } from "@/statecharts/runtime_types";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 import "./Microwave.css";
 
@@ -40,6 +40,7 @@ export type MicrowaveState = {
 
 export type MicrowaveProps = {
   state: MicrowaveState,
+  speed: number,
   callbacks: {
     startPressed: () => void;
     stopPressed: () => void;
@@ -92,41 +93,75 @@ function fetchAudioBuffer(url: string): Promise<AudioBuffer> {
   });
 }
 
-function playAudioBufer(buf: AudioBuffer, loop: boolean) {
+// Using the Web Audio API was the only way I could get the 'microwave running' sound to properly play gapless in Chrome.
+function playAudioBufer(buf: AudioBuffer, loop: boolean, speed: number): AudioCallbacks {
   const src = ctx.createBufferSource();
   src.buffer = buf;
-  src.connect(ctx.destination);
+  
+  const lowPass = ctx.createBiquadFilter();
+  lowPass.type = 'highpass';
+  lowPass.frequency.value = 20; // let's not blow up anyone's speakers
+  
+  src.connect(lowPass);
+  lowPass.connect(ctx.destination);
+  
   if (loop) src.loop = true;
   src.start();
-  return () => src.stop();
+  return [
+    () => src.stop(),
+    (speed: number) => {
+      // instead of setting playback rate to 0 (which browsers seem to handle as if playback rate was set to 1, we just set it to a very small value, making it "almost paused")
+      // combined with the lowpass filter above, this should produce any audible results.
+      src.playbackRate.value = (speed===0) ? 0.00001 : speed;
+      return;
+    },
+  ];
 }
 
-export function Magnetron({state: {timeDisplay, bell, magnetron}, callbacks}: MicrowaveProps) {
+type AudioCallbacks = [
+  () => void,
+  (speed: number) => void,
+];
+
+export function Magnetron({state: {timeDisplay, bell, magnetron}, speed, callbacks}: MicrowaveProps) {
   const [door, setDoor] = useState<DoorState>("closed");
 
-  const bufRunningPromise = useRef(fetchAudioBuffer(sndRunning));
-  const bufBellPromise = useRef(fetchAudioBuffer(sndBell));
+  const [soundsPlaying, setSoundsPlaying] = useState<AudioCallbacks[]>([]);
+  const [bufRunningPromise] = useState(() => fetchAudioBuffer(sndRunning));
+  const [bufBellPromise] = useState(() => fetchAudioBuffer(sndBell));
 
   // a bit hacky: when the bell-state changes to true, we play the bell sound...
   useEffect(() => {
     if (bell) {
-      bufBellPromise.current.then(buf => {
-        playAudioBufer(buf, false);
-      })
+      bufBellPromise.then(buf => {
+        const cbs = playAudioBufer(buf, false, speed);
+        setSoundsPlaying(sounds => [...sounds, cbs]);
+      });
     }
   }, [bell]);
 
   useEffect(() => {
     if (magnetron === "on") {
-      const stop = bufRunningPromise.current.then(buf => {
-        return playAudioBufer(buf, true);
+      const stop = bufRunningPromise.then(buf => {
+        const cbs = playAudioBufer(buf, true, speed);
+        setSoundsPlaying(sounds => [...sounds, cbs]);
+        return () => {
+          cbs[0]();
+          setSoundsPlaying(sounds => sounds.filter(cbs_ => cbs_ !== cbs));
+        }
       });
-      return () => stop.then(stop => stop());
+      return () => stop.then(stop => {
+        stop();
+      });
     }
     return () => {};
   }, [magnetron])
 
-  preload(imgSmallClosedOff, {as: "image"});
+  useEffect(() => {
+    soundsPlaying.forEach(([_, setSpeed]) => setSpeed(speed));
+  }, [soundsPlaying, speed])
+
+  // preload(imgSmallClosedOff, {as: "image"});
   preload(imgSmallClosedOn, {as: "image"});
   preload(imgSmallOpenedOff, {as: "image"});
   preload(imgSmallOpenedOn, {as: "image"});
@@ -147,7 +182,7 @@ export function Magnetron({state: {timeDisplay, bell, magnetron}, callbacks}: Mi
         src: url(${fontDigital});
       }
     `}</style>
-    <svg style={{maxWidth: 520}} width='100%' height='auto' viewBox="0 0 520 348">
+    <svg width='400px' height='auto' viewBox="0 0 520 348">
       <image xlinkHref={imgs[door][magnetron]} width={520} height={348}/>
 
       <rect className="microwaveButtonHelper" x={START_X0} y={START_Y0} width={BUTTON_WIDTH} height={BUTTON_HEIGHT} 
@@ -188,7 +223,7 @@ export const MicrowavePlant: Plant<MicrowaveState> = {
     }
     return state; // unknown event - ignore it
   },
-  render: (state, raiseEvent) => <Magnetron state={state} callbacks={{
+  render: (state, raiseEvent, speed) => <Magnetron state={state} speed={speed} callbacks={{
     startPressed: () => raiseEvent({name: "startPressed"}),
     stopPressed: () => raiseEvent({name: "stopPressed"}),
     incTimePressed: () => raiseEvent({name: "incTimePressed"}),

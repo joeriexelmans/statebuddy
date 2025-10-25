@@ -8,5 +8,5 @@ export type Plant<StateType> = {
 
   initial: StateType;
   reduce: (inputEvent: RaisedEvent, state: StateType) => StateType;
-  render: (state: StateType, raise: (event: RaisedEvent) => void) => ReactElement;
+  render: (state: StateType, raise: (event: RaisedEvent) => void, timescale: number) => ReactElement;
 }

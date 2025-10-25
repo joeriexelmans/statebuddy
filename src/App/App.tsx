@@ -215,7 +215,14 @@ export function App() {
         throw error; // probably a bug in the interpreter
       }
     }
-    setTime({kind: "paused", simtime: 0});
+    setTime(time => {
+      if (time.kind === "paused") {
+        return {...time, simtime: 0};
+      }
+      else {
+        return {...time, since: {simtime: 0, wallclktime: performance.now()}};
+      }
+    });
     scrollDownSidebar();
   }, [ast, scrollDownSidebar, setTime, setTrace]);
 
@@ -399,7 +406,7 @@ export function App() {
         flex: '0 0 content',
         overflowY: "auto",
         overflowX: "visible",
-        maxWidth: 'min(400px,50vw)',
+        maxWidth: '50vw',
       }}>
         <div className="stackVertical" style={{height:'100%'}}>
           <div
@@ -439,7 +446,11 @@ export function App() {
               </select>
               {trace !== null &&
                 <div>{
-                  plant.render(trace.trace[trace.idx].plantState, event => onRaise(event.name, event.param))
+                  plant.render(
+                    trace.trace[trace.idx].plantState,
+                    event => onRaise(event.name, event.param),
+                    time.kind === "paused" ? 0 : time.scale,
+                  )
                 }</div>}
             </PersistentDetails>
             <details open={showExecutionTrace} onToggle={e => setShowExecutionTrace(e.newState === "open")}><summary>execution trace</summary></details>
