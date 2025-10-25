@@ -1,5 +1,5 @@
 import { Dispatch, SetStateAction } from "react";
-import { InsertMode } from "../VisualEditor/VisualEditor";
+import { InsertMode } from "./VisualEditor/VisualEditor";
 
 export function getKeyHandler(setMode: Dispatch<SetStateAction<InsertMode>>) {
   return function onKeyDown(e: KeyboardEvent) {

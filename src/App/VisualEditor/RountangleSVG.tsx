@@ -1,9 +1,9 @@
 import { memo } from "react";
-import { Rountangle, RectSide } from "../statecharts/concrete_syntax";
+import { Rountangle, RectSide } from "../../statecharts/concrete_syntax";
 import { ROUNTANGLE_RADIUS } from "./parameters";
 import { RectHelper } from "./RectHelpers";
 import { rountangleMinSize } from "./VisualEditor";
-import { arraysEqual } from "@/App/util";
+import { arraysEqual } from "@/util/util";
 
 
 export const RountangleSVG = memo(function RountangleSVG(props: {rountangle: Rountangle; selected: RectSide[]; highlight: RectSide[]; error?: string; active: boolean; }) {

@@ -1,4 +1,4 @@
-import { RectSide } from "../statecharts/concrete_syntax";
+import { RectSide } from "../../statecharts/concrete_syntax";
 
 export type Vec2D = {
   x: number;

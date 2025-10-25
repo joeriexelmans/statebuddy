@@ -1,6 +1,6 @@
-import { ZOOM_MAX, ZOOM_MIN, ZOOM_STEP } from "@/VisualEditor/parameters";
+import { ZOOM_MAX, ZOOM_MIN, ZOOM_STEP } from "@/App/VisualEditor/parameters";
 import { Dispatch, memo, SetStateAction, useEffect } from "react";
-import { KeyInfoHidden, KeyInfoVisible } from "../KeyInfo";
+import { KeyInfoHidden, KeyInfoVisible } from "./KeyInfo";
 
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import ZoomOutIcon from '@mui/icons-material/ZoomOut';

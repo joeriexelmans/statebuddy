@@ -1,13 +1,13 @@
 import { Dispatch, memo, ReactElement, SetStateAction, useCallback, useEffect, useState } from "react";
-import { TimerElapseEvent, Timers } from "../statecharts/runtime_types";
-import { getSimTime, setPaused, setRealtime, TimeMode } from "../statecharts/time";
+import { TimerElapseEvent, Timers } from "../../statecharts/runtime_types";
+import { getSimTime, setPaused, setRealtime, TimeMode } from "../../statecharts/time";
 import { InsertMode } from "../VisualEditor/VisualEditor";
-import { About } from "./About";
-import { EditHistory, TraceState } from "./App";
+import { About } from "../Modals/About";
+import { EditHistory, TraceState } from "../App";
 import { KeyInfoHidden, KeyInfoVisible } from "./KeyInfo";
-import { UndoRedoButtons } from "./TopPanel/UndoRedoButtons";
-import { ZoomButtons } from "./TopPanel/ZoomButtons";
-import { formatTime } from "./util";
+import { UndoRedoButtons } from "./UndoRedoButtons";
+import { ZoomButtons } from "./ZoomButtons";
+import { formatTime } from "../../util/util";
 
 import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
 import CachedIcon from '@mui/icons-material/Cached';
@@ -17,8 +17,8 @@ import PauseIcon from '@mui/icons-material/Pause';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import SkipNextIcon from '@mui/icons-material/SkipNext';
 import StopIcon from '@mui/icons-material/Stop';
-import { InsertModes } from "./TopPanel/InsertModes";
-import { usePersistentState } from "@/util/persistent_state";
+import { InsertModes } from "./InsertModes";
+import { usePersistentState } from "@/App/persistent_state";
 
 export type TopPanelProps = {
   trace: TraceState | null,

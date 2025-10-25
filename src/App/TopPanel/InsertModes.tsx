@@ -1,7 +1,7 @@
 import { Dispatch, memo, ReactElement, SetStateAction } from "react";
-import { KeyInfoHidden, KeyInfoVisible } from "../KeyInfo";
-import { InsertMode } from "@/VisualEditor/VisualEditor";
-import { HistoryIcon, PseudoStateIcon, RountangleIcon } from "../Icons";
+import { KeyInfoHidden, KeyInfoVisible } from "./KeyInfo";
+import { InsertMode } from "@/App/VisualEditor/VisualEditor";
+import { HistoryIcon, PseudoStateIcon, RountangleIcon } from "./Icons";
 
 import TrendingFlatIcon from '@mui/icons-material/TrendingFlat';
 

@@ -3,7 +3,7 @@ import { rountangleMinSize } from "./VisualEditor";
 import { Vec2D } from "./geometry";
 import { RectHelper } from "./RectHelpers";
 import { memo } from "react";
-import { arraysEqual } from "@/App/util";
+import { arraysEqual } from "@/util/util";
 
 export const DiamondShape = memo(function DiamondShape(props: {size: Vec2D, extraAttrs: object}) {
   const minSize = rountangleMinSize(props.size);

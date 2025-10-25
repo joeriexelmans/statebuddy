@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { KeyInfoHidden, KeyInfoVisible } from "../KeyInfo";
+import { KeyInfoHidden, KeyInfoVisible } from "./KeyInfo";
 
 import UndoIcon from '@mui/icons-material/Undo';
 import RedoIcon from '@mui/icons-material/Redo';

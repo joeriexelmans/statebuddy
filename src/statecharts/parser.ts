@@ -1,12 +1,12 @@
 import {  ConcreteState, HistoryState, OrState, UnstableState, Statechart, stateDescription, Transition } from "./abstract_syntax";
 import { Rountangle } from "./concrete_syntax";
-import { isEntirelyWithin, Rect2D } from "../VisualEditor/geometry";
+import { isEntirelyWithin, Rect2D } from "../App/VisualEditor/geometry";
 import { Action, EventTrigger, Expression, ParsedText } from "./label_ast";
 import { parse as parseLabel, SyntaxError } from "./label_parser";
 import { Connections } from "./detect_connections";
-import { HISTORY_RADIUS } from "../VisualEditor/parameters";
-import { VisualEditorState } from "@/VisualEditor/VisualEditor";
-import { memoize } from "@/App/util";
+import { HISTORY_RADIUS } from "../App/VisualEditor/parameters";
+import { VisualEditorState } from "@/App/VisualEditor/VisualEditor";
+import { memoize } from "@/util/util";
 
 export type TraceableError = {
   shapeUid: string;

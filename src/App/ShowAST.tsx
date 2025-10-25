@@ -72,7 +72,7 @@ export const ShowAST = memo(function ShowASTx(props: {root: ConcreteState | Unst
 });
 
 import BoltIcon from '@mui/icons-material/Bolt';
-import { KeyInfoHidden, KeyInfoVisible } from "./KeyInfo";
+import { KeyInfoHidden, KeyInfoVisible } from "./TopPanel/KeyInfo";
 import { memo, useEffect } from "react";
 
 export function ShowInputEvents({inputEvents, onRaise, disabled, showKeys}: {inputEvents: EventTrigger[], onRaise: (e: string, p: any) => void, disabled: boolean, showKeys: boolean}) {

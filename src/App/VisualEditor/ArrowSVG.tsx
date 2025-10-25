@@ -1,8 +1,8 @@
 import { memo } from "react";
-import { Arrow, ArrowPart } from "../statecharts/concrete_syntax";
+import { Arrow, ArrowPart } from "../../statecharts/concrete_syntax";
 import { ArcDirection, euclideanDistance } from "./geometry";
 import { CORNER_HELPER_RADIUS } from "./parameters";
-import { arraysEqual } from "@/App/util";
+import { arraysEqual } from "@/util/util";
 
 
 export const ArrowSVG = memo(function(props: { arrow: Arrow; selected: ArrowPart[]; error: string; highlight: boolean; fired: boolean; arc: ArcDirection; initialMarker: boolean }) {

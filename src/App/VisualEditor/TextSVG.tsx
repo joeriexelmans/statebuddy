@@ -1,6 +1,6 @@
-import { TextDialog } from "@/App/TextDialog";
-import { TraceableError } from "..//statecharts/parser";
-import {Text} from "../statecharts/concrete_syntax";
+import { TextDialog } from "@/App/Modals/TextDialog";
+import { TraceableError } from "../../statecharts/parser";
+import {Text} from "../../statecharts/concrete_syntax";
 import { Dispatch, memo, ReactElement, SetStateAction } from "react";
 
 export const TextSVG = memo(function TextSVG(props: {text: Text, error: TraceableError|undefined, selected: boolean, highlight: boolean, onEdit: (text: Text, newText: string) => void, setModal: Dispatch<SetStateAction<ReactElement|null>>}) {

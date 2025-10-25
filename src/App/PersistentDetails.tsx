@@ -1,4 +1,4 @@
-import { usePersistentState } from "@/util/persistent_state"
+import { usePersistentState } from "@/App/persistent_state"
 import { DetailsHTMLAttributes, PropsWithChildren } from "react";
 
 type Props = {

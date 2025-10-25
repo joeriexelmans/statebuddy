@@ -2,13 +2,13 @@ import { ReactElement, useCallback, useEffect, useMemo, useRef, useState } from 
 
 import { handleInputEvent, initialize, RuntimeError } from "../statecharts/interpreter";
 import { BigStep, RT_Event } from "../statecharts/runtime_types";
-import { InsertMode, VisualEditor, VisualEditorState } from "../VisualEditor/VisualEditor";
+import { InsertMode, VisualEditor, VisualEditorState } from "./VisualEditor/VisualEditor";
 import { getSimTime, getWallClkDelay, TimeMode } from "../statecharts/time";
 
 import "../index.css";
 import "./App.css";
 
-import { TopPanel } from "./TopPanel";
+import { TopPanel } from "./TopPanel/TopPanel";
 import { ShowAST, ShowInputEvents, ShowInternalEvents, ShowOutputEvents } from "./ShowAST";
 import { parseStatechart } from "../statecharts/parser";
 import { getKeyHandler } from "./shortcut_handler";
@@ -18,7 +18,7 @@ import { PersistentDetails } from "./PersistentDetails";
 import { DigitalWatchPlant } from "@/Plant/DigitalWatch/DigitalWatch";
 import { DummyPlant } from "@/Plant/Dummy/Dummy";
 import { Plant } from "@/Plant/Plant";
-import { usePersistentState } from "@/util/persistent_state";
+import { usePersistentState } from "@/App/persistent_state";
 import { RTHistory } from "./RTHistory";
 import { detectConnections } from "@/statecharts/detect_connections";
 import { MicrowavePlant } from "@/Plant/Microwave/Microwave";
