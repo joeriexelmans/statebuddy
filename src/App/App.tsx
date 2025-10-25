@@ -15,13 +15,13 @@ import { getKeyHandler } from "./shortcut_handler";
 import { BottomPanel } from "./BottomPanel";
 import { emptyState } from "@/statecharts/concrete_syntax";
 import { PersistentDetails } from "./PersistentDetails";
-import { DigitalWatchPlant } from "@/Plant/DigitalWatch/DigitalWatch";
-import { DummyPlant } from "@/Plant/Dummy/Dummy";
-import { Plant } from "@/Plant/Plant";
-import { usePersistentState } from "@/App/persistent_state";
+import { DigitalWatchPlant } from "./Plant/DigitalWatch/DigitalWatch";
+import { DummyPlant } from "./Plant/Dummy/Dummy";
+import { Plant } from "./Plant/Plant";
+import { usePersistentState } from "./persistent_state";
 import { RTHistory } from "./RTHistory";
 import { detectConnections } from "@/statecharts/detect_connections";
-import { MicrowavePlant } from "@/Plant/Microwave/Microwave";
+import { MicrowavePlant } from "./Plant/Microwave/Microwave";
 
 export type EditHistory = {
   current: VisualEditorState,

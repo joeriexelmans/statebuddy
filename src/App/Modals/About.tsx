@@ -1,5 +1,5 @@
 import { Dispatch, ReactElement, SetStateAction } from "react";
-import logo from "../../artwork/logo-playful.svg";
+import logo from "../../../artwork/logo-playful.svg";
 
 export function About(props: {setModal: Dispatch<SetStateAction<ReactElement|null>>}) {
   return <div style={{maxWidth: '500px', padding: 4}}>
