@@ -1,20 +1,24 @@
 import { Action, EventTrigger, ParsedText } from "./label_ast";
 
 export type AbstractState = {
+  kind: string;
   uid: string;
   parent?: ConcreteState;
-  comments: [string, string][]; // array of tuple (text-uid, text-text)
-  entryActions: Action[];
-  exitActions: Action[];
   depth: number;
+  comments: [string, string][]; // array of tuple (text-uid, text-text)
 }
 
-export type StableState = {
+export type EntryExitState = AbstractState & {
+  entryActions: Action[];
+  exitActions: Action[];
+}
+
+export type StableState = EntryExitState & {
   kind: "and" | "or";
   children: ConcreteState[];
   history: HistoryState[];
   timers: number[]; // list of timeouts (e.g., the state having an outgoing transition with trigger "after 4s" would appear as the number 4000 in this list)
-} & AbstractState;
+};
 
 export type AndState = {
   kind: "and";
@@ -27,25 +31,24 @@ export type OrState = {
   initial: [string, ConcreteState][]; 
 } & StableState;
 
-export type PseudoState = {
-  kind: "pseudo";
-  uid: string;
-  comments: [string, string][];
-};
+export type ConcreteState = AndState | OrState;
 
-export type HistoryState = {
+export type TransitionSrcTgt = ConcreteState | UnstableState;
+
+// also called pseudo-state or choice-state:
+export type UnstableState = EntryExitState & {
+  kind: "pseudo";
+} & AbstractState;
+
+export type HistoryState = AbstractState & {
   kind: "shallow" | "deep";
-  parent: ConcreteState;
-  uid: string;
-  depth: number;
 }
 
-export type ConcreteState = AndState | OrState;
 
 export type Transition = {
   uid: string; // uid of arrow in concrete syntax
-  src: ConcreteState | PseudoState;
-  tgt: ConcreteState | PseudoState | HistoryState;
+  src: ConcreteState | UnstableState;
+  tgt: ConcreteState | UnstableState | HistoryState;
   label: ParsedText[];
 }
 
@@ -59,7 +62,7 @@ export type Statechart = {
   internalEvents: EventTrigger[];
   outputEvents: Set<string>;
 
-  uid2State: Map<string, ConcreteState|PseudoState>;
+  uid2State: Map<string, ConcreteState|UnstableState>;
 
   historyStates: HistoryState[];
 }
@@ -110,7 +113,7 @@ export function isOverlapping(a: ConcreteState, b: ConcreteState): boolean {
 }
 
 
-export function computeLCA(a: (ConcreteState|HistoryState), b: (ConcreteState|HistoryState)): (ConcreteState|HistoryState) {
+export function computeLCA(a: AbstractState, b: AbstractState): AbstractState {
   if (a === b) {
     return a;
   }
@@ -120,77 +123,90 @@ export function computeLCA(a: (ConcreteState|HistoryState), b: (ConcreteState|Hi
   return computeLCA(a, b.parent!);
 }
 
-export function computeLCA2(states: (ConcreteState|HistoryState)[]): (ConcreteState|HistoryState) {
-  if (states.length === 0) {
-    throw new Error("cannot compute LCA of empty set of states");
+// arena(a,b) = lowest common or-state ancestor of (a,b) that is not a or b
+// see "Deconstructing the Semantics of Big-Step Modelling Languages" by Shahram Esmaeilsabzali, 2009
+export function computeArena(a: AbstractState, b: AbstractState): OrState {
+  let arena = computeLCA(a, b);
+  while (arena.kind !== "or" || arena.uid === a.uid || arena.uid === b.uid) {
+    arena = arena.parent!;
   }
-  if (states.length === 1) {
-    return states[0];
-  }
-  // 2 states or more
-  return states.reduce((acc, cur) => computeLCA(acc, cur));
+  return arena as OrState;
 }
 
-export function getPossibleTargets(t: Transition, ts: Map<string, Transition[]>): (ConcreteState|HistoryState)[] {
-  if (t.tgt.kind !== "pseudo") {
-    return [t.tgt];
-  }
-  const pseudoOutgoing = ts.get(t.tgt.uid) || [];
-  return pseudoOutgoing.flatMap(t => getPossibleTargets(t, ts));
-}
+// export function computeLCA2(states: (ConcreteState|HistoryState)[]): (ConcreteState|HistoryState) {
+//   if (states.length === 0) {
+//     throw new Error("cannot compute LCA of empty set of states");
+//   }
+//   if (states.length === 1) {
+//     return states[0];
+//   }
+//   // 2 states or more
+//   return states.reduce((acc, cur) => computeLCA(acc, cur));
+// }
 
-export function computeArena2(t: Transition, ts: Map<string, Transition[]>): OrState {
-  const tgts = getPossibleTargets(t, ts);
-  let lca = computeLCA2([t.src as ConcreteState, ...tgts]);
-  while (lca.kind !== "or" || lca === t.src || lca === t.tgt) {
-    lca = lca.parent!;
-  }
-  return lca as OrState;
-}
+// export function getPossibleTargets(t: Transition, ts: Map<string, Transition[]>): (ConcreteState|HistoryState)[] {
+//   if (t.tgt.kind !== "pseudo") {
+//     return [t.tgt];
+//   }
+//   const pseudoOutgoing = ts.get(t.tgt.uid) || [];
+//   return pseudoOutgoing.flatMap(t => getPossibleTargets(t, ts));
+// }
+
+// export function computeArena2(t: Transition, ts: Map<string, Transition[]>): OrState {
+//   const tgts = getPossibleTargets(t, ts);
+//   let lca = computeLCA2([t.src as ConcreteState, ...tgts]);
+//   while (lca.kind !== "or" || lca === t.src || lca === t.tgt) {
+//     lca = lca.parent!;
+//   }
+//   return lca as OrState;
+// }
 
 // Assuming ancestor is already entered, what states to enter in order to enter descendants?
 // E.g.
 //    root > A > B > C > D
 //  computePath({ancestor: A, descendant: A}) = []
 //  computePath({ancestor: A, descendant: C}) = [B, C]
-export function computePath({ancestor, descendant}: {ancestor: ConcreteState, descendant: (ConcreteState|HistoryState)}): (ConcreteState|HistoryState)[] {
+export function computePath({ancestor, descendant}: {ancestor: AbstractState, descendant: AbstractState}): AbstractState[] {
   if (ancestor === descendant) {
     return [];
   }
   return [...computePath({ancestor, descendant: descendant.parent!}), descendant];
 }
 
-// the arena of a transition is the lowest common ancestor state that is an OR-state
-// see "Deconstructing the Semantics of Big-Step Modelling Languages" by Shahram Esmaeilsabzali, 2009
-export function computeArena({src, tgt}: {src: ConcreteState, tgt: ConcreteState}): {
-  arena: OrState,
-  srcPath: ConcreteState[],
-  tgtPath: ConcreteState[],
-} {
-  if (src.depth >= tgt.depth) {
-    const path = isAncestorOf({descendant: src, ancestor: tgt});
-    if (path) {
-      if (tgt.kind === "or") {
-        return {arena: tgt as OrState, srcPath: path, tgtPath: [tgt]};
-      }
-    }
-    // keep looking
-    const {arena, srcPath, tgtPath} = computeArena({src, tgt: tgt.parent!});
-    return {arena, srcPath, tgtPath: [...tgtPath, tgt]};
-  }
-  else {
-    // same, but swap src and tgt
-    const {arena, srcPath, tgtPath} = computeArena({src: tgt, tgt: src});
-    return {arena, srcPath: tgtPath, tgtPath: srcPath};
-  }
-}
+// // the arena of a transition is the lowest common ancestor state that is an OR-state
+// // see "Deconstructing the Semantics of Big-Step Modelling Languages" by Shahram Esmaeilsabzali, 2009
+// export function computeArena({src, tgt}: {src: ConcreteState, tgt: ConcreteState}): {
+//   arena: OrState,
+//   srcPath: ConcreteState[],
+//   tgtPath: ConcreteState[],
+// } {
+//   if (src.depth >= tgt.depth) {
+//     const path = isAncestorOf({descendant: src, ancestor: tgt});
+//     if (path) {
+//       if (tgt.kind === "or") {
+//         return {arena: tgt as OrState, srcPath: path, tgtPath: [tgt]};
+//       }
+//     }
+//     // keep looking
+//     const {arena, srcPath, tgtPath} = computeArena({src, tgt: tgt.parent!});
+//     return {arena, srcPath, tgtPath: [...tgtPath, tgt]};
+//   }
+//   else {
+//     // same, but swap src and tgt
+//     const {arena, srcPath, tgtPath} = computeArena({src: tgt, tgt: src});
+//     return {arena, srcPath: tgtPath, tgtPath: srcPath};
+//   }
+// }
 
+// transitive, reflexive
 export function getDescendants(state: ConcreteState): Set<string> {
   const result = new Set([state.uid]);
-  for (const child of state.children) {
-    for (const descendant of getDescendants(child)) {
-      // will include child itself:
-      result.add(descendant);
+  if (state.children) {
+    for (const child of state.children) {
+      for (const descendant of getDescendants(child)) {
+        // will include child itself:
+        result.add(descendant);
+      }
     }
   }
   return result;
@@ -199,17 +215,18 @@ export function getDescendants(state: ConcreteState): Set<string> {
 // the 'description' of a state is a human-readable string that (hopefully) identifies the state.
 // if the state contains a comment, we take the 'first' (= visually topmost) comment
 // otherwise we fall back to the state's UID.
-export function stateDescription(state: ConcreteState | PseudoState | HistoryState): string {
+export function stateDescription(state: AbstractState): string {
   if (state.kind === "shallow") {
-    return `shallow(${stateDescription(state.parent)})`;
+    return `shallow(${stateDescription(state.parent!)})`;
   }
   else if (state.kind === "deep") {
-    return `deep(${stateDescription(state.parent)})`;
+    return `deep(${stateDescription(state.parent!)})`;
+  }
+  else if (state.comments.length > 0) {
+    return state.comments[0][1];
   }
   else {
-    // @ts-ignore
-    const description = state.comments.length > 0 ? state.comments[0][1] : state.uid;
-    return description;
+    return state.uid;
   }
 }
 

@@ -110,7 +110,7 @@ export const VisualEditor = memo(function VisualEditor({state, setState, trace, 
       x: (e.pageX - bbox.left)/zoom,
       y: (e.pageY - bbox.top)/zoom,
     }
-  }, [refSVG.current]);
+  }, [refSVG.current, zoom]);
 
   const onMouseDown = useCallback((e: {button: number, target: any, pageX: number, pageY: number}) => {
     const currentPointer = getCurrentPointer(e);

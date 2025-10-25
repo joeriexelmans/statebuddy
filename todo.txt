@@ -27,6 +27,9 @@
 
 TODO
 
+- bugs
+    interpreter: pseudo-state semantics is broken
+
 - testing
     use STL for testing
         https://github.com/mvcisback/py-metric-temporal-logic
@@ -36,11 +39,18 @@ TODO
         - outgoing transitions?
 
 - usability stuff:
+    - action language: add increment operations (++) and (--)
+       and (+=) and (-=)
+
+    - snap:
+            comments only to states
+            triggers only to transitions
+            entry/exit only to states
+
     - ability to hide statechart and only show the plant?
     - hovering over event in side panel should highlight all occurrences of the event in the SC
     - hovering over error in bottom panel should highlight that rror in the SC
     - highlight selected shapes while making a selection
-    - comments sometimes snap to transitions even if they belong to a state
 
     - highlight fired transitions
     - highlight about-to-fire transitions

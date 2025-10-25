@@ -1,4 +1,4 @@
-import { ConcreteState, PseudoState, stateDescription, Transition } from "../statecharts/abstract_syntax";
+import { ConcreteState, UnstableState, stateDescription, Transition } from "../statecharts/abstract_syntax";
 import { Action, EventTrigger, Expression } from "../statecharts/label_ast";
 import { RT_Statechart } from "../statecharts/runtime_types";
 
@@ -32,7 +32,7 @@ export function ShowAction(props: {action: Action}) {
   }
 }
 
-export const ShowAST = memo(function ShowASTx(props: {root: ConcreteState | PseudoState}) {
+export const ShowAST = memo(function ShowASTx(props: {root: ConcreteState | UnstableState}) {
   const description = stateDescription(props.root);
   // const outgoing = props.transitions.get(props.root.uid) || [];
 

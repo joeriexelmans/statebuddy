@@ -21,6 +21,7 @@ import { Plant } from "@/Plant/Plant";
 import { usePersistentState } from "@/util/persistent_state";
 import { RTHistory } from "./RTHistory";
 import { detectConnections } from "@/statecharts/detect_connections";
+import { MicrowavePlant } from "@/Plant/Microwave/Microwave";
 
 export type EditHistory = {
   current: VisualEditorState,
@@ -31,6 +32,7 @@ export type EditHistory = {
 const plants: [string, Plant<any>][] = [
   ["dummy", DummyPlant],
   ["digital watch", DigitalWatchPlant],
+  ["microwave", MicrowavePlant],
 ]
 
 export type BigStepError = {
@@ -149,8 +151,6 @@ export function App() {
   const parsed = useMemo(() => editorState && conns && parseStatechart(editorState, conns), [editorState, conns]);
   const ast = parsed && parsed[0];
   const syntaxErrors = parsed && parsed[1];
-
-  console.log('render App', ast);
 
   // append editor state to undo history
   const makeCheckPoint = useCallback(() => {
@@ -278,7 +278,6 @@ export function App() {
       for (const o of nextConfig.outputEvents) {
         plantState = plant.reduce(o, plantState);
       }
-      console.log({plantState});
       newItem = {kind: "bigstep", plantState, ...timedEvent, ...nextConfig};
     }
     catch (error) {
@@ -343,7 +342,6 @@ export function App() {
   }
   else {
     const item = current(trace);
-    console.log(trace);
     if (item.kind === "bigstep") {
       highlightActive = item.mode;
       highlightTransitions = item.firedTransitions;
@@ -371,31 +369,26 @@ export function App() {
     </div>
   </div>}
 
+  {/* top-to-bottom: everything -> bottom panel */}
   <div className="stackVertical" style={{height:'100%'}}>
+
+    {/* left-to-right: main -> sidebar */}
     <div className="stackHorizontal" style={{flexGrow:1, overflow: "auto"}}>
 
-      {/* Left: top bar and main editor */}
-      <div style={{flexGrow:1, overflow: "auto"}}>
-        <div style={{height:'100%'}}>
-          {/* Top bar */}
-          <div
-            className="shadowBelow"
-            style={{
-              display: "flex",
-              borderBottom: 1,
-              borderColor: "divider",
-              alignItems: 'center',
-              flex: '0 0 content',
-            }}
-          >
-            {editHistory && <TopPanel
-              {...{trace, time, setTime, onUndo, onRedo, onInit, onClear, onBack, insertMode, setInsertMode, setModal, zoom, setZoom, showKeys, setShowKeys, editHistory}}
-            />}
-          </div>
-          {/* Below the top bar: Editor */}
-          <div style={{flexGrow:1, overflow: "auto"}}>
-            {editorState && conns && syntaxErrors && <VisualEditor {...{state: editorState, setState: setEditorState, conns, trace, setTrace, syntaxErrors, insertMode, highlightActive, highlightTransitions, setModal, makeCheckPoint, zoom}}/>}
-          </div>
+      {/* top-to-bottom: top bar, editor */}
+      <div className="stackVertical" style={{flexGrow:1, overflow: "auto"}}>
+        {/* Top bar */}
+        <div
+          className="shadowBelow"
+          style={{flex: '0 0 content'}}
+        >
+          {editHistory && <TopPanel
+            {...{trace, time, setTime, onUndo, onRedo, onInit, onClear, onBack, insertMode, setInsertMode, setModal, zoom, setZoom, showKeys, setShowKeys, editHistory}}
+          />}
+        </div>
+        {/* Editor */}
+        <div style={{flexGrow: 1, overflow: "auto"}}>
+          {editorState && conns && syntaxErrors && <VisualEditor {...{state: editorState, setState: setEditorState, conns, trace, setTrace, syntaxErrors, insertMode, highlightActive, highlightTransitions, setModal, makeCheckPoint, zoom}}/>}
         </div>
       </div>
 
@@ -406,7 +399,7 @@ export function App() {
         flex: '0 0 content',
         overflowY: "auto",
         overflowX: "visible",
-        maxWidth: 'min(300px, 30vw)',
+        maxWidth: '50vw',
       }}>
         <div className="stackVertical" style={{height:'100%'}}>
           <div
@@ -445,7 +438,9 @@ export function App() {
                 )}
               </select>
               {trace !== null &&
-                plant.render(trace.trace[trace.idx].plantState, event => onRaise(event.name, event.param))}
+                <div>{
+                  plant.render(trace.trace[trace.idx].plantState, event => onRaise(event.name, event.param))
+                }</div>}
             </PersistentDetails>
             <details open={showExecutionTrace} onToggle={e => setShowExecutionTrace(e.newState === "open")}><summary>execution trace</summary></details>
           </div>
@@ -467,8 +462,6 @@ export function App() {
           </div>
         </div>
       </div>
-
-
     </div>
 
     {/* Bottom panel */}

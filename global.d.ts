@@ -2,3 +2,4 @@
 declare module '*.css';
 declare module '*.png';
 declare module '*.ttf';
+declare module '*.wav';

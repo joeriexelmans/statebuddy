@@ -1,4 +1,4 @@
-import {  ConcreteState, HistoryState, OrState, PseudoState, Statechart, stateDescription, Transition } from "./abstract_syntax";
+import {  ConcreteState, HistoryState, OrState, UnstableState, Statechart, stateDescription, Transition } from "./abstract_syntax";
 import { Rountangle } from "./concrete_syntax";
 import { isEntirelyWithin, Rect2D } from "../VisualEditor/geometry";
 import { Action, EventTrigger, Expression, ParsedText } from "./label_ast";
@@ -51,7 +51,7 @@ export function parseStatechart(state: VisualEditorState, conns: Connections): [
     timers: [],
   }
 
-  const uid2State = new Map<string, ConcreteState|PseudoState>([["root", root]]);
+  const uid2State = new Map<string, ConcreteState|UnstableState>([["root", root]]);
   const historyStates: HistoryState[] = [];
 
   // we will always look for the smallest parent rountangle
@@ -116,11 +116,18 @@ export function parseStatechart(state: VisualEditorState, conns: Connections): [
     uid2State.set(rt.uid, state as ConcreteState);
   }
   for (const d of state.diamonds) {
-    uid2State.set(d.uid, {
+    const parent = findParent(d);
+    const pseudoState = {
       kind: "pseudo",
       uid: d.uid,
       comments: [],
-    });
+      depth: parent.depth+1,
+      parent,
+      entryActions: [],
+      exitActions: [],
+    };
+    uid2State.set(d.uid, pseudoState);
+    parent.children.push(pseudoState);
   }
   for (const h of state.history) {
     const parent = findParent({topLeft: h.topLeft, size: {x: HISTORY_RADIUS*2, y: HISTORY_RADIUS*2}});
