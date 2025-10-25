@@ -107,10 +107,6 @@ export function Magnetron({state: {timeDisplay, bell, magnetron}, callbacks}: Mi
   const bufRunningPromise = useRef(fetchAudioBuffer(sndRunning));
   const bufBellPromise = useRef(fetchAudioBuffer(sndBell));
 
-  const refSndBell = useRef<HTMLAudioElement>(null);
-  const refSndRunning = useRef<HTMLAudioElement>(null);
-
-
   // a bit hacky: when the bell-state changes to true, we play the bell sound...
   useEffect(() => {
     if (bell) {
@@ -134,8 +130,6 @@ export function Magnetron({state: {timeDisplay, bell, magnetron}, callbacks}: Mi
   preload(imgSmallClosedOn, {as: "image"});
   preload(imgSmallOpenedOff, {as: "image"});
   preload(imgSmallOpenedOn, {as: "image"});
-  preload(sndBell, {as: "audio"});
-  preload(sndRunning, {as: "audio"});
 
   const openDoor = () => {
     setDoor("open");
