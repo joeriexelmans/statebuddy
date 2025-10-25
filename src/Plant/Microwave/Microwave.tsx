@@ -10,7 +10,7 @@ import sndBell from "./bell.wav";
 import sndRunning from "./running.wav";
 import { Plant } from "../Plant";
 import { RaisedEvent } from "@/statecharts/runtime_types";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import "./Microwave.css";
 
@@ -82,22 +82,53 @@ const DOOR_Y0 = 68;
 const DOOR_WIDTH = 353;
 const DOOR_HEIGHT = 217;
 
+const ctx = new AudioContext();
+
+function fetchAudioBuffer(url: string): Promise<AudioBuffer> {
+  return fetch(url).then(res => {
+    return res.arrayBuffer();
+  }).then(buf => {
+    return ctx.decodeAudioData(buf);
+  });
+}
+
+function playAudioBufer(buf: AudioBuffer, loop: boolean) {
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  src.connect(ctx.destination);
+  if (loop) src.loop = true;
+  src.start();
+  return () => src.stop();
+}
 
 export function Magnetron({state: {timeDisplay, bell, magnetron}, callbacks}: MicrowaveProps) {
   const [door, setDoor] = useState<DoorState>("closed");
-  const [playBell, setPlayBell] = useState(false);
 
-  // a bit hacky: when the bell-state changes to true, we play the bell sound for 610 ms...
+  const bufRunningPromise = useRef(fetchAudioBuffer(sndRunning));
+  const bufBellPromise = useRef(fetchAudioBuffer(sndBell));
+
+  const refSndBell = useRef<HTMLAudioElement>(null);
+  const refSndRunning = useRef<HTMLAudioElement>(null);
+
+
+  // a bit hacky: when the bell-state changes to true, we play the bell sound...
   useEffect(() => {
-    let timeout: NodeJS.Timeout;
     if (bell) {
-      setPlayBell(true);
-      timeout = setTimeout(() => {
-        setPlayBell(false);
-      }, 610);
+      bufBellPromise.current.then(buf => {
+        playAudioBufer(buf, false);
+      })
     }
-    return () => { if (timeout) clearTimeout(timeout); };
   }, [bell]);
+
+  useEffect(() => {
+    if (magnetron === "on") {
+      const stop = bufRunningPromise.current.then(buf => {
+        return playAudioBufer(buf, true);
+      });
+      return () => stop.then(stop => stop());
+    }
+    return () => {};
+  }, [magnetron])
 
   preload(imgSmallClosedOff, {as: "image"});
   preload(imgSmallClosedOn, {as: "image"});
@@ -122,7 +153,7 @@ export function Magnetron({state: {timeDisplay, bell, magnetron}, callbacks}: Mi
         src: url(${fontDigital});
       }
     `}</style>
-    <svg width={520} height={348}>
+    <svg style={{maxWidth: 520}} width='100%' height='auto' viewBox="0 0 520 348">
       <image xlinkHref={imgs[door][magnetron]} width={520} height={348}/>
 
       <rect className="microwaveButtonHelper" x={START_X0} y={START_Y0} width={BUTTON_WIDTH} height={BUTTON_HEIGHT} 
@@ -135,20 +166,11 @@ export function Magnetron({state: {timeDisplay, bell, magnetron}, callbacks}: Mi
         onMouseDown={() => callbacks.incTimePressed()}
         onMouseUp={() => callbacks.incTimeReleased()}
       />
-      <rect className="microwaveButtonHelper" x={DOOR_X0} y={DOOR_Y0} width={DOOR_WIDTH} height={DOOR_HEIGHT} 
-        onMouseDown={() => door === "open" ? closeDoor() : openDoor()}
+      <rect className="microwaveDoorHelper" x={DOOR_X0} y={DOOR_Y0} width={DOOR_WIDTH} height={DOOR_HEIGHT}         onMouseDown={() => door === "open" ? closeDoor() : openDoor()}
       />
 
       <text x={472} y={106} textAnchor="end" fontFamily="digital-font" fontSize={24} fill="lightgreen">{timeDisplay}</text>
     </svg>
-
-    {magnetron === "on" && <audio hidden autoPlay loop>
-      <source src={sndRunning} type="audio/wav"/>
-    </audio>}
-
-    {playBell && <audio hidden autoPlay>
-      <source src={sndBell} type="audio/wav"/>
-    </audio>}
   </>;
 }
 

@@ -12,3 +12,7 @@ rect.microwaveButtonHelper:active {
   fill: red;
   fill-opacity: 0.5;
 }
+
+rect.microwaveDoorHelper {
+  fill-opacity: 0;
+}
