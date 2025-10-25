@@ -1,0 +1,14 @@
+rect.microwaveButtonHelper {
+  fill-opacity: 0;
+}
+
+rect.microwaveButtonHelper:hover {
+  fill: rgba(46, 211, 197);
+  fill-opacity: 0.5;
+}
+
+rect.microwaveButtonHelper:active {
+  /* fill: rgba(47, 0, 255); */
+  fill: red;
+  fill-opacity: 0.5;
+}
