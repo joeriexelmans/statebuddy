@@ -1,9 +1,10 @@
 import { Dispatch, memo, Ref, SetStateAction, useCallback } from "react";
 import { Statechart, stateDescription } from "../statecharts/abstract_syntax";
-import { BigStep, Environment, Mode, RaisedEvent, RT_Event } from "../statecharts/runtime_types";
+import { BigStep, Mode, RaisedEvent, RT_Event } from "../statecharts/runtime_types";
 import { formatTime } from "../util/util";
 import { TimeMode } from "../statecharts/time";
 import { TraceItem, TraceState } from "./App";
+import { Environment } from "@/statecharts/environment";
 
 type RTHistoryProps = {
   trace: TraceState|null,

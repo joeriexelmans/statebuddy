@@ -1,4 +1,4 @@
-import { ZOOM_MAX, ZOOM_MIN, ZOOM_STEP } from "@/App/VisualEditor/parameters";
+import { ZOOM_MAX, ZOOM_MIN, ZOOM_STEP } from "@/App/parameters";
 import { Dispatch, memo, SetStateAction, useEffect } from "react";
 import { KeyInfoHidden, KeyInfoVisible } from "./KeyInfo";
 

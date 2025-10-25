@@ -3,9 +3,9 @@ import { ClipboardEvent, Dispatch, memo, ReactElement, SetStateAction, useCallba
 import { Statechart } from "../../statecharts/abstract_syntax";
 import { Arrow, ArrowPart, Diamond, History, Rountangle, RectSide, Text } from "../../statecharts/concrete_syntax";
 import { parseStatechart, TraceableError } from "../../statecharts/parser";
-import { ArcDirection, Line2D, Rect2D, Vec2D, addV2D, arcDirection, area, getBottomSide, getLeftSide, getRightSide, getTopSide, isEntirelyWithin, normalizeRect, scaleV2D, subtractV2D, transformLine, transformRect } from "./geometry";
-import { MIN_ROUNTANGLE_SIZE } from "./parameters";
-import { getBBoxInSvgCoords } from "./svg_helper";
+import { ArcDirection, Rect2D, Vec2D, addV2D, arcDirection, area, isEntirelyWithin, normalizeRect, scaleV2D, subtractV2D, transformLine, transformRect } from "../../util/geometry";
+import { MIN_ROUNTANGLE_SIZE } from "../parameters";
+import { getBBoxInSvgCoords } from "../../util/svg_helper";
 import { ArrowSVG } from "./ArrowSVG";
 import { RountangleSVG } from "./RountangleSVG";
 import { TextSVG } from "./TextSVG";
@@ -51,14 +51,6 @@ type HistorySelectable = {
 type Selectable = RountangleSelectable | ArrowSelectable | TextSelectable | HistorySelectable;
 
 type Selection = Selectable[];
-
-
-export const sides: [RectSide, (r:Rect2D)=>Line2D][] = [
-  ["left", getLeftSide],
-  ["top", getTopSide],
-  ["right", getRightSide],
-  ["bottom", getBottomSide],
-];
 
 export type InsertMode = "and"|"or"|"pseudo"|"shallow"|"deep"|"transition"|"text";
 

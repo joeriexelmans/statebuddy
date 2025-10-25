@@ -11,7 +11,7 @@ import "./App.css";
 import { TopPanel } from "./TopPanel/TopPanel";
 import { ShowAST, ShowInputEvents, ShowInternalEvents, ShowOutputEvents } from "./ShowAST";
 import { parseStatechart } from "../statecharts/parser";
-import { getKeyHandler } from "./shortcut_handler";
+import { getKeyHandler } from "./VisualEditor/shortcut_handler";
 import { BottomPanel } from "./BottomPanel";
 import { emptyState } from "@/statecharts/concrete_syntax";
 import { PersistentDetails } from "./PersistentDetails";

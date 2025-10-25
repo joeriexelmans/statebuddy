@@ -1,6 +1,6 @@
 import { memo } from "react";
-import { Vec2D } from "./geometry";
-import { HISTORY_RADIUS } from "./parameters";
+import { Vec2D } from "../../util/geometry";
+import { HISTORY_RADIUS } from "../parameters";
 
 export const HistorySVG = memo(function HistorySVG(props: {uid: string, topLeft: Vec2D, kind: "shallow"|"deep", selected: boolean, highlight: boolean}) {
   const text = props.kind === "shallow" ? "H" : "H*";

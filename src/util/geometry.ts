@@ -1,4 +1,4 @@
-import { RectSide } from "../../statecharts/concrete_syntax";
+import { RectSide } from "../statecharts/concrete_syntax";
 
 export type Vec2D = {
   x: number;
@@ -196,3 +196,10 @@ export function arcDirection(start: RectSide, end: RectSide): ArcDirection {
   }
   return "cw";
 }
+
+export const sides: [RectSide, (r: Rect2D) => Line2D][] = [
+  ["left", getLeftSide],
+  ["top", getTopSide],
+  ["right", getRightSide],
+  ["bottom", getBottomSide],
+];

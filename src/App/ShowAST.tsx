@@ -1,6 +1,5 @@
 import { ConcreteState, UnstableState, stateDescription, Transition } from "../statecharts/abstract_syntax";
 import { Action, EventTrigger, Expression } from "../statecharts/label_ast";
-import { RT_Statechart } from "../statecharts/runtime_types";
 
 import "./AST.css";
 

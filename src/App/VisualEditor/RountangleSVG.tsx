@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { Rountangle, RectSide } from "../../statecharts/concrete_syntax";
-import { ROUNTANGLE_RADIUS } from "./parameters";
+import { ROUNTANGLE_RADIUS } from "../parameters";
 import { RectHelper } from "./RectHelpers";
 import { rountangleMinSize } from "./VisualEditor";
 import { arraysEqual } from "@/util/util";

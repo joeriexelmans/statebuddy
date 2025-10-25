@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { RectSide } from "../../statecharts/concrete_syntax";
-import { Vec2D } from "./geometry";
-import { CORNER_HELPER_OFFSET, CORNER_HELPER_RADIUS } from "./parameters";
+import { Vec2D } from "../../util/geometry";
+import { CORNER_HELPER_OFFSET, CORNER_HELPER_RADIUS } from "../parameters";
 
 function lineGeometryProps(size: Vec2D): [RectSide, object][] {
   return [

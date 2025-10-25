@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { Arrow, ArrowPart } from "../../statecharts/concrete_syntax";
-import { ArcDirection, euclideanDistance } from "./geometry";
-import { CORNER_HELPER_RADIUS } from "./parameters";
+import { ArcDirection, euclideanDistance } from "../../util/geometry";
+import { CORNER_HELPER_RADIUS } from "../parameters";
 import { arraysEqual } from "@/util/util";
 
 

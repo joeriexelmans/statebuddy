@@ -13,7 +13,7 @@ export type Environment = {
   // read variable
   get(key: string): any;
 
-  entries(): Iterator<[string, any]>;
+  entries(): IterableIterator<[string, any]>;
 }
 
 
