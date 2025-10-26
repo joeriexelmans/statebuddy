@@ -13,7 +13,7 @@ import { RaisedEvent } from "@/statecharts/runtime_types";
 import { useEffect, useState } from "react";
 
 import "./Microwave.css";
-import { useAudioContext } from "./useAudioContext";
+import { useAudioContext } from "../../useAudioContext";
 
 export type MagnetronState = "on" | "off";
 export type DoorState = "open" | "closed";

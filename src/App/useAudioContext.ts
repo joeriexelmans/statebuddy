@@ -1,5 +1,5 @@
 import { memoize } from "@/util/util";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 
 // I was trying to get the 'microwave running' sound to play gapless on Chrome, and the Web Audio API turned out to be the only thing that worked properly. It has some nice bonus features as well, such as setting the playback rate, and audio filters.
@@ -11,7 +11,7 @@ export function useAudioContext(speed: number) {
     const ctx = new AudioContext();
     const hipass = ctx.createBiquadFilter();
     hipass.type = 'highpass';
-    hipass.frequency.value = 20; // let's not blow up anyone's speakers
+    hipass.frequency.value = 20; // Hz (let's not blow up anyone's speakers)
     hipass.connect(ctx.destination);
     return {
       ctx,
@@ -20,13 +20,14 @@ export function useAudioContext(speed: number) {
   });
   const [sounds, setSounds] = useState<AudioBufferSourceNode[]>([]);
 
-  const url2AudioBuf: (url:string) => Promise<AudioBuffer> = memoize((url: string) => {
+  const url2AudioBuf: (url:string) => Promise<AudioBuffer> = useCallback(memoize((url: string) => {
     return fetch(url)
       .then(res => res.arrayBuffer())
       .then(buf => ctx.decodeAudioData(buf));
-  });
+  }), [ctx]);
 
   function play(url: string, loop: boolean) {
+    console.log('play', url);
     const srcPromise = url2AudioBuf(url)
       .then(audioBuf => {
         const src = ctx.createBufferSource();

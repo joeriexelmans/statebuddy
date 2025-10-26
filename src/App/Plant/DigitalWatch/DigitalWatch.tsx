@@ -4,7 +4,10 @@ import digitalFont from "./digital-font.ttf";
 import { Plant } from "../Plant";
 import { RaisedEvent } from "@/statecharts/runtime_types";
 
+import sndBeep from "./beep.wav";
 import "./DigitalWatch.css";
+import { useAudioContext } from "@/App/useAudioContext";
+import { useEffect } from "react";
 
 type DigitalWatchState = {
   light: boolean;
@@ -12,10 +15,12 @@ type DigitalWatchState = {
   m: number;
   s: number;
   alarm: boolean;
+  beep: boolean;
 }
 
 type DigitalWatchProps = {
   state: DigitalWatchState,
+  speed: number
   callbacks: {
     onTopLeftPressed: () => void;
     onTopRightPressed: () => void;
@@ -28,9 +33,19 @@ type DigitalWatchProps = {
   },
 }
 
-export function DigitalWatch({state: {light, h, m, s, alarm}, callbacks}: DigitalWatchProps) {
+export function DigitalWatch({state: {light, h, m, s, alarm, beep}, speed, callbacks}: DigitalWatchProps) {
   const twoDigits = (n: number) => n < 0 ? "  " : ("0"+n.toString()).slice(-2);
   const hhmmss = `${twoDigits(h)}:${twoDigits(m)}:${twoDigits(s)}`;
+
+  const [playSound, preloadAudio] = useAudioContext(speed);
+
+  preloadAudio(sndBeep);
+
+  useEffect(() => {
+    if (beep) {
+      playSound(sndBeep, false);
+    }
+  }, [beep])
 
   return <>
     <style>{`
@@ -78,6 +93,7 @@ export const DigitalWatchPlant: Plant<DigitalWatchState> = {
     { kind: "event", event: "setS", paramName: 's' },
     { kind: "event", event: "setLight", paramName: 'lightOn'},
     { kind: "event", event: "setAlarm", paramName: 'alarmOn'},
+    { kind: "event", event: "beep", paramName: 'beep'},
   ],
   outputEvents: [
     { kind: "event", event: "topLeftPressed" },
@@ -95,6 +111,7 @@ export const DigitalWatchPlant: Plant<DigitalWatchState> = {
     h: 12,
     m: 0,
     s: 0,
+    beep: false,
   },
   reduce: (inputEvent: RaisedEvent, state: DigitalWatchState) => {
     if (inputEvent.name === "setH") {
@@ -118,9 +135,12 @@ export const DigitalWatchPlant: Plant<DigitalWatchState> = {
     if (inputEvent.name === "unsetAlarm") {
       return { ...state, alarm: false };
     }
+    if (inputEvent.name === "beep") {
+      return { ...state, beep: inputEvent.param };
+    }
     return state; // unknown event - ignore it
   },
-  render: (state, raiseEvent) => <DigitalWatch state={state} callbacks={{
+  render: (state, raiseEvent, speed) => <DigitalWatch state={state} speed={speed} callbacks={{
     onTopLeftPressed: () => raiseEvent({name: "topLeftPressed"}),
     onTopRightPressed: () => raiseEvent({name: "topRightPressed"}),
     onBottomRightPressed: () => raiseEvent({name: "bottomRightPressed"}),
