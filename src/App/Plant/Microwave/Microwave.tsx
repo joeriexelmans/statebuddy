@@ -13,6 +13,7 @@ import { RaisedEvent } from "@/statecharts/runtime_types";
 import { useEffect, useState } from "react";
 
 import "./Microwave.css";
+import { useAudioContext } from "./useAudioContext";
 
 export type MagnetronState = "on" | "off";
 export type DoorState = "open" | "closed";
@@ -56,115 +57,48 @@ const imgs = {
   open: { off: imgSmallOpenedOff, on: imgSmallOpenedOn },
 }
 
-
 const BUTTON_HEIGHT = 18;
 const BUTTON_WIDTH = 60;
-
 const BUTTON_X0 = 412;
-const BUTTON_X1 = BUTTON_X0 + BUTTON_WIDTH;
-
 const START_X0 = BUTTON_X0;
 const START_Y0 = 234;
-const START_X1 = BUTTON_X1;
-const START_Y1 = START_Y0 + BUTTON_HEIGHT;
-
 const STOP_X0 = BUTTON_X0;
 const STOP_Y0 = 211;
-const STOP_X1 = BUTTON_X1;
-const STOP_Y1 = STOP_Y0 + BUTTON_HEIGHT;
-
 const INCTIME_X0 = BUTTON_X0;
 const INCTIME_Y0 = 188;
-const INCTIME_X1 = BUTTON_X1;
-const INCTIME_Y1 = INCTIME_Y0 + BUTTON_HEIGHT;
-
 const DOOR_X0 = 26;
 const DOOR_Y0 = 68;
 const DOOR_WIDTH = 353;
 const DOOR_HEIGHT = 217;
 
-const ctx = new AudioContext();
-
-function fetchAudioBuffer(url: string): Promise<AudioBuffer> {
-  return fetch(url).then(res => {
-    return res.arrayBuffer();
-  }).then(buf => {
-    return ctx.decodeAudioData(buf);
-  });
-}
-
-// Using the Web Audio API was the only way I could get the 'microwave running' sound to properly play gapless in Chrome.
-function playAudioBufer(buf: AudioBuffer, loop: boolean, speed: number): AudioCallbacks {
-  const src = ctx.createBufferSource();
-  src.buffer = buf;
-  
-  const lowPass = ctx.createBiquadFilter();
-  lowPass.type = 'highpass';
-  lowPass.frequency.value = 20; // let's not blow up anyone's speakers
-  
-  src.connect(lowPass);
-  lowPass.connect(ctx.destination);
-  
-  if (loop) src.loop = true;
-  src.start();
-  return [
-    () => src.stop(),
-    (speed: number) => {
-      // instead of setting playback rate to 0 (which browsers seem to handle as if playback rate was set to 1, we just set it to a very small value, making it "almost paused")
-      // combined with the lowpass filter above, this should produce any audible results.
-      src.playbackRate.value = (speed===0) ? 0.00001 : speed;
-      return;
-    },
-  ];
-}
-
-type AudioCallbacks = [
-  () => void,
-  (speed: number) => void,
-];
-
 export function Magnetron({state: {timeDisplay, bell, magnetron}, speed, callbacks}: MicrowaveProps) {
   const [door, setDoor] = useState<DoorState>("closed");
 
-  const [soundsPlaying, setSoundsPlaying] = useState<AudioCallbacks[]>([]);
-  const [bufRunningPromise] = useState(() => fetchAudioBuffer(sndRunning));
-  const [bufBellPromise] = useState(() => fetchAudioBuffer(sndBell));
-
-  // a bit hacky: when the bell-state changes to true, we play the bell sound...
-  useEffect(() => {
-    if (bell) {
-      bufBellPromise.then(buf => {
-        const cbs = playAudioBufer(buf, false, speed);
-        setSoundsPlaying(sounds => [...sounds, cbs]);
-      });
-    }
-  }, [bell]);
-
-  useEffect(() => {
-    if (magnetron === "on") {
-      const stop = bufRunningPromise.then(buf => {
-        const cbs = playAudioBufer(buf, true, speed);
-        setSoundsPlaying(sounds => [...sounds, cbs]);
-        return () => {
-          cbs[0]();
-          setSoundsPlaying(sounds => sounds.filter(cbs_ => cbs_ !== cbs));
-        }
-      });
-      return () => stop.then(stop => {
-        stop();
-      });
-    }
-    return () => {};
-  }, [magnetron])
-
-  useEffect(() => {
-    soundsPlaying.forEach(([_, setSpeed]) => setSpeed(speed));
-  }, [soundsPlaying, speed])
+  const [playSound, preloadAudio] = useAudioContext(speed);
 
   // preload(imgSmallClosedOff, {as: "image"});
   preload(imgSmallClosedOn, {as: "image"});
   preload(imgSmallOpenedOff, {as: "image"});
   preload(imgSmallOpenedOn, {as: "image"});
+
+  preloadAudio(sndRunning);
+  preloadAudio(sndBell);
+
+  // a bit hacky: when the bell-state changes to true, we play the bell sound...
+  useEffect(() => {
+    if (bell) {
+      playSound(sndBell, false);
+    }
+  }, [bell]);
+
+  useEffect(() => {
+    if (magnetron === "on") {
+      const stopSoundRunning = playSound(sndRunning, true);
+      return () => stopSoundRunning();
+    }
+    return () => {};
+  }, [magnetron])
+
 
   const openDoor = () => {
     setDoor("open");
