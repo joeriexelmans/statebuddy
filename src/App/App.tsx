@@ -406,7 +406,7 @@ export function App() {
         flex: '0 0 content',
         overflowY: "auto",
         overflowX: "visible",
-        maxWidth: '50vw',
+        maxWidth: 'min(400px, 50vw)',
       }}>
         <div className="stackVertical" style={{height:'100%'}}>
           <div

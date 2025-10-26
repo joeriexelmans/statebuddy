@@ -36,6 +36,9 @@ export function useAudioContext(speed: number) {
         src.loop = loop;
         src.start();
         setSounds(sounds => [...sounds, src]);
+        src.addEventListener("ended", () => {
+          setSounds(sounds => sounds.filter(s => s !== src));
+        })
         return src;
       });
     // return callback to stop playing
