@@ -453,7 +453,7 @@ export function App() {
                   <option>{plantName}</option>
                 )}
               </select>
-              {trace !== null &&
+              {trace !== null && trace.trace[trace.idx].plantState &&
                 <div>{
                   plant.render(
                     trace.trace[trace.idx].plantState,
