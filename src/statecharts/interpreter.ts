@@ -39,9 +39,9 @@ export class RuntimeError extends Error {
 
 export class NonDeterminismError extends RuntimeError {}
 
-export function execAction(action: Action, rt: ActionScope): ActionScope {
+export function execAction(action: Action, rt: ActionScope, uids: string[]): ActionScope {
   if (action.kind === "assignment") {
-    const rhs = evalExpr(action.rhs, rt.environment);
+    const rhs = evalExpr(action.rhs, rt.environment, uids);
     const environment = rt.environment.set(action.lhs, rhs);
     return {
       ...rt,
@@ -76,11 +76,10 @@ export function entryActions(simtime: number, state: TransitionSrcTgt, actionSco
 
   let {environment, ...rest} = actionScope;
 
-  environment = environment.enterScope(state.uid);
-
   for (const action of state.entryActions) {
-    ({environment, ...rest} = execAction(action, {environment, ...rest}));
+    ({environment, ...rest} = execAction(action, {environment, ...rest}, [state.uid]));
   }
+
   // schedule timers
   if (state.kind !== "pseudo") {
     // we store timers in the environment (dirty!)
@@ -101,10 +100,12 @@ export function entryActions(simtime: number, state: TransitionSrcTgt, actionSco
 export function exitActions(simtime: number, state: TransitionSrcTgt, {enteredStates, ...actionScope}: EnteredScope): ActionScope {
   // console.log('exit', stateDescription(state), '...');
 
-  for (const action of state.exitActions) {
-    (actionScope = execAction(action, actionScope));
-  }
   let environment = actionScope.environment;
+
+  for (const action of state.exitActions) {
+    (actionScope = execAction(action, actionScope, [state.uid]));
+  }
+
   // cancel timers
   if (state.kind !== "pseudo") {
     const timers: Timers = environment.get("_timers") || [];
@@ -112,25 +113,26 @@ export function exitActions(simtime: number, state: TransitionSrcTgt, {enteredSt
     environment = environment.set("_timers", newTimers);
   }
 
-  environment = environment.exitScope();
-
   return {...actionScope, environment};
 }
 
 // recursively enter the given state's default state
 export function enterDefault(simtime: number, state: ConcreteState, rt: ActionScope): EnteredScope {
-  let {firedTransitions, ...actionScope} = rt;
+  let {firedTransitions, environment, ...actionScope} = rt;
+
+  environment = environment.enterScope(state.uid);
+
+  let enteredStates = new Set([state.uid]);
 
   // execute entry actions
-  ({firedTransitions, ...actionScope} = entryActions(simtime, state, {firedTransitions, ...actionScope}));
+  ({firedTransitions, environment, ...actionScope} = entryActions(simtime, state, {firedTransitions, environment, ...actionScope}));
 
   // enter children...
-  let enteredStates = new Set([state.uid]);
   if (state.kind === "and") {
     // enter every child
     for (const child of state.children) {
       let enteredChildren;
-      ({enteredStates: enteredChildren, firedTransitions, ...actionScope} = enterDefault(simtime, child, {firedTransitions, ...actionScope}));
+      ({enteredStates: enteredChildren, firedTransitions, environment, ...actionScope} = enterDefault(simtime, child, {firedTransitions, environment, ...actionScope}));
       enteredStates = enteredStates.union(enteredChildren);
     }
   }
@@ -143,22 +145,26 @@ export function enterDefault(simtime: number, state: ConcreteState, rt: ActionSc
       const [arrowUid, toEnter] = state.initial[0];
       firedTransitions = [...firedTransitions, arrowUid];
       let enteredChildren;
-      ({enteredStates: enteredChildren, firedTransitions, ...actionScope} = enterDefault(simtime, toEnter, {firedTransitions, ...actionScope}));
+      ({enteredStates: enteredChildren, firedTransitions, environment, ...actionScope} = enterDefault(simtime, toEnter, {firedTransitions, environment, ...actionScope}));
       enteredStates = enteredStates.union(enteredChildren);
     }
     else {
-      console.warn(state.uid + ': no initial state');
+      throw new RuntimeError(state.uid + ': no initial state', [state.uid]);
     }
   }  
 
-  return {enteredStates, firedTransitions, ...actionScope};
+  environment = environment.exitScope();
+
+  return {enteredStates, firedTransitions, environment, ...actionScope};
 }
 
 // recursively enter the given state and, if children need to be entered, preferrably those occurring in 'toEnter' will be entered. If no child occurs in 'toEnter', the default child will be entered.
-export function enterStates(simtime: number, state: ConcreteState, toEnter: Set<string>, actionScope: ActionScope): EnteredScope {
+export function enterStates(simtime: number, state: ConcreteState, toEnter: Set<string>, {environment, ...actionScope}: ActionScope): EnteredScope {
+
+  environment = environment.enterScope(state.uid);
 
   // execute entry actions
-  actionScope = entryActions(simtime, state, actionScope);
+  actionScope = entryActions(simtime, state, {environment, ...actionScope});
 
   // enter children...
   let enteredStates = new Set([state.uid]);
@@ -167,7 +173,7 @@ export function enterStates(simtime: number, state: ConcreteState, toEnter: Set<
     // every child must be entered
     for (const child of state.children) {
       let enteredChildren;
-      ({enteredStates: enteredChildren, ...actionScope} = enterStates(simtime, child, toEnter, actionScope));
+      ({enteredStates: enteredChildren, environment, ...actionScope} = enterStates(simtime, child, toEnter, {environment, ...actionScope}));
       enteredStates = enteredStates.union(enteredChildren);
     }
   }
@@ -177,36 +183,40 @@ export function enterStates(simtime: number, state: ConcreteState, toEnter: Set<
     if (childToEnter.length === 1) {
       // good
       let enteredChildren;
-      ({enteredStates: enteredChildren, ...actionScope} = enterStates(simtime, childToEnter[0], toEnter, actionScope));
+      ({enteredStates: enteredChildren, environment, ...actionScope} = enterStates(simtime, childToEnter[0], toEnter, {environment, ...actionScope}));
       enteredStates = enteredStates.union(enteredChildren);
     }
     else if (childToEnter.length === 0) {
       // also good, enter default child
-      return enterDefault(simtime, state, {...actionScope});
+      return enterDefault(simtime, state, {environment, ...actionScope});
     }
     else {
       throw new Error("can only enter one child of an OR-state, stupid!");
     }
   }
 
-  return { enteredStates, ...actionScope };
+  environment = environment.exitScope();
+
+  return { enteredStates, environment, ...actionScope };
 }
 
 // exit the given state and all its active descendants
 export function exitCurrent(simtime: number, state: ConcreteState, rt: EnteredScope): ActionScope {
   // console.log('exitCurrent', stateDescription(state));
-  let {enteredStates, history, ...actionScope} = rt;
+  let {enteredStates, history, environment, ...actionScope} = rt;
+
+  environment = environment.enterScope(state.uid);
 
   if (enteredStates.has(state.uid)) {
     // exit all active children...
     if (state.children) {
       for (const child of state.children) {
-        ({history, ...actionScope} = exitCurrent(simtime, child,  {enteredStates, history, ...actionScope}));
+        ({history, environment, ...actionScope} = exitCurrent(simtime, child,  {enteredStates, history, environment, ...actionScope}));
       }
     }
 
     // execute exit actions
-    ({history, ...actionScope} = exitActions(simtime, state, {enteredStates, history, ...actionScope}));
+    ({history, environment, ...actionScope} = exitActions(simtime, state, {enteredStates, history, environment, ...actionScope}));
 
     // record history
     if (state.history) {
@@ -229,7 +239,9 @@ export function exitCurrent(simtime: number, state: ConcreteState, rt: EnteredSc
     }
   }
 
-  return {history, ...actionScope};
+  environment = environment.exitScope();
+
+  return {history, environment, ...actionScope};
 }
 
 function allowedToFire(arena: OrState, alreadyFiredArenas: OrState[]) {
@@ -272,7 +284,7 @@ function attemptSrcState(simtime: number, sourceState: AbstractState, event: RT_
     }
   };
   const guardEnvironment = environment.set("inState", inState);
-  const enabled = triggered.filter(([t,l]) => evalExpr(l.guard, guardEnvironment));
+  const enabled = triggered.filter(([t,l]) => evalExpr(l.guard, guardEnvironment, [t.uid]));
   if (enabled.length > 0) {
     if (enabled.length > 1) {
       throw new NonDeterminismError(`Non-determinism: state '${stateDescription(sourceState)}' has multiple (${enabled.length}) enabled outgoing transitions: ${enabled.map(([t]) => transitionDescription(t)).join(', ')}`, [...enabled.map(([t]) => t.uid), sourceState.uid]);
@@ -376,7 +388,7 @@ export function fire(simtime: number, t: Transition, ts: Map<string, Transition[
 
   // transition actions
   for (const action of label.actions) {
-    ({environment, history, ...rest} = execAction(action, {environment, history, ...rest}));
+    ({environment, history, ...rest} = execAction(action, {environment, history, ...rest}, [t.uid]));
   }
 
   const tgtPath = computePath({ancestor: arena, descendant: t.tgt});

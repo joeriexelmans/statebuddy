@@ -30,9 +30,7 @@ details:has(+ details) {
   cursor: pointer;
 }
 .runtimeState.active {
-  /* background-color: rgba(255, 140, 0, 0.2); */
   background-color: rgba(0,0,255,0.2);
-  /* border: solid black 3px; */
   border: solid blue 1px;
 }
 
@@ -40,6 +38,11 @@ details:has(+ details) {
   background-color: lightpink;
   color: darkred;
 }
+
+.runtimeState.runtimeError.active {
+  border-color: darkred;
+}
+
 /* details:not(:has(details)) > summary::marker {
   color: white;
 } */

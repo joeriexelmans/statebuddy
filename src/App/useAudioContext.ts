@@ -27,7 +27,6 @@ export function useAudioContext(speed: number) {
   }), [ctx]);
 
   function play(url: string, loop: boolean) {
-    console.log('play', url);
     const srcPromise = url2AudioBuf(url)
       .then(audioBuf => {
         const src = ctx.createBufferSource();

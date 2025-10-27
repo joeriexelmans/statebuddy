@@ -97,6 +97,6 @@ export class ScopedEnvironment {
   }
 
   *entries(): Iterator<[string, any]> {
-    return iterST(this.scopeTree);
+    yield* iterST(this.scopeTree);
   }
 }

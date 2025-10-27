@@ -151,6 +151,13 @@ export function App() {
   const parsed = useMemo(() => editorState && conns && parseStatechart(editorState, conns), [editorState, conns]);
   const ast = parsed && parsed[0];
   const syntaxErrors = parsed && parsed[1];
+  const allErrors = syntaxErrors && [
+    ...syntaxErrors,
+    ...(trace && trace.trace[trace.idx].kind === "error") ? [{
+      message: trace.trace[trace.idx].error.message,
+      shapeUid: trace.trace[trace.idx].error.highlight[0],
+    }] : [],
+  ]
 
   // append editor state to undo history
   const makeCheckPoint = useCallback(() => {
@@ -395,7 +402,8 @@ export function App() {
         </div>
         {/* Editor */}
         <div style={{flexGrow: 1, overflow: "auto"}}>
-          {editorState && conns && syntaxErrors && <VisualEditor {...{state: editorState, setState: setEditorState, conns, trace, setTrace, syntaxErrors, insertMode, highlightActive, highlightTransitions, setModal, makeCheckPoint, zoom}}/>}
+          {editorState && conns && syntaxErrors &&
+            <VisualEditor {...{state: editorState, setState: setEditorState, conns, trace, setTrace, syntaxErrors: allErrors, insertMode, highlightActive, highlightTransitions, setModal, makeCheckPoint, zoom}}/>}
         </div>
       </div>
 

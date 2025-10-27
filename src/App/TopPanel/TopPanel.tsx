@@ -259,5 +259,11 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
         </div>
       </div>
     </div>
+    <div className="toolbarGroup">
+      {location.host === "localhost:3000" ?
+        <a href={`https://deemz.org/public/statebuddy/${location.hash}`}>production</a>
+        : <a href={`http://localhost:3000/${location.hash}`}>development</a>
+      }
+    </div>
   </div>;
 });

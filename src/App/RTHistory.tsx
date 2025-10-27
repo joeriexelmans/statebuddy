@@ -50,7 +50,10 @@ export const RTHistoryItem = memo(function RTHistoryItem({ast, idx, item, prevIt
     </div>;
   }
   else {
-    return <div className="runtimeState runtimeError">
+    // error item
+    return <div
+      className={"runtimeState runtimeError" + (active ? " active" : "")}
+      onMouseDown={useCallback(() => onMouseDown(idx, item.simtime), [idx, item.simtime])}>
       <div>
         {formatTime(item.simtime)}
         &emsp;
@@ -68,7 +71,8 @@ function ShowEnvironment(props: {environment: Environment}) {
   return <div>{
     [...props.environment.entries()]
       .filter(([variable]) => !variable.startsWith('_'))
-      .map(([variable,value]) => `${variable}: ${value}`).join(', ')
+      // we strip the first 5 characters from 'variable' (remove "root.")
+      .map(([variable,value]) => `${variable.slice(5)}: ${value}`).join(', ')
   }</div>;
 }
 
