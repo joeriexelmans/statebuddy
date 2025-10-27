@@ -1,7 +1,7 @@
 import { ReactElement, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { handleInputEvent, initialize, RuntimeError } from "../statecharts/interpreter";
-import { BigStep, RT_Event } from "../statecharts/runtime_types";
+import { BigStepOutput, RT_Event, RT_Statechart } from "../statecharts/runtime_types";
 import { InsertMode, VisualEditor, VisualEditorState } from "./VisualEditor/VisualEditor";
 import { getSimTime, getWallClkDelay, TimeMode } from "../statecharts/time";
 
@@ -22,6 +22,33 @@ import { usePersistentState } from "./persistent_state";
 import { RTHistory } from "./RTHistory";
 import { detectConnections } from "@/statecharts/detect_connections";
 import { MicrowavePlant } from "./Plant/Microwave/Microwave";
+import { coupledExecution, dummyExecution, exposeStatechartInputs, statechartExecution, TimedReactive } from "@/statecharts/timed_reactive";
+
+// const clock1: TimedReactive<{nextTick: number}> = {
+//   initial: () => ({nextTick: 1}),
+//   timeAdvance: (c) => c.nextTick,
+//   intTransition: (c) => [[{name: "tick"}], {nextTick: c.nextTick+1}],
+//   extTransition: (simtime, c, e) => [[], (c)],
+// }
+
+// const clock2: TimedReactive<{nextTick: number}> = {
+//   initial: () => ({nextTick: 0.5}),
+//   timeAdvance: (c) => c.nextTick,
+//   intTransition: (c) => [[{name: "tick"}], {nextTick: c.nextTick+1}],
+//   extTransition: (simtime, c, e) => [[], (c)],
+// }
+
+// const coupled = coupledExecution({clock1, clock2}, {inputEvents: {}, outputEvents: {
+//   clock1: {tick: {kind:"output", eventName: 'tick'}},
+//   clock2: {tick: {kind:"output", eventName: 'tick'}},
+// }})
+
+// let state = coupled.initial();
+// for (let i=0; i<10; i++) {
+//   const nextWakeup = coupled.timeAdvance(state);
+//   console.log({state, nextWakeup});
+//   [[], state] = coupled.intTransition(state);
+// }
 
 export type EditHistory = {
   current: VisualEditorState,
@@ -35,15 +62,23 @@ const plants: [string, Plant<any>][] = [
   ["microwave", MicrowavePlant],
 ]
 
-export type BigStepError = {
-  inputEvent: string,
+export type TraceItemError = {
+  cause: string, // event name, <init> or <timer>
   simtime: number,
   error: RuntimeError,
 }
 
-export type TraceItem = { kind: "error" } & BigStepError | { kind: "bigstep", plantState: any } & BigStep;
+type CoupledState = {
+  sc: BigStepOutput,
+  plant: any,
+};
+
+export type TraceItem =
+  { kind: "error" } & TraceItemError
+| { kind: "bigstep", simtime: number, cause: string, state: CoupledState };
 
 export type TraceState = {
+  // executor: TimedReactive<CoupledState>,
   trace: [TraceItem, ...TraceItem[]], // non-empty
   idx: number,
 }; // <-- null if there is no trace
@@ -52,22 +87,22 @@ function current(ts: TraceState) {
   return ts.trace[ts.idx]!;
 }
 
-function getPlantState<T>(plant: Plant<T>, trace: TraceItem[], idx: number): T | null {
-  if (idx === -1) {
-    return plant.initial;
-  }
-  let plantState = getPlantState(plant, trace, idx-1);
-  if (plantState !== null) {
-    const currentConfig = trace[idx];
-    if (currentConfig.kind === "bigstep") {
-      for (const o of currentConfig.outputEvents) {
-        plantState = plant.reduce(o, plantState);
-      }
-    }
-    return plantState;
-  }
-  return null;
-}
+// function getPlantState<T>(plant: Plant<T>, trace: TraceItem[], idx: number): T | null {
+//   if (idx === -1) {
+//     return plant.initial;
+//   }
+//   let plantState = getPlantState(plant, trace, idx-1);
+//   if (plantState !== null) {
+//     const currentConfig = trace[idx];
+//     if (currentConfig.kind === "bigstep") {
+//       for (const o of currentConfig.outputEvents) {
+//         plantState = plant.reduce(o, plantState);
+//       }
+//     }
+//     return plantState;
+//   }
+//   return null;
+// }
 
 export function App() {
   const [insertMode, setInsertMode] = useState<InsertMode>("and");
@@ -150,12 +185,13 @@ export function App() {
   const conns = useMemo(() => editorState && detectConnections(editorState), [editorState]);
   const parsed = useMemo(() => editorState && conns && parseStatechart(editorState, conns), [editorState, conns]);
   const ast = parsed && parsed[0];
-  const syntaxErrors = parsed && parsed[1];
-  const allErrors = syntaxErrors && [
+  const syntaxErrors = parsed && parsed[1] || [];
+  const currentTraceItem = trace && trace.trace[trace.idx];
+  const allErrors = [
     ...syntaxErrors,
-    ...(trace && trace.trace[trace.idx].kind === "error") ? [{
-      message: trace.trace[trace.idx].error.message,
-      shapeUid: trace.trace[trace.idx].error.highlight[0],
+    ...(currentTraceItem && currentTraceItem.kind === "error") ? [{
+      message: currentTraceItem.error.message,
+      shapeUid: currentTraceItem.error.highlight[0],
     }] : [],
   ]
 
@@ -204,19 +240,29 @@ export function App() {
     }
   }, [refRightSideBar.current]);
 
+  const cE = useMemo(() => ast && coupledExecution({sc: statechartExecution(ast), plant: dummyExecution}, exposeStatechartInputs(ast, "sc")), [ast]);
+
   const onInit = useCallback(() => {
-    if (ast === null) return;
-    const timestampedEvent = {simtime: 0, inputEvent: "<init>"};
-    let config;
+    if (cE === null) return;
+    const metadata = {simtime: 0, cause: "<init>"};
     try {
-      config = initialize(ast);
-      const item = {kind: "bigstep", ...timestampedEvent, ...config};
-      const plantState = getPlantState(plant, [item], 0);
-      setTrace({trace: [{...item, plantState}], idx: 0});
+      const state = cE.initial(); // may throw if initialing the statechart results in a RuntimeError
+      setTrace({
+        trace: [{kind: "bigstep", ...metadata, state}],
+        idx: 0,
+      });
+      // config = initialize(ast);
+      // const item = {kind: "bigstep", ...timestampedEvent, ...config};
+      // const plantState = getPlantState(plant, [item], 0);
+      // setTrace({trace: [{...item, plantState}], idx: 0});
     }
     catch (error) {
       if (error instanceof RuntimeError) {
-        setTrace({trace: [{kind: "error", ...timestampedEvent, error}], idx: 0});
+        setTrace({
+          trace: [{kind: "error", ...metadata, error}],
+          idx: 0,
+        });
+        // setTrace({trace: [{kind: "error", ...timestampedEvent, error}], idx: 0});
       }
       else {
         throw error; // probably a bug in the interpreter
@@ -231,7 +277,7 @@ export function App() {
       }
     });
     scrollDownSidebar();
-  }, [ast, scrollDownSidebar, setTime, setTrace]);
+  }, [cE, scrollDownSidebar]);
 
   const onClear = useCallback(() => {
     setTrace(null);
@@ -240,36 +286,41 @@ export function App() {
 
   // raise input event, producing a new runtime configuration (or a runtime error)
   const onRaise = (inputEvent: string, param: any) => {
-    if (ast === null) return;
-    if (trace !== null && ast.inputEvents.some(e => e.event === inputEvent)) {
-      const config = current(trace);
-      if (config.kind === "bigstep") {
+    if (cE === null) return;
+    if (currentTraceItem !== null /*&& ast.inputEvents.some(e => e.event === inputEvent)*/) {
+      if (currentTraceItem.kind === "bigstep") {
         const simtime = getSimTime(time, Math.round(performance.now()));
-        produceNextConfig(simtime, {kind: "input", name: inputEvent, param}, config);
+        appendNewConfig(simtime, inputEvent, () => {
+          const [_, newState] = cE.extTransition(simtime, currentTraceItem.state, {kind: "input", name: inputEvent, param});
+          return newState;
+        });
       }
     }
   };
+
   // timer elapse events are triggered by a change of the simulated time (possibly as a scheduled JS event loop timeout)
   useEffect(() => {
     let timeout: NodeJS.Timeout | undefined;
-    if (trace !== null) {
-      const config = current(trace);
-      if (config.kind === "bigstep") {
-        const timers = config.environment.get("_timers") || [];
-        if (timers.length > 0) {
-          const [nextInterrupt, timeElapsedEvent] = timers[0];
-          const raiseTimeEvent = () => {
-            produceNextConfig(nextInterrupt, timeElapsedEvent, config);
-          }
-          // depending on whether paused or realtime, raise immediately or in the future:
-          if (time.kind === "realtime") {
-            const wallclkDelay = getWallClkDelay(time, nextInterrupt, Math.round(performance.now()));
+    if (currentTraceItem !== null && cE !== null) {
+      if (currentTraceItem.kind === "bigstep") {
+        const nextTimeout = cE?.timeAdvance(currentTraceItem.state);
+
+        const raiseTimeEvent = () => {
+          appendNewConfig(nextTimeout, "<timer>", () => {
+            const [_, newState] = cE.intTransition(currentTraceItem.state);
+            return newState;
+          });
+        }
+
+        if (time.kind === "realtime") {
+          const wallclkDelay = getWallClkDelay(time, nextTimeout, Math.round(performance.now()));
+          if (wallclkDelay !== Infinity) {
             timeout = setTimeout(raiseTimeEvent, wallclkDelay);
           }
-          else if (time.kind === "paused") {
-            if (nextInterrupt <= time.simtime) {
-              raiseTimeEvent();
-            }
+        }
+        else if (time.kind === "paused") {
+          if (nextTimeout <= time.simtime) {
+            raiseTimeEvent();
           }
         }
       }
@@ -278,31 +329,24 @@ export function App() {
       if (timeout) clearTimeout(timeout);
     }
   }, [time, trace]); // <-- todo: is this really efficient?
-  function produceNextConfig(simtime: number, event: RT_Event, config: TraceItem) {
-    if (ast === null) return;
-    const timedEvent = {
-      simtime,
-      inputEvent: event.kind === "timer" ? "<timer>" : event.name,
-    };
 
+  function appendNewConfig(simtime: number, cause: string, computeNewState: () => CoupledState) {
     let newItem: TraceItem;
+    const metadata = {simtime, cause}
     try {
-      const nextConfig = handleInputEvent(simtime, event, ast, config as BigStep); // may throw
-      let plantState = config.plantState;
-      for (const o of nextConfig.outputEvents) {
-        plantState = plant.reduce(o, plantState);
-      }
-      newItem = {kind: "bigstep", plantState, ...timedEvent, ...nextConfig};
+      const state = computeNewState(); // may throw RuntimeError
+      newItem = {kind: "bigstep", ...metadata, state};
     }
     catch (error) {
       if (error instanceof RuntimeError) {
-        newItem = {kind: "error", ...timedEvent, error};
+        newItem = {kind: "error", ...metadata, error};
+        // also pause the simulation, for dramatic effect:
+        setTime({kind: "paused", simtime});
       }
       else {
         throw error;
       }
     }
-
     // @ts-ignore
     setTrace(trace => ({
       trace: [
@@ -348,25 +392,9 @@ export function App() {
     };
   }, []);
 
-  let highlightActive: Set<string>;
-  let highlightTransitions: string[];
-  if (trace === null) {
-    highlightActive = new Set();
-    highlightTransitions = [];
-  }
-  else {
-    const item = current(trace);
-    if (item.kind === "bigstep") {
-      highlightActive = item.mode;
-      highlightTransitions = item.firedTransitions;
-    }
-    else {
-      highlightActive = new Set();
-      highlightTransitions = [];
-    }
-  }
-
-  // const plantState = trace && getPlantState(plant, trace.trace, trace.idx);
+  const currentBigStep = currentTraceItem && currentTraceItem.kind === "bigstep" && currentTraceItem;
+  const highlightActive = (currentBigStep && currentBigStep.state.sc.mode) || new Set();
+  const highlightTransitions = currentBigStep && currentBigStep.state.sc.firedTransitions || [];
 
   const [showExecutionTrace, setShowExecutionTrace] = usePersistentState("showExecutionTrace", true);
 
@@ -453,14 +481,14 @@ export function App() {
                   <option>{plantName}</option>
                 )}
               </select>
-              {trace !== null && trace.trace[trace.idx].plantState &&
+              {/* {trace !== null && trace.trace[trace.idx].plantState &&
                 <div>{
                   plant.render(
                     trace.trace[trace.idx].plantState,
                     event => onRaise(event.name, event.param),
                     time.kind === "paused" ? 0 : time.scale,
                   )
-                }</div>}
+                }</div>} */}
             </PersistentDetails>
             <details open={showExecutionTrace} onToggle={e => setShowExecutionTrace(e.newState === "open")}><summary>execution trace</summary></details>
           </div>

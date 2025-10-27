@@ -3,6 +3,7 @@ import { getST, iterST, ScopeTree, updateST, writeST } from "./scope_tree";
 export type Environment = {
   enterScope(scopeId: string): Environment;
   exitScope(): Environment;
+  dropScope(): Environment;
 
   // force creation of a new variable in the current scope, even if a variable with the same name already exists in a surrounding scope
   newVar(key: string, value: any): Environment;
@@ -32,6 +33,9 @@ export class FlatEnvironment {
   exitScope(): FlatEnvironment {
     return this;
   }
+  dropScope(): FlatEnvironment {
+    return this;
+  }
 
   newVar(key: string, value: any) {
     return this.set(key, value);
@@ -43,7 +47,7 @@ export class FlatEnvironment {
     return this.env.get(key);
   }
 
-  entries(): Iterator<[string, any]> {
+  entries(): IterableIterator<[string, any]> {
     return this.env.entries();
   }
 }
@@ -60,16 +64,49 @@ export class ScopedEnvironment {
   }
 
   enterScope(scopeId: string): ScopedEnvironment {
+    // console.log('enter scope', scopeId, new ScopedEnvironment(
+    //   this.scopeTree,
+    //   [...this.current, scopeId],
+    // ));
     return new ScopedEnvironment(
       this.scopeTree,
       [...this.current, scopeId],
     );
   }
   exitScope() {
+    // console.log('exit scope', this.current.at(-1), new ScopedEnvironment(
+    //   this.scopeTree,
+    //   this.current.slice(0, -1),
+    // ));
     return new ScopedEnvironment(
       this.scopeTree,
       this.current.slice(0, -1),
     );
+  }
+
+  // like exitScope, but also gets rid of everything that was in the scope
+  dropScope() {
+    function dropPath({children, env}: ScopeTree, [first, ...restOfPath]: string[]): ScopeTree {
+      const { [first]: toDrop, ...rest} = children;
+      if (restOfPath.length === 0) {
+        return {
+          children: rest,
+          env,
+        };
+      }
+      return {
+        children: {
+          [first]: dropPath(toDrop, restOfPath),
+          ...rest,
+        },
+        env,
+      }
+    }
+    const after = dropPath(this.scopeTree, this.current);
+    return new ScopedEnvironment(
+      after,
+      this.current.slice(0, -1),
+    )
   }
 
   newVar(key: string, value: any): ScopedEnvironment {
@@ -96,7 +133,8 @@ export class ScopedEnvironment {
     return getST(this.current, key, this.scopeTree);
   }
 
-  *entries(): Iterator<[string, any]> {
+  *entries(): IterableIterator<[string, any]> {
     yield* iterST(this.scopeTree);
   }
 }
+

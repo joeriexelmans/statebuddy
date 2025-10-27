@@ -1,6 +1,6 @@
-import { Dispatch, memo, Ref, SetStateAction, useCallback } from "react";
+import { Dispatch, memo, SetStateAction, useCallback } from "react";
 import { Statechart, stateDescription } from "../statecharts/abstract_syntax";
-import { BigStep, Mode, RaisedEvent, RT_Event } from "../statecharts/runtime_types";
+import { Mode, RaisedEvent } from "../statecharts/runtime_types";
 import { formatTime } from "../util/util";
 import { TimeMode } from "../statecharts/time";
 import { TraceItem, TraceState } from "./App";
@@ -33,19 +33,19 @@ export function RTHistory({trace, setTrace, ast, setTime}: RTHistoryProps) {
 export const RTHistoryItem = memo(function RTHistoryItem({ast, idx, item, prevItem, active, onMouseDown}: {idx: number, ast: Statechart, item: TraceItem, prevItem?: TraceItem, active: boolean, onMouseDown: (idx: number, timestamp: number) => void}) {
   if (item.kind === "bigstep") {
     // @ts-ignore
-    const newStates = item.mode.difference(prevItem?.mode || new Set());
+    const newStates = item.state.sc.mode.difference(prevItem?.state.sc.mode || new Set());
     return <div
       className={"runtimeState" + (active ? " active" : "")}
       onMouseDown={useCallback(() => onMouseDown(idx, item.simtime), [idx, item.simtime])}>
       <div>
         {formatTime(item.simtime)}
         &emsp;
-        <div className="inputEvent">{item.inputEvent || "<init>"}</div>
+        <div className="inputEvent">{item.cause}</div>
       </div>
       <ShowMode mode={newStates} statechart={ast}/>
-      <ShowEnvironment environment={item.environment}/>
-      {item.outputEvents.length>0 && <>^
-        {item.outputEvents.map((e:RaisedEvent) => <span className="outputEvent">{e.name}</span>)}
+      <ShowEnvironment environment={item.state.sc.environment}/>
+      {item.state.sc.outputEvents.length>0 && <>^
+        {item.state.sc.outputEvents.map((e:RaisedEvent) => <span className="outputEvent">{e.name}</span>)}
       </>}
     </div>;
   }
@@ -57,7 +57,7 @@ export const RTHistoryItem = memo(function RTHistoryItem({ast, idx, item, prevIt
       <div>
         {formatTime(item.simtime)}
         &emsp;
-        <div className="inputEvent">{item.inputEvent}</div>
+        <div className="inputEvent">{item.cause}</div>
       </div>
       <div>
         {item.error.message}
@@ -71,8 +71,7 @@ function ShowEnvironment(props: {environment: Environment}) {
   return <div>{
     [...props.environment.entries()]
       .filter(([variable]) => !variable.startsWith('_'))
-      // we strip the first 5 characters from 'variable' (remove "root.")
-      .map(([variable,value]) => `${variable.slice(5)}: ${value}`).join(', ')
+      .map(([variable,value]) => `${variable.split('.').at(-1)}: ${JSON.stringify(value)}`).join(', ')
   }</div>;
 }
 

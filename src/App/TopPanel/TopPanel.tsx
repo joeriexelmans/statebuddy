@@ -96,7 +96,7 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
   }, [setTime, setTimescale]);
 
   // timestamp of next timed transition, in simulated time
-  const timers: Timers = config?.kind === "bigstep" && config.environment.get("_timers") || [];
+  const timers: Timers = config?.kind === "bigstep" && config.state.sc.environment.get("_timers") || [];
   const nextTimedTransition: [number, TimerElapseEvent] | undefined = timers[0];
 
   const onSkip = useCallback(() => {

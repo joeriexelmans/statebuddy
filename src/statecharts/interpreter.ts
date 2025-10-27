@@ -2,7 +2,7 @@ import { AbstractState, computeArena, computePath, ConcreteState, getDescendants
 import { evalExpr } from "./actionlang_interpreter";
 import { Environment, FlatEnvironment, ScopedEnvironment } from "./environment";
 import { Action, EventTrigger, TransitionLabel } from "./label_ast";
-import { BigStepOutput, initialRaised, Mode, RaisedEvents, RT_Event, RT_History, RT_Statechart, TimerElapseEvent, Timers, InputEvent } from "./runtime_types";
+import { BigStepOutput, initialRaised, Mode, RaisedEvents, RT_Event, RT_History, RT_Statechart, TimerElapseEvent, Timers } from "./runtime_types";
 
 const initialEnv = new Map<string, any>([
   ["_timers", []],
@@ -253,6 +253,13 @@ function allowedToFire(arena: OrState, alreadyFiredArenas: OrState[]) {
 }
 
 function attemptSrcState(simtime: number, sourceState: AbstractState, event: RT_Event|undefined, statechart: Statechart, {environment, mode, arenasFired, ...rest}: RT_Statechart & RaisedEvents): (RT_Statechart & RaisedEvents) | undefined {
+  const addEventParam = (event && event.kind === "input" && event.param !== undefined) ?
+    (environment: Environment, label: TransitionLabel) => {
+      const varName = (label.trigger as EventTrigger).paramName as string;
+      const result = environment.newVar(varName, event.param);
+      return result;
+    }
+    : (environment: Environment) => environment;
   // console.log('attemptSrcState', stateDescription(sourceState), arenasFired);
   const outgoing = statechart.transitions.get(sourceState.uid) || [];
   const labels = outgoing.flatMap(t =>
@@ -284,7 +291,7 @@ function attemptSrcState(simtime: number, sourceState: AbstractState, event: RT_
     }
   };
   const guardEnvironment = environment.set("inState", inState);
-  const enabled = triggered.filter(([t,l]) => evalExpr(l.guard, guardEnvironment, [t.uid]));
+  const enabled = triggered.filter(([t,l]) => evalExpr(l.guard, addEventParam(guardEnvironment, l), [t.uid]));
   if (enabled.length > 0) {
     if (enabled.length > 1) {
       throw new NonDeterminismError(`Non-determinism: state '${stateDescription(sourceState)}' has multiple (${enabled.length}) enabled outgoing transitions: ${enabled.map(([t]) => transitionDescription(t)).join(', ')}`, [...enabled.map(([t]) => t.uid), sourceState.uid]);
@@ -292,15 +299,8 @@ function attemptSrcState(simtime: number, sourceState: AbstractState, event: RT_
     const [toFire, label] = enabled[0];
     const arena = computeArena(toFire.src, toFire.tgt);
     if (allowedToFire(arena, arenasFired)) {
-      environment = environment.enterScope("<transition>");
-      // if there's an event parameter, add it to environment
-      if (event && event.kind === "input" && event.param !== undefined) {
-        const varName = (label.trigger as EventTrigger).paramName as string;
-        environment = environment.set(varName, event.param);
-      }
-      ({mode, environment, ...rest} = fire(simtime, toFire, statechart.transitions, label, arena, {mode, environment, ...rest}));
+      ({mode, environment, ...rest} = fire(simtime, toFire, statechart.transitions, label, arena, {mode, environment, ...rest}, addEventParam));
       rest = {...rest, firedTransitions: [...rest.firedTransitions, toFire.uid]}
-      environment.exitScope();
       arenasFired = [...arenasFired, arena];
 
       // if there is any pseudo-state in the modal configuration, immediately fire any enabled outgoing transitions of that state:
@@ -322,22 +322,24 @@ function attemptSrcState(simtime: number, sourceState: AbstractState, event: RT_
 }
 
 // A fair step is a response to one (input|internal) event, where possibly multiple transitions are made as long as their arenas do not overlap. A reasonably accurate and more intuitive explanation is that every orthogonal region is allowed to fire at most one transition.
-export function fairStep(simtime: number, event: RT_Event, statechart: Statechart, activeParent: StableState, {arenasFired, ...config}: RT_Statechart & RaisedEvents): RT_Statechart & RaisedEvents {
+export function fairStep(simtime: number, event: RT_Event, statechart: Statechart, activeParent: StableState, {arenasFired, environment, ...config}: RT_Statechart & RaisedEvents): RT_Statechart & RaisedEvents {
+  environment = environment.enterScope(activeParent.uid);
   // console.log('fairStep', arenasFired);
   for (const state of activeParent.children) {
     if (config.mode.has(state.uid)) {
-      const didFire = attemptSrcState(simtime, state, event, statechart, {...config, arenasFired});
+      const didFire = attemptSrcState(simtime, state, event, statechart, {...config, environment, arenasFired});
       if (didFire) {
-        ({arenasFired, ...config} = didFire);
+        ({arenasFired, environment, ...config} = didFire);
       }
       else {
         // no enabled outgoing transitions, try the children:
         // console.log('attempt children');
-        ({arenasFired, ...config} = fairStep(simtime, event, statechart, state, {...config, arenasFired}));
+        ({arenasFired, environment, ...config} = fairStep(simtime, event, statechart, state, {...config, environment, arenasFired}));
       }
     }
   }
-  return {arenasFired, ...config};
+  environment = environment.exitScope();
+  return {arenasFired, environment, ...config};
 }
 
 export function handleInputEvent(simtime: number, event: RT_Event, statechart: Statechart, {mode, environment, history}: {mode: Mode, environment: Environment, history: RT_History}): BigStepOutput {
@@ -369,7 +371,7 @@ function resolveHistory(tgt: AbstractState, history: RT_History): Set<string> {
   }
 }
 
-export function fire(simtime: number, t: Transition, ts: Map<string, Transition[]>, label: TransitionLabel, arena: OrState, {mode, environment, history, ...rest}: RT_Statechart & RaisedEvents): RT_Statechart & RaisedEvents {
+export function fire(simtime: number, t: Transition, ts: Map<string, Transition[]>, label: TransitionLabel, arena: OrState, {mode, environment, history, ...rest}: RT_Statechart & RaisedEvents, addEventParam: (env: Environment, label: TransitionLabel) => Environment): RT_Statechart & RaisedEvents {
   // console.log('will now fire', transitionDescription(t), 'arena', arena);
 
   const srcPath = computePath({ancestor: arena, descendant: t.src as ConcreteState}) as ConcreteState[];
@@ -388,7 +390,9 @@ export function fire(simtime: number, t: Transition, ts: Map<string, Transition[
 
   // transition actions
   for (const action of label.actions) {
+    environment = addEventParam(environment.enterScope("<transition>"), label);
     ({environment, history, ...rest} = execAction(action, {environment, history, ...rest}, [t.uid]));
+    environment = environment.dropScope();
   }
 
   const tgtPath = computePath({ancestor: arena, descendant: t.tgt});

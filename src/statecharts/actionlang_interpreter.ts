@@ -1,8 +1,8 @@
 // Just a simple recursive interpreter for the action language
 
+import { Environment } from "./environment";
 import { RuntimeError } from "./interpreter";
 import { Expression } from "./label_ast";
-import { Environment } from "./runtime_types";
 
 const UNARY_OPERATOR_MAP: Map<string, (x: any) => any> = new Map([
   ["!", x => !x],

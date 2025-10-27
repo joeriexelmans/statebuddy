@@ -32,10 +32,10 @@ export type BigStepOutput = RT_Statechart & {
   firedTransitions: string[],
 };
 
-export type BigStep = {
-  inputEvent: string | null, // null if initialization
-  simtime: number,
-} & BigStepOutput;
+// export type BigStep = {
+//   inputEvent: string | null, // null if initialization
+//   simtime: number,
+// } & BigStepOutput;
 
 // internal or output event
 export type RaisedEvent = {
