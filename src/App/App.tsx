@@ -446,6 +446,7 @@ export function App() {
             <PersistentDetails localStorageKey="showPlant" initiallyOpen={true}>
               <summary>plant</summary>
               <select
+                disabled={trace!==null}
                 value={plantName}
                 onChange={e => setPlantName(() => e.target.value)}>
                 {plants.map(([plantName, p]) =>
