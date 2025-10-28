@@ -19,6 +19,7 @@ import SkipNextIcon from '@mui/icons-material/SkipNext';
 import StopIcon from '@mui/icons-material/Stop';
 import { InsertModes } from "./InsertModes";
 import { usePersistentState } from "@/App/persistent_state";
+import { RotateButtons } from "./RotateButtons";
 
 export type TopPanelProps = {
   trace: TraceState | null,
@@ -26,6 +27,7 @@ export type TopPanelProps = {
   setTime: Dispatch<SetStateAction<TimeMode>>,
   onUndo: () => void,
   onRedo: () => void,
+  onRotate: (direction: "ccw"|"cw") => void,
   onInit: () => void,
   onClear: () => void,
   onBack: () => void,
@@ -41,7 +43,7 @@ export type TopPanelProps = {
 
 const ShortCutShowKeys = <kbd>~</kbd>;
 
-export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, onRedo, onInit, onClear, onBack, insertMode, setInsertMode, setModal, zoom, setZoom, showKeys, setShowKeys, editHistory}: TopPanelProps) {
+export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, onRedo, onRotate, onInit, onClear, onBack, insertMode, setInsertMode, setModal, zoom, setZoom, showKeys, setShowKeys, editHistory}: TopPanelProps) {
   const [displayTime, setDisplayTime] = useState("0.000");
   const [timescale, setTimescale] = usePersistentState("timescale", 1);
 
@@ -209,6 +211,11 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
     {/* insert rountangle / arrow / ... */}
     <div className="toolbarGroup">
       <InsertModes insertMode={insertMode} setInsertMode={setInsertMode} showKeys={showKeys}/>
+      &emsp;
+    </div>
+
+    <div className="toolbarGroup">
+      <RotateButtons selection={editHistory.current.selection} onRotate={onRotate}/>
       &emsp;
     </div>
 

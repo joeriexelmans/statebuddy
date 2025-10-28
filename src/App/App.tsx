@@ -21,6 +21,9 @@ import { ShowAST, ShowInputEvents, ShowInternalEvents, ShowOutputEvents } from "
 import { TopPanel } from "./TopPanel/TopPanel";
 import { getKeyHandler } from "./VisualEditor/shortcut_handler";
 import { InsertMode, VisualEditor, VisualEditorState } from "./VisualEditor/VisualEditor";
+import { addV2D, rotateLine90CCW, rotateLine90CW, rotatePoint90CCW, rotatePoint90CW, rotateRect90CCW, rotateRect90CW, scaleV2D, subtractV2D, Vec2D } from "@/util/geometry";
+import { HISTORY_RADIUS } from "./parameters";
+import { DigitalWatchPlant } from "./Plant/DigitalWatch/DigitalWatch";
 
 export type EditHistory = {
   current: VisualEditorState,
@@ -31,8 +34,7 @@ export type EditHistory = {
 const plants: [string, Plant<any>][] = [
   ["dummy", DummyPlant],
   ["microwave", MicrowavePlant],
-
-  // ["digital watch", DigitalWatchPlant],
+  ["digital watch", DigitalWatchPlant],
 ]
 
 export type TraceItemError = {
@@ -197,6 +199,121 @@ export function App() {
         future: historyState.future.slice(0,-1),
       }
     });
+  }, [setEditHistory]);
+  const onRotate = useCallback((direction: "ccw" | "cw") => {
+    makeCheckPoint();
+    setEditHistory(historyState => {
+      if (historyState === null) return null;
+
+      const selection = historyState.current.selection;
+
+      if (selection.length === 0) {
+        return historyState;
+      }
+
+      // determine bounding box... in a convoluted manner
+      let minX = -Infinity, minY = -Infinity, maxX = Infinity, maxY = Infinity;
+
+      function addPointToBBox({x,y}: Vec2D) {
+        minX = Math.max(minX, x);
+        minY = Math.max(minY, y);
+        maxX = Math.min(maxX, x);
+        maxY = Math.min(maxY, y);
+      }
+
+      for (const rt of historyState.current.rountangles) {
+        if (selection.some(s => s.uid === rt.uid)) {
+          addPointToBBox(rt.topLeft);
+          addPointToBBox(addV2D(rt.topLeft, rt.size));
+        }
+      }
+      for (const d of historyState.current.diamonds) {
+        if (selection.some(s => s.uid === d.uid)) {
+          addPointToBBox(d.topLeft);
+          addPointToBBox(addV2D(d.topLeft, d.size));
+        }
+      }
+      for (const arr of historyState.current.arrows) {
+        if (selection.some(s => s.uid === arr.uid)) {
+          addPointToBBox(arr.start);
+          addPointToBBox(arr.end);
+        }
+      }
+      for (const txt of historyState.current.texts) {
+        if (selection.some(s => s.uid === txt.uid)) {
+          addPointToBBox(txt.topLeft);
+        }
+      }
+      const historySize = {x: HISTORY_RADIUS, y: HISTORY_RADIUS};
+      for (const h of historyState.current.history) {
+        if (selection.some(s => s.uid === h.uid)) {
+          addPointToBBox(h.topLeft);
+          addPointToBBox(addV2D(h.topLeft, scaleV2D(historySize, 2)));
+        }
+      }
+
+      const center: Vec2D = {
+        x: (minX + maxX) / 2,
+        y: (minY + maxY) / 2,
+      };
+
+      const mapIfSelected = (shape: {uid: string}, cb: (shape:any)=>any) => {
+        if (selection.some(s => s.uid === shape.uid)) {
+          return cb(shape);
+        }
+        else {
+          return shape;
+        }
+      }
+
+      return {
+        ...historyState,
+        current: {
+          ...historyState.current,
+          rountangles: historyState.current.rountangles.map(rt => mapIfSelected(rt, rt => {
+            return {
+              ...rt,
+              ...(direction === "ccw"
+                ? rotateRect90CCW(rt, center)
+                : rotateRect90CW(rt, center)),
+            }
+          })),
+          arrows: historyState.current.arrows.map(arr => mapIfSelected(arr, arr => {
+            return {
+              ...arr,
+              ...(direction === "ccw"
+                ? rotateLine90CCW(arr, center)
+                : rotateLine90CW(arr, center)),
+            };
+          })),
+          diamonds: historyState.current.diamonds.map(d => mapIfSelected(d, d => {
+            return {
+              ...d,
+              ...(direction === "ccw"
+                ? rotateRect90CCW(d, center)
+                : rotateRect90CW(d, center)),
+            };
+          })),
+          texts: historyState.current.texts.map(txt => mapIfSelected(txt, txt => {
+              return {
+                ...txt,
+                topLeft: (direction === "ccw"
+                  ? rotatePoint90CCW(txt.topLeft, center)
+                  : rotatePoint90CW(txt.topLeft, center)),
+              };
+          })),
+          history: historyState.current.history.map(h => mapIfSelected(h, h => {
+              return {
+                ...h,
+                topLeft: (direction === "ccw"
+                  ? subtractV2D(rotatePoint90CCW(addV2D(h.topLeft, historySize), center), historySize)
+                  : subtractV2D(rotatePoint90CW(addV2D(h.topLeft, historySize), center), historySize)
+                ),
+              };
+          })),
+        },
+      }
+    })
   }, [setEditHistory]);
 
   const scrollDownSidebar = useCallback(() => {
@@ -400,7 +517,7 @@ export function App() {
           style={{flex: '0 0 content'}}
         >
           {editHistory && <TopPanel
-            {...{trace, time, setTime, onUndo, onRedo, onInit, onClear, onBack, insertMode, setInsertMode, setModal, zoom, setZoom, showKeys, setShowKeys, editHistory}}
+            {...{trace, time, setTime, onUndo, onRedo, onRotate, onInit, onClear, onBack, insertMode, setInsertMode, setModal, zoom, setZoom, showKeys, setShowKeys, editHistory}}
           />}
         </div>
         {/* Editor */}
@@ -458,7 +575,6 @@ export function App() {
               {plantConns && <ShowConns {...plantConns} />}
               {currentBigStep && <plant.render state={currentBigStep.state.plant} speed={speed}
                 raiseInput={e => onRaise("PLANT_UI_"+e.name, e.param)}
-                raiseOutput={() => {}}
                 />}
             </PersistentDetails>
             <details open={showExecutionTrace} onToggle={e => setShowExecutionTrace(e.newState === "open")}><summary>execution trace</summary>

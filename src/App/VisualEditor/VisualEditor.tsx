@@ -53,9 +53,10 @@ type HistorySelectable = {
 }
 type Selectable = RountangleSelectable | ArrowSelectable | TextSelectable | HistorySelectable;
 
-type Selection = Selectable[];
+export type Selection = Selectable[];
 
 export type InsertMode = "and"|"or"|"pseudo"|"shallow"|"deep"|"transition"|"text";
+
 
 type VisualEditorProps = {
   state: VisualEditorState,
@@ -74,6 +75,8 @@ type VisualEditorProps = {
 export const VisualEditor = memo(function VisualEditor({state, setState, trace, conns, syntaxErrors: errors, insertMode, highlightActive, highlightTransitions, setModal, makeCheckPoint, zoom}: VisualEditorProps) {
 
   const [dragging, setDragging] = useState(false);
+
+  window.setState = setState;
 
   // uid's of selected rountangles
   const selection = state.selection || [];

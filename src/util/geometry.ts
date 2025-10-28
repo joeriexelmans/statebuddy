@@ -203,3 +203,65 @@ export const sides: [RectSide, (r: Rect2D) => Line2D][] = [
   ["right", getRightSide],
   ["bottom", getBottomSide],
 ];
+
+
+export function rotatePoint90CW(p: Vec2D, around: Vec2D): Vec2D {
+  
+  const result = {
+    x: around.x - (p.y - around.y),
+    y: around.y + (p.x - around.x),
+  };
+  console.log('rotate', p, 'around', around, 'result=', result);
+  return result;
+}
+
+export function rotatePoint90CCW(p: Vec2D, around: Vec2D): Vec2D {
+  return {
+    x: around.x + (p.y - around.y),
+    y: around.y - (p.x - around.x),
+  };
+}
+
+function fixNegativeSize(r: Rect2D): Rect2D {
+  return {
+    topLeft: {
+      x: r.size.x < 0 ? r.topLeft.x + r.size.x : r.topLeft.x,
+      y: r.size.y < 0 ? r.topLeft.y + r.size.y : r.topLeft.y,
+    },
+    size: {
+      x: Math.abs(r.size.x),
+      y: Math.abs(r.size.y),
+    },
+  }
+}
+
+export function rotateRect90CCW(r: Rect2D, around: Vec2D): Rect2D {
+  const rotated = {
+    topLeft: rotatePoint90CCW(r.topLeft, around),
+    size: rotatePoint90CCW(r.size, {x: 0, y: 0}),
+  };
+  return fixNegativeSize(rotated);
+}
+
+
+export function rotateRect90CW(r: Rect2D, around: Vec2D): Rect2D {
+  const rotated = {
+    topLeft: rotatePoint90CW(r.topLeft, around),
+    size: rotatePoint90CW(r.size, {x: 0, y: 0}),
+  };
+  return fixNegativeSize(rotated);
+}
+
+export function rotateLine90CCW(l: Line2D, around: Vec2D): Line2D {
+  return {
+    start: rotatePoint90CCW(l.start, around),
+    end: rotatePoint90CCW(l.end, around),
+  };
+}
+
+export function rotateLine90CW(l: Line2D, around: Vec2D): Line2D {
+  return {
+    start: rotatePoint90CW(l.start, around),
+    end: rotatePoint90CW(l.end, around),
+  };
+}

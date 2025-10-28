@@ -66,7 +66,7 @@ export const RTHistoryItem = memo(function RTHistoryItem({ast, idx, item, prevIt
       <div>
         {formatTime(item.simtime)}
         &emsp;
-        <div className="inputEvent"><RTCause cause={item.state.sc.inputEvent}/></div>
+        <div className="inputEvent"><RTCause cause={isPlantStep ? item.state.plant.inputEvent : item.state.sc.inputEvent}/></div>
       </div>
       <ShowMode mode={newStates} statechart={ast}/>
       <ShowEnvironment environment={item.state.sc.environment}/>

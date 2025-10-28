@@ -13,16 +13,10 @@ import { useEffect } from "react";
 
 import "./Microwave.css";
 import { useAudioContext } from "../../useAudioContext";
-import { Plant } from "../Plant";
+import { Plant, PlantRenderProps } from "../Plant";
 import { statechartExecution } from "@/statecharts/timed_reactive";
 import { microwaveAbstractSyntax } from "./model";
 
-export type MicrowaveProps = {
-  state: RT_Statechart,
-  speed: number,
-  raiseInput: (event: RaisedEvent) => void;
-  raiseOutput: (event: RaisedEvent) => void;
-}
 
 const imgs = {
   "false": { "false": imgSmallClosedOff, "true": imgSmallClosedOn },
@@ -43,7 +37,7 @@ const DOOR_Y0 = 68;
 const DOOR_WIDTH = 353;
 const DOOR_HEIGHT = 217;
 
-export function Magnetron({state, speed, raiseInput, raiseOutput}: MicrowaveProps) {
+export function Microwave({state, speed, raiseInput}: PlantRenderProps<RT_Statechart>) {
   const [playSound, preloadAudio] = useAudioContext(speed);
 
   // preload(imgSmallClosedOff, {as: "image"});
@@ -134,5 +128,5 @@ export const MicrowavePlant: Plant<BigStep> = {
     {kind: "event", event: "incTimeReleased"},
   ],
   execution: statechartExecution(microwaveAbstractSyntax),
-  render: Magnetron,
+  render: Microwave,
 }

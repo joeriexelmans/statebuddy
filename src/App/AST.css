@@ -75,6 +75,9 @@ details > summary:hover {
   color: black;
   display: inline-block;
 }
+.inputEvent:disabled {
+  color: darkgrey;
+}
 .inputEvent * {
   vertical-align: middle;
 }

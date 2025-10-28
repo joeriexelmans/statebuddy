@@ -8,7 +8,6 @@ export type PlantRenderProps<StateType> = {
   state: StateType,
   speed: number,
   raiseInput: (e: RaisedEvent) => void,
-  raiseOutput: (e: RaisedEvent) => void,
 };
 
 export type Plant<StateType> = {
