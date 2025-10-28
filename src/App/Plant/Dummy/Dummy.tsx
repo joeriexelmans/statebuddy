@@ -1,10 +1,16 @@
-import { RaisedEvent } from "@/statecharts/runtime_types";
 import { Plant } from "../Plant";
+import { TimedReactive } from "@/statecharts/timed_reactive";
 
-export const DummyPlant: Plant<{}> = {
+export const dummyExecution: TimedReactive<null> = {
+  initial: () => [[], null],
+  timeAdvance: () => Infinity,
+  intTransition: () => { throw new Error("dummy never makes intTransition"); },
+  extTransition: () => [[], null],
+};
+
+export const DummyPlant: Plant<null> = {
   inputEvents: [],
   outputEvents: [],
-  initial: () => ({}),
-  reduce: (_inputEvent: RaisedEvent, _state: {}) => ({}),
-  render: (_state: {}, _raise: (event: RaisedEvent) => void) => <></>,
+  execution: dummyExecution,
+  render: (props) => <></>,
 }

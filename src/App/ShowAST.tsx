@@ -73,6 +73,7 @@ export const ShowAST = memo(function ShowASTx(props: {root: ConcreteState | Unst
 import BoltIcon from '@mui/icons-material/Bolt';
 import { KeyInfoHidden, KeyInfoVisible } from "./TopPanel/KeyInfo";
 import { memo, useEffect } from "react";
+import { usePersistentState } from "./persistent_state";
 
 export function ShowInputEvents({inputEvents, onRaise, disabled, showKeys}: {inputEvents: EventTrigger[], onRaise: (e: string, p: any) => void, disabled: boolean, showKeys: boolean}) {
   const raiseHandlers = inputEvents.map(({event}) => {
@@ -93,6 +94,9 @@ export function ShowInputEvents({inputEvents, onRaise, disabled, showKeys}: {inp
     };
   });
   const onKeyDown = (e: KeyboardEvent) => {
+    // don't capture keyboard events when focused on an input element:
+    if (["INPUT", "TEXTAREA", "SELECT"].includes(e.target?.tagName)) return;
+
     const n = (parseInt(e.key)+9) % 10;
     if (raiseHandlers[n] !== undefined) {
       raiseHandlers[n]();
@@ -106,10 +110,16 @@ export function ShowInputEvents({inputEvents, onRaise, disabled, showKeys}: {inp
   }, [raiseHandlers]);
   // const KeyInfo = showKeys ? KeyInfoVisible : KeyInfoHidden;
   const KeyInfo = KeyInfoVisible; // always show keyboard shortcuts on input events, we can't expect the user to remember them
+
+  const [inputParams, setInputParams] = usePersistentState<{[eventName:string]: string}>("inputParams", {});
+
   return inputEvents.map(({event, paramName}, i) => {
+    const key = event+'/'+paramName;
+    const value = inputParams[key] || "";
+    const width = Math.max(value.length, (paramName||"").length)*6;
     const shortcut = (i+1)%10;
     const KI = (i <= 10) ? KeyInfo : KeyInfoHidden;
-    return <div key={event+'/'+paramName} className="toolbarGroup">
+    return <div key={key} className="toolbarGroup">
       <KI keyInfo={<kbd>{shortcut}</kbd>} horizontal={true}>
         <button
           className="inputEvent"
@@ -121,7 +131,7 @@ export function ShowInputEvents({inputEvents, onRaise, disabled, showKeys}: {inp
         </button>
       </KI>
       {paramName &&
-        <><input id={`input-${event}-param`} style={{width: 20}} placeholder={paramName}/></>
+        <><input id={`input-${event}-param`} style={{width, overflow: 'visible'}} placeholder={paramName} value={value} onChange={e => setInputParams(params => ({...params, [key]: e.target.value, }))}/></>
       }
       &nbsp;
     </div>;

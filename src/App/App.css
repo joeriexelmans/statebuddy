@@ -33,6 +33,9 @@ details:has(+ details) {
   background-color: rgba(0,0,255,0.2);
   border: solid blue 1px;
 }
+.runtimeState.plantStep * {
+  color: grey;
+}
 
 .runtimeState.runtimeError {
   background-color: lightpink;

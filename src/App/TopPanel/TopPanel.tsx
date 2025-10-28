@@ -122,6 +122,9 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
+      // don't capture keyboard events when focused on an input element:
+      if (["INPUT", "TEXTAREA", "SELECT"].includes(e.target?.tagName)) return;
+
       if (!e.ctrlKey) {
         if (e.key === " ") {
           e.preventDefault();

@@ -1,51 +1,77 @@
 import { Dispatch, memo, SetStateAction, useCallback } from "react";
 import { Statechart, stateDescription } from "../statecharts/abstract_syntax";
-import { Mode, RaisedEvent } from "../statecharts/runtime_types";
+import { Mode, RaisedEvent, RT_Event } from "../statecharts/runtime_types";
 import { formatTime } from "../util/util";
-import { TimeMode } from "../statecharts/time";
+import { TimeMode, timeTravel } from "../statecharts/time";
 import { TraceItem, TraceState } from "./App";
 import { Environment } from "@/statecharts/environment";
+import { Conns } from "@/statecharts/timed_reactive";
 
 type RTHistoryProps = {
   trace: TraceState|null,
   setTrace: Dispatch<SetStateAction<TraceState|null>>;
   ast: Statechart,
   setTime: Dispatch<SetStateAction<TimeMode>>,
+  showPlantTrace: boolean,
 }
 
-export function RTHistory({trace, setTrace, ast, setTime}: RTHistoryProps) {
+export function RTHistory({trace, setTrace, ast, setTime, showPlantTrace}: RTHistoryProps) {
   const onMouseDown = useCallback((idx: number, timestamp: number) => {
     setTrace(trace => trace && {
       ...trace,
       idx,
     });
-    setTime({kind: "paused", simtime: timestamp});
+    setTime(time => timeTravel(time, timestamp, performance.now()));
   }, [setTrace, setTime]);
 
   if (trace === null) {
     return <></>;
   }
-  return <div>
-    {trace.trace.map((item, i) => <RTHistoryItem ast={ast} idx={i} item={item} prevItem={trace.trace[i-1]} active={i === trace.idx} onMouseDown={onMouseDown}/>)}
-  </div>;
+  return trace.trace.map((item, i) => {
+    const prevItem = trace.trace[i-1];
+    // @ts-ignore
+    const isPlantStep = item.state?.sc === prevItem?.state?.sc;
+    if (!showPlantTrace && isPlantStep) {
+      return <></>
+    }
+    return <RTHistoryItem ast={ast} idx={i} item={item} prevItem={prevItem} isPlantStep={isPlantStep} active={i === trace.idx} onMouseDown={onMouseDown}/>;
+  });
 }
 
-export const RTHistoryItem = memo(function RTHistoryItem({ast, idx, item, prevItem, active, onMouseDown}: {idx: number, ast: Statechart, item: TraceItem, prevItem?: TraceItem, active: boolean, onMouseDown: (idx: number, timestamp: number) => void}) {
+function RTCause(props: {cause?: RT_Event}) {
+  if (props.cause === undefined) {
+    return <>{"<init>"}</>;
+  }
+  if (props.cause.kind === "timer") {
+    return <>{"<timer>"}</>;
+  }
+  else if (props.cause.kind === "input") {
+    return <>{props.cause.name}<RTEventParam param={props.cause.param}/></>
+  }
+  console.log(props.cause);
+  throw new Error("unreachable");
+}
+
+function RTEventParam(props: {param?: any}) {
+  return <>{props.param !== undefined && <>({JSON.stringify(props.param)})</>}</>;
+}
+
+export const RTHistoryItem = memo(function RTHistoryItem({ast, idx, item, prevItem, isPlantStep, active, onMouseDown}: {idx: number, ast: Statechart, item: TraceItem, prevItem?: TraceItem, isPlantStep: boolean, active: boolean, onMouseDown: (idx: number, timestamp: number) => void}) {
   if (item.kind === "bigstep") {
     // @ts-ignore
     const newStates = item.state.sc.mode.difference(prevItem?.state.sc.mode || new Set());
     return <div
-      className={"runtimeState" + (active ? " active" : "")}
+      className={"runtimeState" + (active ? " active" : "") + (isPlantStep ? " plantStep" : "")}
       onMouseDown={useCallback(() => onMouseDown(idx, item.simtime), [idx, item.simtime])}>
       <div>
         {formatTime(item.simtime)}
         &emsp;
-        <div className="inputEvent">{item.cause}</div>
+        <div className="inputEvent"><RTCause cause={item.state.sc.inputEvent}/></div>
       </div>
       <ShowMode mode={newStates} statechart={ast}/>
       <ShowEnvironment environment={item.state.sc.environment}/>
       {item.state.sc.outputEvents.length>0 && <>^
-        {item.state.sc.outputEvents.map((e:RaisedEvent) => <span className="outputEvent">{e.name}</span>)}
+        {item.state.sc.outputEvents.map((e:RaisedEvent) => <span className="outputEvent">{e.name}<RTEventParam param={e.param}/></span>)}
       </>}
     </div>;
   }

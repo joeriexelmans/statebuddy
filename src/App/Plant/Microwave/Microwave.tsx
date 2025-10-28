@@ -2,59 +2,31 @@ import { preload } from "react-dom";
 import imgSmallClosedOff from "./small_closed_off.png";
 import imgSmallClosedOn from "./small_closed_on.png";
 import imgSmallOpenedOff from "./small_opened_off.png";
-import imgSmallOpenedOn from "./small_opened_off.png";
+import imgSmallOpenedOn from "./small_opened_on.png";
 
 import fontDigital from "../DigitalWatch/digital-font.ttf";
 
 import sndBell from "./bell.wav";
 import sndRunning from "./running.wav";
-import { Plant } from "../Plant";
-import { RaisedEvent } from "@/statecharts/runtime_types";
-import { useEffect, useState } from "react";
+import { BigStep, RaisedEvent, RT_Statechart } from "@/statecharts/runtime_types";
+import { useEffect } from "react";
 
 import "./Microwave.css";
 import { useAudioContext } from "../../useAudioContext";
-
-export type MagnetronState = "on" | "off";
-export type DoorState = "open" | "closed";
-
-export function toggleDoor(d: DoorState) {
-  if (d === "open") {
-    return "closed";
-  }
-  else return "open";
-}
-
-export function toggleMagnetron(m: MagnetronState) {
-  if (m === "on") {
-    return "off";
-  }
-  return "on";
-}
-
-export type MicrowaveState = {
-  // Note: the door state is not part of the MicrowaveState because it is not controlled by the statechart, but by the plant.
-  timeDisplay: number,
-  bell: boolean, // whether the bell should ring
-  magnetron: MagnetronState,
-}
+import { Plant } from "../Plant";
+import { statechartExecution } from "@/statecharts/timed_reactive";
+import { microwaveAbstractSyntax } from "./model";
 
 export type MicrowaveProps = {
-  state: MicrowaveState,
+  state: RT_Statechart,
   speed: number,
-  callbacks: {
-    startPressed: () => void;
-    stopPressed: () => void;
-    incTimePressed: () => void;
-    incTimeReleased: () => void;
-    doorOpened: () => void;
-    doorClosed: () => void;
-  }
+  raiseInput: (event: RaisedEvent) => void;
+  raiseOutput: (event: RaisedEvent) => void;
 }
 
 const imgs = {
-  closed: { off: imgSmallClosedOff, on: imgSmallClosedOn },
-  open: { off: imgSmallOpenedOff, on: imgSmallOpenedOn },
+  "false": { "false": imgSmallClosedOff, "true": imgSmallClosedOn },
+  "true": { "false": imgSmallOpenedOff, "true": imgSmallOpenedOn },
 }
 
 const BUTTON_HEIGHT = 18;
@@ -71,9 +43,7 @@ const DOOR_Y0 = 68;
 const DOOR_WIDTH = 353;
 const DOOR_HEIGHT = 217;
 
-export function Magnetron({state: {timeDisplay, bell, magnetron}, speed, callbacks}: MicrowaveProps) {
-  const [door, setDoor] = useState<DoorState>("closed");
-
+export function Magnetron({state, speed, raiseInput, raiseOutput}: MicrowaveProps) {
   const [playSound, preloadAudio] = useAudioContext(speed);
 
   // preload(imgSmallClosedOff, {as: "image"});
@@ -84,30 +54,25 @@ export function Magnetron({state: {timeDisplay, bell, magnetron}, speed, callbac
   preloadAudio(sndRunning);
   preloadAudio(sndBell);
 
+  const bellRinging = state.mode.has("45");
+  const magnetronRunning = state.mode.has("28");
+  const doorOpen = state.mode.has("13");
+  const timeDisplay = state.environment.get("timeDisplay");
+
   // a bit hacky: when the bell-state changes to true, we play the bell sound...
   useEffect(() => {
-    if (bell) {
+    if (bellRinging) {
       playSound(sndBell, false);
     }
-  }, [bell]);
+  }, [bellRinging]);
 
   useEffect(() => {
-    if (magnetron === "on") {
+    if (magnetronRunning) {
       const stopSoundRunning = playSound(sndRunning, true);
       return () => stopSoundRunning();
     }
     return () => {};
-  }, [magnetron])
-
-
-  const openDoor = () => {
-    setDoor("open");
-    callbacks.doorOpened();
-  }
-  const closeDoor = () => {
-    setDoor("closed");
-    callbacks.doorClosed();
-  }
+  }, [magnetronRunning])
 
   return <>
     <style>{`
@@ -117,52 +82,57 @@ export function Magnetron({state: {timeDisplay, bell, magnetron}, speed, callbac
       }
     `}</style>
     <svg width='400px' height='auto' viewBox="0 0 520 348">
-      <image xlinkHref={imgs[door][magnetron]} width={520} height={348}/>
+      {/* @ts-ignore */}
+      <image xlinkHref={imgs[doorOpen][magnetronRunning]} width={520} height={348}/>
 
       <rect className="microwaveButtonHelper" x={START_X0} y={START_Y0} width={BUTTON_WIDTH} height={BUTTON_HEIGHT} 
-        onMouseDown={() => callbacks.startPressed()}
+        onMouseDown={() => raiseInput({name: "startPressed"})}
+        onMouseUp={() => raiseInput({name: "startReleased"})}
       />
       <rect className="microwaveButtonHelper" x={STOP_X0} y={STOP_Y0} width={BUTTON_WIDTH} height={BUTTON_HEIGHT} 
-        onMouseDown={() => callbacks.stopPressed()}
+        onMouseDown={() => raiseInput({name: "stopPressed"})}
+        onMouseUp={() => raiseInput({name: "stopReleased"})}
       />
       <rect className="microwaveButtonHelper" x={INCTIME_X0} y={INCTIME_Y0} width={BUTTON_WIDTH} height={BUTTON_HEIGHT} 
-        onMouseDown={() => callbacks.incTimePressed()}
-        onMouseUp={() => callbacks.incTimeReleased()}
+        onMouseDown={() => raiseInput({name: "incTimePressed"})}
+        onMouseUp={() => raiseInput({name: "incTimeReleased"})}
       />
-      <rect className="microwaveDoorHelper" x={DOOR_X0} y={DOOR_Y0} width={DOOR_WIDTH} height={DOOR_HEIGHT}         onMouseDown={() => door === "open" ? closeDoor() : openDoor()}
+      <rect className="microwaveDoorHelper"
+        x={DOOR_X0} y={DOOR_Y0} width={DOOR_WIDTH} height={DOOR_HEIGHT}
+        onMouseDown={() => raiseInput({name: "doorMouseDown"})}
+        onMouseUp={() => raiseInput({name: "doorMouseUp"})}
       />
-
       <text x={472} y={106} textAnchor="end" fontFamily="digital-font" fontSize={24} fill="lightgreen">{timeDisplay}</text>
     </svg>
   </>;
 }
 
-export const MicrowavePlant: Plant<MicrowaveState> = {
-  inputEvents: [],
-  outputEvents: [],
-  initial: {
-    timeDisplay: 0,
-    magnetron: "off",
-    bell: false,
-  },
-  reduce: (inputEvent: RaisedEvent, state: MicrowaveState) => {
-    if (inputEvent.name === "setMagnetron") {
-      return { ...state, magnetron: inputEvent.param, bell: false };
-    }
-    if (inputEvent.name === "setTimeDisplay") {
-      return { ...state, timeDisplay: inputEvent.param, bell: false };
-    }
-    if (inputEvent.name === "ringBell") {
-      return { ...state, bell: true };
-    }
-    return state; // unknown event - ignore it
-  },
-  render: (state, raiseEvent, speed) => <Magnetron state={state} speed={speed} callbacks={{
-    startPressed: () => raiseEvent({name: "startPressed"}),
-    stopPressed: () => raiseEvent({name: "stopPressed"}),
-    incTimePressed: () => raiseEvent({name: "incTimePressed"}),
-    incTimeReleased: () => raiseEvent({name: "incTimeReleased"}),
-    doorOpened: () => raiseEvent({name: "door", param: "open"}),
-    doorClosed: () => raiseEvent({name: "door", param: "closed"}),
-  }}/>,
+export const MicrowavePlant: Plant<BigStep> = {
+  inputEvents: [
+    // events coming from statechart    
+    {kind: "event", event: "setTimeDisplay", paramName: "t"},
+    {kind: "event", event: "setMagnetron", paramName: "state"},
+    {kind: "event", event: "ringBell"},
+
+    // events coming from UI:
+    {kind: "event", event: "doorMouseDown"},
+    {kind: "event", event: "doorMouseUp"},
+    {kind: "event", event: "startPressed"},
+    {kind: "event", event: "stopPressed"},
+    {kind: "event", event: "incTimePressed"},
+    {kind: "event", event: "startReleased"},
+    {kind: "event", event: "stopReleased"},
+    {kind: "event", event: "incTimeReleased"},
+  ],
+  outputEvents: [
+    {kind: "event", event: "door", paramName: "state"},
+    {kind: "event", event: "startPressed"},
+    {kind: "event", event: "stopPressed"},
+    {kind: "event", event: "incTimePressed"},
+    {kind: "event", event: "startReleased"},
+    {kind: "event", event: "stopReleased"},
+    {kind: "event", event: "incTimeReleased"},
+  ],
+  execution: statechartExecution(microwaveAbstractSyntax),
+  render: Magnetron,
 }

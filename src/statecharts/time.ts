@@ -58,3 +58,12 @@ export function setPaused(currentMode: TimeMode, wallclktime: number): TimePause
     simtime: getSimTime(currentMode, wallclktime),
   };
 }
+
+export function timeTravel(currentMode: TimeMode, simtime: number, wallclktime: number): TimeMode {
+  if (currentMode.kind === "paused") {
+    return {kind: "paused", simtime};
+  }
+  else {
+    return {kind: "realtime", scale: currentMode.scale, since: {simtime, wallclktime}};
+  }
+}

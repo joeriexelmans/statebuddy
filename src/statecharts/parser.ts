@@ -5,7 +5,7 @@ import { Action, EventTrigger, Expression, ParsedText } from "./label_ast";
 import { parse as parseLabel, SyntaxError } from "./label_parser";
 import { Connections } from "./detect_connections";
 import { HISTORY_RADIUS } from "../App/parameters";
-import { VisualEditorState } from "@/App/VisualEditor/VisualEditor";
+import { ConcreteSyntax, VisualEditorState } from "@/App/VisualEditor/VisualEditor";
 import { memoize } from "@/util/util";
 
 export type TraceableError = {
@@ -34,7 +34,7 @@ function addEvent(events: EventTrigger[], e: EventTrigger, textUid: string) {
   }
 }
 
-export function parseStatechart(state: VisualEditorState, conns: Connections): [Statechart, TraceableError[]] {
+export function parseStatechart(state: ConcreteSyntax, conns: Connections): [Statechart, TraceableError[]] {
   const errors: TraceableError[] = [];
 
   // implicitly, the root is always an Or-state

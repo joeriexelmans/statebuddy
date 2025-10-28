@@ -27,15 +27,13 @@ export type RT_Statechart = {
   history: RT_History; // history-uid -> set of states
 }
 
-export type BigStepOutput = RT_Statechart & {
+export type BigStep = RT_Statechart & {
+  inputEvent?: RT_Event,
   outputEvents: RaisedEvent[],
+
+  // we also record the transitions that fired, to highlight them in the UI:
   firedTransitions: string[],
 };
-
-// export type BigStep = {
-//   inputEvent: string | null, // null if initialization
-//   simtime: number,
-// } & BigStepOutput;
 
 // internal or output event
 export type RaisedEvent = {

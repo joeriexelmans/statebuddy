@@ -2,20 +2,20 @@ import { AbstractState, computeArena, computePath, ConcreteState, getDescendants
 import { evalExpr } from "./actionlang_interpreter";
 import { Environment, FlatEnvironment, ScopedEnvironment } from "./environment";
 import { Action, EventTrigger, TransitionLabel } from "./label_ast";
-import { BigStepOutput, initialRaised, Mode, RaisedEvents, RT_Event, RT_History, RT_Statechart, TimerElapseEvent, Timers } from "./runtime_types";
+import { BigStep, initialRaised, Mode, RaisedEvents, RT_Event, RT_History, RT_Statechart, TimerElapseEvent, Timers } from "./runtime_types";
 
 const initialEnv = new Map<string, any>([
   ["_timers", []],
   ["_log", (str: string) => console.log(str)],
 ]);
-const initialScopedEnvironment = new ScopedEnvironment({env: initialEnv, children: {}});
-// const intiialFlatEnvironment = new FlatEnvironment(initialEnv);
+// const initialScopedEnvironment = new ScopedEnvironment({env: initialEnv, children: {}});
+const intiialFlatEnvironment = new FlatEnvironment(initialEnv);
 
-export function initialize(ast: Statechart): BigStepOutput {
+export function initialize(ast: Statechart): BigStep {
   let history = new Map();
   let enteredStates, environment, rest;
   ({enteredStates, environment, history, ...rest} = enterDefault(0, ast.root, {
-    environment: initialScopedEnvironment,
+    environment: intiialFlatEnvironment,
     history,
     ...initialRaised,
   }));
@@ -256,8 +256,11 @@ function attemptSrcState(simtime: number, sourceState: AbstractState, event: RT_
   const addEventParam = (event && event.kind === "input" && event.param !== undefined) ?
     (environment: Environment, label: TransitionLabel) => {
       const varName = (label.trigger as EventTrigger).paramName as string;
-      const result = environment.newVar(varName, event.param);
-      return result;
+      if (varName) {
+        const result = environment.newVar(varName, event.param);
+        return result;
+      }
+      return environment;
     }
     : (environment: Environment) => environment;
   // console.log('attemptSrcState', stateDescription(sourceState), arenasFired);
@@ -342,15 +345,15 @@ export function fairStep(simtime: number, event: RT_Event, statechart: Statechar
   return {arenasFired, environment, ...config};
 }
 
-export function handleInputEvent(simtime: number, event: RT_Event, statechart: Statechart, {mode, environment, history}: {mode: Mode, environment: Environment, history: RT_History}): BigStepOutput {
+export function handleInputEvent(simtime: number, event: RT_Event, statechart: Statechart, {mode, environment, history}: {mode: Mode, environment: Environment, history: RT_History}): BigStep {
   let raised = initialRaised;
 
   ({mode, environment, ...raised} = fairStep(simtime, event, statechart, statechart.root, {mode, environment, history, arenasFired: [], ...raised}));
 
-  return handleInternalEvents(simtime, statechart, {mode, environment, history, ...raised});
+  return {inputEvent: event, ...handleInternalEvents(simtime, statechart, {mode, environment, history, ...raised})};
 }
 
-export function handleInternalEvents(simtime: number, statechart: Statechart, {internalEvents, ...rest}: RT_Statechart & RaisedEvents): BigStepOutput {
+export function handleInternalEvents(simtime: number, statechart: Statechart, {internalEvents, ...rest}: RT_Statechart & RaisedEvents) {
   while (internalEvents.length > 0) {
     const [nextEvent, ...remainingEvents] = internalEvents;
     ({internalEvents, ...rest} = fairStep(simtime, 
@@ -389,11 +392,12 @@ export function fire(simtime: number, t: Transition, ts: Map<string, Transition[
   // console.log('exitedMode', exitedMode);
 
   // transition actions
+  environment = addEventParam(environment.enterScope("<transition>"), label);
   for (const action of label.actions) {
-    environment = addEventParam(environment.enterScope("<transition>"), label);
+    console.log('environment after adding event param:', environment);
     ({environment, history, ...rest} = execAction(action, {environment, history, ...rest}, [t.uid]));
-    environment = environment.dropScope();
   }
+  environment = environment.dropScope();
 
   const tgtPath = computePath({ancestor: arena, descendant: t.tgt});
   const state = tgtPath[0] as ConcreteState; // first state to enter

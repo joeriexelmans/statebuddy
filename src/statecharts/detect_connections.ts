@@ -1,4 +1,4 @@
-import { VisualEditorState } from "@/App/VisualEditor/VisualEditor";
+import { ConcreteSyntax, VisualEditorState } from "@/App/VisualEditor/VisualEditor";
 import { findNearestArrow, findNearestHistory, findNearestSide, findRountangle, RectSide } from "./concrete_syntax";
 
 export type Connections = {
@@ -12,7 +12,7 @@ export type Connections = {
   history2ArrowMap: Map<string, string[]>,
 }
 
-export function detectConnections(state: VisualEditorState): Connections {
+export function detectConnections(state: ConcreteSyntax): Connections {
   const startTime = performance.now();
   // detect what is 'connected'
   const arrow2SideMap = new Map<string,[{ uid: string; part: RectSide; } | undefined, { uid: string; part: RectSide; } | undefined]>();

@@ -1,54 +1,26 @@
-import { ReactElement, useCallback, useEffect, useMemo, useRef, useState } from "react";
-
-import { handleInputEvent, initialize, RuntimeError } from "../statecharts/interpreter";
-import { BigStepOutput, RT_Event, RT_Statechart } from "../statecharts/runtime_types";
-import { InsertMode, VisualEditor, VisualEditorState } from "./VisualEditor/VisualEditor";
-import { getSimTime, getWallClkDelay, TimeMode } from "../statecharts/time";
-
 import "../index.css";
 import "./App.css";
 
-import { TopPanel } from "./TopPanel/TopPanel";
-import { ShowAST, ShowInputEvents, ShowInternalEvents, ShowOutputEvents } from "./ShowAST";
-import { parseStatechart } from "../statecharts/parser";
-import { getKeyHandler } from "./VisualEditor/shortcut_handler";
-import { BottomPanel } from "./BottomPanel";
+import { ReactElement, useCallback, useEffect, useMemo, useRef, useState } from "react";
+
 import { emptyState } from "@/statecharts/concrete_syntax";
-import { PersistentDetails } from "./PersistentDetails";
-import { DigitalWatchPlant } from "./Plant/DigitalWatch/DigitalWatch";
-import { DummyPlant } from "./Plant/Dummy/Dummy";
-import { Plant } from "./Plant/Plant";
-import { usePersistentState } from "./persistent_state";
-import { RTHistory } from "./RTHistory";
 import { detectConnections } from "@/statecharts/detect_connections";
+import { Conns, coupledExecution, EventDestination, exposeStatechartInputs, statechartExecution } from "@/statecharts/timed_reactive";
+import { RuntimeError } from "../statecharts/interpreter";
+import { parseStatechart } from "../statecharts/parser";
+import { BigStep, RaisedEvent } from "../statecharts/runtime_types";
+import { getSimTime, getWallClkDelay, TimeMode } from "../statecharts/time";
+import { BottomPanel } from "./BottomPanel";
+import { usePersistentState } from "./persistent_state";
+import { PersistentDetails } from "./PersistentDetails";
+import { DummyPlant } from "./Plant/Dummy/Dummy";
 import { MicrowavePlant } from "./Plant/Microwave/Microwave";
-import { coupledExecution, dummyExecution, exposeStatechartInputs, statechartExecution, TimedReactive } from "@/statecharts/timed_reactive";
-
-// const clock1: TimedReactive<{nextTick: number}> = {
-//   initial: () => ({nextTick: 1}),
-//   timeAdvance: (c) => c.nextTick,
-//   intTransition: (c) => [[{name: "tick"}], {nextTick: c.nextTick+1}],
-//   extTransition: (simtime, c, e) => [[], (c)],
-// }
-
-// const clock2: TimedReactive<{nextTick: number}> = {
-//   initial: () => ({nextTick: 0.5}),
-//   timeAdvance: (c) => c.nextTick,
-//   intTransition: (c) => [[{name: "tick"}], {nextTick: c.nextTick+1}],
-//   extTransition: (simtime, c, e) => [[], (c)],
-// }
-
-// const coupled = coupledExecution({clock1, clock2}, {inputEvents: {}, outputEvents: {
-//   clock1: {tick: {kind:"output", eventName: 'tick'}},
-//   clock2: {tick: {kind:"output", eventName: 'tick'}},
-// }})
-
-// let state = coupled.initial();
-// for (let i=0; i<10; i++) {
-//   const nextWakeup = coupled.timeAdvance(state);
-//   console.log({state, nextWakeup});
-//   [[], state] = coupled.intTransition(state);
-// }
+import { autoConnect, exposePlantInputs, Plant } from "./Plant/Plant";
+import { RTHistory } from "./RTHistory";
+import { ShowAST, ShowInputEvents, ShowInternalEvents, ShowOutputEvents } from "./ShowAST";
+import { TopPanel } from "./TopPanel/TopPanel";
+import { getKeyHandler } from "./VisualEditor/shortcut_handler";
+import { InsertMode, VisualEditor, VisualEditorState } from "./VisualEditor/VisualEditor";
 
 export type EditHistory = {
   current: VisualEditorState,
@@ -58,8 +30,9 @@ export type EditHistory = {
 
 const plants: [string, Plant<any>][] = [
   ["dummy", DummyPlant],
-  ["digital watch", DigitalWatchPlant],
   ["microwave", MicrowavePlant],
+
+  // ["digital watch", DigitalWatchPlant],
 ]
 
 export type TraceItemError = {
@@ -69,23 +42,19 @@ export type TraceItemError = {
 }
 
 type CoupledState = {
-  sc: BigStepOutput,
-  plant: any,
+  sc: BigStep,
+  plant: BigStep,
 };
 
 export type TraceItem =
   { kind: "error" } & TraceItemError
-| { kind: "bigstep", simtime: number, cause: string, state: CoupledState };
+| { kind: "bigstep", simtime: number, cause: string, state: CoupledState, outputEvents: RaisedEvent[] };
 
 export type TraceState = {
   // executor: TimedReactive<CoupledState>,
   trace: [TraceItem, ...TraceItem[]], // non-empty
   idx: number,
 }; // <-- null if there is no trace
-
-function current(ts: TraceState) {
-  return ts.trace[ts.idx]!;
-}
 
 // function getPlantState<T>(plant: Plant<T>, trace: TraceItem[], idx: number): T | null {
 //   if (idx === -1) {
@@ -240,21 +209,27 @@ export function App() {
     }
   }, [refRightSideBar.current]);
 
-  const cE = useMemo(() => ast && coupledExecution({sc: statechartExecution(ast), plant: dummyExecution}, exposeStatechartInputs(ast, "sc")), [ast]);
+  const plantConns = ast && ({
+    inputEvents: {
+      ...exposeStatechartInputs(ast, "sc", (eventName: string) => "DEBUG_"+eventName),
+      ...exposePlantInputs(plant, "plant", (eventName: string) => "PLANT_UI_"+eventName),
+    },
+    outputEvents: autoConnect(ast, "sc", plant, "plant"),
+  }) as Conns;
+  const cE = useMemo(() => ast && coupledExecution({
+    sc: statechartExecution(ast),
+    plant: plant.execution,
+  }, plantConns!), [ast]);
 
   const onInit = useCallback(() => {
     if (cE === null) return;
     const metadata = {simtime: 0, cause: "<init>"};
     try {
-      const state = cE.initial(); // may throw if initialing the statechart results in a RuntimeError
+      const [outputEvents, state] = cE.initial(); // may throw if initialing the statechart results in a RuntimeError
       setTrace({
-        trace: [{kind: "bigstep", ...metadata, state}],
+        trace: [{kind: "bigstep", ...metadata, state, outputEvents}],
         idx: 0,
       });
-      // config = initialize(ast);
-      // const item = {kind: "bigstep", ...timestampedEvent, ...config};
-      // const plantState = getPlantState(plant, [item], 0);
-      // setTrace({trace: [{...item, plantState}], idx: 0});
     }
     catch (error) {
       if (error instanceof RuntimeError) {
@@ -262,7 +237,6 @@ export function App() {
           trace: [{kind: "error", ...metadata, error}],
           idx: 0,
         });
-        // setTrace({trace: [{kind: "error", ...timestampedEvent, error}], idx: 0});
       }
       else {
         throw error; // probably a bug in the interpreter
@@ -291,8 +265,7 @@ export function App() {
       if (currentTraceItem.kind === "bigstep") {
         const simtime = getSimTime(time, Math.round(performance.now()));
         appendNewConfig(simtime, inputEvent, () => {
-          const [_, newState] = cE.extTransition(simtime, currentTraceItem.state, {kind: "input", name: inputEvent, param});
-          return newState;
+          return cE.extTransition(simtime, currentTraceItem.state, {kind: "input", name: inputEvent, param});
         });
       }
     }
@@ -307,8 +280,7 @@ export function App() {
 
         const raiseTimeEvent = () => {
           appendNewConfig(nextTimeout, "<timer>", () => {
-            const [_, newState] = cE.intTransition(currentTraceItem.state);
-            return newState;
+            return cE.intTransition(currentTraceItem.state);
           });
         }
 
@@ -330,12 +302,12 @@ export function App() {
     }
   }, [time, trace]); // <-- todo: is this really efficient?
 
-  function appendNewConfig(simtime: number, cause: string, computeNewState: () => CoupledState) {
+  function appendNewConfig(simtime: number, cause: string, computeNewState: () => [RaisedEvent[], CoupledState]) {
     let newItem: TraceItem;
     const metadata = {simtime, cause}
     try {
-      const state = computeNewState(); // may throw RuntimeError
-      newItem = {kind: "bigstep", ...metadata, state};
+      const [outputEvents, state] = computeNewState(); // may throw RuntimeError
+      newItem = {kind: "bigstep", ...metadata, state, outputEvents};
     }
     catch (error) {
       if (error instanceof RuntimeError) {
@@ -397,6 +369,9 @@ export function App() {
   const highlightTransitions = currentBigStep && currentBigStep.state.sc.firedTransitions || [];
 
   const [showExecutionTrace, setShowExecutionTrace] = usePersistentState("showExecutionTrace", true);
+  const [showPlantTrace, setShowPlantTrace] = usePersistentState("showPlantTrace", false);
+
+  const speed = time.kind === "paused" ? 0 : time.scale;
 
   return <>
 
@@ -437,11 +412,10 @@ export function App() {
 
       {/* Right: sidebar */}
       <div style={{
-        borderLeft: 1,
-        borderColor: "divider",
         flex: '0 0 content',
+        borderLeft: '1px solid lightgrey',
         overflowY: "auto",
-        overflowX: "visible",
+        overflowX: "auto",
         maxWidth: 'min(400px, 50vw)',
       }}>
         <div className="stackVertical" style={{height:'100%'}}>
@@ -459,7 +433,7 @@ export function App() {
               <summary>input events</summary>
               {ast && <ShowInputEvents
                 inputEvents={ast.inputEvents}
-                onRaise={onRaise}
+                onRaise={(e,p) => onRaise("DEBUG_"+e,p)}
                 disabled={trace===null || trace.trace[trace.idx].kind === "error"}
                 showKeys={showKeys}/>}
             </PersistentDetails>
@@ -481,16 +455,15 @@ export function App() {
                   <option>{plantName}</option>
                 )}
               </select>
-              {/* {trace !== null && trace.trace[trace.idx].plantState &&
-                <div>{
-                  plant.render(
-                    trace.trace[trace.idx].plantState,
-                    event => onRaise(event.name, event.param),
-                    time.kind === "paused" ? 0 : time.scale,
-                  )
-                }</div>} */}
+              {plantConns && <ShowConns {...plantConns} />}
+              {currentBigStep && <plant.render state={currentBigStep.state.plant} speed={speed}
+                raiseInput={e => onRaise("PLANT_UI_"+e.name, e.param)}
+                raiseOutput={() => {}}
+                />}
             </PersistentDetails>
-            <details open={showExecutionTrace} onToggle={e => setShowExecutionTrace(e.newState === "open")}><summary>execution trace</summary></details>
+            <details open={showExecutionTrace} onToggle={e => setShowExecutionTrace(e.newState === "open")}><summary>execution trace</summary>
+              <input id="checkbox-show-plant-items" type="checkbox" checked={showPlantTrace} onChange={e => setShowPlantTrace(e.target.checked)}/><label htmlFor="checkbox-show-plant-items">show plant steps</label>
+            </details>
           </div>
 
           {/* We cheat a bit, and render the execution trace depending on whether the <details> above is 'open' or not, rather than putting it as a child of the <details>. We do this because only then can we get the execution trace to scroll without the rest scrolling as well. */}
@@ -502,10 +475,9 @@ export function App() {
               // minHeight: '75%', // <-- allows us to always scroll down the sidebar far enough such that the execution history is enough in view
               }}>
                 <div ref={refRightSideBar}>
-                  {ast && <RTHistory {...{ast, trace, setTrace, setTime}}/>}
+                  {ast && <RTHistory {...{ast, trace, setTrace, setTime, showPlantTrace}}/>}
                 </div>
             </div>}
-
           <div style={{flex: '0 0 content'}}>
           </div>
         </div>
@@ -518,6 +490,27 @@ export function App() {
     </div>
   </div>
   </>;
+}
+
+function ShowEventDestination(dst: EventDestination) {
+  if (dst.kind === "model") {
+    return <>{dst.model}.{dst.eventName}</>;
+  }
+  else if (dst.kind === "output") {
+    return <>{dst.eventName}</>;
+  }
+  else {
+    return <>&#x1F5D1;</>; // <-- garbage can icon
+  }
+}
+
+function ShowConns({inputEvents, outputEvents}: Conns) {
+  return <div>
+    <div style={{color: "grey"}}>
+      {Object.entries(inputEvents).map(([eventName, destination]) => <div>{eventName} &#x2192; <ShowEventDestination {...destination}/></div>)}
+    </div>
+    {Object.entries(outputEvents).map(([modelName, mapping]) => <>{Object.entries(mapping).map(([eventName, destination]) => <div>{modelName}.{eventName} &#x2192; <ShowEventDestination {...destination}/></div>)}</>)}
+  </div>;
 }
 
 export default App;

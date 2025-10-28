@@ -1,21 +1,24 @@
 import { Statechart } from "./abstract_syntax";
-import { handleInputEvent, initialize } from "./interpreter";
-import { BigStepOutput, InputEvent, RaisedEvent, RT_Statechart, Timers } from "./runtime_types";
+import { handleInputEvent, initialize, RuntimeError } from "./interpreter";
+import { BigStep, InputEvent, RaisedEvent, RT_Statechart, Timers } from "./runtime_types";
 
 // an abstract interface for timed reactive discrete event systems somewhat similar but not equal to DEVS
 // differences from DEVS:
 //   - extTransition can have output events
 //   - time is kept as absolute simulated time (since beginning of simulation), not relative to the last transition
 export type TimedReactive<RT_Config> = {
-  initial: () => RT_Config,
+  initial: () => [RaisedEvent[], RT_Config],
   timeAdvance: (c: RT_Config) => number,
   intTransition: (c: RT_Config) => [RaisedEvent[], RT_Config],
   extTransition: (simtime: number, c: RT_Config, e: InputEvent) => [RaisedEvent[], RT_Config],
 }
 
-export function statechartExecution(ast: Statechart): TimedReactive<BigStepOutput> {
+export function statechartExecution(ast: Statechart): TimedReactive<BigStep> {
   return {
-    initial: () => initialize(ast),
+    initial: () => {
+      const bigstep = initialize(ast);
+      return [bigstep.outputEvents, bigstep];
+    },
     timeAdvance: (c: RT_Statechart) => (c.environment.get("_timers") as Timers)[0]?.[0] || Infinity,
     intTransition: (c: RT_Statechart) => {
       const timers = c.environment.get("_timers") as Timers;
@@ -33,13 +36,6 @@ export function statechartExecution(ast: Statechart): TimedReactive<BigStepOutpu
   }
 }
 
-export const dummyExecution: TimedReactive<null> = {
-  initial: () => null,
-  timeAdvance: () => Infinity,
-  intTransition: () => { throw new Error("dummy never makes intTransition"); },
-  extTransition: () => [[], null],
-};
-
 export type EventDestination = ModelDestination | OutputDestination;
 
 export type ModelDestination = {
@@ -53,12 +49,34 @@ export type OutputDestination = {
   eventName: string,
 };
 
-export function exposeStatechartInputs(ast: Statechart, model: string): Conns {
+// export type NowhereDestination = {
+//   kind: "nowhere",
+// };
+
+export function exposeStatechartInputsOutputs(ast: Statechart, model: string): Conns {
   return {
-    inputEvents: Object.fromEntries(ast.inputEvents.map(e => [e.event, {kind: "model", model, eventName: e.event}])),
-    outputEvents: {},
+    // all the coupled execution's input events become input events for the statechart
+    inputEvents: exposeStatechartInputs(ast, model),
+    outputEvents: exposeStatechartOutputs(ast, model),
   }
 }
+
+export function exposeStatechartInputs(ast: Statechart, model: string, tfm = (s: string) => s): {[eventName: string]: ModelDestination} {
+  return Object.fromEntries(ast.inputEvents.map(e => [tfm(e.event), {kind: "model", model, eventName: e.event}]));
+}
+
+export function exposeStatechartOutputs(ast: Statechart, model: string): {[modelName: string]: {[eventName: string]: EventDestination}} {
+  return {
+    // all the statechart's output events become output events of our coupled execution
+    [model]: Object.fromEntries([...ast.outputEvents].map(e => [e, {kind: "output", model, eventName: e}])),
+  };
+}
+
+// export function hideStatechartOutputs(ast: Statechart, model: string) {
+//   return {
+//     [model]: Object.fromEntries([...ast.outputEvents].map(e => [e, {kind: "nowhere" as const}])),
+//   }
+// }
 
 export type Conns = {
   // inputs coming from outside are routed to the right models
@@ -85,10 +103,12 @@ export function coupledExecution<T extends {[name: string]: any}>(models: {[name
       const destination = conns.outputEvents[model]?.[event.name];
       if (destination === undefined) {
         // ignore
+        console.log(`${model}.${event.name} goes nowhere`);
         return processOutputs(simtime, rest, model, c);
       }
       if (destination.kind === "model") {
         // output event is input for another model
+        console.log(`${model}.${event.name} goes to ${destination.model}.${destination.eventName}`);
         const inputEvent = {
           kind: "input" as const,
           name: destination.eventName,
@@ -100,11 +120,13 @@ export function coupledExecution<T extends {[name: string]: any}>(models: {[name
         const [restOutputEvents, newConfig2] = processOutputs(simtime, rest, model, newConfig);
         return [[...outputEvents, ...restOutputEvents], newConfig2];
       }
-      else {
+      else if (destination.kind === "output") {
         // kind === "output"
+        console.log(`${model}.${event.name} becomes ^${destination.eventName}`);
         const [outputEvents, newConfig] = processOutputs(simtime, rest, model, c);
         return [[event, ...outputEvents], newConfig];
       }
+      throw new Error("unreachable");
     }
     else {
       return [[], c];
@@ -112,13 +134,33 @@ export function coupledExecution<T extends {[name: string]: any}>(models: {[name
   }
 
   return {
-    initial: () => Object.fromEntries(Object.entries(models).map(([name, model]) => {
-      return [name, model.initial()];
-    })) as T,
+    initial: () => {
+      // 1. initialize every model
+      const allOutputs = [];
+      let state = {} as T;
+      for (const [modelName, model] of Object.entries(models)) {
+        const [outputEvents, modelState] = model.initial();
+        for (const o of outputEvents) {
+          allOutputs.push([modelName, o]);
+        }
+        // @ts-ignore
+        state[modelName] = modelState;
+      }
+      console.log({state});
+      // 2. handle all output events (models' outputs may be inputs for each other)
+      let finalOutputs = [];
+      for (const [modelName, outputEvents] of allOutputs) {
+        let newOutputs;
+        [newOutputs, state] = processOutputs(0, outputEvents, modelName, state);
+        finalOutputs.push(...newOutputs);
+      }
+      return [finalOutputs, state];
+    },
     timeAdvance: (c) => {
       return Object.entries(models).reduce((acc, [name, {timeAdvance}]) => Math.min(timeAdvance(c[name]), acc), Infinity);
     },
     intTransition: (c) => {
+      // find earliest internal transition among all models:
       const [when, name] = Object.entries(models).reduce(([earliestSoFar, earliestModel], [name, {timeAdvance}]) => {
         const when = timeAdvance(c[name]);
         if (when < earliestSoFar) {
@@ -133,8 +175,9 @@ export function coupledExecution<T extends {[name: string]: any}>(models: {[name
       throw new Error("cannot make intTransition - timeAdvance is infinity");
     },
     extTransition: (simtime, c, e) => {
+      console.log(e);
       const {model, eventName} = conns.inputEvents[e.name];
-      // console.log('input event', e, 'goes to', model);
+      console.log('input event', e.name, 'goes to', `${model}.${eventName}`);
       const inputEvent: InputEvent = {
         kind: "input",
         name: eventName,
@@ -144,3 +187,32 @@ export function coupledExecution<T extends {[name: string]: any}>(models: {[name
     },
   }
 }
+
+
+// Example of a coupled execution:
+
+// const clock1: TimedReactive<{nextTick: number}> = {
+//   initial: () => ({nextTick: 1}),
+//   timeAdvance: (c) => c.nextTick,
+//   intTransition: (c) => [[{name: "tick"}], {nextTick: c.nextTick+1}],
+//   extTransition: (simtime, c, e) => [[], (c)],
+// }
+
+// const clock2: TimedReactive<{nextTick: number}> = {
+//   initial: () => ({nextTick: 0.5}),
+//   timeAdvance: (c) => c.nextTick,
+//   intTransition: (c) => [[{name: "tick"}], {nextTick: c.nextTick+1}],
+//   extTransition: (simtime, c, e) => [[], (c)],
+// }
+
+// const coupled = coupledExecution({clock1, clock2}, {inputEvents: {}, outputEvents: {
+//   clock1: {tick: {kind:"output", eventName: 'tick'}},
+//   clock2: {tick: {kind:"output", eventName: 'tick'}},
+// }})
+
+// let state = coupled.initial();
+// for (let i=0; i<10; i++) {
+//   const nextWakeup = coupled.timeAdvance(state);
+//   console.log({state, nextWakeup});
+//   [[], state] = coupled.intTransition(state);
+// }

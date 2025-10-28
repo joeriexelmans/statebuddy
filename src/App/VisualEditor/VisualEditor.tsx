@@ -18,12 +18,15 @@ import { TraceState } from "@/App/App";
 import { Mode } from "@/statecharts/runtime_types";
 import { arraysEqual, objectsEqual, setsEqual } from "@/util/util";
 
-export type VisualEditorState = {
+export type ConcreteSyntax = {
   rountangles: Rountangle[];
   texts: Text[];
   arrows: Arrow[];
   diamonds: Diamond[];
   history: History[];
+};
+
+export type VisualEditorState = ConcreteSyntax & {
   nextID: number;
   selection: Selection;
 };
@@ -373,6 +376,9 @@ export const VisualEditor = memo(function VisualEditor({state, setState, trace, 
   }, [setState]);
 
   const onKeyDown = useCallback((e: KeyboardEvent) => {
+    // don't capture keyboard events when focused on an input element:
+    if (["INPUT", "TEXTAREA", "SELECT"].includes(e.target?.tagName)) return;
+
     if (e.key === "Delete") {
       // delete selection
       makeCheckPoint();
