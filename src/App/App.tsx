@@ -464,9 +464,10 @@ function ConnEditor(ast: Statechart, plant: Plant<any>, plantConns: Conns, setPl
   const scInputs = <>{ast.inputEvents.map(e => <option key={'sc.'+e.event} value={'sc.'+e.event}>sc.{e.event}</option>)}</>;
   return <>
     {/* Plant UI events can go to SC or to Plant */}
-    {plant.uiEvents.map(e => <div>
-      <label htmlFor={`select-dst-plant-ui-${e.event}`}>ui.{e.event}&nbsp;→&nbsp;</label>
+    {plant.uiEvents.map(e => <div style={{width:'100%', textAlign:'right'}}>
+      <label htmlFor={`select-dst-plant-ui-${e.event}`} style={{width:'50%'}}>ui.{e.event}&nbsp;→&nbsp;</label>
       <select id={`select-dst-plant-ui-${e.event}`}
+        style={{width:'50%'}}
         value={plantConns['plant.ui.'+e.event]?.join('.')}
         onChange={domEvent => setPlantConns(conns => ({...conns, [`plant.ui.${e.event}`]: domEvent.target.value.split('.') as [string,string]}))}>
         <option key="none" value=""></option>
@@ -476,9 +477,10 @@ function ConnEditor(ast: Statechart, plant: Plant<any>, plantConns: Conns, setPl
     </div>)}
     
     {/* SC output events can go to Plant */}
-    {[...ast.outputEvents].map(e => <div>
-      <label htmlFor={`select-dst-sc-${e}`}>sc.{e}&nbsp;→&nbsp;</label>
+    {[...ast.outputEvents].map(e => <div style={{width:'100%', textAlign:'right'}}>
+      <label htmlFor={`select-dst-sc-${e}`} style={{width:'50%'}}>sc.{e}&nbsp;→&nbsp;</label>
       <select id={`select-dst-sc-${e}`}
+        style={{width:'50%'}}
         value={plantConns['sc.'+e]?.join('.')}
         onChange={domEvent => setPlantConns(conns => ({...conns, [`sc.${e}`]: domEvent.target.value.split('.') as [string,string]}))}>
         <option key="none" value=""></option>
@@ -487,9 +489,10 @@ function ConnEditor(ast: Statechart, plant: Plant<any>, plantConns: Conns, setPl
     </div>)}
 
     {/* Plant output events can go to Statechart */}
-    {[...plant.outputEvents.map(e => <div>
-      <label htmlFor={`select-dst-plant-${e.event}`}>plant.{e.event}&nbsp;→&nbsp;</label>
+    {[...plant.outputEvents.map(e => <div style={{width:'100%', textAlign:'right'}}>
+      <label htmlFor={`select-dst-plant-${e.event}`} style={{width:'50%'}}>plant.{e.event}&nbsp;→&nbsp;</label>
       <select id={`select-dst-plant-${e.event}`}
+        style={{width:'50%'}}
         value={plantConns['plant.'+e.event]?.join('.')}
         onChange={(domEvent => setPlantConns(conns => ({...conns, [`plant.${e.event}`]: domEvent.target.value.split('.') as [string,string]})))}>
         <option key="none" value=""></option>
