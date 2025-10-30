@@ -1,11 +1,10 @@
 import "../index.css";
 import "./App.css";
 
-import { ReactElement, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Dispatch, ReactElement, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { emptyState } from "@/statecharts/concrete_syntax";
 import { detectConnections } from "@/statecharts/detect_connections";
-import { Conns, coupledExecution, EventDestination, exposeStatechartInputs, statechartExecution } from "@/statecharts/timed_reactive";
+import { Conns, coupledExecution, EventDestination, statechartExecution, TimedReactive } from "@/statecharts/timed_reactive";
 import { RuntimeError } from "../statecharts/interpreter";
 import { parseStatechart } from "../statecharts/parser";
 import { BigStep, RaisedEvent } from "../statecharts/runtime_types";
@@ -13,17 +12,17 @@ import { getSimTime, getWallClkDelay, TimeMode } from "../statecharts/time";
 import { BottomPanel } from "./BottomPanel";
 import { usePersistentState } from "./persistent_state";
 import { PersistentDetails } from "./PersistentDetails";
-import { DummyPlant } from "./Plant/Dummy/Dummy";
-import { MicrowavePlant } from "./Plant/Microwave/Microwave";
-import { autoConnect, exposePlantInputs, Plant } from "./Plant/Plant";
+import { dummyPlant } from "./Plant/Dummy/Dummy";
+import { microwavePlant } from "./Plant/Microwave/Microwave";
+import { Plant } from "./Plant/Plant";
 import { RTHistory } from "./RTHistory";
 import { ShowAST, ShowInputEvents, ShowInternalEvents, ShowOutputEvents } from "./ShowAST";
 import { TopPanel } from "./TopPanel/TopPanel";
-import { getKeyHandler } from "./VisualEditor/shortcut_handler";
-import { InsertMode, VisualEditor, VisualEditorState } from "./VisualEditor/VisualEditor";
-import { addV2D, rotateLine90CCW, rotateLine90CW, rotatePoint90CCW, rotatePoint90CW, rotateRect90CCW, rotateRect90CW, scaleV2D, subtractV2D, Vec2D } from "@/util/geometry";
-import { HISTORY_RADIUS } from "./parameters";
-import { DigitalWatchPlant } from "./Plant/DigitalWatch/DigitalWatch";
+import { VisualEditor, VisualEditorState } from "./VisualEditor/VisualEditor";
+import { digitalWatchPlant } from "./Plant/DigitalWatch/DigitalWatch";
+import { useEditor as useEditor } from "./useEditor";
+import { InsertMode } from "./TopPanel/InsertModes";
+import { Statechart } from "@/statecharts/abstract_syntax";
 
 export type EditHistory = {
   current: VisualEditorState,
@@ -32,9 +31,9 @@ export type EditHistory = {
 }
 
 const plants: [string, Plant<any>][] = [
-  ["dummy", DummyPlant],
-  ["microwave", MicrowavePlant],
-  ["digital watch", DigitalWatchPlant],
+  ["dummy", dummyPlant],
+  ["microwave", microwavePlant],
+  ["digital watch", digitalWatchPlant],
 ]
 
 export type TraceItemError = {
@@ -58,25 +57,8 @@ export type TraceState = {
   idx: number,
 }; // <-- null if there is no trace
 
-// function getPlantState<T>(plant: Plant<T>, trace: TraceItem[], idx: number): T | null {
-//   if (idx === -1) {
-//     return plant.initial;
-//   }
-//   let plantState = getPlantState(plant, trace, idx-1);
-//   if (plantState !== null) {
-//     const currentConfig = trace[idx];
-//     if (currentConfig.kind === "bigstep") {
-//       for (const o of currentConfig.outputEvents) {
-//         plantState = plant.reduce(o, plantState);
-//       }
-//     }
-//     return plantState;
-//   }
-//   return null;
-// }
-
 export function App() {
-  const [insertMode, setInsertMode] = useState<InsertMode>("and");
+  const [insertMode, setInsertMode] = usePersistentState<InsertMode>("insertMode", "and");
   const [editHistory, setEditHistory] = useState<EditHistory|null>(null);
   const [trace, setTrace] = useState<TraceState|null>(null);
   const [time, setTime] = useState<TimeMode>({kind: "paused", simtime: 0});
@@ -86,69 +68,16 @@ export function App() {
   const [zoom, setZoom] = usePersistentState("zoom", 1);
   const [showKeys, setShowKeys] = usePersistentState("shortcuts", true);
 
+  const [autoScroll, setAutoScroll] = usePersistentState("autoScroll", true);
+  const [autoConnect, setAutoConnect] = usePersistentState("autoConnect", true);
+  const [plantConns, setPlantConns] = usePersistentState<Conns>("plantConns", {});
+
   const plant = plants.find(([pn, p]) => pn === plantName)![1];
 
   const editorState = editHistory && editHistory.current;
   const setEditorState = useCallback((cb: (value: VisualEditorState) => VisualEditorState) => {
     setEditHistory(historyState => historyState && ({...historyState, current: cb(historyState.current)}));
   }, [setEditHistory]);
-
-  // recover editor state from URL - we need an effect here because decompression is asynchronous
-  useEffect(() => {
-    console.log('recovering state...');
-    const compressedState = window.location.hash.slice(1);
-    if (compressedState.length === 0) {
-      // empty URL hash
-      console.log("no state to recover");
-      setEditHistory(() => ({current: emptyState, history: [], future: []}));
-      return;
-    }
-    let compressedBuffer;
-    try {
-      compressedBuffer = Uint8Array.fromBase64(compressedState); // may throw
-    } catch (e) {
-      // probably invalid base64
-      console.error("failed to recover state:", e);
-      setEditHistory(() => ({current: emptyState, history: [], future: []}));
-      return;
-    }
-    const ds = new DecompressionStream("deflate");
-    const writer = ds.writable.getWriter();
-    writer.write(compressedBuffer).catch(() => {}); // any promise rejections will be detected when we try to read
-    writer.close().catch(() => {});
-    new Response(ds.readable).arrayBuffer()
-      .then(decompressedBuffer => {
-        const recoveredState = JSON.parse(new TextDecoder().decode(decompressedBuffer));
-        setEditHistory(() => ({current: recoveredState, history: [], future: []}));
-      })
-      .catch(e => {
-        // any other error: invalid JSON, or decompression failed.
-        console.error("failed to recover state:", e);
-        setEditHistory({current: emptyState, history: [], future: []});
-      });
-  }, []);
-
-  // save editor state in URL
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (editorState === null) {
-        window.location.hash = "#";
-        return;
-      }
-      const serializedState = JSON.stringify(editorState);
-      const stateBuffer = new TextEncoder().encode(serializedState);
-      const cs = new CompressionStream("deflate");
-      const writer = cs.writable.getWriter();
-      writer.write(stateBuffer);
-      writer.close();
-      // todo: cancel this promise handler when concurrently starting another compression job
-      new Response(cs.readable).arrayBuffer().then(compressedStateBuffer => {
-        const compressedStateString = new Uint8Array(compressedStateBuffer).toBase64();
-        window.location.hash = "#"+compressedStateString;
-      });
-    }, 100);
-    return () => clearTimeout(timeout);
-  }, [editorState]);
 
   const refRightSideBar = useRef<HTMLDivElement>(null);
 
@@ -166,177 +95,42 @@ export function App() {
     }] : [],
   ]
 
-  // append editor state to undo history
-  const makeCheckPoint = useCallback(() => {
-    setEditHistory(historyState => historyState && ({
-      ...historyState,
-      history: [...historyState.history, historyState.current],
-      future: [],
-    }));
-  }, [setEditHistory]);
-  const onUndo = useCallback(() => {
-    setEditHistory(historyState => {
-      if (historyState === null) return null;
-      if (historyState.history.length === 0) {
-        return historyState; // no change
-      }
-      return {
-        current: historyState.history.at(-1)!,
-        history: historyState.history.slice(0,-1),
-        future: [...historyState.future, historyState.current],
-      }
-    })
-  }, [setEditHistory]);
-  const onRedo = useCallback(() => {
-    setEditHistory(historyState => {
-      if (historyState === null) return null;
-      if (historyState.future.length === 0) {
-        return historyState; // no change
-      }
-      return {
-        current: historyState.future.at(-1)!,
-        history: [...historyState.history, historyState.current],
-        future: historyState.future.slice(0,-1),
-      }
-    });
-  }, [setEditHistory]);
-  const onRotate = useCallback((direction: "ccw" | "cw") => {
-    makeCheckPoint();
-    setEditHistory(historyState => {
-      if (historyState === null) return null;
-
-      const selection = historyState.current.selection;
-
-      if (selection.length === 0) {
-        return historyState;
-      }
-
-      // determine bounding box... in a convoluted manner
-      let minX = -Infinity, minY = -Infinity, maxX = Infinity, maxY = Infinity;
-
-      function addPointToBBox({x,y}: Vec2D) {
-        minX = Math.max(minX, x);
-        minY = Math.max(minY, y);
-        maxX = Math.min(maxX, x);
-        maxY = Math.min(maxY, y);
-      }
-
-      for (const rt of historyState.current.rountangles) {
-        if (selection.some(s => s.uid === rt.uid)) {
-          addPointToBBox(rt.topLeft);
-          addPointToBBox(addV2D(rt.topLeft, rt.size));
-        }
-      }
-      for (const d of historyState.current.diamonds) {
-        if (selection.some(s => s.uid === d.uid)) {
-          addPointToBBox(d.topLeft);
-          addPointToBBox(addV2D(d.topLeft, d.size));
-        }
-      }
-      for (const arr of historyState.current.arrows) {
-        if (selection.some(s => s.uid === arr.uid)) {
-          addPointToBBox(arr.start);
-          addPointToBBox(arr.end);
-        }
-      }
-      for (const txt of historyState.current.texts) {
-        if (selection.some(s => s.uid === txt.uid)) {
-          addPointToBBox(txt.topLeft);
-        }
-      }
-      const historySize = {x: HISTORY_RADIUS, y: HISTORY_RADIUS};
-      for (const h of historyState.current.history) {
-        if (selection.some(s => s.uid === h.uid)) {
-          addPointToBBox(h.topLeft);
-          addPointToBBox(addV2D(h.topLeft, scaleV2D(historySize, 2)));
-        }
-      }
-
-      const center: Vec2D = {
-        x: (minX + maxX) / 2,
-        y: (minY + maxY) / 2,
-      };
-
-      const mapIfSelected = (shape: {uid: string}, cb: (shape:any)=>any) => {
-        if (selection.some(s => s.uid === shape.uid)) {
-          return cb(shape);
-        }
-        else {
-          return shape;
-        }
-      }
-
-      return {
-        ...historyState,
-        current: {
-          ...historyState.current,
-          rountangles: historyState.current.rountangles.map(rt => mapIfSelected(rt, rt => {
-            return {
-              ...rt,
-              ...(direction === "ccw"
-                ? rotateRect90CCW(rt, center)
-                : rotateRect90CW(rt, center)),
-            }
-          })),
-          arrows: historyState.current.arrows.map(arr => mapIfSelected(arr, arr => {
-            return {
-              ...arr,
-              ...(direction === "ccw"
-                ? rotateLine90CCW(arr, center)
-                : rotateLine90CW(arr, center)),
-            };
-          })),
-          diamonds: historyState.current.diamonds.map(d => mapIfSelected(d, d => {
-            return {
-              ...d,
-              ...(direction === "ccw"
-                ? rotateRect90CCW(d, center)
-                : rotateRect90CW(d, center)),
-            };
-          })),
-          texts: historyState.current.texts.map(txt => mapIfSelected(txt, txt => {
-              return {
-                ...txt,
-                topLeft: (direction === "ccw"
-                  ? rotatePoint90CCW(txt.topLeft, center)
-                  : rotatePoint90CW(txt.topLeft, center)),
-              };
-          })),
-          history: historyState.current.history.map(h => mapIfSelected(h, h => {
-              return {
-                ...h,
-                topLeft: (direction === "ccw"
-                  ? subtractV2D(rotatePoint90CCW(addV2D(h.topLeft, historySize), center), historySize)
-                  : subtractV2D(rotatePoint90CW(addV2D(h.topLeft, historySize), center), historySize)
-                ),
-              };
-          })),
-        },
-      }
-    })
-  }, [setEditHistory]);
+  const {makeCheckPoint, onRedo, onUndo, onRotate} = useEditor(editorState, setEditHistory);
 
   const scrollDownSidebar = useCallback(() => {
-    if (refRightSideBar.current) {
+    if (autoScroll && refRightSideBar.current) {
       const el = refRightSideBar.current;
       // hack: we want to scroll to the new element, but we have to wait until it is rendered...
       setTimeout(() => {
         el.scrollIntoView({block: "end", behavior: "smooth"});
       }, 50);
     }
-  }, [refRightSideBar.current]);
+  }, [refRightSideBar.current, autoScroll]);
 
-  const plantConns = ast && ({
-    inputEvents: {
-      ...exposeStatechartInputs(ast, "sc", (eventName: string) => "DEBUG_"+eventName),
-      ...exposePlantInputs(plant, "plant", (eventName: string) => "PLANT_UI_"+eventName),
-    },
-    outputEvents: autoConnect(ast, "sc", plant, "plant"),
-  }) as Conns;
+  // const plantConns = ast && ({
+  //   inputEvents: {
+  //     // all SC inputs are directly triggerable from outside
+  //     ...exposeStatechartInputs(ast, "sc", (eventName: string) => "debug."+eventName),
+
+  //     ...Object.fromEntries(plant.uiEvents.map(e => {
+  //       const globalName = "PLANT_UI_"+e.event;
+  //       if (plant.inputEvents.some(f => f.event === e.event)) {
+  //         return [globalName, {kind: "model", model: 'plant', eventName: e.event}];
+  //       }
+  //       if (ast.inputEvents.some(f => f.event === e.event)) {
+  //         return [globalName, {kind: "model", model: 'sc', eventName: e.event}];
+  //       }
+  //     }).filter(entry => entry !== undefined)),
+  //   },
+  //   outputEvents: {}, //autoConnect(ast, "sc", plant, "plant"),
+  // }) as Conns;
   const cE = useMemo(() => ast && coupledExecution({
     sc: statechartExecution(ast),
     plant: plant.execution,
-  }, plantConns!), [ast]);
+  }, {
+    ...plantConns,
+    ...Object.fromEntries(ast.inputEvents.map(({event}) => ["debug."+event, ['sc',event] as [string,string]])),
+  }), [ast]);
 
   const onInit = useCallback(() => {
     if (cE === null) return;
@@ -448,7 +242,7 @@ export function App() {
     scrollDownSidebar();
   }
 
-  function onBack() {
+  const onBack = useCallback(() => {
     if (trace !== null) {
       setTime(() => {
         if (trace !== null) {
@@ -464,22 +258,7 @@ export function App() {
         idx: trace.idx-1,
       });
     }
-  }
-
-  useEffect(() => {
-    console.log("Welcome to StateBuddy!");
-    () => {
-      console.log("Goodbye!");
-    }
-  }, []);
-
-  useEffect(() => {
-    const onKeyDown = getKeyHandler(setInsertMode);
-    window.addEventListener("keydown", onKeyDown);
-    return () => {
-      window.removeEventListener("keydown", onKeyDown);
-    };
-  }, []);
+  }, [trace]);
 
   const currentBigStep = currentTraceItem && currentTraceItem.kind === "bigstep" && currentTraceItem;
   const highlightActive = (currentBigStep && currentBigStep.state.sc.mode) || new Set();
@@ -489,6 +268,12 @@ export function App() {
   const [showPlantTrace, setShowPlantTrace] = usePersistentState("showPlantTrace", false);
 
   const speed = time.kind === "paused" ? 0 : time.scale;
+
+  const plantState = currentBigStep && currentBigStep.state.plant || plant.execution.initial()[1];
+
+  useEffect(() => {
+    ast && autoConnect && autoDetectConns(ast, plant, setPlantConns);
+  }, [ast, plant, autoConnect]);
 
   return <>
 
@@ -523,7 +308,7 @@ export function App() {
         {/* Editor */}
         <div style={{flexGrow: 1, overflow: "auto"}}>
           {editorState && conns && syntaxErrors &&
-            <VisualEditor {...{state: editorState, setState: setEditorState, conns, trace, setTrace, syntaxErrors: allErrors, insertMode, highlightActive, highlightTransitions, setModal, makeCheckPoint, zoom}}/>}
+            <VisualEditor {...{state: editorState, setState: setEditorState, conns, trace, syntaxErrors: allErrors, insertMode, highlightActive, highlightTransitions, setModal, makeCheckPoint, zoom}}/>}
         </div>
       </div>
 
@@ -550,7 +335,7 @@ export function App() {
               <summary>input events</summary>
               {ast && <ShowInputEvents
                 inputEvents={ast.inputEvents}
-                onRaise={(e,p) => onRaise("DEBUG_"+e,p)}
+                onRaise={(e,p) => onRaise("debug."+e,p)}
                 disabled={trace===null || trace.trace[trace.idx].kind === "error"}
                 showKeys={showKeys}/>}
             </PersistentDetails>
@@ -572,13 +357,25 @@ export function App() {
                   <option>{plantName}</option>
                 )}
               </select>
-              {plantConns && <ShowConns {...plantConns} />}
-              {currentBigStep && <plant.render state={currentBigStep.state.plant} speed={speed}
-                raiseInput={e => onRaise("PLANT_UI_"+e.name, e.param)}
+              {/* Render plant */}
+              {<plant.render state={plantState} speed={speed}
+                raiseUIEvent={e => onRaise("plant.ui."+e.name, e.param)}
                 />}
             </PersistentDetails>
+              <PersistentDetails localStorageKey="showConnEditor" initiallyOpen={false}>
+                <summary>connections</summary>
+                <button title="auto-connect (name-based)" className={autoConnect?"active":""}
+                  onClick={() => setAutoConnect(c => !c)}>
+                  <AutoAwesomeIcon fontSize="small"/>
+                </button>
+                {ast && ConnEditor(ast, plant, plantConns, setPlantConns)}
+              </PersistentDetails>
+
             <details open={showExecutionTrace} onToggle={e => setShowExecutionTrace(e.newState === "open")}><summary>execution trace</summary>
-              <input id="checkbox-show-plant-items" type="checkbox" checked={showPlantTrace} onChange={e => setShowPlantTrace(e.target.checked)}/><label htmlFor="checkbox-show-plant-items">show plant steps</label>
+              <input id="checkbox-show-plant-items" type="checkbox" checked={showPlantTrace} onChange={e => setShowPlantTrace(e.target.checked)}/>
+              <label htmlFor="checkbox-show-plant-items">show plant steps</label>
+              <input id="checkbox-autoscroll" type="checkbox" checked={autoScroll} onChange={e => setAutoScroll(e.target.checked)}/>
+              <label htmlFor="checkbox-autoscroll">auto-scroll</label>
             </details>
           </div>
 
@@ -622,11 +419,85 @@ function ShowEventDestination(dst: EventDestination) {
 
 function ShowConns({inputEvents, outputEvents}: Conns) {
   return <div>
-    <div style={{color: "grey"}}>
+    {/* <div style={{color: "grey"}}>
       {Object.entries(inputEvents).map(([eventName, destination]) => <div>{eventName} &#x2192; <ShowEventDestination {...destination}/></div>)}
     </div>
-    {Object.entries(outputEvents).map(([modelName, mapping]) => <>{Object.entries(mapping).map(([eventName, destination]) => <div>{modelName}.{eventName} &#x2192; <ShowEventDestination {...destination}/></div>)}</>)}
+    {Object.entries(outputEvents).map(([modelName, mapping]) => <>{Object.entries(mapping).map(([eventName, destination]) => <div>{modelName}.{eventName} &#x2192; <ShowEventDestination {...destination}/></div>)}</>)} */}
   </div>;
 }
 
+import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+
+function autoDetectConns(ast: Statechart, plant: Plant<any>, setPlantConns: Dispatch<SetStateAction<Conns>>) {
+  for (const {event: a} of plant.uiEvents) {
+    for (const {event: b} of plant.inputEvents) {
+      if (a === b) {
+        setPlantConns(conns => ({...conns, ['plant.ui.'+a]: ['plant', b]}));
+        break;
+      }
+    }
+    for (const {event: b} of ast.inputEvents) {
+      if (a === b) {
+        setPlantConns(conns => ({...conns, ['plant.ui.'+a]: ['sc', b]}));
+      }
+    }
+  }
+  for (const a of ast.outputEvents) {
+    for (const {event: b} of plant.inputEvents) {
+      if (a === b) {
+        setPlantConns(conns => ({...conns, ['sc.'+a]: ['plant', b]}));
+      }
+    }
+  }
+  for (const {event: a} of plant.outputEvents) {
+    for (const {event: b} of ast.inputEvents) {
+      if (a === b) {
+        setPlantConns(conns => ({...conns, ['plant.'+a]: ['sc', b]}));
+      }
+    }
+  }
+}
+
+function ConnEditor(ast: Statechart, plant: Plant<any>, plantConns: Conns, setPlantConns: Dispatch<SetStateAction<Conns>>) {
+  const plantInputs = <>{plant.inputEvents.map(e => <option key={'plant.'+e.event} value={'plant.'+e.event}>plant.{e.event}</option>)}</>
+  const scInputs = <>{ast.inputEvents.map(e => <option key={'sc.'+e.event} value={'sc.'+e.event}>sc.{e.event}</option>)}</>;
+  return <>
+    {/* Plant UI events can go to SC or to Plant */}
+    {plant.uiEvents.map(e => <div>
+      <label htmlFor={`select-dst-plant-ui-${e.event}`}>ui.{e.event}&nbsp;→&nbsp;</label>
+      <select id={`select-dst-plant-ui-${e.event}`}
+        value={plantConns['plant.ui.'+e.event]?.join('.')}
+        onChange={domEvent => setPlantConns(conns => ({...conns, [`plant.ui.${e.event}`]: domEvent.target.value.split('.') as [string,string]}))}>
+        <option key="none" value=""></option>
+        {scInputs}
+        {plantInputs}
+      </select>
+    </div>)}
+    
+    {/* SC output events can go to Plant */}
+    {[...ast.outputEvents].map(e => <div>
+      <label htmlFor={`select-dst-sc-${e}`}>sc.{e}&nbsp;→&nbsp;</label>
+      <select id={`select-dst-sc-${e}`}
+        value={plantConns['sc.'+e]?.join('.')}
+        onChange={domEvent => setPlantConns(conns => ({...conns, [`sc.${e}`]: domEvent.target.value.split('.') as [string,string]}))}>
+        <option key="none" value=""></option>
+        {plantInputs}
+      </select>
+    </div>)}
+
+    {/* Plant output events can go to Statechart */}
+    {[...plant.outputEvents.map(e => <div>
+      <label htmlFor={`select-dst-plant-${e.event}`}>plant.{e.event}&nbsp;→&nbsp;</label>
+      <select id={`select-dst-plant-${e.event}`}
+        value={plantConns['plant.'+e.event]?.join('.')}
+        onChange={(domEvent => setPlantConns(conns => ({...conns, [`plant.${e.event}`]: domEvent.target.value.split('.') as [string,string]})))}>
+        <option key="none" value=""></option>
+        {scInputs}
+      </select>
+    </div>)]}
+  </>;
+}
+
 export default App;
+

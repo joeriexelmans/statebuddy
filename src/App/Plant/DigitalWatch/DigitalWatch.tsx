@@ -2,10 +2,9 @@ import { useAudioContext } from "@/App/useAudioContext";
 import { ConcreteSyntax } from "@/App/VisualEditor/VisualEditor";
 import { detectConnections } from "@/statecharts/detect_connections";
 import { parseStatechart } from "@/statecharts/parser";
-import { BigStep, RT_Statechart } from "@/statecharts/runtime_types";
-import { statechartExecution } from "@/statecharts/timed_reactive";
+import { RT_Statechart } from "@/statecharts/runtime_types";
 import { useEffect } from "react";
-import { Plant, PlantRenderProps } from "../Plant";
+import { makeStatechartPlant, PlantRenderProps } from "../Plant";
 
 import dwatchConcreteSyntax from "./model.json";
 import sndBeep from "./beep.wav";
@@ -24,12 +23,12 @@ if (dwatchErrors.length > 0) {
 
 const twoDigits = (n: number) => ("0"+n.toString()).slice(-2);
 
-export function DigitalWatch({state, speed, raiseInput}: PlantRenderProps<RT_Statechart>) {
-  const displayingTime = state.mode.has("265");
-  const displayingAlarm = state.mode.has("266");
-  const displayingChrono = state.mode.has("264");
+export function DigitalWatch({state, speed, raiseUIEvent}: PlantRenderProps<RT_Statechart>) {
+  const displayingTime = state.mode.has("625");
+  const displayingAlarm = state.mode.has("626");
+  const displayingChrono = state.mode.has("624");
 
-  const lightOn = state.mode.has("389");
+  const lightOn = state.mode.has("630");
 
   const alarm = state.environment.get("alarm");
 
@@ -43,9 +42,9 @@ export function DigitalWatch({state, speed, raiseInput}: PlantRenderProps<RT_Sta
   const cs = state.environment.get("cs");
   const chs = state.environment.get("chs");
 
-  const hideH = state.mode.has("268");
-  const hideM = state.mode.has("271");
-  const hideS = state.mode.has("267");
+  const hideH = state.mode.has("628");
+  const hideM = state.mode.has("633");
+  const hideS = state.mode.has("627");
 
   // console.log({cm,cs,chs});
 
@@ -64,7 +63,7 @@ export function DigitalWatch({state, speed, raiseInput}: PlantRenderProps<RT_Sta
 
   preloadAudio(sndBeep);
 
-  const beep = state.mode.has("270");
+  const beep = state.mode.has("632");
 
   useEffect(() => {
     if (beep) {
@@ -88,20 +87,20 @@ export function DigitalWatch({state, speed, raiseInput}: PlantRenderProps<RT_Sta
       <text x="111" y="126" dominantBaseline="middle" textAnchor="middle" fontFamily="digital-font" fontSize={28} style={{whiteSpace:'preserve'}}>{hhmmss}</text>
     
       <rect className="watchButtonHelper" x={0} y={54} width={24} height={24} 
-        onMouseDown={() => raiseInput({name: "topLeftPressed"})}
-        onMouseUp={() => raiseInput({name: "topLeftReleased"})}
+        onMouseDown={() => raiseUIEvent({name: "topLeftPressed"})}
+        onMouseUp={() => raiseUIEvent({name: "topLeftReleased"})}
       />
       <rect className="watchButtonHelper" x={198} y={54} width={24} height={24}
-        onMouseDown={() => raiseInput({name: "topRightPressed"})}
-        onMouseUp={() => raiseInput({name: "topRightReleased"})}
+        onMouseDown={() => raiseUIEvent({name: "topRightPressed"})}
+        onMouseUp={() => raiseUIEvent({name: "topRightReleased"})}
       />
       <rect className="watchButtonHelper" x={0} y={154} width={24} height={24}
-        onMouseDown={() => raiseInput({name: "bottomLeftPressed"})}
-        onMouseUp={() => raiseInput({name: "bottomLeftReleased"})}
+        onMouseDown={() => raiseUIEvent({name: "bottomLeftPressed"})}
+        onMouseUp={() => raiseUIEvent({name: "bottomLeftReleased"})}
       />
       <rect className="watchButtonHelper" x={198} y={154} width={24} height={24}
-        onMouseDown={() => raiseInput({name: "bottomRightPressed"})}
-        onMouseUp={() => raiseInput({name: "bottomRightReleased"})}
+        onMouseDown={() => raiseUIEvent({name: "bottomRightPressed"})}
+        onMouseUp={() => raiseUIEvent({name: "bottomRightReleased"})}
       />
 
       {alarm &&
@@ -111,46 +110,17 @@ export function DigitalWatch({state, speed, raiseInput}: PlantRenderProps<RT_Sta
   </>;
 }
 
-export const DigitalWatchPlant: Plant<BigStep> = {
-  inputEvents: [
-    { kind: "event", event: "displayTime" },
-    { kind: "event", event: "displayChrono" },
-    { kind: "event", event: "displayAlarm" },
-    { kind: "event", event: "beginEdit" },
-    { kind: "event", event: "endEdit" },
-    { kind: "event", event: "selectNext" },
-    { kind: "event", event: "incSelection" },
-    { kind: "event", event: "incTime" },
-    { kind: "event", event: "incAlarm" },
-    { kind: "event", event: "incChrono" },
-    { kind: "event", event: "resetChrono" },
-    { kind: "event", event: "lightOn"},
-    { kind: "event", event: "lightOff"},
-    { kind: "event", event: "setAlarm", paramName: 'alarmOn'},
-    { kind: "event", event: "beep", paramName: 'beep'},
-
-    // UI events
-    { kind: "event", event: "topLeftPressed" },
-    { kind: "event", event: "topRightPressed" },
-    { kind: "event", event: "bottomRightPressed" },
-    { kind: "event", event: "bottomLeftPressed" },
-    { kind: "event", event: "topLeftReleased" },
-    { kind: "event", event: "topRightReleased" },
-    { kind: "event", event: "bottomRightReleased" },
-    { kind: "event", event: "bottomLeftReleased" },
-  ],
-  outputEvents: [
-    { kind: "event", event: "alarm" },
-
-    { kind: "event", event: "topLeftPressed" },
-    { kind: "event", event: "topRightPressed" },
-    { kind: "event", event: "bottomRightPressed" },
-    { kind: "event", event: "bottomLeftPressed" },
-    { kind: "event", event: "topLeftReleased" },
-    { kind: "event", event: "topRightReleased" },
-    { kind: "event", event: "bottomRightReleased" },
-    { kind: "event", event: "bottomLeftReleased" },
-  ],
-  execution: statechartExecution(dwatchAbstractSyntax),
+export const digitalWatchPlant = makeStatechartPlant({
+  ast: dwatchAbstractSyntax,
   render: DigitalWatch,
-}
+  uiEvents: [
+    { kind: "event", event: "topLeftPressed" },
+    { kind: "event", event: "topRightPressed" },
+    { kind: "event", event: "bottomRightPressed" },
+    { kind: "event", event: "bottomLeftPressed" },
+    { kind: "event", event: "topLeftReleased" },
+    { kind: "event", event: "topRightReleased" },
+    { kind: "event", event: "bottomRightReleased" },
+    { kind: "event", event: "bottomLeftReleased" },
+  ],
+});

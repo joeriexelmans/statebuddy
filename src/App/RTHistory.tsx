@@ -5,7 +5,6 @@ import { formatTime } from "../util/util";
 import { TimeMode, timeTravel } from "../statecharts/time";
 import { TraceItem, TraceState } from "./App";
 import { Environment } from "@/statecharts/environment";
-import { Conns } from "@/statecharts/timed_reactive";
 
 type RTHistoryProps = {
   trace: TraceState|null,

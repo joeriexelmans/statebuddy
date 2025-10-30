@@ -1,22 +1,23 @@
-import { ClipboardEvent, Dispatch, memo, ReactElement, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Dispatch, memo, ReactElement, SetStateAction, useCallback, useEffect, useRef, useState } from "react";
 
-import { Statechart } from "../../statecharts/abstract_syntax";
-import { Arrow, ArrowPart, Diamond, History, Rountangle, RectSide, Text } from "../../statecharts/concrete_syntax";
-import { parseStatechart, TraceableError } from "../../statecharts/parser";
-import { ArcDirection, Rect2D, Vec2D, addV2D, arcDirection, area, isEntirelyWithin, normalizeRect, scaleV2D, subtractV2D, transformLine, transformRect } from "../../util/geometry";
-import { MIN_ROUNTANGLE_SIZE } from "../parameters";
-import { getBBoxInSvgCoords } from "../../util/svg_helper";
-import { ArrowSVG } from "./ArrowSVG";
-import { RountangleSVG } from "./RountangleSVG";
-import { TextSVG } from "./TextSVG";
-import { DiamondSVG } from "./DiamondSVG";
-import { HistorySVG } from "./HistorySVG";
-import { Connections, detectConnections } from "../../statecharts/detect_connections";
-
-import "./VisualEditor.css";
 import { TraceState } from "@/App/App";
+import { InsertMode } from "../TopPanel/InsertModes";
 import { Mode } from "@/statecharts/runtime_types";
 import { arraysEqual, objectsEqual, setsEqual } from "@/util/util";
+import { Arrow, ArrowPart, Diamond, History, RectSide, Rountangle, Text } from "../../statecharts/concrete_syntax";
+import { Connections } from "../../statecharts/detect_connections";
+import { TraceableError } from "../../statecharts/parser";
+import { ArcDirection, arcDirection } from "../../util/geometry";
+import { ArrowSVG } from "./ArrowSVG";
+import { DiamondSVG } from "./DiamondSVG";
+import { HistorySVG } from "./HistorySVG";
+import { RountangleSVG } from "./RountangleSVG";
+import { TextSVG } from "./TextSVG";
+import { useCopyPaste } from "./useCopyPaste";
+
+import "./VisualEditor.css";
+import { useMouse } from "./useMouse";
+import { Selecting } from "./Selection";
 
 export type ConcreteSyntax = {
   rountangles: Rountangle[];
@@ -30,8 +31,6 @@ export type VisualEditorState = ConcreteSyntax & {
   nextID: number;
   selection: Selection;
 };
-
-type SelectingState = Rect2D | null;
 
 export type RountangleSelectable = {
   // kind: "rountangle";
@@ -55,9 +54,6 @@ type Selectable = RountangleSelectable | ArrowSelectable | TextSelectable | Hist
 
 export type Selection = Selectable[];
 
-export type InsertMode = "and"|"or"|"pseudo"|"shallow"|"deep"|"transition"|"text";
-
-
 type VisualEditorProps = {
   state: VisualEditorState,
   setState: Dispatch<(v:VisualEditorState) => VisualEditorState>,
@@ -74,17 +70,8 @@ type VisualEditorProps = {
 
 export const VisualEditor = memo(function VisualEditor({state, setState, trace, conns, syntaxErrors: errors, insertMode, highlightActive, highlightTransitions, setModal, makeCheckPoint, zoom}: VisualEditorProps) {
 
-  const [dragging, setDragging] = useState(false);
-
-  window.setState = setState;
-
   // uid's of selected rountangles
   const selection = state.selection || [];
-  const setSelection = useCallback((cb: (oldSelection: Selection) => Selection) =>
-    setState(oldState => ({...oldState, selection: cb(oldState.selection)})),[setState]);
-
-  // not null while the user is making a selection
-  const [selectingState, setSelectingState] = useState<SelectingState>(null);
 
   const refSVG = useRef<SVGSVGElement>(null);
 
@@ -102,344 +89,11 @@ export const VisualEditor = memo(function VisualEditor({state, setState, trace, 
     })
   }, [trace && trace.idx]);
 
-  const getCurrentPointer = useCallback((e: {pageX: number, pageY: number}) => {
-    const bbox = refSVG.current!.getBoundingClientRect();
-    return {
-      x: (e.pageX - bbox.left)/zoom,
-      y: (e.pageY - bbox.top)/zoom,
-    }
-  }, [refSVG.current, zoom]);
 
-  const onMouseDown = useCallback((e: {button: number, target: any, pageX: number, pageY: number}) => {
-    const currentPointer = getCurrentPointer(e);
-    if (e.button === 2) {
-      makeCheckPoint();
-      // ignore selection, middle mouse button always inserts
-      setState(state => {
-        const newID = state.nextID.toString();
-        if (insertMode === "and" || insertMode === "or") {
-          // insert rountangle
-          return {
-            ...state,
-            rountangles: [...state.rountangles, {
-              uid: newID,
-              topLeft: currentPointer,
-              size: MIN_ROUNTANGLE_SIZE,
-              kind: insertMode,
-            }],
-            nextID: state.nextID+1,
-            selection: [{uid: newID, parts: ["bottom", "right"]}],
-          };
-        }
-        else if (insertMode === "pseudo") {
-          return {
-            ...state,
-            diamonds: [...state.diamonds, {
-              uid: newID,
-              topLeft: currentPointer,
-              size: MIN_ROUNTANGLE_SIZE,
-            }],
-            nextID: state.nextID+1,
-            selection: [{uid: newID, parts: ["bottom", "right"]}],
-          };
-        }
-        else if (insertMode === "shallow" || insertMode === "deep") {
-          return {
-            ...state,
-            history: [...state.history, {
-              uid: newID,
-              kind: insertMode,
-              topLeft: currentPointer,
-            }],
-            nextID: state.nextID+1,
-            selection: [{uid: newID, parts: ["history"]}],
-          }
-        }
-        else if (insertMode === "transition") {
-          return {
-            ...state,
-            arrows: [...state.arrows, {
-              uid: newID,
-              start: currentPointer,
-              end: currentPointer,
-            }],
-            nextID: state.nextID+1,
-            selection: [{uid: newID, parts: ["end"]}],
-          }
-        }
-        else if (insertMode === "text") {
-          return {
-            ...state,
-            texts: [...state.texts, {
-              uid: newID,
-              text: "// Double-click to edit",
-              topLeft: currentPointer,
-            }],
-            nextID: state.nextID+1,
-            selection: [{uid: newID, parts: ["text"]}],
-          }
-        }
-        throw new Error("unreachable, mode=" + insertMode); // shut up typescript
-      });
-      setDragging(true);
-      return;
-    }
+  const {onCopy, onPaste, onCut, deleteSelection} = useCopyPaste(makeCheckPoint, state, setState, selection);
 
-    if (e.button === 0) {
-      // left mouse button on a shape will drag that shape (and everything else that's selected). if the shape under the pointer was not in the selection then the selection is reset to contain only that shape.
-      const uid = e.target?.dataset.uid;
-      const parts: string[] = e.target?.dataset.parts?.split(' ').filter((p:string) => p!=="") || [];
-      if (uid && parts.length > 0) {
-        makeCheckPoint();
+  const {onMouseDown, selectionRect} = useMouse(makeCheckPoint, insertMode, zoom, refSVG, state, setState, deleteSelection);
 
-        // if the mouse button is pressed outside of the current selection, we reset the selection to whatever shape the mouse is on
-        let allPartsInSelection = true;
-        for (const part of parts) {
-          if (!(selection.find(s => s.uid === uid)?.parts || [] as string[]).includes(part)) {
-            allPartsInSelection = false;
-            break;
-          }
-        }
-        if (!allPartsInSelection) {
-          if (e.target.classList.contains("helper")) {
-            setSelection(() => [{uid, parts}] as Selection);
-          }
-          else {
-            setDragging(false);
-            setSelectingState({
-              topLeft: currentPointer,
-              size: {x: 0, y: 0},
-            });
-            setSelection(() => []);
-            return;
-          }
-        }
-
-        // start dragging
-        setDragging(true);
-        return;
-      }
-    }
-
-    // otherwise, just start making a selection
-    setDragging(false);
-    setSelectingState({
-      topLeft: currentPointer,
-      size: {x: 0, y: 0},
-    });
-    setSelection(() => []);
-  }, [getCurrentPointer, makeCheckPoint, insertMode, selection]);
-
-  const onMouseMove = useCallback((e: {pageX: number, pageY: number, movementX: number, movementY: number}) => {
-    const currentPointer = getCurrentPointer(e);
-    if (dragging) {
-      // const pointerDelta = subtractV2D(currentPointer, dragging.lastMousePos);
-      const pointerDelta = {x: e.movementX/zoom, y: e.movementY/zoom};
-      setState(state => ({
-        ...state,
-        rountangles: state.rountangles.map(r => {
-          const parts = state.selection.find(selected => selected.uid === r.uid)?.parts || [];
-          if (parts.length === 0) {
-            return r;
-          }
-          return {
-            ...r,
-            ...transformRect(r, parts, pointerDelta),
-          };
-        })
-        .toSorted((a,b) => area(b) - area(a)), // sort: smaller rountangles are drawn on top
-        diamonds: state.diamonds.map(d => {
-          const parts = state.selection.find(selected => selected.uid === d.uid)?.parts || [];
-          if (parts.length === 0) {
-            return d;
-          }
-          return {
-            ...d,
-            ...transformRect(d, parts, pointerDelta),
-          }
-        }),
-        history: state.history.map(h => {
-          const parts = state.selection.find(selected => selected.uid === h.uid)?.parts || [];
-          if (parts.length === 0) {
-            return h;
-          }
-          return {
-            ...h,
-            topLeft: addV2D(h.topLeft, pointerDelta),
-          }
-        }),
-        arrows: state.arrows.map(a => {
-          const parts = state.selection.find(selected => selected.uid === a.uid)?.parts || [];
-          if (parts.length === 0) {
-            return a;
-          }
-          return {
-            ...a,
-            ...transformLine(a, parts, pointerDelta),
-          }
-        }),
-        texts: state.texts.map(t => {
-          const parts = state.selection.find(selected => selected.uid === t.uid)?.parts || [];
-          if (parts.length === 0) {
-            return t;
-          }
-          return {
-            ...t,
-            topLeft: addV2D(t.topLeft, pointerDelta),
-          }
-        }),
-      }));
-      setDragging(true);
-    }
-    else if (selectingState) {
-      setSelectingState(ss => {
-        const selectionSize = subtractV2D(currentPointer, ss!.topLeft);
-        return {
-          ...ss!,
-          size: selectionSize,
-        };
-      });
-    }
-  }, [getCurrentPointer, selectingState, dragging]);
-
-  const onMouseUp = useCallback((e: {target: any, pageX: number, pageY: number}) => {
-    if (dragging) {
-      setDragging(false);
-      // do not persist sizes smaller than 40x40
-      setState(state => {
-        return {
-          ...state,
-          rountangles: state.rountangles.map(r => ({
-            ...r,
-            size: rountangleMinSize(r.size),
-          })),
-          diamonds: state.diamonds.map(d => ({
-            ...d,
-            size: rountangleMinSize(d.size),
-          }))
-        };
-      });
-    }
-    if (selectingState) {
-      if (selectingState.size.x === 0 && selectingState.size.y === 0) {
-        const uid = e.target?.dataset.uid;
-        if (uid) {
-          const parts = e.target?.dataset.parts.split(' ').filter((p: string) => p!=="");
-          if (uid) {
-            setSelection(() => [{
-              uid,
-              parts,
-            }]);
-          }
-        }
-      }
-      else {
-        // we were making a selection
-        const normalizedSS = normalizeRect(selectingState);
-        const shapes = Array.from(refSVG.current?.querySelectorAll("rect, line, circle, text") || []) as SVGGraphicsElement[];
-        const shapesInSelection = shapes.filter(el => {
-          const bbox = getBBoxInSvgCoords(el, refSVG.current!);
-          const scaledBBox = {
-            topLeft: scaleV2D(bbox.topLeft, 1/zoom),
-            size: scaleV2D(bbox.size, 1/zoom),
-          }
-          return isEntirelyWithin(scaledBBox, normalizedSS);
-        }).filter(el => !el.classList.contains("corner"));
-        
-        const uidToParts = new Map();
-        for (const shape of shapesInSelection) {
-          const uid = shape.dataset.uid;
-          if (uid) {
-            const parts: Set<string> = uidToParts.get(uid) || new Set();
-            for (const part of shape.dataset.parts?.split(' ') || []) {
-              parts.add(part);
-            }
-            uidToParts.set(uid, parts);
-          }
-        }
-        setSelection(() => [...uidToParts.entries()].map(([uid,parts]) => ({
-          uid,
-          parts: [...parts],
-        })));
-      }
-    }
-    setSelectingState(null); // no longer making a selection
-  }, [dragging, selectingState, refSVG.current]);
-
-  const deleteSelection = useCallback(() => {
-    setState(state => ({
-      ...state,
-      rountangles: state.rountangles.filter(r => !state.selection.some(rs => rs.uid === r.uid)),
-      diamonds: state.diamonds.filter(d => !state.selection.some(ds => ds.uid === d.uid)),
-      history: state.history.filter(h => !state.selection.some(hs => hs.uid === h.uid)),
-      arrows: state.arrows.filter(a => !state.selection.some(as => as.uid === a.uid)),
-      texts: state.texts.filter(t => !state.selection.some(ts => ts.uid === t.uid)),
-      selection: [],
-    }));
-  }, [setState]);
-
-  const onKeyDown = useCallback((e: KeyboardEvent) => {
-    // don't capture keyboard events when focused on an input element:
-    if (["INPUT", "TEXTAREA", "SELECT"].includes(e.target?.tagName)) return;
-
-    if (e.key === "Delete") {
-      // delete selection
-      makeCheckPoint();
-      deleteSelection();
-    }
-    if (e.key === "o") {
-      // selected states become OR-states
-      setState(state => ({
-        ...state,
-        rountangles: state.rountangles.map(r => state.selection.some(rs => rs.uid === r.uid) ? ({...r, kind: "or"}) : r),
-      }));
-    }
-    if (e.key === "a") {
-      // selected states become AND-states
-      setState(state => ({
-        ...state,
-        rountangles: state.rountangles.map(r => state.selection.some(rs => rs.uid === r.uid) ? ({...r, kind: "and"}) : r),
-      }));
-    }
-    // if (e.key === "p") {
-    //   // selected states become pseudo-states
-    //   setSelection(selection => {
-    //     setState(state => ({
-    //       ...state,
-    //       rountangles: state.rountangles.map(r => selection.some(rs => rs.uid === r.uid) ? ({...r, kind: "pseudo"}) : r),
-    //     }));
-    //     return selection;
-    //   });
-    // }
-    if (e.ctrlKey) {
-      if (e.key === "a") {
-        e.preventDefault();
-        setDragging(false);
-        setState(state => ({
-          ...state,
-          // @ts-ignore
-          selection: [
-          ...state.rountangles.map(r => ({uid: r.uid, parts: ["left", "top", "right", "bottom"]})),
-          ...state.diamonds.map(d => ({uid: d.uid, parts: ["left", "top", "right", "bottom"]})),
-          ...state.arrows.map(a => ({uid: a.uid, parts: ["start", "end"]})),
-          ...state.texts.map(t => ({uid: t.uid, parts: ["text"]})),
-        ]
-        }))
-      }
-    }
-  }, [makeCheckPoint, deleteSelection, setState, setDragging]);
-
-  useEffect(() => {
-    // mousemove and mouseup are global event handlers so they keep working when pointer is outside of browser window
-    window.addEventListener("mouseup", onMouseUp);
-    window.addEventListener("mousemove", onMouseMove);
-    window.addEventListener("keydown", onKeyDown);
-    return () => {
-      window.removeEventListener("keydown", onKeyDown);
-      window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("mouseup", onMouseUp);
-    };
-  }, [selectingState, dragging]);
 
   // for visual feedback, when selecting/moving one thing, we also highlight (in green) all the things that belong to the thing we selected.
   const sidesToHighlight: {[key: string]: RectSide[]} = {};
@@ -487,101 +141,6 @@ export const VisualEditor = memo(function VisualEditor({state, setState, trace, 
     }
   }
 
-  const onPaste = useCallback((e: ClipboardEvent) => {
-    const data = e.clipboardData?.getData("text/plain");
-    if (data) {
-      let parsed;
-      try {
-        parsed = JSON.parse(data);
-      }
-      catch (e) {
-        return;
-      }
-      // const offset = {x: 40, y: 40};
-      const offset = {x: 0, y: 0};
-      setState(state => {
-        let nextID = state.nextID;
-        const copiedRountangles: Rountangle[] = parsed.rountangles.map((r: Rountangle) => ({
-          ...r,
-          uid: (nextID++).toString(),
-          topLeft: addV2D(r.topLeft, offset),
-        } as Rountangle));
-        const copiedDiamonds: Diamond[] = parsed.diamonds.map((r: Diamond) => ({
-          ...r,
-          uid: (nextID++).toString(),
-          topLeft: addV2D(r.topLeft, offset),
-        } as Diamond));
-        const copiedArrows: Arrow[] = parsed.arrows.map((a: Arrow) => ({
-          ...a,
-          uid: (nextID++).toString(),
-          start: addV2D(a.start, offset),
-          end: addV2D(a.end, offset),
-        } as Arrow));
-        const copiedTexts: Text[] = parsed.texts.map((t: Text) => ({
-          ...t,
-          uid: (nextID++).toString(),
-          topLeft: addV2D(t.topLeft, offset),
-        } as Text));
-        const copiedHistories: History[] = parsed.history.map((h: History) => ({
-          ...h,
-          uid: (nextID++).toString(),
-          topLeft: addV2D(h.topLeft, offset),
-        }))
-        // @ts-ignore
-        const newSelection: Selection = [
-          ...copiedRountangles.map(r => ({uid: r.uid, parts: ["left", "top", "right", "bottom"]})),
-          ...copiedDiamonds.map(d => ({uid: d.uid, parts: ["left", "top", "right", "bottom"]})),
-          ...copiedArrows.map(a => ({uid: a.uid, parts: ["start", "end"]})),
-          ...copiedTexts.map(t => ({uid: t.uid, parts: ["text"]})),
-          ...copiedHistories.map(h => ({uid: h.uid, parts: ["history"]})),
-        ];
-        return {
-          ...state,
-          rountangles: [...state.rountangles, ...copiedRountangles],
-          diamonds: [...state.diamonds, ...copiedDiamonds],
-          arrows: [...state.arrows, ...copiedArrows],
-          texts: [...state.texts, ...copiedTexts],
-          history: [...state.history, ...copiedHistories],
-          nextID: nextID,
-          selection: newSelection,
-        };
-      });
-      // copyInternal(newSelection, e); // doesn't work
-      e.preventDefault();
-    }
-  }, [setState]);
-
-  const copyInternal = useCallback((state: VisualEditorState, selection: Selection, e: ClipboardEvent) => {
-    const uidsToCopy = new Set(selection.map(shape => shape.uid));
-    const rountanglesToCopy = state.rountangles.filter(r => uidsToCopy.has(r.uid));
-    const diamondsToCopy = state.diamonds.filter(d => uidsToCopy.has(d.uid));
-    const historiesToCopy = state.history.filter(h => uidsToCopy.has(h.uid));
-    const arrowsToCopy = state.arrows.filter(a => uidsToCopy.has(a.uid));
-    const textsToCopy = state.texts.filter(t => uidsToCopy.has(t.uid));
-    e.clipboardData?.setData("text/plain", JSON.stringify({
-      rountangles: rountanglesToCopy,
-      diamonds: diamondsToCopy,
-      history: historiesToCopy,
-      arrows: arrowsToCopy,
-      texts: textsToCopy,
-    }));
-  }, []);
-
-  const onCopy = useCallback((e: ClipboardEvent) => {
-    if (selection.length > 0) {
-      e.preventDefault();
-      copyInternal(state, selection, e);
-    }
-  }, [state, selection]);
-
-  const onCut = useCallback((e: ClipboardEvent) => {
-    if (selection.length > 0) {
-      copyInternal(state, selection, e);
-      deleteSelection();
-      e.preventDefault();
-    }
-  }, [state, selection]);
-
   const onEditText = useCallback((text: Text, newText: string) => {
     if (newText === "") {
       // delete text node
@@ -616,7 +175,7 @@ export const VisualEditor = memo(function VisualEditor({state, setState, trace, 
   const size = 4000*zoom;
 
   return <svg width={size} height={size}
-      className={"svgCanvas"+(active.has("root")?" active":"")+(dragging ? " dragging" : "")}
+      className={"svgCanvas"+(active.has("root")?" active":"")/*+(dragging ? " dragging" : "")*/}
       onMouseDown={onMouseDown}
       onContextMenu={e => e.preventDefault()}
       ref={refSVG}
@@ -689,19 +248,9 @@ export const VisualEditor = memo(function VisualEditor({state, setState, trace, 
 
     <Texts texts={state.texts} {...{selection, textsToHighlight, errors, onEditText, setModal}}/>
 
-    {selectingState && <Selecting {...selectingState} />}
+    {selectionRect}
   </svg>;
 });
-
-export function rountangleMinSize(size: Vec2D): Vec2D {
-  if (size.x >= 40 && size.y >= 40) {
-    return size;
-  }
-  return {
-    x: Math.max(40, size.x),
-    y: Math.max(40, size.y),
-  };
-}
 
 const Rountangles = memo(function Rountangles({rountangles, selection, sidesToHighlight, rountanglesToHighlight, errors, highlightActive}: {rountangles: Rountangle[], selection: Selection, sidesToHighlight: {[key: string]: RectSide[]}, rountanglesToHighlight: {[key: string]: boolean}, errors: TraceableError[], highlightActive: Mode}) {
   return <>{rountangles.map(rountangle => {
@@ -765,13 +314,3 @@ const Texts = memo(function Texts({texts, selection, textsToHighlight, errors, o
     && p.setModal === n.setModal;
 });
 
-export function Selecting(props: SelectingState) {
-  const normalizedRect = normalizeRect(props!);
-  return <rect
-    className="selecting"
-    x={normalizedRect.topLeft.x}
-    y={normalizedRect.topLeft.y}
-    width={normalizedRect.size.x}
-    height={normalizedRect.size.y}
-  />;
-}

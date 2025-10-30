@@ -8,7 +8,8 @@ export const dummyExecution: TimedReactive<null> = {
   extTransition: () => [[], null],
 };
 
-export const DummyPlant: Plant<null> = {
+export const dummyPlant: Plant<null> = {
+  uiEvents: [],
   inputEvents: [],
   outputEvents: [],
   execution: dummyExecution,

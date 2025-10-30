@@ -1,5 +1,5 @@
 import { Rect2D, Vec2D, Line2D, euclideanDistance, intersectLines, isWithin, lineBBox, subtractV2D } from "../util/geometry";
-import { ARROW_SNAP_THRESHOLD, HISTORY_RADIUS, TEXT_SNAP_THRESHOLD } from "../App/parameters";
+import { ARROW_SNAP_THRESHOLD, HISTORY_RADIUS, ROUNTANGLE_RADIUS, TEXT_SNAP_THRESHOLD } from "../App/parameters";
 import {  VisualEditorState } from "../App/VisualEditor/VisualEditor";
 import { sides } from "@/util/geometry";
 
@@ -122,4 +122,15 @@ export function findNearestHistory(point: Vec2D, candidates: History[]): History
     }
   }
   return best;
+}
+
+export function rountangleMinSize(size: Vec2D): Vec2D {
+  const minSize = ROUNTANGLE_RADIUS * 2;
+  if (size.x >= minSize && size.y >= minSize) {
+    return size;
+  }
+  return {
+    x: Math.max(minSize, size.x),
+    y: Math.max(minSize, size.y),
+  };
 }

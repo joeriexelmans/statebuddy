@@ -1,7 +1,7 @@
 import { Dispatch, memo, ReactElement, SetStateAction, useCallback, useEffect, useState } from "react";
 import { TimerElapseEvent, Timers } from "../../statecharts/runtime_types";
 import { getSimTime, setPaused, setRealtime, TimeMode } from "../../statecharts/time";
-import { InsertMode } from "../VisualEditor/VisualEditor";
+import { InsertMode } from "./InsertModes";
 import { About } from "../Modals/About";
 import { EditHistory, TraceState } from "../App";
 import { KeyInfoHidden, KeyInfoVisible } from "./KeyInfo";
@@ -20,6 +20,7 @@ import StopIcon from '@mui/icons-material/Stop';
 import { InsertModes } from "./InsertModes";
 import { usePersistentState } from "@/App/persistent_state";
 import { RotateButtons } from "./RotateButtons";
+import { SpeedControl } from "./SpeedControl";
 
 export type TopPanelProps = {
   trace: TraceState | null,
@@ -79,24 +80,6 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
     updateDisplayedTime();
   }, [setTime, timescale, updateDisplayedTime]);
 
-  const onTimeScaleChange = useCallback((newValue: string, wallclktime: number) => {
-    const asFloat = parseFloat(newValue);
-    if (Number.isNaN(asFloat)) {
-      return;
-    }
-    const maxed = Math.min(asFloat, 64);
-    const mined = Math.max(maxed, 1/64);
-    setTimescale(mined);
-    setTime(time => {
-      if (time.kind === "paused") {
-        return time;
-      }
-      else {
-        return setRealtime(time, mined, wallclktime);
-      }
-    });
-  }, [setTime, setTimescale]);
-
   // timestamp of next timed transition, in simulated time
   const timers: Timers = config?.kind === "bigstep" && config.state.sc.environment.get("_timers") || [];
   const nextTimedTransition: [number, TimerElapseEvent] | undefined = timers[0];
@@ -115,16 +98,10 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
     }
   }, [nextTimedTransition, setTime]);
 
-  const onSlower = useCallback(() => {
-    onTimeScaleChange((timescale/2).toString(), Math.round(performance.now()));
-  }, [onTimeScaleChange, timescale]);
-  const onFaster = useCallback(() => {
-    onTimeScaleChange((timescale*2).toString(), Math.round(performance.now()));
-  }, [onTimeScaleChange, timescale]);
-
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       // don't capture keyboard events when focused on an input element:
+      // @ts-ignore
       if (["INPUT", "TEXTAREA", "SELECT"].includes(e.target?.tagName)) return;
 
       if (!e.ctrlKey) {
@@ -143,21 +120,13 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
           onClear();
         }
         if (e.key === "Tab") {
-          if (trace === null) {
+          if (config === null) {
             onInit();
           }
           else {
             onSkip();
           }
           e.preventDefault();
-        }
-        if (e.key === "s") {
-          e.preventDefault();
-          onSlower();
-        }
-        if (e.key === "f") {
-          e.preventDefault();
-          onFaster();
         }
         if (e.key === "`") {
           e.preventDefault();
@@ -168,23 +137,12 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
           onBack();
         }
       }
-      else {
-        // ctrl is down
-        if (e.key === "z") {
-          e.preventDefault();
-          onUndo();
-        }
-        if (e.key === "Z") {
-          e.preventDefault();
-          onRedo();
-        }
-      }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => {
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [trace, config, time, onInit, timescale, onChangePaused, setShowKeys, onUndo, onRedo, onSlower, onFaster, onSkip, onBack, onClear]);
+  }, [config, time, onInit, onChangePaused, setShowKeys, onSkip, onBack, onClear]);
 
   return <div className="toolbar">
     {/* shortcuts / about */}
@@ -241,14 +199,7 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
 
       {/* speed */}
       <div className="toolbarGroup">
-        <label htmlFor="number-timescale">speed</label>&nbsp;
-        <KeyInfo keyInfo={<kbd>S</kbd>}>
-          <button title="slower" onClick={onSlower}>÷2</button>
-        </KeyInfo>
-        <input title="controls how fast the simulation should run in real time mode - larger than 1 means: faster than wall-clock time" id="number-timescale" value={timescale.toFixed(3)} style={{width:40}} readOnly onChange={e => onTimeScaleChange(e.target.value, Math.round(performance.now()))}/>
-        <KeyInfo keyInfo={<kbd>F</kbd>}>
-          <button title="faster" onClick={onFaster}>×2</button>
-        </KeyInfo>
+        <SpeedControl setTime={setTime} timescale={timescale} setTimescale={setTimescale} showKeys={showKeys} />
         &emsp;
       </div>
 

@@ -1,6 +1,6 @@
 import { AbstractState, computeArena, computePath, ConcreteState, getDescendants, HistoryState, isOverlapping, OrState, StableState, Statechart, stateDescription, Transition, transitionDescription, TransitionSrcTgt } from "./abstract_syntax";
 import { evalExpr } from "./actionlang_interpreter";
-import { Environment, FlatEnvironment, ScopedEnvironment } from "./environment";
+import { Environment, FlatEnvironment } from "./environment";
 import { Action, EventTrigger, TransitionLabel } from "./label_ast";
 import { BigStep, initialRaised, Mode, RaisedEvents, RT_Event, RT_History, RT_Statechart, TimerElapseEvent, Timers } from "./runtime_types";
 

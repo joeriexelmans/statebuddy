@@ -1,18 +1,21 @@
 import { ReactElement } from "react";
 import { Statechart } from "@/statecharts/abstract_syntax";
 import { EventTrigger } from "@/statecharts/label_ast";
-import { RaisedEvent } from "@/statecharts/runtime_types";
-import { Conns, TimedReactive } from "@/statecharts/timed_reactive";
+import { BigStep, RaisedEvent, RT_Statechart } from "@/statecharts/runtime_types";
+import { statechartExecution, TimedReactive } from "@/statecharts/timed_reactive";
 
 export type PlantRenderProps<StateType> = {
   state: StateType,
   speed: number,
-  raiseInput: (e: RaisedEvent) => void,
+  raiseUIEvent: (e: RaisedEvent) => void,
 };
 
 export type Plant<StateType> = {
+  uiEvents: EventTrigger[];
+
   inputEvents: EventTrigger[];
   outputEvents: EventTrigger[];
+
   execution: TimedReactive<StateType>;
   render: (props: PlantRenderProps<StateType>) => ReactElement;
 }
@@ -47,4 +50,20 @@ export function exposePlantInputs(plant: Plant<any>, plantName: string, tfm = (s
     inputs[tfm(i.event)] = {kind: "model", model: plantName, eventName: i.event};
   }
   return inputs
+}
+
+export type StatechartPlantSpec = {
+  uiEvents: EventTrigger[],
+  ast: Statechart,
+  render: (props: PlantRenderProps<RT_Statechart>) => ReactElement,
+}
+
+export function makeStatechartPlant({uiEvents, ast, render}: StatechartPlantSpec): Plant<BigStep> {
+  return {
+    uiEvents,
+    inputEvents: ast.inputEvents,
+    outputEvents: [...ast.outputEvents].map(e => ({kind: "event" as const, event: e})),
+    execution: statechartExecution(ast),
+    render,
+  }
 }

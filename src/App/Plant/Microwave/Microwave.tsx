@@ -8,14 +8,24 @@ import fontDigital from "../DigitalWatch/digital-font.ttf";
 
 import sndBell from "./bell.wav";
 import sndRunning from "./running.wav";
-import { BigStep, RaisedEvent, RT_Statechart } from "@/statecharts/runtime_types";
+import { RT_Statechart } from "@/statecharts/runtime_types";
 import { useEffect } from "react";
 
 import "./Microwave.css";
 import { useAudioContext } from "../../useAudioContext";
-import { Plant, PlantRenderProps } from "../Plant";
-import { statechartExecution } from "@/statecharts/timed_reactive";
-import { microwaveAbstractSyntax } from "./model";
+import { makeStatechartPlant, PlantRenderProps, StatechartPlantSpec } from "../Plant";
+import { detectConnections } from "@/statecharts/detect_connections";
+import { parseStatechart } from "@/statecharts/parser";
+
+import microwaveConcreteSyntax from "./model.json";
+import { ConcreteSyntax } from "@/App/VisualEditor/VisualEditor";
+
+export const [microwaveAbstractSyntax, microwaveErrors] = parseStatechart(microwaveConcreteSyntax as ConcreteSyntax, detectConnections(microwaveConcreteSyntax as ConcreteSyntax));
+
+if (microwaveErrors.length > 0) {
+  console.log({microwaveErrors});
+  throw new Error("there were errors parsing microwave plant model. see console.")
+}
 
 
 const imgs = {
@@ -37,7 +47,7 @@ const DOOR_Y0 = 68;
 const DOOR_WIDTH = 353;
 const DOOR_HEIGHT = 217;
 
-export function Microwave({state, speed, raiseInput}: PlantRenderProps<RT_Statechart>) {
+export function Microwave({state, speed, raiseUIEvent}: PlantRenderProps<RT_Statechart>) {
   const [playSound, preloadAudio] = useAudioContext(speed);
 
   // preload(imgSmallClosedOff, {as: "image"});
@@ -48,9 +58,9 @@ export function Microwave({state, speed, raiseInput}: PlantRenderProps<RT_Statec
   preloadAudio(sndRunning);
   preloadAudio(sndBell);
 
-  const bellRinging = state.mode.has("45");
-  const magnetronRunning = state.mode.has("28");
-  const doorOpen = state.mode.has("13");
+  const bellRinging = state.mode.has("12");
+  const magnetronRunning = state.mode.has("8");
+  const doorOpen = state.mode.has("7");
   const timeDisplay = state.environment.get("timeDisplay");
 
   // a bit hacky: when the bell-state changes to true, we play the bell sound...
@@ -80,53 +90,40 @@ export function Microwave({state, speed, raiseInput}: PlantRenderProps<RT_Statec
       <image xlinkHref={imgs[doorOpen][magnetronRunning]} width={520} height={348}/>
 
       <rect className="microwaveButtonHelper" x={START_X0} y={START_Y0} width={BUTTON_WIDTH} height={BUTTON_HEIGHT} 
-        onMouseDown={() => raiseInput({name: "startPressed"})}
-        onMouseUp={() => raiseInput({name: "startReleased"})}
+        onMouseDown={() => raiseUIEvent({name: "startPressed"})}
+        onMouseUp={() => raiseUIEvent({name: "startReleased"})}
       />
       <rect className="microwaveButtonHelper" x={STOP_X0} y={STOP_Y0} width={BUTTON_WIDTH} height={BUTTON_HEIGHT} 
-        onMouseDown={() => raiseInput({name: "stopPressed"})}
-        onMouseUp={() => raiseInput({name: "stopReleased"})}
+        onMouseDown={() => raiseUIEvent({name: "stopPressed"})}
+        onMouseUp={() => raiseUIEvent({name: "stopReleased"})}
       />
       <rect className="microwaveButtonHelper" x={INCTIME_X0} y={INCTIME_Y0} width={BUTTON_WIDTH} height={BUTTON_HEIGHT} 
-        onMouseDown={() => raiseInput({name: "incTimePressed"})}
-        onMouseUp={() => raiseInput({name: "incTimeReleased"})}
+        onMouseDown={() => raiseUIEvent({name: "incTimePressed"})}
+        onMouseUp={() => raiseUIEvent({name: "incTimeReleased"})}
       />
       <rect className="microwaveDoorHelper"
         x={DOOR_X0} y={DOOR_Y0} width={DOOR_WIDTH} height={DOOR_HEIGHT}
-        onMouseDown={() => raiseInput({name: "doorMouseDown"})}
-        onMouseUp={() => raiseInput({name: "doorMouseUp"})}
+        onMouseDown={() => raiseUIEvent({name: "doorMouseDown"})}
+        onMouseUp={() => raiseUIEvent({name: "doorMouseUp"})}
       />
       <text x={472} y={106} textAnchor="end" fontFamily="digital-font" fontSize={24} fill="lightgreen">{timeDisplay}</text>
     </svg>
   </>;
 }
 
-export const MicrowavePlant: Plant<BigStep> = {
-  inputEvents: [
-    // events coming from statechart    
-    {kind: "event", event: "setTimeDisplay", paramName: "t"},
-    {kind: "event", event: "setMagnetron", paramName: "state"},
-    {kind: "event", event: "ringBell"},
-
-    // events coming from UI:
+const microwavePlantSpec: StatechartPlantSpec = {
+  ast: microwaveAbstractSyntax,
+  render: Microwave,
+  uiEvents: [
     {kind: "event", event: "doorMouseDown"},
     {kind: "event", event: "doorMouseUp"},
     {kind: "event", event: "startPressed"},
-    {kind: "event", event: "stopPressed"},
-    {kind: "event", event: "incTimePressed"},
     {kind: "event", event: "startReleased"},
+    {kind: "event", event: "stopPressed"},
     {kind: "event", event: "stopReleased"},
+    {kind: "event", event: "incTimePressed"},
     {kind: "event", event: "incTimeReleased"},
   ],
-  outputEvents: [
-    {kind: "event", event: "door", paramName: "state"},
-    {kind: "event", event: "startPressed"},
-    {kind: "event", event: "stopPressed"},
-    {kind: "event", event: "incTimePressed"},
-    {kind: "event", event: "startReleased"},
-    {kind: "event", event: "stopReleased"},
-    {kind: "event", event: "incTimeReleased"},
-  ],
-  execution: statechartExecution(microwaveAbstractSyntax),
-  render: Microwave,
 }
+
+export const microwavePlant = makeStatechartPlant(microwavePlantSpec);

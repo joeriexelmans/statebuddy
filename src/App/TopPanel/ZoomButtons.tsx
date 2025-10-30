@@ -24,10 +24,12 @@ export const ZoomButtons = memo(function ZoomButtons({showKeys, zoom, setZoom}: 
       if (e.ctrlKey) {
           if (e.key === "+") {
           e.preventDefault();
+          e.stopPropagation();
           onZoomIn();
         }
         if (e.key === "-") {
           e.preventDefault();
+          e.stopPropagation();
           onZoomOut();
         }
       }

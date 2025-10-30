@@ -1,10 +1,30 @@
-import { memo } from "react";
+import { memo, useCallback, useEffect } from "react";
 import { KeyInfoHidden, KeyInfoVisible } from "./KeyInfo";
 
 import UndoIcon from '@mui/icons-material/Undo';
 import RedoIcon from '@mui/icons-material/Redo';
 
 export const UndoRedoButtons = memo(function UndoRedoButtons({showKeys, onUndo, onRedo, historyLength, futureLength}: {showKeys: boolean, onUndo: () => void, onRedo: () => void, historyLength: number, futureLength: number}) {
+
+  const onKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.ctrlKey) {
+      // ctrl is down
+      if (e.key === "z") {
+        e.preventDefault();
+        onUndo();
+      }
+      if (e.key === "Z") {
+        e.preventDefault();
+        onRedo();
+      }
+    }
+  }, [onUndo, onRedo]);
+
+  useEffect(() => {
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onKeyDown]);
+
   const KeyInfo = showKeys ? KeyInfoVisible : KeyInfoHidden;
   return <>
     <KeyInfo keyInfo={<><kbd>Ctrl</kbd>+<kbd>Z</kbd></>}>
