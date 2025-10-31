@@ -1,8 +1,8 @@
 import { preload } from "react-dom";
-import imgSmallClosedOff from "./small_closed_off.png";
-import imgSmallClosedOn from "./small_closed_on.png";
-import imgSmallOpenedOff from "./small_opened_off.png";
-import imgSmallOpenedOn from "./small_opened_on.png";
+import imgSmallClosedOff from "./small_closed_off.webp";
+import imgSmallClosedOn from "./small_closed_on.webp";
+import imgSmallOpenedOff from "./small_opened_off.webp";
+import imgSmallOpenedOn from "./small_opened_on.webp";
 
 import fontDigital from "../DigitalWatch/digital-font.ttf";
 
