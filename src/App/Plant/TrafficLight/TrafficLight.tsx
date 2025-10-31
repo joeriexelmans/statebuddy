@@ -4,6 +4,7 @@ import imgRedOverlay from "./red-overlay.webp";
 import imgYellowOverlay from "./yellow-overlay.webp";
 import imgGreenOverlay from "./green-overlay.webp";
 import sndAtmosphere from "./atmosphere.opus";
+import sndBuzz from "./buzz.wav";
 import { preload } from "react-dom";
 
 import trafficLightConcreteSyntax from "./model.json";
@@ -45,6 +46,15 @@ export const TrafficLight = memo(function TrafficLight({state, speed, raiseUIEve
     return () => stopPlaying();
   }, []);
 
+  useEffect(() => {
+    if (redOn || yellowOn || greenOn) {
+      const stopPlaying = playURL(sndBuzz, true);
+      return () => {
+        stopPlaying();
+      };
+    }
+  }, [redOn || yellowOn || greenOn])
+
   return <>
     <style>{`
       @font-face{
@@ -52,7 +62,7 @@ export const TrafficLight = memo(function TrafficLight({state, speed, raiseUIEve
         src: url(${fontDigital});
       }
       image {
-        transition: opacity 250ms ease;
+        transition: opacity 300ms ease;
       }
       .hidden {
         opacity: 0;
