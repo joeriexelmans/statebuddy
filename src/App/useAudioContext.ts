@@ -1,5 +1,5 @@
 import { memoize } from "@/util/util";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 
 // I was trying to get the 'microwave running' sound to play gapless on Chrome, and the Web Audio API turned out to be the only thing that worked properly. It has some nice bonus features as well, such as setting the playback rate, and audio filters.
@@ -7,31 +7,33 @@ import { useCallback, useEffect, useState } from "react";
 // The result is a simple Web Audio API wrapper for React:
 
 export function useAudioContext(speed: number) {
-  const [{ctx,hipass}] = useState(() => {
-    const ctx = new AudioContext();
-    const hipass = ctx.createBiquadFilter();
-    hipass.type = 'highpass';
-    hipass.frequency.value = 20; // Hz (let's not blow up anyone's speakers)
-    hipass.connect(ctx.destination);
-    return {
-      ctx,
-      hipass,
+  const ref = useRef<{ctx: AudioContext, hipass: BiquadFilterNode}>(null);
+
+  useEffect(() => {
+    if (!ref.current) {
+      const audioCtx = new AudioContext();
+      const hipass = audioCtx.createBiquadFilter();
+      hipass.type = 'highpass';
+      hipass.frequency.value = 20; // Hz (let's not blow up anyone's speakers)
+      hipass.connect(audioCtx.destination);
+      ref.current = { ctx: audioCtx, hipass };
     }
-  });
+  }, []);
+
   const [sounds, setSounds] = useState<AudioBufferSourceNode[]>([]);
 
   const url2AudioBuf: (url:string) => Promise<AudioBuffer> = useCallback(memoize((url: string) => {
     return fetch(url)
       .then(res => res.arrayBuffer())
-      .then(buf => ctx.decodeAudioData(buf));
-  }), [ctx]);
+      .then(buf => ref.current!.ctx.decodeAudioData(buf));
+  }), [ref.current]);
 
   function play(url: string, loop: boolean) {
     const srcPromise = url2AudioBuf(url)
       .then(audioBuf => {
-        const src = ctx.createBufferSource();
+        const src = ref.current!.ctx.createBufferSource();
         src.buffer = audioBuf;
-        src.connect(hipass);
+        src.connect(ref.current!.hipass);
         src.playbackRate.value = speed;
         src.loop = loop;
         src.start();
@@ -50,10 +52,10 @@ export function useAudioContext(speed: number) {
       sounds.forEach(src => {
         src.playbackRate.value = speed;
       });
-      ctx.resume();
+      ref.current!.ctx.resume();
     }
     else {
-      ctx.suspend();
+      ref.current!.ctx.suspend();
     }
   }, [speed]);
 

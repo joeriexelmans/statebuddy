@@ -53,6 +53,7 @@ export const TrafficLight = memo(function TrafficLight({state, speed, raiseUIEve
         stopPlaying();
       };
     }
+    else return () => {};
   }, [redOn || yellowOn || greenOn])
 
   return <>
