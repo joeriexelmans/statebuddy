@@ -66,3 +66,21 @@ export function objectsEqual<T>(a: {[key: string]: T}, b: {[key: string]: T}, cm
 
   return true;
 }
+
+export function mapsEqual<K,V>(a: Map<K,V>, b: Map<K,V>, cmp: (a: V, b: V) => boolean = (a,b)=>a===b) {
+  if (a===b)
+    return true;
+
+  if (a.size !== b.size)
+    return false;
+
+  for (const [keyA,valA] of a.entries()) {
+    const valB = b.get(keyA);
+    if (valB === undefined)
+      return false;
+    if (!cmp(valA, valB))
+      return false;
+  }
+
+  return true;
+}

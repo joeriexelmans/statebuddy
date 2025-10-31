@@ -322,6 +322,7 @@ export function useMouse(makeCheckPoint: () => void, insertMode: InsertMode, zoo
           ...state.diamonds.map(d => ({uid: d.uid, parts: ["left", "top", "right", "bottom"]})),
           ...state.arrows.map(a => ({uid: a.uid, parts: ["start", "end"]})),
           ...state.texts.map(t => ({uid: t.uid, parts: ["text"]})),
+          ...state.history.map(h => ({uid: h.uid, parts: ["history"]})),
         ]
         }))
       }

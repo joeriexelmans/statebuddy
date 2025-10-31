@@ -34,6 +34,7 @@ const plants: [string, Plant<any>][] = [
   ["dummy", dummyPlant],
   ["microwave", microwavePlant],
   ["digital watch", digitalWatchPlant],
+  ["traffic light", trafficLightPlant],
 ]
 
 export type TraceItemError = {
@@ -357,6 +358,7 @@ export function App() {
                   <option>{plantName}</option>
                 )}
               </select>
+              <br/>
               {/* Render plant */}
               {<plant.render state={plantState} speed={speed}
                 raiseUIEvent={e => onRaise("plant.ui."+e.name, e.param)}
@@ -428,6 +430,7 @@ function ShowConns({inputEvents, outputEvents}: Conns) {
 
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import { trafficLightPlant } from "./Plant/TrafficLight/TrafficLight";
 
 function autoDetectConns(ast: Statechart, plant: Plant<any>, setPlantConns: Dispatch<SetStateAction<Conns>>) {
   for (const {event: a} of plant.uiEvents) {
@@ -463,18 +466,6 @@ function ConnEditor(ast: Statechart, plant: Plant<any>, plantConns: Conns, setPl
   const plantInputs = <>{plant.inputEvents.map(e => <option key={'plant.'+e.event} value={'plant.'+e.event}>plant.{e.event}</option>)}</>
   const scInputs = <>{ast.inputEvents.map(e => <option key={'sc.'+e.event} value={'sc.'+e.event}>sc.{e.event}</option>)}</>;
   return <>
-    {/* Plant UI events can go to SC or to Plant */}
-    {plant.uiEvents.map(e => <div style={{width:'100%', textAlign:'right'}}>
-      <label htmlFor={`select-dst-plant-ui-${e.event}`} style={{width:'50%'}}>ui.{e.event}&nbsp;→&nbsp;</label>
-      <select id={`select-dst-plant-ui-${e.event}`}
-        style={{width:'50%'}}
-        value={plantConns['plant.ui.'+e.event]?.join('.')}
-        onChange={domEvent => setPlantConns(conns => ({...conns, [`plant.ui.${e.event}`]: domEvent.target.value.split('.') as [string,string]}))}>
-        <option key="none" value=""></option>
-        {scInputs}
-        {plantInputs}
-      </select>
-    </div>)}
     
     {/* SC output events can go to Plant */}
     {[...ast.outputEvents].map(e => <div style={{width:'100%', textAlign:'right'}}>
@@ -499,6 +490,19 @@ function ConnEditor(ast: Statechart, plant: Plant<any>, plantConns: Conns, setPl
         {scInputs}
       </select>
     </div>)]}
+
+    {/* Plant UI events can go to SC or to Plant */}
+    {plant.uiEvents.map(e => <div style={{width:'100%', textAlign:'right'}}>
+      <label htmlFor={`select-dst-plant-ui-${e.event}`} style={{width:'50%'}}>ui.{e.event}&nbsp;→&nbsp;</label>
+      <select id={`select-dst-plant-ui-${e.event}`}
+        style={{width:'50%'}}
+        value={plantConns['plant.ui.'+e.event]?.join('.')}
+        onChange={domEvent => setPlantConns(conns => ({...conns, [`plant.ui.${e.event}`]: domEvent.target.value.split('.') as [string,string]}))}>
+        <option key="none" value=""></option>
+        {scInputs}
+        {plantInputs}
+      </select>
+    </div>)}
   </>;
 }
 

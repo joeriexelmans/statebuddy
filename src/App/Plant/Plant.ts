@@ -1,8 +1,9 @@
-import { ReactElement } from "react";
+import { ReactElement, ReactNode } from "react";
 import { Statechart } from "@/statecharts/abstract_syntax";
 import { EventTrigger } from "@/statecharts/label_ast";
 import { BigStep, RaisedEvent, RT_Statechart } from "@/statecharts/runtime_types";
 import { statechartExecution, TimedReactive } from "@/statecharts/timed_reactive";
+import { mapsEqual, setsEqual } from "@/util/util";
 
 export type PlantRenderProps<StateType> = {
   state: StateType,
@@ -17,7 +18,7 @@ export type Plant<StateType> = {
   outputEvents: EventTrigger[];
 
   execution: TimedReactive<StateType>;
-  render: (props: PlantRenderProps<StateType>) => ReactElement;
+  render: (props: PlantRenderProps<StateType>) => ReactNode;
 }
 
 // Automatically connect Statechart and Plant inputs/outputs if their event names match.
@@ -55,7 +56,7 @@ export function exposePlantInputs(plant: Plant<any>, plantName: string, tfm = (s
 export type StatechartPlantSpec = {
   uiEvents: EventTrigger[],
   ast: Statechart,
-  render: (props: PlantRenderProps<RT_Statechart>) => ReactElement,
+  render: (props: PlantRenderProps<RT_Statechart>) => ReactNode,
 }
 
 export function makeStatechartPlant({uiEvents, ast, render}: StatechartPlantSpec): Plant<BigStep> {
@@ -66,4 +67,11 @@ export function makeStatechartPlant({uiEvents, ast, render}: StatechartPlantSpec
     execution: statechartExecution(ast),
     render,
   }
+}
+
+export function comparePlantRenderProps(oldProps: PlantRenderProps<RT_Statechart>, newProps: PlantRenderProps<RT_Statechart>) {
+  return setsEqual(oldProps.state.mode, newProps.state.mode)
+    && oldProps.state.environment === newProps.state.environment // <-- could optimize this further
+    && oldProps.speed === newProps.speed
+    && oldProps.raiseUIEvent === newProps.raiseUIEvent
 }

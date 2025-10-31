@@ -9,11 +9,11 @@ import fontDigital from "../DigitalWatch/digital-font.ttf";
 import sndBell from "./bell.wav";
 import sndRunning from "./running.wav";
 import { RT_Statechart } from "@/statecharts/runtime_types";
-import { useEffect } from "react";
+import { memo, useEffect } from "react";
 
 import "./Microwave.css";
 import { useAudioContext } from "../../useAudioContext";
-import { makeStatechartPlant, PlantRenderProps, StatechartPlantSpec } from "../Plant";
+import { comparePlantRenderProps, makeStatechartPlant, PlantRenderProps, StatechartPlantSpec } from "../Plant";
 import { detectConnections } from "@/statecharts/detect_connections";
 import { parseStatechart } from "@/statecharts/parser";
 
@@ -47,7 +47,7 @@ const DOOR_Y0 = 68;
 const DOOR_WIDTH = 353;
 const DOOR_HEIGHT = 217;
 
-export function Microwave({state, speed, raiseUIEvent}: PlantRenderProps<RT_Statechart>) {
+export const Microwave = memo(function Microwave({state, speed, raiseUIEvent}: PlantRenderProps<RT_Statechart>) {
   const [playSound, preloadAudio] = useAudioContext(speed);
 
   // preload(imgSmallClosedOff, {as: "image"});
@@ -106,10 +106,11 @@ export function Microwave({state, speed, raiseUIEvent}: PlantRenderProps<RT_Stat
         onMouseDown={() => raiseUIEvent({name: "doorMouseDown"})}
         onMouseUp={() => raiseUIEvent({name: "doorMouseUp"})}
       />
+
       <text x={472} y={106} textAnchor="end" fontFamily="digital-font" fontSize={24} fill="lightgreen">{timeDisplay}</text>
     </svg>
   </>;
-}
+}, comparePlantRenderProps);
 
 const microwavePlantSpec: StatechartPlantSpec = {
   ast: microwaveAbstractSyntax,
