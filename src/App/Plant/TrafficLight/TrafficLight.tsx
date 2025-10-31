@@ -57,6 +57,9 @@ export const TrafficLight = memo(function TrafficLight({state, speed, raiseUIEve
       .hidden {
         opacity: 0;
       }
+      text.timer {
+        text-shadow: 0 0 5px currentColor, 0 0 10px currentColor;
+      }
     `}</style>
     <svg width={200} height='auto' viewBox="0 0 424 791">
       <image xlinkHref={imgBackground} width={424} height={791}/>
@@ -66,8 +69,8 @@ export const TrafficLight = memo(function TrafficLight({state, speed, raiseUIEve
       <image className={greenOn  ? "" : "hidden"} xlinkHref={imgGreenOverlay}  width={424} height={791}/>
 
       {timerValue >= 0 && <>
-        <rect x={300} y={678} width={110} height={80} fill="black" />
-        <text x={400} y={750} fontFamily="digital-font" fontSize={100} fill={timerGreen ? "#59ae8b" : "#f9172e"} textAnchor="end">{timerValue}</text>
+        <rect x={300} y={676} width={108} height={84} fill="black" />
+        <text x={400} y={750} className="timer" fontFamily="digital-font" fontSize={100} fill={timerGreen ? "#59ae8b" : "#f9172e"} textAnchor="end">{timerValue}</text>
       </>}
     </svg>
     <br/>
