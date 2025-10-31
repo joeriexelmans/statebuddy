@@ -63,7 +63,7 @@ export const TrafficLight = memo(function TrafficLight({state, speed, raiseUIEve
         src: url(${fontDigital});
       }
       image {
-        transition: opacity 300ms ease;
+        transition: opacity ${300/speed}ms ease;
       }
       .hidden {
         opacity: 0;
