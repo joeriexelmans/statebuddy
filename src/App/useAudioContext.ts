@@ -28,12 +28,15 @@ export function useAudioContext(speed: number) {
       .then(buf => ref.current!.ctx.decodeAudioData(buf));
   }), [ref.current]);
 
-  function play(url: string, loop: boolean) {
+  function play(url: string, loop: boolean, gain: number = 1) {
     const srcPromise = url2AudioBuf(url)
       .then(audioBuf => {
         const src = ref.current!.ctx.createBufferSource();
+        const gainNode = ref.current!.ctx.createGain();
+        gainNode.gain.value = gain;
+        gainNode.connect(ref.current!.hipass);
         src.buffer = audioBuf;
-        src.connect(ref.current!.hipass);
+        src.connect(gainNode);
         src.playbackRate.value = speed;
         src.loop = loop;
         src.start();
@@ -59,5 +62,5 @@ export function useAudioContext(speed: number) {
     }
   }, [speed]);
 
-  return [play, url2AudioBuf] as [(url: string, loop: boolean) => ()=>void, (url:string)=>void];
+  return [play, url2AudioBuf] as [(url: string, loop: boolean, gain?: number) => ()=>void, (url:string)=>void];
 }
