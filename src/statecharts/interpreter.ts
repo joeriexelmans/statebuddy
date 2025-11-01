@@ -394,7 +394,6 @@ export function fire(simtime: number, t: Transition, ts: Map<string, Transition[
   // transition actions
   environment = addEventParam(environment.enterScope("<transition>"), label);
   for (const action of label.actions) {
-    console.log('environment after adding event param:', environment);
     ({environment, history, ...rest} = execAction(action, {environment, history, ...rest}, [t.uid]));
   }
   environment = environment.dropScope();

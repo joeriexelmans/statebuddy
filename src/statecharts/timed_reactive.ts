@@ -115,6 +115,7 @@ export function coupledExecution<T extends {[name: string]: any}>(models: {[name
     if (events.length > 0) {
       const [event, ...rest] = events;
       const destination = conns[model+'.'+event.name];
+      console.log(model, '.', event, destination);
       if (destination === undefined) {
         // ignore
         console.log(`${model}.${event.name} goes nowhere`);
@@ -160,11 +161,13 @@ export function coupledExecution<T extends {[name: string]: any}>(models: {[name
         // @ts-ignore
         state[modelName] = modelState;
       }
+      console.log('all outputs:', allOutputs);
       // 2. handle all output events (models' outputs may be inputs for each other)
       let finalOutputs = [];
-      for (const [modelName, outputEvents] of allOutputs) {
+      for (const [modelName, outputEvent] of allOutputs) {
+        console.log('what about', modelName, outputEvent);
         let newOutputs;
-        [newOutputs, state] = processOutputs(0, outputEvents, modelName, state);
+        [newOutputs, state] = processOutputs(0, [outputEvent], modelName, state);
         finalOutputs.push(...newOutputs);
       }
       return [finalOutputs, state];
