@@ -212,7 +212,7 @@ export function App() {
     return () => {
       if (timeout) clearTimeout(timeout);
     }
-  }, [time, trace]); // <-- todo: is this really efficient?
+  }, [time, currentTraceItem]); // <-- todo: is this really efficient?
 
   function appendNewConfig(simtime: number, cause: string, computeNewState: () => [RaisedEvent[], CoupledState]) {
     let newItem: TraceItem;

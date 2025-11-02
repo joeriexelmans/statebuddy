@@ -22,7 +22,13 @@ export function statechartExecution(ast: Statechart): TimedReactive<BigStep> {
       const bigstep = initialize(ast);
       return [bigstep.outputEvents, bigstep];
     },
-    timeAdvance: (c: RT_Statechart) => (c.environment.get("_timers") as Timers)[0]?.[0] || Infinity,
+    timeAdvance: (c: RT_Statechart) => {
+      const timers = c.environment.get("_timers");
+      if (timers && timers[0]) {
+        return timers[0][0];
+      }
+      return Infinity;
+    },
     intTransition: (c: RT_Statechart) => {
       const timers = c.environment.get("_timers") as Timers;
       if (timers.length === 0) {

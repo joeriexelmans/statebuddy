@@ -279,7 +279,7 @@ function attemptSrcState(simtime: number, sourceState: AbstractState, event: RT_
     else {
       // get transitions triggered by timeout
       triggered = labels.filter(([_t,l]) =>
-        l.trigger.kind === "after" && l.trigger.durationMs === event.timeDurMs);
+        l.trigger.kind === "after" && sourceState.uid === event.state && l.trigger.durationMs === event.timeDurMs);
     }
   }
     else {
