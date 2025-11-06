@@ -33,6 +33,7 @@ import { checkProperty, PropertyCheckResult } from "./check_property";
 import { usePersistentState } from "./persistent_state";
 import { useEditor } from "./useEditor";
 import { useUrlHashState } from "./useUrlHashState";
+import { formatTime } from "@/util/util";
 
 export type EditHistory = {
   current: VisualEditorState,
@@ -473,7 +474,7 @@ export function App() {
                 const result = propertyResults && propertyResults[i];
                 let violated = null, propertyError = null;
                 if (result) {
-                  violated = result[0] && !result[0][0].satisfied;
+                  violated = result[0] && result[0].length > 0 && !result[0][0].satisfied;
                   propertyError = result[1];
                 }
                 return <div style={{width:'100%'}} key={i} className="toolbar">
@@ -502,7 +503,11 @@ export function App() {
                     <button title="replay trace (may give a different result if you changed your model since recording the trace because only input and timer events are recorded)" onClick={() => onReplayTrace(savedTrace[1])}>
                       <CachedOutlinedIcon fontSize="small"/>
                     </button>
-                    <input title="name of the trace (only for humans - names don't have to be unique or anything)" type="text" value={savedTrace[0]} style={{width: 'calc(100% - 70px)'}} onChange={e => setSavedTraces(savedTraces => savedTraces.toSpliced(i, 1, [e.target.value, savedTraces[i][1]]))}/>
+                    &nbsp;
+                    <span style={{display:'inline-block', width: 26, fontSize: 9}}>{(Math.floor(savedTrace[1].at(-1).simtime/1000))}s</span>
+                    <span style={{display:'inline-block', width: 22, fontSize: 9}}>({savedTrace[1].length})</span>
+                    &nbsp;
+                    <input title="name of the trace (only for humans - names don't have to be unique or anything)" type="text" value={savedTrace[0]} style={{width: 'calc(100% - 124px)'}} onChange={e => setSavedTraces(savedTraces => savedTraces.toSpliced(i, 1, [e.target.value, savedTraces[i][1]]))}/>
                     <button title="forget trace" onClick={() => setSavedTraces(savedTraces => savedTraces.toSpliced(i, 1))}>
                       <DeleteOutlineIcon fontSize="small"/>
                     </button>
