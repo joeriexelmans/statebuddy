@@ -64,6 +64,7 @@ type CoupledState = {
 
 export type BigStepCause = {
   kind: "init",
+  simtime: 0,
 } | {
   kind: "input",
   simtime: number,
@@ -161,7 +162,7 @@ export function App() {
 
   const onInit = useCallback(() => {
     if (cE === null) return;
-    const metadata = {simtime: 0, cause: {kind: "init" as const}};
+    const metadata = {simtime: 0, cause: {kind: "init" as const, simtime: 0 as const}};
     try {
       const [outputEvents, state] = cE.initial(); // may throw if initialing the statechart results in a RuntimeError
       setTrace({
@@ -504,7 +505,7 @@ export function App() {
                       <CachedOutlinedIcon fontSize="small"/>
                     </button>
                     &nbsp;
-                    <span style={{display:'inline-block', width: 26, fontSize: 9}}>{(Math.floor(savedTrace[1].at(-1).simtime/1000))}s</span>
+                    <span style={{display:'inline-block', width: 26, fontSize: 9}}>{(Math.floor(savedTrace[1].at(-1)!.simtime/1000))}s</span>
                     <span style={{display:'inline-block', width: 22, fontSize: 9}}>({savedTrace[1].length})</span>
                     &nbsp;
                     <input title="name of the trace (only for humans - names don't have to be unique or anything)" type="text" value={savedTrace[0]} style={{width: 'calc(100% - 124px)'}} onChange={e => setSavedTraces(savedTraces => savedTraces.toSpliced(i, 1, [e.target.value, savedTraces[i][1]]))}/>
