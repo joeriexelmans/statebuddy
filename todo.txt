@@ -23,16 +23,15 @@
         - paused / step-wise
         - (scaled) real time
     - omniscient debugging
+    - coupled execution with "plant"
+    - MTL properties & checking of plant state
+    - recording and replaying traces
 
 
 TODO
 
 - bugs
     editing SC <-> Plant connections at runtime doesn't seem to work
-
-- testing
-    use STL for testing
-        https://github.com/mvcisback/py-metric-temporal-logic
 
 - maybe support:
     - explicit order of:
