@@ -129,6 +129,8 @@ div.status {
   border-radius: 50%;
   height: 12px;
   width: 12px;
+  margin-left: 4px;
+  margin-right: 4px;
 }
 
 div.status.violated {

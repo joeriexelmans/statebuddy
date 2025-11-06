@@ -7,6 +7,8 @@ import AddIcon from '@mui/icons-material/Add';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
+import CachedOutlinedIcon from '@mui/icons-material/CachedOutlined';
 
 import { Statechart } from "@/statecharts/abstract_syntax";
 import { detectConnections } from "@/statecharts/detect_connections";
@@ -30,6 +32,7 @@ import { VisualEditor, VisualEditorState } from "./VisualEditor/VisualEditor";
 import { checkProperty, PropertyCheckResult } from "./check_property";
 import { usePersistentState } from "./persistent_state";
 import { useEditor } from "./useEditor";
+import { useUrlHashState } from "./useUrlHashState";
 
 export type EditHistory = {
   current: VisualEditorState,
@@ -47,7 +50,7 @@ const plants: [string, Plant<any, UniversalPlantState>][] = [
 ]
 
 export type TraceItemError = {
-  cause: string, // event name, <init> or <timer>
+  cause: BigStepCause, // event name, <init> or <timer>
   simtime: number,
   error: RuntimeError,
 }
@@ -58,9 +61,21 @@ type CoupledState = {
   // plantCleanState: {[prop: string]: boolean|number},
 };
 
+export type BigStepCause = {
+  kind: "init",
+} | {
+  kind: "input",
+  simtime: number,
+  eventName: string,
+  param?: any,
+} | {
+  kind: "timer",
+  simtime: number,
+};
+
 export type TraceItem =
   { kind: "error" } & TraceItemError
-| { kind: "bigstep", simtime: number, cause: string, state: CoupledState, outputEvents: RaisedEvent[] };
+| { kind: "bigstep", simtime: number, cause: BigStepCause, state: CoupledState, outputEvents: RaisedEvent[] };
 
 export type TraceState = {
   trace: [TraceItem, ...TraceItem[]], // non-empty
@@ -68,26 +83,45 @@ export type TraceState = {
 };
 
 export function App() {
-  const [insertMode, setInsertMode] = usePersistentState<InsertMode>("insertMode", "and");
   const [editHistory, setEditHistory] = useState<EditHistory|null>(null);
   const [trace, setTrace] = useState<TraceState|null>(null);
   const [time, setTime] = useState<TimeMode>({kind: "paused", simtime: 0});
   const [modal, setModal] = useState<ReactElement|null>(null);
 
-  const [plantName, setPlantName] = usePersistentState("plant", "dummy");
-  const [zoom, setZoom] = usePersistentState("zoom", 1);
-  const [showKeys, setShowKeys] = usePersistentState("shortcuts", true);
-
-  const [autoScroll, setAutoScroll] = usePersistentState("autoScroll", true);
-  const [autoConnect, setAutoConnect] = usePersistentState("autoConnect", true);
-  const [plantConns, setPlantConns] = usePersistentState<Conns>("plantConns", {});
-
-  const plant = plants.find(([pn, p]) => pn === plantName)![1];
+  const {makeCheckPoint, onRedo, onUndo, onRotate} = useEditor(setEditHistory);
 
   const editorState = editHistory && editHistory.current;
   const setEditorState = useCallback((cb: (value: VisualEditorState) => VisualEditorState) => {
     setEditHistory(historyState => historyState && ({...historyState, current: cb(historyState.current)}));
   }, [setEditHistory]);
+
+  const {
+    autoConnect,
+    setAutoConnect,
+    autoScroll,
+    setAutoScroll,
+    plantConns,
+    setPlantConns,
+    showKeys,
+    setShowKeys,
+    zoom,
+    setZoom,
+    insertMode,
+    setInsertMode,
+    plantName,
+    setPlantName,
+    showExecutionTrace,
+    setShowExecutionTrace,
+    showPlantTrace,
+    setShowPlantTrace,
+    properties,
+    setProperties,
+    savedTraces,
+    setSavedTraces,
+    activeProperty,
+    setActiveProperty,
+  } = useUrlHashState(editorState, setEditHistory);
+  const plant = plants.find(([pn, p]) => pn === plantName)![1];
 
   const refRightSideBar = useRef<HTMLDivElement>(null);
 
@@ -104,8 +138,6 @@ export function App() {
       shapeUid: currentTraceItem.error.highlight[0],
     }] : [],
   ];
-
-  const {makeCheckPoint, onRedo, onUndo, onRotate} = useEditor(editorState, setEditHistory);
 
   const scrollDownSidebar = useCallback(() => {
     if (autoScroll && refRightSideBar.current) {
@@ -128,7 +160,7 @@ export function App() {
 
   const onInit = useCallback(() => {
     if (cE === null) return;
-    const metadata = {simtime: 0, cause: "<init>"};
+    const metadata = {simtime: 0, cause: {kind: "init" as const}};
     try {
       const [outputEvents, state] = cE.initial(); // may throw if initialing the statechart results in a RuntimeError
       setTrace({
@@ -169,7 +201,7 @@ export function App() {
     if (currentTraceItem !== null /*&& ast.inputEvents.some(e => e.event === inputEvent)*/) {
       if (currentTraceItem.kind === "bigstep") {
         const simtime = getSimTime(time, Math.round(performance.now()));
-        appendNewConfig(simtime, inputEvent, () => {
+        appendNewConfig(simtime, {kind: "input", simtime, eventName: inputEvent, param}, () => {
           return cE.extTransition(simtime, currentTraceItem.state, {kind: "input", name: inputEvent, param});
         });
       }
@@ -184,7 +216,7 @@ export function App() {
         const nextTimeout = cE?.timeAdvance(currentTraceItem.state);
 
         const raiseTimeEvent = () => {
-          appendNewConfig(nextTimeout, "<timer>", () => {
+          appendNewConfig(nextTimeout, {kind: "timer", simtime: nextTimeout}, () => {
             return cE.intTransition(currentTraceItem.state);
           });
         }
@@ -207,7 +239,7 @@ export function App() {
     }
   }, [time, currentTraceItem]); // <-- todo: is this really efficient?
 
-  function appendNewConfig(simtime: number, cause: string, computeNewState: () => [RaisedEvent[], CoupledState]) {
+  function appendNewConfig(simtime: number, cause: BigStepCause, computeNewState: () => [RaisedEvent[], CoupledState]) {
     let newItem: TraceItem;
     const metadata = {simtime, cause}
     try {
@@ -258,8 +290,6 @@ export function App() {
   const highlightActive = (currentBigStep && currentBigStep.state.sc.mode) || new Set();
   const highlightTransitions = currentBigStep && currentBigStep.state.sc.firedTransitions || [];
 
-  const [showExecutionTrace, setShowExecutionTrace] = usePersistentState("showExecutionTrace", true);
-  const [showPlantTrace, setShowPlantTrace] = usePersistentState("showPlantTrace", false);
 
   const speed = time.kind === "paused" ? 0 : time.scale;
 
@@ -269,9 +299,53 @@ export function App() {
     ast && autoConnect && autoDetectConns(ast, plant, setPlantConns);
   }, [ast, plant, autoConnect]);
 
-  const [properties, setProperties] = usePersistentState<string[]>("properties", []);
   const [propertyResults, setPropertyResults] = useState<PropertyCheckResult[] | null>(null);
-  const [activeProperty, setActiveProperty] = usePersistentState<number>("activeProperty", 0);
+
+
+  const onSaveTrace = () => {
+    if (trace) {
+      setSavedTraces(savedTraces => [
+        ...savedTraces,
+        ["untitled", trace.trace.map((item) => item.cause)] as [string, BigStepCause[]],
+      ]);
+    }
+  }
+
+  const onReplayTrace = (causes: BigStepCause[]) => {
+    if (cE) {
+      function run_until(simtime: number) {
+        while (true) {
+          const nextTimeout = cE!.timeAdvance(lastState);
+          if (nextTimeout > simtime) {
+            break;
+          }
+          const [outputEvents, coupledState] = cE!.intTransition(lastState);
+          lastState = coupledState;
+          lastSimtime = nextTimeout;
+          newTrace.push({kind: "bigstep", simtime: nextTimeout, state: coupledState, outputEvents, cause: {kind: "timer", simtime: nextTimeout}});
+        }
+      }
+      const [outputEvents, coupledState] = cE.initial();
+      const newTrace = [{kind: "bigstep", simtime: 0, state: coupledState, outputEvents, cause: {kind: "init"} as BigStepCause} as TraceItem] as [TraceItem, ...TraceItem[]];
+      let lastState = coupledState;
+      let lastSimtime = 0;
+      for (const cause of causes) {
+        if (cause.kind === "input") {
+          run_until(cause.simtime); // <-- just make sure we haven't missed any timers elapsing
+          // @ts-ignore
+          const [outputEvents, coupledState] = cE.extTransition(cause.simtime, newTrace.at(-1)!.state, {kind: "input", name: cause.eventName, param: cause.param});
+          lastState = coupledState;
+          lastSimtime = cause.simtime;
+          newTrace.push({kind: "bigstep", simtime: cause.simtime, state: coupledState, outputEvents, cause});
+        }
+        else if (cause.kind === "timer") {
+          run_until(cause.simtime);
+        }
+      }
+      setTrace({trace: newTrace, idx: newTrace.length-1});
+      setTime({kind: "paused", simtime: lastSimtime});
+    }
+  }
 
   // if some properties change, re-evaluate them:
   useEffect(() => {
@@ -395,11 +469,6 @@ export function App() {
             {/* Properties */}
             <PersistentDetails localStorageKey="showProperty" initiallyOpen={false}>
               <summary>properties</summary>
-              <div className="toolbar">
-                <button title="add property" onClick={() => setProperties(properties => [...properties, ""])}>
-                  <AddIcon fontSize="small"/>
-                </button>
-              </div>
               {properties.map((property, i) => {
                 const result = propertyResults && propertyResults[i];
                 let violated = null, propertyError = null;
@@ -409,25 +478,47 @@ export function App() {
                 }
                 return <div style={{width:'100%'}} key={i} className="toolbar">
                   <div className={"status" + (violated === null ? "" : (violated ? " violated" : " satisfied"))}></div>
-                  &nbsp;
                   <button title="see in trace (below)" className={activeProperty === i ? "active" : ""} onClick={() => setActiveProperty(i)}>
                     <VisibilityIcon fontSize="small"/>
                   </button>
-                  <input type="text" style={{width:'calc(97% - 70px)'}} value={property} onChange={e => setProperties(properties => properties.toSpliced(i, 1, e.target.value))}/>
+                  <input type="text" style={{width:'calc(100% - 90px)'}} value={property} onChange={e => setProperties(properties => properties.toSpliced(i, 1, e.target.value))}/>
                   <button title="delete this property" onClick={() => setProperties(properties => properties.toSpliced(i, 1))}>
                     <DeleteOutlineIcon fontSize="small"/>
                   </button>
                   {propertyError && <div style={{color: 'var(--error-color)'}}>{propertyError}</div>}
                 </div>;
               })}
+              <div className="toolbar">
+                <button title="add property" onClick={() => setProperties(properties => [...properties, ""])}>
+                  <AddIcon fontSize="small"/> add property
+                </button>
+              </div>
             </PersistentDetails>
             {/* Traces */}
-
             <details open={showExecutionTrace} onToggle={e => setShowExecutionTrace(e.newState === "open")}><summary>execution trace</summary>
-              <input id="checkbox-show-plant-items" type="checkbox" checked={showPlantTrace} onChange={e => setShowPlantTrace(e.target.checked)}/>
-              <label htmlFor="checkbox-show-plant-items">show plant steps</label>
-              <input id="checkbox-autoscroll" type="checkbox" checked={autoScroll} onChange={e => setAutoScroll(e.target.checked)}/>
-              <label htmlFor="checkbox-autoscroll">auto-scroll</label>
+              <div>
+                {savedTraces.map((savedTrace, i) =>
+                  <div key={i} className="toolbar">
+                    <button title="replay trace (may give a different result if you changed your model since recording the trace because only input and timer events are recorded)" onClick={() => onReplayTrace(savedTrace[1])}>
+                      <CachedOutlinedIcon fontSize="small"/>
+                    </button>
+                    <input title="name of the trace (only for humans - names don't have to be unique or anything)" type="text" value={savedTrace[0]} style={{width: 'calc(100% - 70px)'}} onChange={e => setSavedTraces(savedTraces => savedTraces.toSpliced(i, 1, [e.target.value, savedTraces[i][1]]))}/>
+                    <button title="forget trace" onClick={() => setSavedTraces(savedTraces => savedTraces.toSpliced(i, 1))}>
+                      <DeleteOutlineIcon fontSize="small"/>
+                    </button>
+                  </div>
+                )}
+              </div>
+              <div className="toolbar">
+                <input id="checkbox-show-plant-items" type="checkbox" checked={showPlantTrace} onChange={e => setShowPlantTrace(e.target.checked)}/>
+                <label htmlFor="checkbox-show-plant-items">show plant steps</label>
+                <input id="checkbox-autoscroll" type="checkbox" checked={autoScroll} onChange={e => setAutoScroll(e.target.checked)}/>
+                <label htmlFor="checkbox-autoscroll">auto-scroll</label>
+                &emsp;
+                <button title="save current trace" disabled={trace === null} onClick={() => onSaveTrace()}>
+                  <SaveOutlinedIcon fontSize="small"/> save trace
+                </button>
+              </div>
             </details>
           </div>
 

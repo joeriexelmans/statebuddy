@@ -44,30 +44,6 @@ export const ShowAST = memo(function ShowASTx(props: {root: ConcreteState | Unst
       </ul>
     }
   </li>;
-
-  // return <details open={true} className={"stateTree" + (props.highlightActive.has(props.root.uid) ? " active" : "")}>
-  //   <summary>{props.root.kind}: {description}</summary>
-
-  //   {/* {props.root.kind !== "pseudo" && props.root.entryActions.length>0 &&
-  //       props.root.entryActions.map(action =>
-  //         <div>&emsp;entry / <ShowAction action={action}/></div>
-  //       )
-  //   }
-  //   {props.root.kind !== "pseudo" && props.root.exitActions.length>0 &&
-  //       props.root.exitActions.map(action =>
-  //         <div>&emsp;exit / <ShowAction action={action}/></div>
-  //       )
-  //   } */}
-
-  //   {props.root.kind !== "pseudo" && props.root.children.length>0 &&
-  //         props.root.children.map(child => 
-  //           <ShowAST key={child.uid} root={child} transitions={props.transitions} rt={props.rt} highlightActive={props.highlightActive} />
-  //         )
-  //   }
-  //   {/* {outgoing.length>0 &&
-  //       outgoing.map(transition => <>&emsp;<ShowTransition transition={transition}/><br/></>)
-  //   } */}
-  // </details>;
 });
 
 import BoltIcon from '@mui/icons-material/Bolt';
@@ -95,6 +71,7 @@ export function ShowInputEvents({inputEvents, onRaise, disabled, showKeys}: {inp
   });
   const onKeyDown = (e: KeyboardEvent) => {
     // don't capture keyboard events when focused on an input element:
+    // @ts-ignore
     if (["INPUT", "TEXTAREA", "SELECT"].includes(e.target?.tagName)) return;
 
     const n = (parseInt(e.key)+9) % 10;

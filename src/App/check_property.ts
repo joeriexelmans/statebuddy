@@ -70,10 +70,12 @@ export async function checkProperty(plant: Plant<RT_Statechart, any>, property: 
       return [null, json];
     }
     else {
+      // @ts-ignore
       return [json.map(([timestamp, satisfied]) => ({timestamp, satisfied})), null];
     }
   }
   catch (e) {
+    // @ts-ignore
     return [null, e.message];
   }
 }
