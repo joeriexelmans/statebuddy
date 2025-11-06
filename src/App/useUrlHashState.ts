@@ -152,6 +152,8 @@ export function useUrlHashState(editorState: VisualEditorState | null, setEditHi
     }, 100);
     return () => clearTimeout(timeout);
   }, [
+    editorState,
+
     autoConnect,
     autoScroll,
     plantConns,
