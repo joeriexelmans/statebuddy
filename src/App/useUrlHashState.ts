@@ -8,7 +8,7 @@ import { Conns } from "@/statecharts/timed_reactive";
 export function useUrlHashState(editorState: VisualEditorState | null, setEditHistory: Dispatch<SetStateAction<EditHistory|null>>) {
 
   // i should probably put all these things into a single object, the 'app state'...
-  const [autoScroll, setAutoScroll] = useState(true);
+  const [autoScroll, setAutoScroll] = useState(false);
   const [autoConnect, setAutoConnect] = useState(true);
   const [plantConns, setPlantConns] = useState<Conns>({});
   const [showKeys, setShowKeys] = useState(true);
@@ -16,6 +16,8 @@ export function useUrlHashState(editorState: VisualEditorState | null, setEditHi
   const [insertMode, setInsertMode] = useState<InsertMode>("and");
   const [plantName, setPlantName] = useState("dummy");
 
+  const [showConnections, setShowConnections] = useState(false);
+  const [showProperties, setShowProperties] = useState(false);
   const [showExecutionTrace, setShowExecutionTrace] = useState(true);
   const [showPlantTrace, setShowPlantTrace] = useState(false);
   const [properties, setProperties] = useState<string[]>([]);
@@ -82,6 +84,12 @@ export function useUrlHashState(editorState: VisualEditorState | null, setEditHi
           if (recoveredState.insertMode !== undefined) {
             setInsertMode(recoveredState.insertMode);
           }
+          if (recoveredState.showConnections !== undefined) {
+            setShowConnections(recoveredState.showConnections);
+          }
+          if (recoveredState.showProperties !== undefined) {
+            setShowProperties(recoveredState.showProperties);
+          }
           if (recoveredState.showExecutionTrace !== undefined) {
             setShowExecutionTrace(recoveredState.showExecutionTrace);
           }
@@ -123,6 +131,8 @@ export function useUrlHashState(editorState: VisualEditorState | null, setEditHi
         insertMode,
         plantName,
         editorState,
+        showConnections,
+        showProperties,
         showExecutionTrace,
         showPlantTrace,
         properties,
@@ -149,6 +159,8 @@ export function useUrlHashState(editorState: VisualEditorState | null, setEditHi
     zoom,
     insertMode,
     plantName,
+    showConnections,
+    showProperties,
     showExecutionTrace,
     showPlantTrace,
     properties,
@@ -171,6 +183,10 @@ export function useUrlHashState(editorState: VisualEditorState | null, setEditHi
     setInsertMode,
     plantName,
     setPlantName,
+    showConnections,
+    setShowConnections,
+    showProperties,
+    setShowProperties,
     showExecutionTrace,
     setShowExecutionTrace,
     showPlantTrace,

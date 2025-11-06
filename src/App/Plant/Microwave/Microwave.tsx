@@ -143,6 +143,16 @@ const microwavePlantSpec: StatechartPlantSpec<MicrowaveState> = {
     {kind: "event", event: "incTimeMouseDown"},
     {kind: "event", event: "incTimeMouseUp"},
   ],
+  signals: [
+    "bellRinging",
+    "magnetronRunning",
+    "doorOpen",
+
+    // these booleans are true for as long as the respective button is pressed (i.e., mouse button is down)
+    "startPressed",
+    "stopPressed",
+    "incTimePressed",
+  ]
 }
 
 export const microwavePlant = makeStatechartPlant(microwavePlantSpec);

@@ -4,7 +4,7 @@ import { TraceableError } from "../statecharts/parser";
 import "./BottomPanel.css";
 
 import logo from "../../artwork/logo-playful.svg";
-import { PersistentDetails } from "./PersistentDetails";
+import { PersistentDetailsLocalStorage } from "./PersistentDetails";
 
 export function BottomPanel(props: {errors: TraceableError[]}) {
   const [greeting, setGreeting] = useState(
@@ -24,7 +24,7 @@ export function BottomPanel(props: {errors: TraceableError[]}) {
     {greeting}
     {props.errors.length > 0 &&
       <div className="errorStatus">
-        <PersistentDetails initiallyOpen={false} localStorageKey="errorsExpanded">
+        <PersistentDetailsLocalStorage initiallyOpen={false} localStorageKey="errorsExpanded">
           <summary>{props.errors.length} errors</summary>
           <div style={{maxHeight: '25vh', overflow: 'auto'}}>
           {props.errors.map(({message, shapeUid})=>
@@ -32,7 +32,7 @@ export function BottomPanel(props: {errors: TraceableError[]}) {
               {shapeUid}: {message}
             </div>)}
           </div>
-        </PersistentDetails>
+        </PersistentDetailsLocalStorage>
       </div>
     }
   </div>;

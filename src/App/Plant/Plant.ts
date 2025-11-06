@@ -17,6 +17,8 @@ export type Plant<StateType, CleanStateType> = {
   inputEvents: EventTrigger[];
   outputEvents: EventTrigger[];
 
+  signals: string[]; // signal names. all signals are booleans.
+
   execution: TimedReactive<StateType>;
   cleanupState: (state: StateType) => CleanStateType;
   render: (props: PlantRenderProps<CleanStateType>) => ReactNode;
@@ -59,9 +61,10 @@ export type StatechartPlantSpec<CleanStateType> = {
   ast: Statechart,
   cleanupState: (rtConfig: RT_Statechart) => CleanStateType,
   render: (props: PlantRenderProps<CleanStateType>) => ReactNode,
+  signals: string[],
 }
 
-export function makeStatechartPlant<CleanStateType>({uiEvents, ast, cleanupState, render}: StatechartPlantSpec<CleanStateType>): Plant<BigStep, CleanStateType> {
+export function makeStatechartPlant<CleanStateType>({uiEvents, ast, cleanupState, render, signals}: StatechartPlantSpec<CleanStateType>): Plant<BigStep, CleanStateType> {
   return {
     uiEvents,
     inputEvents: ast.inputEvents,
@@ -69,6 +72,7 @@ export function makeStatechartPlant<CleanStateType>({uiEvents, ast, cleanupState
     execution: statechartExecution(ast),
     cleanupState,
     render,
+    signals,
   }
 }
 

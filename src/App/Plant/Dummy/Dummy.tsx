@@ -15,4 +15,5 @@ export const dummyPlant: Plant<{}, {}> = {
   execution: dummyExecution,
   cleanupState: ({}) => ({}),
   render: ({}) => <></>,
+  signals: [],
 };

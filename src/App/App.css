@@ -33,6 +33,9 @@ details:has(+ details) {
   background-color: rgba(0,0,255,0.2);
   border: solid blue 1px;
 }
+.runtimeState.plantStep:not(.active) {
+  background-color: #f7f7f7;
+}
 .runtimeState.plantStep * {
   color: grey;
 }

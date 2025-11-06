@@ -5,10 +5,10 @@ import { Dispatch, ReactElement, SetStateAction, useCallback, useEffect, useMemo
 
 import AddIcon from '@mui/icons-material/Add';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import CachedOutlinedIcon from '@mui/icons-material/CachedOutlined';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 
 import { Statechart } from "@/statecharts/abstract_syntax";
 import { detectConnections } from "@/statecharts/detect_connections";
@@ -18,7 +18,7 @@ import { parseStatechart } from "../statecharts/parser";
 import { BigStep, RaisedEvent } from "../statecharts/runtime_types";
 import { getSimTime, getWallClkDelay, TimeMode } from "../statecharts/time";
 import { BottomPanel } from "./BottomPanel";
-import { PersistentDetails } from "./PersistentDetails";
+import { PersistentDetails, PersistentDetailsLocalStorage } from "./PersistentDetails";
 import { digitalWatchPlant } from "./Plant/DigitalWatch/DigitalWatch";
 import { dummyPlant } from "./Plant/Dummy/Dummy";
 import { microwavePlant } from "./Plant/Microwave/Microwave";
@@ -26,14 +26,11 @@ import { Plant } from "./Plant/Plant";
 import { trafficLightPlant } from "./Plant/TrafficLight/TrafficLight";
 import { RTHistory } from "./RTHistory";
 import { ShowAST, ShowInputEvents, ShowInternalEvents, ShowOutputEvents } from "./ShowAST";
-import { InsertMode } from "./TopPanel/InsertModes";
 import { TopPanel } from "./TopPanel/TopPanel";
 import { VisualEditor, VisualEditorState } from "./VisualEditor/VisualEditor";
 import { checkProperty, PropertyCheckResult } from "./check_property";
-import { usePersistentState } from "./persistent_state";
 import { useEditor } from "./useEditor";
 import { useUrlHashState } from "./useUrlHashState";
-import { formatTime } from "@/util/util";
 
 export type EditHistory = {
   current: VisualEditorState,
@@ -112,6 +109,10 @@ export function App() {
     setInsertMode,
     plantName,
     setPlantName,
+    showConnections,
+    setShowConnections,
+    showProperties,
+    setShowProperties,
     showExecutionTrace,
     setShowExecutionTrace,
     showPlantTrace,
@@ -417,33 +418,33 @@ export function App() {
             style={{flex: '0 0 content', backgroundColor: ''}}
           >
             {/* State tree */}
-            <PersistentDetails localStorageKey="showStateTree" initiallyOpen={true}>
+            <PersistentDetailsLocalStorage localStorageKey="showStateTree" initiallyOpen={true}>
               <summary>state tree</summary>
               <ul>
                 {ast && <ShowAST {...{...ast, trace, highlightActive}}/>}
               </ul>
-            </PersistentDetails>
+            </PersistentDetailsLocalStorage>
             {/* Input events */}
-            <PersistentDetails localStorageKey="showInputEvents" initiallyOpen={true}>
+            <PersistentDetailsLocalStorage localStorageKey="showInputEvents" initiallyOpen={true}>
               <summary>input events</summary>
               {ast && <ShowInputEvents
                 inputEvents={ast.inputEvents}
                 onRaise={(e,p) => onRaise("debug."+e,p)}
                 disabled={trace===null || trace.trace[trace.idx].kind === "error"}
                 showKeys={showKeys}/>}
-            </PersistentDetails>
+            </PersistentDetailsLocalStorage>
             {/* Internal events */}
-            <PersistentDetails localStorageKey="showInternalEvents" initiallyOpen={true}>
+            <PersistentDetailsLocalStorage localStorageKey="showInternalEvents" initiallyOpen={true}>
               <summary>internal events</summary>
               {ast && <ShowInternalEvents internalEvents={ast.internalEvents}/>}
-            </PersistentDetails>
+            </PersistentDetailsLocalStorage>
             {/* Output events */}
-            <PersistentDetails localStorageKey="showOutputEvents" initiallyOpen={true}>
+            <PersistentDetailsLocalStorage localStorageKey="showOutputEvents" initiallyOpen={true}>
               <summary>output events</summary>
               {ast && <ShowOutputEvents outputEvents={ast.outputEvents}/>}
-            </PersistentDetails>
+            </PersistentDetailsLocalStorage>
             {/* Plant */}
-            <PersistentDetails localStorageKey="showPlant" initiallyOpen={true}>
+            <PersistentDetailsLocalStorage localStorageKey="showPlant" initiallyOpen={true}>
               <summary>plant</summary>
               <select
                 disabled={trace!==null}
@@ -458,9 +459,9 @@ export function App() {
               {<plant.render state={plant.cleanupState(plantState)} speed={speed}
                 raiseUIEvent={e => onRaise("plant.ui."+e.name, e.param)}
                 />}
-            </PersistentDetails>
+            </PersistentDetailsLocalStorage>
             {/* Connections */}
-            <PersistentDetails localStorageKey="showConnEditor" initiallyOpen={false}>
+            <PersistentDetails state={showConnections} setState={setShowConnections}>
               <summary>connections</summary>
               <button title="auto-connect (name-based)" className={autoConnect?"active":""}
                 onClick={() => setAutoConnect(c => !c)}>
@@ -469,8 +470,13 @@ export function App() {
               {ast && ConnEditor(ast, plant, plantConns, setPlantConns)}
             </PersistentDetails>
             {/* Properties */}
-            <PersistentDetails localStorageKey="showProperty" initiallyOpen={false}>
+            <details open={showProperties} onToggle={e => setShowProperties(e.newState === "open")}>
               <summary>properties</summary>
+              {plant && <div>
+                available signals:
+                &nbsp;
+                {plant.signals.join(', ')}
+              </div>}
               {properties.map((property, i) => {
                 const result = propertyResults && propertyResults[i];
                 let violated = null, propertyError = null;
@@ -495,7 +501,7 @@ export function App() {
                   <AddIcon fontSize="small"/> add property
                 </button>
               </div>
-            </PersistentDetails>
+            </details>
             {/* Traces */}
             <details open={showExecutionTrace} onToggle={e => setShowExecutionTrace(e.newState === "open")}><summary>execution trace</summary>
               <div>
@@ -517,9 +523,9 @@ export function App() {
               </div>
               <div className="toolbar">
                 <input id="checkbox-show-plant-items" type="checkbox" checked={showPlantTrace} onChange={e => setShowPlantTrace(e.target.checked)}/>
-                <label htmlFor="checkbox-show-plant-items">show plant steps</label>
+                <label title="plant steps are steps where only the state of the plant changed" htmlFor="checkbox-show-plant-items">show plant steps</label>
                 <input id="checkbox-autoscroll" type="checkbox" checked={autoScroll} onChange={e => setAutoScroll(e.target.checked)}/>
-                <label htmlFor="checkbox-autoscroll">auto-scroll</label>
+                <label title="automatically scroll down event trace when new events occur" htmlFor="checkbox-autoscroll">auto-scroll</label>
                 &emsp;
                 <button title="save current trace" disabled={trace === null} onClick={() => onSaveTrace()}>
                   <SaveOutlinedIcon fontSize="small"/> save trace
@@ -617,9 +623,9 @@ function ConnEditor(ast: Statechart, plant: Plant<any, any>, plantConns: Conns, 
       </select>
     </div>)]}
 
-    {/* Plant UI events can go to SC or to Plant */}
+    {/* Plant UI events typically go to the Plant */}
     {plant.uiEvents.map(e => <div style={{width:'100%', textAlign:'right'}}>
-      <label htmlFor={`select-dst-plant-ui-${e.event}`} style={{width:'50%'}}>ui.{e.event}&nbsp;→&nbsp;</label>
+      <label htmlFor={`select-dst-plant-ui-${e.event}`} style={{width:'50%', color: 'grey'}}>ui.{e.event}&nbsp;→&nbsp;</label>
       <select id={`select-dst-plant-ui-${e.event}`}
         style={{width:'50%'}}
         value={plantConns['plant.ui.'+e.event]?.join('.')}

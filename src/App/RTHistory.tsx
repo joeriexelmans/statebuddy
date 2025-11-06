@@ -90,6 +90,7 @@ function RTEventParam(props: {param?: any}) {
 
 export const RTHistoryItem = memo(function RTHistoryItem({ast, idx, item, prevItem, isPlantStep, active, onMouseDown, propertyStatus}: {idx: number, ast: Statechart, item: TraceItem, prevItem?: TraceItem, isPlantStep: boolean, active: boolean, onMouseDown: (idx: number, timestamp: number) => void, propertyStatus: PropertyStatus}) {
   if (item.kind === "bigstep") {
+    const outputEvents = isPlantStep ? item.state.plant.outputEvents : item.state.sc.outputEvents;
     // @ts-ignore
     const newStates = item.state.sc.mode.difference(prevItem?.state.sc.mode || new Set());
     return <div
@@ -104,8 +105,8 @@ export const RTHistoryItem = memo(function RTHistoryItem({ast, idx, item, prevIt
       </div>
       <ShowMode mode={newStates} statechart={ast}/>
       <ShowEnvironment environment={item.state.sc.environment}/>
-      {item.state.sc.outputEvents.length>0 && <>^
-        {item.state.sc.outputEvents.map((e:RaisedEvent) => <span className="outputEvent">{e.name}<RTEventParam param={e.param}/></span>)}
+      {outputEvents.length>0 && <>^
+        {outputEvents.map((e:RaisedEvent) => <span className="outputEvent">{e.name}<RTEventParam param={e.param}/></span>)}
       </>}
     </div>;
   }

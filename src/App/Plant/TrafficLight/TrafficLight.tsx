@@ -109,6 +109,13 @@ const trafficLightPlantSpec: StatechartPlantSpec<TrafficLightState> = {
   uiEvents: [
     {kind: "event", event: "policeInterrupt"},
   ],
+  signals: [
+    "redOn",
+    "yellowOn",
+    "greenOn",
+    "timerGreen",
+    "timerValue",
+  ],
 }
 
 export const trafficLightPlant = makeStatechartPlant(trafficLightPlantSpec);

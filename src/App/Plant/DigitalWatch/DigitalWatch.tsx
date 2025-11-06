@@ -156,4 +156,21 @@ export const digitalWatchPlant = makeStatechartPlant({
     { kind: "event", event: "bottomRightMouseUp" },
     { kind: "event", event: "bottomLeftMouseUp" },
   ],
+  signals: [
+    "lightOn",
+    "beep",
+    "alarmOn",
+    "displayingTime",
+    "displayingAlarm",
+    "displayingChrono",
+    "hideH",
+    "hideM",
+    "hideS",
+
+    // these properties are true for as long as the mouse button is down:
+    "topLeftPressed",
+    "topRightPressed",
+    "bottomRightPressed",
+    "bottomLeftPressed",
+  ],
 });
