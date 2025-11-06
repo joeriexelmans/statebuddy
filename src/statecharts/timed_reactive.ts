@@ -194,12 +194,13 @@ export function coupledExecution<T extends {[name: string]: any}>(models: {[name
       throw new Error("cannot make intTransition - timeAdvance is infinity");
     },
     extTransition: (simtime, c, e) => {
-      if (!Object.hasOwn(conns, e.name)) {
+      if (conns[e.name] === undefined) {
         console.warn('input event', e.name, 'goes to nowhere');
         return [[], c];
       }
       else {
         const [model, eventName] = conns[e.name];
+        // console.log(conns);
         if (model !== null) {
           console.log('input event', e.name, 'goes to', `${model}.${eventName}`);
           const inputEvent: InputEvent = {

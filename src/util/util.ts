@@ -84,3 +84,11 @@ export function mapsEqual<K,V>(a: Map<K,V>, b: Map<K,V>, cmp: (a: V, b: V) => bo
 
   return true;
 }
+
+
+export function withGrow<T>(arr: T[], i: number, value: T, fill: T) {
+  if (i >= arr.length) {
+    arr = [...arr, ...new Array(i - arr.length + 1).map(_ => fill)];
+  }
+  return arr.with(i, value);
+}

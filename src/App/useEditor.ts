@@ -7,9 +7,9 @@ import { emptyState } from "@/statecharts/concrete_syntax";
 
 export function useEditor(editorState: VisualEditorState | null, setEditHistory: Dispatch<SetStateAction<EditHistory|null>>) {
   useEffect(() => {
-    console.log("Welcome to StateBuddy!");
+    console.info("Welcome to StateBuddy!");
     () => {
-      console.log("Goodbye!");
+      console.info("Goodbye!");
     }
   }, []);
 

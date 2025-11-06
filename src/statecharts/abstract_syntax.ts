@@ -64,6 +64,8 @@ export type Statechart = {
 
   uid2State: Map<string, ConcreteState|UnstableState>;
 
+  label2State: Map<string, ConcreteState>;
+
   historyStates: HistoryState[];
 }
 
@@ -88,6 +90,7 @@ export const emptyStatechart: Statechart = {
   internalEvents: [],
   outputEvents: new Set(),
   uid2State: new Map([["root", emptyRoot]]),
+  label2State: new Map([]),
   historyStates: [],
 };
 

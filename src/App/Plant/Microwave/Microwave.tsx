@@ -13,12 +13,13 @@ import { memo, useEffect } from "react";
 
 import "./Microwave.css";
 import { useAudioContext } from "../../useAudioContext";
-import { comparePlantRenderProps, makeStatechartPlant, PlantRenderProps, StatechartPlantSpec } from "../Plant";
+import { makeStatechartPlant, PlantRenderProps, StatechartPlantSpec } from "../Plant";
 import { detectConnections } from "@/statecharts/detect_connections";
 import { parseStatechart } from "@/statecharts/parser";
 
 import microwaveConcreteSyntax from "./model.json";
 import { ConcreteSyntax } from "@/App/VisualEditor/VisualEditor";
+import { objectsEqual } from "@/util/util";
 
 export const [microwaveAbstractSyntax, microwaveErrors] = parseStatechart(microwaveConcreteSyntax as ConcreteSyntax, detectConnections(microwaveConcreteSyntax as ConcreteSyntax));
 
@@ -26,7 +27,6 @@ if (microwaveErrors.length > 0) {
   console.log({microwaveErrors});
   throw new Error("there were errors parsing microwave plant model. see console.")
 }
-
 
 const imgs = {
   "false": { "false": imgSmallClosedOff, "true": imgSmallClosedOn },
@@ -47,7 +47,19 @@ const DOOR_Y0 = 68;
 const DOOR_WIDTH = 353;
 const DOOR_HEIGHT = 217;
 
-export const Microwave = memo(function Microwave({state, speed, raiseUIEvent}: PlantRenderProps<RT_Statechart>) {
+type MicrowaveState = {
+  bellRinging: boolean,
+  magnetronRunning: boolean,
+  doorOpen: boolean,
+  timeDisplay: number,
+
+  // these booleans are true for as long as the respective button is pressed (i.e., mouse button is down)
+  startPressed: boolean,
+  stopPressed: boolean,
+  incTimePressed: boolean,
+}
+
+export const Microwave = memo(function Microwave({state: {bellRinging, magnetronRunning, doorOpen, timeDisplay}, speed, raiseUIEvent}: PlantRenderProps<MicrowaveState>) {
   const [playSound, preloadAudio] = useAudioContext(speed);
 
   // preload(imgSmallClosedOff, {as: "image"});
@@ -57,11 +69,6 @@ export const Microwave = memo(function Microwave({state, speed, raiseUIEvent}: P
 
   preloadAudio(sndRunning);
   preloadAudio(sndBell);
-
-  const bellRinging = state.mode.has("12");
-  const magnetronRunning = state.mode.has("8");
-  const doorOpen = state.mode.has("7");
-  const timeDisplay = state.environment.get("timeDisplay");
 
   // a bit hacky: when the bell-state changes to true, we play the bell sound...
   useEffect(() => {
@@ -90,16 +97,16 @@ export const Microwave = memo(function Microwave({state, speed, raiseUIEvent}: P
       <image xlinkHref={imgs[doorOpen][magnetronRunning]} width={520} height={348}/>
 
       <rect className="microwaveButtonHelper" x={START_X0} y={START_Y0} width={BUTTON_WIDTH} height={BUTTON_HEIGHT} 
-        onMouseDown={() => raiseUIEvent({name: "startPressed"})}
-        onMouseUp={() => raiseUIEvent({name: "startReleased"})}
+        onMouseDown={() => raiseUIEvent({name: "startMouseDown"})}
+        onMouseUp={() => raiseUIEvent({name: "startMouseUp"})}
       />
       <rect className="microwaveButtonHelper" x={STOP_X0} y={STOP_Y0} width={BUTTON_WIDTH} height={BUTTON_HEIGHT} 
-        onMouseDown={() => raiseUIEvent({name: "stopPressed"})}
-        onMouseUp={() => raiseUIEvent({name: "stopReleased"})}
+        onMouseDown={() => raiseUIEvent({name: "stopMouseDown"})}
+        onMouseUp={() => raiseUIEvent({name: "stopMouseUp"})}
       />
       <rect className="microwaveButtonHelper" x={INCTIME_X0} y={INCTIME_Y0} width={BUTTON_WIDTH} height={BUTTON_HEIGHT} 
-        onMouseDown={() => raiseUIEvent({name: "incTimePressed"})}
-        onMouseUp={() => raiseUIEvent({name: "incTimeReleased"})}
+        onMouseDown={() => raiseUIEvent({name: "incTimeMouseDown"})}
+        onMouseUp={() => raiseUIEvent({name: "incTimeMouseUp"})}
       />
       <rect className="microwaveDoorHelper"
         x={DOOR_X0} y={DOOR_Y0} width={DOOR_WIDTH} height={DOOR_HEIGHT}
@@ -110,20 +117,31 @@ export const Microwave = memo(function Microwave({state, speed, raiseUIEvent}: P
       <text x={472} y={106} textAnchor="end" fontFamily="digital-font" fontSize={24} fill="lightgreen">{timeDisplay}</text>
     </svg>
   </>;
-}, comparePlantRenderProps);
+}, objectsEqual);
 
-const microwavePlantSpec: StatechartPlantSpec = {
+const microwavePlantSpec: StatechartPlantSpec<MicrowaveState> = {
   ast: microwaveAbstractSyntax,
+  cleanupState: (state: RT_Statechart) => {
+    const bellRinging = state.mode.has(microwaveAbstractSyntax.label2State.get("bell")!.uid);
+    const magnetronRunning = state.mode.has(microwaveAbstractSyntax.label2State.get("Magnetron on")!.uid);
+    const doorOpen = state.mode.has(microwaveAbstractSyntax.label2State.get("Door opened")!.uid);
+    const startPressed = state.mode.has(microwaveAbstractSyntax.label2State.get("startPressed")!.uid);
+    const stopPressed = state.mode.has(microwaveAbstractSyntax.label2State.get("stopPressed")!.uid);
+    const incTimePressed = state.mode.has(microwaveAbstractSyntax.label2State.get("incTimePressed")!.uid);
+    // let startPressed, stopPressed, incTimePressed;
+    const timeDisplay = state.environment.get("timeDisplay");
+    return {bellRinging, magnetronRunning, doorOpen, timeDisplay, startPressed, stopPressed, incTimePressed};
+  },
   render: Microwave,
   uiEvents: [
     {kind: "event", event: "doorMouseDown"},
     {kind: "event", event: "doorMouseUp"},
-    {kind: "event", event: "startPressed"},
-    {kind: "event", event: "startReleased"},
-    {kind: "event", event: "stopPressed"},
-    {kind: "event", event: "stopReleased"},
-    {kind: "event", event: "incTimePressed"},
-    {kind: "event", event: "incTimeReleased"},
+    {kind: "event", event: "startMouseDown"},
+    {kind: "event", event: "startMouseUp"},
+    {kind: "event", event: "stopMouseDown"},
+    {kind: "event", event: "stopMouseUp"},
+    {kind: "event", event: "incTimeMouseDown"},
+    {kind: "event", event: "incTimeMouseUp"},
   ],
 }
 

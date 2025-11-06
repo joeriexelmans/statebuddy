@@ -5,7 +5,7 @@ import { Action, EventTrigger, Expression, ParsedText } from "./label_ast";
 import { parse as parseLabel, SyntaxError } from "./label_parser";
 import { Connections } from "./detect_connections";
 import { HISTORY_RADIUS } from "../App/parameters";
-import { ConcreteSyntax, VisualEditorState } from "@/App/VisualEditor/VisualEditor";
+import { ConcreteSyntax } from "@/App/VisualEditor/VisualEditor";
 import { memoize } from "@/util/util";
 
 export type TraceableError = {
@@ -52,6 +52,7 @@ export function parseStatechart(state: ConcreteSyntax, conns: Connections): [Sta
   }
 
   const uid2State = new Map<string, ConcreteState|UnstableState>([["root", root]]);
+  const label2State = new Map<string, ConcreteState>();
   const historyStates: HistoryState[] = [];
 
   // we will always look for the smallest parent rountangle
@@ -329,6 +330,9 @@ export function parseStatechart(state: ConcreteSyntax, conns: Connections): [Sta
       }
       else if (parsed.kind === "comment") {
         // just append comments to their respective states
+        if (!label2State.has(parsed.text)) {
+          label2State.set(parsed.text, belongsToState);
+        }
         belongsToState.comments.push([text.uid, parsed.text]);
       }
     }
@@ -384,6 +388,7 @@ export function parseStatechart(state: ConcreteSyntax, conns: Connections): [Sta
     internalEvents,
     outputEvents,
     uid2State,
+    label2State,
     historyStates,
   }, errors];
 }

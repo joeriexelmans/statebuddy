@@ -118,7 +118,7 @@ export function ShowInputEvents({inputEvents, onRaise, disabled, showKeys}: {inp
     const value = inputParams[key] || "";
     const width = Math.max(value.length, (paramName||"").length)*6;
     const shortcut = (i+1)%10;
-    const KI = (i <= 10) ? KeyInfo : KeyInfoHidden;
+    const KI = (i < 10) ? KeyInfo : KeyInfoHidden;
     return <div key={key} className="toolbarGroup">
       <KI keyInfo={<kbd>{shortcut}</kbd>} horizontal={true}>
         <button

@@ -118,6 +118,8 @@ export function useCopyPaste(makeCheckPoint: () => void, state: VisualEditorStat
   }, [setState]);
 
   const onKeyDown = (e: KeyboardEvent) => {
+    // @ts-ignore
+    if (["INPUT", "TEXTAREA", "SELECT"].includes(e.target?.tagName)) return;
     if (e.key === "Delete") {
       // delete selection
       makeCheckPoint();

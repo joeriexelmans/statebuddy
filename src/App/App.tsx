@@ -3,26 +3,33 @@ import "./App.css";
 
 import { Dispatch, ReactElement, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import AddIcon from '@mui/icons-material/Add';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+
+import { Statechart } from "@/statecharts/abstract_syntax";
 import { detectConnections } from "@/statecharts/detect_connections";
-import { Conns, coupledExecution, EventDestination, statechartExecution, TimedReactive } from "@/statecharts/timed_reactive";
+import { Conns, coupledExecution, statechartExecution } from "@/statecharts/timed_reactive";
 import { RuntimeError } from "../statecharts/interpreter";
 import { parseStatechart } from "../statecharts/parser";
 import { BigStep, RaisedEvent } from "../statecharts/runtime_types";
 import { getSimTime, getWallClkDelay, TimeMode } from "../statecharts/time";
 import { BottomPanel } from "./BottomPanel";
-import { usePersistentState } from "./persistent_state";
 import { PersistentDetails } from "./PersistentDetails";
+import { digitalWatchPlant } from "./Plant/DigitalWatch/DigitalWatch";
 import { dummyPlant } from "./Plant/Dummy/Dummy";
 import { microwavePlant } from "./Plant/Microwave/Microwave";
 import { Plant } from "./Plant/Plant";
+import { trafficLightPlant } from "./Plant/TrafficLight/TrafficLight";
 import { RTHistory } from "./RTHistory";
 import { ShowAST, ShowInputEvents, ShowInternalEvents, ShowOutputEvents } from "./ShowAST";
+import { InsertMode } from "./TopPanel/InsertModes";
 import { TopPanel } from "./TopPanel/TopPanel";
 import { VisualEditor, VisualEditorState } from "./VisualEditor/VisualEditor";
-import { digitalWatchPlant } from "./Plant/DigitalWatch/DigitalWatch";
-import { useEditor as useEditor } from "./useEditor";
-import { InsertMode } from "./TopPanel/InsertModes";
-import { Statechart } from "@/statecharts/abstract_syntax";
+import { checkProperty, PropertyCheckResult } from "./check_property";
+import { usePersistentState } from "./persistent_state";
+import { useEditor } from "./useEditor";
 
 export type EditHistory = {
   current: VisualEditorState,
@@ -30,11 +37,13 @@ export type EditHistory = {
   future: VisualEditorState[],
 }
 
-const plants: [string, Plant<any>][] = [
+type UniversalPlantState = {[property: string]: boolean|number};
+
+const plants: [string, Plant<any, UniversalPlantState>][] = [
   ["dummy", dummyPlant],
-  ["microwave", microwavePlant],
-  ["digital watch", digitalWatchPlant],
-  ["traffic light", trafficLightPlant],
+  ["microwave", microwavePlant as unknown as Plant<any, UniversalPlantState>],
+  ["digital watch", digitalWatchPlant as unknown as Plant<any, UniversalPlantState>],
+  ["traffic light", trafficLightPlant as unknown as Plant<any, UniversalPlantState>],
 ]
 
 export type TraceItemError = {
@@ -46,6 +55,7 @@ export type TraceItemError = {
 type CoupledState = {
   sc: BigStep,
   plant: BigStep,
+  // plantCleanState: {[prop: string]: boolean|number},
 };
 
 export type TraceItem =
@@ -53,10 +63,9 @@ export type TraceItem =
 | { kind: "bigstep", simtime: number, cause: string, state: CoupledState, outputEvents: RaisedEvent[] };
 
 export type TraceState = {
-  // executor: TimedReactive<CoupledState>,
   trace: [TraceItem, ...TraceItem[]], // non-empty
   idx: number,
-}; // <-- null if there is no trace
+};
 
 export function App() {
   const [insertMode, setInsertMode] = usePersistentState<InsertMode>("insertMode", "and");
@@ -94,7 +103,7 @@ export function App() {
       message: currentTraceItem.error.message,
       shapeUid: currentTraceItem.error.highlight[0],
     }] : [],
-  ]
+  ];
 
   const {makeCheckPoint, onRedo, onUndo, onRotate} = useEditor(editorState, setEditHistory);
 
@@ -108,23 +117,7 @@ export function App() {
     }
   }, [refRightSideBar.current, autoScroll]);
 
-  // const plantConns = ast && ({
-  //   inputEvents: {
-  //     // all SC inputs are directly triggerable from outside
-  //     ...exposeStatechartInputs(ast, "sc", (eventName: string) => "debug."+eventName),
-
-  //     ...Object.fromEntries(plant.uiEvents.map(e => {
-  //       const globalName = "PLANT_UI_"+e.event;
-  //       if (plant.inputEvents.some(f => f.event === e.event)) {
-  //         return [globalName, {kind: "model", model: 'plant', eventName: e.event}];
-  //       }
-  //       if (ast.inputEvents.some(f => f.event === e.event)) {
-  //         return [globalName, {kind: "model", model: 'sc', eventName: e.event}];
-  //       }
-  //     }).filter(entry => entry !== undefined)),
-  //   },
-  //   outputEvents: {}, //autoConnect(ast, "sc", plant, "plant"),
-  // }) as Conns;
+  // coupled execution
   const cE = useMemo(() => ast && coupledExecution({
     sc: statechartExecution(ast),
     plant: plant.execution,
@@ -276,6 +269,27 @@ export function App() {
     ast && autoConnect && autoDetectConns(ast, plant, setPlantConns);
   }, [ast, plant, autoConnect]);
 
+  const [properties, setProperties] = usePersistentState<string[]>("properties", []);
+  const [propertyResults, setPropertyResults] = useState<PropertyCheckResult[] | null>(null);
+  const [activeProperty, setActiveProperty] = usePersistentState<number>("activeProperty", 0);
+
+  // if some properties change, re-evaluate them:
+  useEffect(() => {
+    let timeout: NodeJS.Timeout;
+    if (trace) {
+      setPropertyResults(null);
+      timeout = setTimeout(() => {
+        Promise.all(properties.map((property, i) => {
+          return checkProperty(plant, property, trace.trace);
+        }))
+        .then(results => {
+          setPropertyResults(results);
+        })
+      })
+    }
+    return () => clearTimeout(timeout);
+  }, [properties, trace, plant]);
+
   return <>
 
   {/* Modal dialog */}
@@ -326,12 +340,14 @@ export function App() {
             className={showExecutionTrace ? "shadowBelow" : ""}
             style={{flex: '0 0 content', backgroundColor: ''}}
           >
+            {/* State tree */}
             <PersistentDetails localStorageKey="showStateTree" initiallyOpen={true}>
               <summary>state tree</summary>
               <ul>
                 {ast && <ShowAST {...{...ast, trace, highlightActive}}/>}
               </ul>
             </PersistentDetails>
+            {/* Input events */}
             <PersistentDetails localStorageKey="showInputEvents" initiallyOpen={true}>
               <summary>input events</summary>
               {ast && <ShowInputEvents
@@ -340,14 +356,17 @@ export function App() {
                 disabled={trace===null || trace.trace[trace.idx].kind === "error"}
                 showKeys={showKeys}/>}
             </PersistentDetails>
+            {/* Internal events */}
             <PersistentDetails localStorageKey="showInternalEvents" initiallyOpen={true}>
               <summary>internal events</summary>
               {ast && <ShowInternalEvents internalEvents={ast.internalEvents}/>}
             </PersistentDetails>
+            {/* Output events */}
             <PersistentDetails localStorageKey="showOutputEvents" initiallyOpen={true}>
               <summary>output events</summary>
               {ast && <ShowOutputEvents outputEvents={ast.outputEvents}/>}
             </PersistentDetails>
+            {/* Plant */}
             <PersistentDetails localStorageKey="showPlant" initiallyOpen={true}>
               <summary>plant</summary>
               <select
@@ -360,18 +379,49 @@ export function App() {
               </select>
               <br/>
               {/* Render plant */}
-              {<plant.render state={plantState} speed={speed}
+              {<plant.render state={plant.cleanupState(plantState)} speed={speed}
                 raiseUIEvent={e => onRaise("plant.ui."+e.name, e.param)}
                 />}
             </PersistentDetails>
-              <PersistentDetails localStorageKey="showConnEditor" initiallyOpen={false}>
-                <summary>connections</summary>
-                <button title="auto-connect (name-based)" className={autoConnect?"active":""}
-                  onClick={() => setAutoConnect(c => !c)}>
-                  <AutoAwesomeIcon fontSize="small"/>
+            {/* Connections */}
+            <PersistentDetails localStorageKey="showConnEditor" initiallyOpen={false}>
+              <summary>connections</summary>
+              <button title="auto-connect (name-based)" className={autoConnect?"active":""}
+                onClick={() => setAutoConnect(c => !c)}>
+                <AutoAwesomeIcon fontSize="small"/>
+              </button>
+              {ast && ConnEditor(ast, plant, plantConns, setPlantConns)}
+            </PersistentDetails>
+            {/* Properties */}
+            <PersistentDetails localStorageKey="showProperty" initiallyOpen={false}>
+              <summary>properties</summary>
+              <div className="toolbar">
+                <button title="add property" onClick={() => setProperties(properties => [...properties, ""])}>
+                  <AddIcon fontSize="small"/>
                 </button>
-                {ast && ConnEditor(ast, plant, plantConns, setPlantConns)}
-              </PersistentDetails>
+              </div>
+              {properties.map((property, i) => {
+                const result = propertyResults && propertyResults[i];
+                let violated = null, propertyError = null;
+                if (result) {
+                  violated = result[0] && !result[0][0].satisfied;
+                  propertyError = result[1];
+                }
+                return <div style={{width:'100%'}} key={i} className="toolbar">
+                  <div className={"status" + (violated === null ? "" : (violated ? " violated" : " satisfied"))}></div>
+                  &nbsp;
+                  <button title="see in trace (below)" className={activeProperty === i ? "active" : ""} onClick={() => setActiveProperty(i)}>
+                    <VisibilityIcon fontSize="small"/>
+                  </button>
+                  <input type="text" style={{width:'calc(97% - 70px)'}} value={property} onChange={e => setProperties(properties => properties.toSpliced(i, 1, e.target.value))}/>
+                  <button title="delete this property" onClick={() => setProperties(properties => properties.toSpliced(i, 1))}>
+                    <DeleteOutlineIcon fontSize="small"/>
+                  </button>
+                  {propertyError && <div style={{color: 'var(--error-color)'}}>{propertyError}</div>}
+                </div>;
+              })}
+            </PersistentDetails>
+            {/* Traces */}
 
             <details open={showExecutionTrace} onToggle={e => setShowExecutionTrace(e.newState === "open")}><summary>execution trace</summary>
               <input id="checkbox-show-plant-items" type="checkbox" checked={showPlantTrace} onChange={e => setShowPlantTrace(e.target.checked)}/>
@@ -390,7 +440,8 @@ export function App() {
               // minHeight: '75%', // <-- allows us to always scroll down the sidebar far enough such that the execution history is enough in view
               }}>
                 <div ref={refRightSideBar}>
-                  {ast && <RTHistory {...{ast, trace, setTrace, setTime, showPlantTrace}}/>}
+                  {ast && <RTHistory {...{ast, trace, setTrace, setTime, showPlantTrace,
+                    propertyTrace: propertyResults && propertyResults[activeProperty] && propertyResults[activeProperty][0] || []}}/>}
                 </div>
             </div>}
           <div style={{flex: '0 0 content'}}>
@@ -407,32 +458,7 @@ export function App() {
   </>;
 }
 
-function ShowEventDestination(dst: EventDestination) {
-  if (dst.kind === "model") {
-    return <>{dst.model}.{dst.eventName}</>;
-  }
-  else if (dst.kind === "output") {
-    return <>{dst.eventName}</>;
-  }
-  else {
-    return <>&#x1F5D1;</>; // <-- garbage can icon
-  }
-}
-
-function ShowConns({inputEvents, outputEvents}: Conns) {
-  return <div>
-    {/* <div style={{color: "grey"}}>
-      {Object.entries(inputEvents).map(([eventName, destination]) => <div>{eventName} &#x2192; <ShowEventDestination {...destination}/></div>)}
-    </div>
-    {Object.entries(outputEvents).map(([modelName, mapping]) => <>{Object.entries(mapping).map(([eventName, destination]) => <div>{modelName}.{eventName} &#x2192; <ShowEventDestination {...destination}/></div>)}</>)} */}
-  </div>;
-}
-
-import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
-import { trafficLightPlant } from "./Plant/TrafficLight/TrafficLight";
-
-function autoDetectConns(ast: Statechart, plant: Plant<any>, setPlantConns: Dispatch<SetStateAction<Conns>>) {
+function autoDetectConns(ast: Statechart, plant: Plant<any, any>, setPlantConns: Dispatch<SetStateAction<Conns>>) {
   for (const {event: a} of plant.uiEvents) {
     for (const {event: b} of plant.inputEvents) {
       if (a === b) {
@@ -462,7 +488,8 @@ function autoDetectConns(ast: Statechart, plant: Plant<any>, setPlantConns: Disp
   }
 }
 
-function ConnEditor(ast: Statechart, plant: Plant<any>, plantConns: Conns, setPlantConns: Dispatch<SetStateAction<Conns>>) {
+
+function ConnEditor(ast: Statechart, plant: Plant<any, any>, plantConns: Conns, setPlantConns: Dispatch<SetStateAction<Conns>>) {
   const plantInputs = <>{plant.inputEvents.map(e => <option key={'plant.'+e.event} value={'plant.'+e.event}>plant.{e.event}</option>)}</>
   const scInputs = <>{ast.inputEvents.map(e => <option key={'sc.'+e.event} value={'sc.'+e.event}>sc.{e.event}</option>)}</>;
   return <>
@@ -473,7 +500,8 @@ function ConnEditor(ast: Statechart, plant: Plant<any>, plantConns: Conns, setPl
       <select id={`select-dst-sc-${e}`}
         style={{width:'50%'}}
         value={plantConns['sc.'+e]?.join('.')}
-        onChange={domEvent => setPlantConns(conns => ({...conns, [`sc.${e}`]: domEvent.target.value.split('.') as [string,string]}))}>
+        // @ts-ignore
+        onChange={domEvent => setPlantConns(conns => ({...conns, [`sc.${e}`]: (domEvent.target.value === "" ? undefined : (domEvent.target.value.split('.') as [string,string]))}))}>
         <option key="none" value=""></option>
         {plantInputs}
       </select>
@@ -485,7 +513,8 @@ function ConnEditor(ast: Statechart, plant: Plant<any>, plantConns: Conns, setPl
       <select id={`select-dst-plant-${e.event}`}
         style={{width:'50%'}}
         value={plantConns['plant.'+e.event]?.join('.')}
-        onChange={(domEvent => setPlantConns(conns => ({...conns, [`plant.${e.event}`]: domEvent.target.value.split('.') as [string,string]})))}>
+        // @ts-ignore
+        onChange={(domEvent => setPlantConns(conns => ({...conns, [`plant.${e.event}`]: (domEvent.target.value === "" ? undefined : (domEvent.target.value.split('.') as [string,string]))})))}>
         <option key="none" value=""></option>
         {scInputs}
       </select>
@@ -497,7 +526,8 @@ function ConnEditor(ast: Statechart, plant: Plant<any>, plantConns: Conns, setPl
       <select id={`select-dst-plant-ui-${e.event}`}
         style={{width:'50%'}}
         value={plantConns['plant.ui.'+e.event]?.join('.')}
-        onChange={domEvent => setPlantConns(conns => ({...conns, [`plant.ui.${e.event}`]: domEvent.target.value.split('.') as [string,string]}))}>
+        // @ts-ignore
+        onChange={domEvent => setPlantConns(conns => ({...conns, [`plant.ui.${e.event}`]: (domEvent.target.value === "" ? undefined : (domEvent.target.value.split('.') as [string,string]))}))}>
         <option key="none" value=""></option>
         {scInputs}
         {plantInputs}

@@ -2,6 +2,7 @@ html, body {
   margin: 0;
   height: 100%;
   font-family: Roboto, sans-serif;
+  font-size: 10pt;
 }
 
 body {
@@ -33,8 +34,6 @@ kbd:active { transform: translateY(1px); }
 input {
   /* border: solid blue 2px; */
   accent-color: rgba(0,0,255,0.2);
-
-  /* accent-color: blue; */
 }
 
 ::selection {
@@ -44,3 +43,4 @@ input {
 label {
   user-select: none;
 }
+

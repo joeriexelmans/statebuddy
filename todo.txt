@@ -28,7 +28,7 @@
 TODO
 
 - bugs
-    interpreter: pseudo-state semantics is broken
+    editing SC <-> Plant connections at runtime doesn't seem to work
 
 - testing
     use STL for testing
@@ -51,15 +51,8 @@ TODO
     - hovering over event in side panel should highlight all occurrences of the event in the SC
     - hovering over error in bottom panel should highlight that rror in the SC
     - highlight selected shapes while making a selection
-
     - highlight about-to-fire transitions
-
-    - when there is a runtime error, e.g.,
-        - variable not found
-        - stuck in pseudo-state
-        - ???
-      don't crash and show the error
-    - buttons to rotate selection 90 degrees
+    - integrate undo-history with browser history (back/forward buttons)
 
 - performance:
     maybe try this for rendering the execution trace:
@@ -69,7 +62,7 @@ TODO
     - multiverse execution history
         stable tree layout?
             https://pub.dev/packages/ploeg_tree_layout
-    - local scopes
+    - local variable scopes
 
 for the assignment:
     *ALL* features

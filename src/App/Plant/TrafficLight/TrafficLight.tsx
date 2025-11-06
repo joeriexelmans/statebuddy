@@ -11,10 +11,11 @@ import trafficLightConcreteSyntax from "./model.json";
 import { parseStatechart } from "@/statecharts/parser";
 import { ConcreteSyntax } from "@/App/VisualEditor/VisualEditor";
 import { detectConnections } from "@/statecharts/detect_connections";
-import { comparePlantRenderProps, makeStatechartPlant, PlantRenderProps, StatechartPlantSpec } from "../Plant";
+import { makeStatechartPlant, PlantRenderProps, StatechartPlantSpec } from "../Plant";
 import { RT_Statechart } from "@/statecharts/runtime_types";
 import { useAudioContext } from "@/App/useAudioContext";
 import { memo, useEffect } from "react";
+import { objectsEqual } from "@/util/util";
 
 const [trafficLightAbstractSyntax, trafficLightErrors] = parseStatechart(trafficLightConcreteSyntax as ConcreteSyntax, detectConnections(trafficLightConcreteSyntax as ConcreteSyntax));
 
@@ -23,19 +24,20 @@ if (trafficLightErrors.length > 0) {
   throw new Error("there were errors parsing traffic light plant model. see console.")
 }
 
-export const TrafficLight = memo(function TrafficLight({state, speed, raiseUIEvent}: PlantRenderProps<RT_Statechart>) {
+type TrafficLightState = {
+  redOn: boolean,
+  yellowOn: boolean,
+  greenOn: boolean,
+  timerGreen: boolean,
+  timerValue: number,
+}
+
+export const TrafficLight = memo(function TrafficLight({state: {redOn, yellowOn, greenOn, timerGreen, timerValue}, speed, raiseUIEvent}: PlantRenderProps<TrafficLightState>) {
   // preload(imgBackground, {as: "image"});
   preload(imgRedOverlay, {as: "image"});
   preload(imgYellowOverlay, {as: "image"});
   preload(imgGreenOverlay, {as: "image"});
   
-  const redOn = state.mode.has("85");
-  const yellowOn = state.mode.has("87");
-  const greenOn = state.mode.has("89");
-
-  const timerGreen = state.mode.has("137");
-  const timerValue = state.environment.get("t");
-
   const [playURL, preloadAudio] = useAudioContext(speed);
 
   // preloadAudio(sndAtmosphere);
@@ -89,10 +91,20 @@ export const TrafficLight = memo(function TrafficLight({state, speed, raiseUIEve
     <br/>
     <button onClick={() => raiseUIEvent({name: "policeInterrupt"})}>POLICE INTERRUPT</button>
   </>;
-}, comparePlantRenderProps);
+}, (oldProps, newProps) => {
+  return objectsEqual(oldProps, newProps);
+});
 
-const trafficLightPlantSpec: StatechartPlantSpec = {
+const trafficLightPlantSpec: StatechartPlantSpec<TrafficLightState> = {
   ast: trafficLightAbstractSyntax,
+  cleanupState: (state: RT_Statechart) => {
+    const redOn = state.mode.has("85");
+    const yellowOn = state.mode.has("87");
+    const greenOn = state.mode.has("89");
+    const timerGreen = state.mode.has("137");
+    const timerValue = state.environment.get("t");
+    return { redOn, yellowOn, greenOn, timerGreen, timerValue };
+  },
   render: TrafficLight,
   uiEvents: [
     {kind: "event", event: "policeInterrupt"},

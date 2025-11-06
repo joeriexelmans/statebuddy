@@ -30,6 +30,8 @@ export const SpeedControl = memo(function SpeedControl({showKeys, timescale, set
   }, [onTimeScaleChange, timescale]);
 
   const onKeyDown = useCallback((e: KeyboardEvent) => {
+    // @ts-ignore
+    if (["INPUT", "TEXTAREA", "SELECT"].includes(e.target?.tagName)) return;
     if (!e.ctrlKey) {
       if (e.key === "s") {
         e.preventDefault();

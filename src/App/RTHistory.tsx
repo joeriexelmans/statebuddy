@@ -12,9 +12,30 @@ type RTHistoryProps = {
   ast: Statechart,
   setTime: Dispatch<SetStateAction<TimeMode>>,
   showPlantTrace: boolean,
+  propertyTrace: {timestamp: number, satisfied: boolean}[] | null,
 }
 
-export function RTHistory({trace, setTrace, ast, setTime, showPlantTrace}: RTHistoryProps) {
+function lookupPropertyStatus(simtime: number, propertyTrace: {timestamp: number, satisfied: boolean}[], startAt=0): [number, boolean | undefined] {
+  let i = startAt;
+  while (i >= 0 && i < propertyTrace.length) {
+    const {timestamp} = propertyTrace[i];
+    if (timestamp === simtime) {
+      // exact match
+      break;
+    }
+    else if (timestamp > simtime) {
+      i--;
+      // too far
+      break;
+    }
+    // continue...
+    i++;
+  }
+  i = Math.min(i, propertyTrace.length-1);
+  return [i, propertyTrace[i] && propertyTrace[i].satisfied];
+}
+
+export function RTHistory({trace, setTrace, ast, setTime, showPlantTrace, propertyTrace}: RTHistoryProps) {
   const onMouseDown = useCallback((idx: number, timestamp: number) => {
     setTrace(trace => trace && {
       ...trace,
@@ -26,6 +47,7 @@ export function RTHistory({trace, setTrace, ast, setTime, showPlantTrace}: RTHis
   if (trace === null) {
     return <></>;
   }
+  let j = 0;
   return trace.trace.map((item, i) => {
     const prevItem = trace.trace[i-1];
     // @ts-ignore
@@ -33,7 +55,16 @@ export function RTHistory({trace, setTrace, ast, setTime, showPlantTrace}: RTHis
     if (!showPlantTrace && isPlantStep) {
       return <></>
     }
-    return <RTHistoryItem ast={ast} idx={i} item={item} prevItem={prevItem} isPlantStep={isPlantStep} active={i === trace.idx} onMouseDown={onMouseDown}/>;
+    let propertyClasses = "status";
+    if (propertyTrace !== null) {
+      let satisfied;
+      [j, satisfied] = lookupPropertyStatus(item.simtime, propertyTrace, j);
+      // console.log(item.simtime, j, propertyTrace[j]);
+      if (satisfied !== null && satisfied !== undefined) {
+        propertyClasses += (satisfied ? " satisfied" : " violated");
+      }
+    }
+    return <RTHistoryItem ast={ast} idx={i} item={item} prevItem={prevItem} isPlantStep={isPlantStep} active={i === trace.idx} onMouseDown={onMouseDown} propertyClasses={propertyClasses} />;
   });
 }
 
@@ -55,7 +86,7 @@ function RTEventParam(props: {param?: any}) {
   return <>{props.param !== undefined && <>({JSON.stringify(props.param)})</>}</>;
 }
 
-export const RTHistoryItem = memo(function RTHistoryItem({ast, idx, item, prevItem, isPlantStep, active, onMouseDown}: {idx: number, ast: Statechart, item: TraceItem, prevItem?: TraceItem, isPlantStep: boolean, active: boolean, onMouseDown: (idx: number, timestamp: number) => void}) {
+export const RTHistoryItem = memo(function RTHistoryItem({ast, idx, item, prevItem, isPlantStep, active, onMouseDown, propertyClasses}: {idx: number, ast: Statechart, item: TraceItem, prevItem?: TraceItem, isPlantStep: boolean, active: boolean, onMouseDown: (idx: number, timestamp: number) => void, propertyClasses: string}) {
   if (item.kind === "bigstep") {
     // @ts-ignore
     const newStates = item.state.sc.mode.difference(prevItem?.state.sc.mode || new Set());
@@ -63,6 +94,8 @@ export const RTHistoryItem = memo(function RTHistoryItem({ast, idx, item, prevIt
       className={"runtimeState" + (active ? " active" : "") + (isPlantStep ? " plantStep" : "")}
       onMouseDown={useCallback(() => onMouseDown(idx, item.simtime), [idx, item.simtime])}>
       <div>
+        <div className={propertyClasses}/>
+        &emsp;
         {formatTime(item.simtime)}
         &emsp;
         <div className="inputEvent"><RTCause cause={isPlantStep ? item.state.plant.inputEvent : item.state.sc.inputEvent}/></div>
