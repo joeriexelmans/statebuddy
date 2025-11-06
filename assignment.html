@@ -1,0 +1,338 @@
+<dtml-var simple_html_header>
+  <style>
+    h5 {
+       background: unset !important;
+       border: unset !important;
+       padding: unset !important;
+       text-transform: unset !important;
+       font-weight: bold !important;
+    }
+  </style>
+
+<h2 id="practical-stuff">Practical stuff</h2>
+<ul>
+  <li> <b>Due Date:</b> ?? November 2025, before 23:59 (Blackboard's clock).</li>
+  <li> <b>Team Size:</b> 2 (pair design/programming)!<br/>
+  <i>Note that as of the 2017-2018 Academic Year, each International student should team up with "local"
+    (i.e., whose Bachelor degree was obtained at the University of Antwerp).</i></li>
+  <li><b>Assignment overview:</b>
+    <ol>
+      <li>Review the exercises</li>
+      <li>Implement Statechart</li>
+      <li>Write report</li>
+    </ol>
+  </li>
+
+  <li> <b>Submitting your solution:</b>
+    <ul>
+      <li>
+        <em>Only one</em> member of each team submits a full solution. Either a ZIP-archive if you have multiple files, or just a PDF containing your report.
+      </li>
+      <li>
+        The other team member <em>must</em> submit a single (plain text or HTML) file containing <em>only</em> the names of both team members. This will allow us to put in grades for both team members in BlackBoard.
+      </li>
+    </ul>
+  </li>
+
+  <li> <b>Submission Medium:</b>
+    <a href="http://blackboard.uantwerpen.be">BlackBoard</a>.
+  </li>
+
+  <li> <b>Contact / TA:</b>
+      <a href="mailto:Joeri.Exelmans@uantwerpen.be">Joeri Exelmans</a>.
+  </li>
+</ul>
+
+<h2 id="goals">Goals</h2>
+<p>The goal of this assignment is to familiarize yourself with Statechart modeling, simulation, debugging and, to a lesser extend, checking formal properties on your solution.</p>
+
+<style>
+  figcaption {
+    font-style: italic;
+  }
+  ol.requirements > li::marker {
+    content: "R" counter(list-item) ". ";
+  }
+  ol.stepped > li::marker {
+    content: "Step " counter(list-item) ": ";
+  }
+  ol.stepped > li {
+    margin-left: 10pt;
+  }
+  .interface {
+    background-color: #faebd2;
+    padding: 2pt;
+    padding-left: 20pt;
+    border-width: 1px;
+    border-color: #000;
+    border-style: solid;
+  }
+  .tip {
+    background-color: #eee;
+    padding: 6pt;
+    border-width: 1px;
+    border-color: #000;
+    border-style: solid;
+    display: inline-block;
+    margin: 4pt;
+  }
+  table {
+    border-collapse: collapse;
+  }
+  table, tr, td, th {
+    border:1px solid black;
+    padding: 4pt;
+  }
+</style>
+
+<h2 id="getting-started">Getting Started</h2>
+<p>We will use the brand-new Statechart editor, simulation and testing environment <a href="https://deemz.org/git/research/statebuddy">StateBuddy</a>, created by yours truly.</p>
+<img src="./logo-playful.svg"/>
+<p>No need to install anything. <a href="https://deemz.org/public/statebuddy">StateBuddy</a> runs in the browser.</p>
+<div class="tip">
+Note: StateBuddy will be updated from time to time, to fix bugs or add new features. To make sure you have the latest version, in StateBuddy, use the shortcut <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd> to refresh the page while clearing your browser cache.
+</div>
+
+<h2 id="exercises">Exercises</h2>
+<p>Before we start working on this assignment, we will solve 5 small exercises.
+Each exercise shows you a small Statechart model, and asks a question about its behavior.
+If you can solve the exercises, you will have a good (enough) understanding of the precise semantics of StateBuddy.</p>
+
+<p>The exercises can be opened by clicking on their respective links:</p>
+<ol>
+  <li><a href="https://deemz.org/public/statebuddy/#eJyFVNuO2jAQ/RXLz5GInQuE13Yfql5Uafu23UohGRariY1sZ4FF/Htn4rAk0JYXRM7MOZ77kZedNx+M1lB5vvS2g6iHHitrmoYv12XjENo2pfbk5vjyeIq425jdZzi4d4c3Y1q+FBFX2oH1X00NfMk97D0f2N/KlqC6a9sDYlArb+yjLz2iR25Np32pXxpAzacj71SNzjE6erP9AmtPTnu+nM8jfsCHREFRqDcY8ETK3pDkGRp+K010Y/kpOmvJGy0hi54j88VUTGTBIOT8Ilbi7+k56nMax5jxgJHL2oNlwrEZ+6WwpPbmSVkMYc7l6RLa/FpC9hKm83+RSEXeS6R5MpJYXCRmM/awx5IrzfwGmFl5/As1gz1UnVcGYVtWEP3Uu42qNqxs8BmNfXBsBX4HEHh9AgyzZn0cRNJOEf82qzxklWEhLyEVk5CCnOv7fcMXQ1XkuCoingiEKP4hkGShYWlxoh6V1prduEkCKUi1760XaU/IJTYYqL8BHhIRYhxIck1OB69FMmHL+DxP486kV2yZhhFOinTKLpKAJ+O38yt2kseh+4tiwk7jkFCKI0sVqFXZGl1TDfBroxwu2yF8aCzpp4+UJEpDg4tPPUXTsNfDNUDwst6Ef7dmi6utYAo/nMfqB03V+Yb0BFr7AT3fkZEGxeLKV6h7FwKeeAOe5cxBRbGzF8NWeCuwi8MOKq3onjjVekXXJKZCDTZC7Ngo4vi/dnnHntyxp3fs2R17TvbnZxpXrPYrDPU9UFp/AFFzv5g=">
+    nested timed transitions</a></li>
+  <li><a href="https://deemz.org/public/statebuddy/#eJx9VMtu2zAQ/BWVl1wERyQlWdKtjxyKPlAgBXpIc1AlJiZqkwZJOXYM/3uXFGWLktOLAS13hsvx7BxR3Rn5UQrBGoMqozoWu9J9o+R6jaqneq2htF3Xwtg2jarjKUZ6JV++sIM+N7xKuUEVjhEXminzTbYMVciwvUEe/b3e2FLbbTYHqLGWG6nuTW2gekRKdsLU4nnNgPPhiDreQnMCjUZuv7InY5v2qFouY3SAi3Bpp+CvzNcpIe6A5hkc/OXCwqVCp3jgKmdceVF4DAnJ8LLwtywvZDX8XtjIjA2T0oFIXkzYsv4AkzfZivlsJe5BdMo2KJCkE7bH2Ok91g+7Me2fUCE2uyNLe81wmZ4us2D6X0zSz0WX2RiTXjC3t9GvFRMRF9vORGzHhIlu2E0km6ZTerFY/BZmxXVkVC00N1xCq46aldRMVPP7qBcvxeP7suA+eH4kpIkcrxTsCg3uaSgNnpoHNHd7MCoX72botEgcOkuXY3QRoDnskIq0M/SUgGDvTkLGBGVAIDvzNgHNvAzliIAkAcH7+bb4wXE5Vo/gAPbhypJRB0tJcbK2qpWSL4GvAAKDqrP3ceoAbpGYtWRfzr3B8PjZdAoebFjQAE2SYaHoWLRkAifDFmdZAM+L3qkpDpwzHZ2W/T4RTCdwr3hJnQYtrzdStFYF+AKjQXod+g8BUn7+BBTwDs3WkKRganvkg9LHKxQveWnrP5TcQlZyFpbv9qzpbPdPVTdsCGUHsDnqq0MwjzjsLLresda12MIDur6FKIa/0mcHF9xmtOYbw21CJ1as8xmgg0OQyHINYc7+dM8LBtnzaG0Cb9wx/6qDZfoH1nrr4Q==">
+    parent-first</a></li>
+  <li><a href="https://deemz.org/public/statebuddy/#eJydlUtv4jAQx79K5NtKSMSP2A5ST7t7qPahlbq3bg8WuBAVYuSYFor47juODbWTZV8XUCb+/zyvzByR2jnz3rStnjs0c3anJ73pbm7Neo1mj2rdgWm7Vq3zxzo0O54mqFuZl0/60F0OvBqzQTM8QU3baeu+mIVGM+T03qGo/qo23rTYbTYHsOlF44y9c8qB9Yis2bVOtcu1Bub9Ee2aBRzGGE46s/2sH50/tYcrSj5BB/gnpfejedXxhcR1/6KqJLx4aloPUPB7mlxwZIxjOOA4y3GUi/4FkwnO2JRGR7SK1pFGBrSqjDRxjSZGNM54FFU5DdNAk/xapGQcKWEs0ET9rzTMf+FbyBup6YBGQt4kuerbOG8k5o306fkb2sOkb660WUiJgtE3nllCKxX3zjzp9uamfPjRTovwMG4pwWNmiDwlbuIhbpwEHqvKSCrk/+kH5ST6keHEH/0glQxCyhMhTfKhW2cPxfnqckyQIZJapIAkA9Npgd8Vt8XSFI+N7dw4FzK2fo1TBMkQJCI6PTdQxZEXdag2lpkbNGP01xcr1YVgxtUsQzIqWqYQlkGCA7+h0DJOEwIphWZT1pqXbDSBpHPKXgYJDk3Uf/naN2owx5pinNYUy4Fa0OA0FblcxM+MyTQYXA/kXJzHC8vknJ+xWWezgZzSMGgo55mcxs+SCZbKq4GcxFuYkJmccH4JKpEPY+ciVJ2wQexlFYdC5vwwdiLjJKL57bSMWJgdvoKLRm2g5r6G8LRqOlg/h/DQQl/cfvBTGtB6DauwMa1/FTdd3I9gfFt43v7Nmi0su0bn5o97Pd/509+tmuvzVu0FfhFG63mzJgzvS6ee9aI/Eg0KLn7W8SpwuDz9BNaZRTg=">
+    order of orthogonal regions</a></li>
+  <li><a href="https://deemz.org/public/statebuddy/#eJyVlU1v2zAMhv9KoXOA6NuWgR62dodhHxjQ3YYdhFhdjTpSIMtt0iD/fZKlJLKdFNsliCk+LymKEvdA9s7cGa3VyoHK2V4tBtPDypq2BdWjbDtv2rRSu+DWgWp/WIDuybx+Ubvu5PBmzBpUaAEa3SnrvplagQo4tXUg0d/lOpjqfr3eeZuqG2fsg5POW/fAml47qf+0ymv+2oO+qb0zQt7Tmc1X9eiC1xZUvFyAnY8Ey5BG86aSvRBwWGAY+oXnRgde+t/D4qSGZ2oJQrgYqxFeDAu0LM9qxuZiZCbmnZMam6gxmNSKa2rFTI0JFiE62SkiUa3k1zaK5xtFgiQ1/L9qiF/ILUKY8YkajnUr8dXc5nVDqW6YwX9U+70YWitvFQJBNPr/Sju7u1neOPOs9C2cBcSER112OCdGy7PAcnnzYU6xlKYockyMsI9zjNNYeUEzjMERdjfvc45SNJ5jaITdX8B4ioZyDGfFmTFE4IEhKK8HI+8xDB/jwJxh7zGYixhHkEM4QmmteR1dd490TtojUKQrHdpChdOPXYGOT0AeGpcTmKcMMWQjnDOaui2vEBYTHKd7gSEa4b7lo52OmodPcIKS2/CAnHEm4rHSIk+eFhOcCZq2Po5OcHmyZ2Wn0+RZrDQlxcXkCRHDCdSNXBtdhzPwX09N55/kXfzQ/hQ/3/tInuhU68dDY3RYSq9/mhneeB4Cwf7Dmo0fAI0amz9t1aoP3j+tXKnjpBmAMByS9ThtMo2QSydfVD24JIP0gV9UCuUThoe/IgP68w==">
+    crossing orthogonal regions</a></li>
+  <li><a href="https://deemz.org/public/statebuddy/#eJyVVU1v2zAM/SuCLr0EqyVLsp3b1vYw7AMDutvQDVqsNsIcKZCVNmmQ/z7aUhrZbrDuEjgU3yNFPop7LDfeXllj1MLjuXcbNetNtwtnmwbP72XTgmndSOM7txbP94cZbpf26ZPatS8Oz9au8JzMsDatcv6LrRWeY6+2Hkf0V7nqTPVmtdqBTdXaW3frpQfrHju7MV6ah0YB54893uganAkBT2/Xn9W977y2eC7KGd5BpKzs0tDPKtqLKusPhOgO/mjT4SX8HmYvbHTCFkGEFkO2XBSBLRcnNutSsnxCxsqYG+UjNh5zy/kZNl5N2EjJAoiObkoY7Q8qcfaixYSNV7wHMTZmy0Nu5Vk2Oi0bqfLIRv+XjYhXcgsgysWIjYYulPRsbtMukNgFyrM3st3NeqGmwmMlDkb4vrxE7ydRKI9RquJwSodVA9iHKUyEprKKJTCeDWBXU9ELEqOJFEYGsOtXYCJGIymMnmAKXaKfv7TxyhnZ3Dwq46c5FyHnvOQpixgEv9nCkGuD/FIh+9vDp6qR2qrFxmsLZicXCj0tlUFO6labB6TNeuORgpDoQl1Mh0lEJWWDSiV9+UfaQgSN5oNSC/JmAirCyPAiLbqgg3uTd0ijB4vutWtfK10YVcLzlCIfUNBI0aqFBTlO7lHEN4pDE0Gq0jn7NHgkAdJ66Y6A6N/LX3UqD+onx4czS1Kh5QgsaJAMzfgALjiLU5VKiVYjOI3zTzMygMNoBztLNcTEGB6j5HkxgofRZXk6bbwYJ8+rAGfD6OI4dfBcJW3IJtEDnPePfhI9ShFq03eg1nIFnep6AP+WuoVFtgt/DHT14zW4QsBWNbBUQf3dUdyZcdOC8bQ6O/s3Z9ewNrUamm+OA/S9m5/jfu4B3UqN1uOOTji6XFr5qOreJRokBH5UMRQknB3+AhSjWss=">
+    internal events (yes, there's a bug here that i should fix)</a></li>
+</ol>
+
+
+<div class="tip">
+  To solve the exercises, you <b>must have a good understanding of the precise semantics of StateBuddy</b>.
+  The semantics are as follows:
+  <ul>
+    <li>The execution of a Statechart is a sequence of Run-To-Completion (RTC) steps</li>
+    <li>An RTC-step can only triggered by:</li>
+    <ul>
+      <li>An input event</li>
+      <li>A timer that elapses (actually, an elapsing timer generates an input event behind the scenes)</li>
+    </ul>
+    <li>An RTC-step is instanteneous: it takes zero time.</li>
+    <li>In between RTC-steps, the Statechart is idle (it will not change its state), and time may pass.</li>
+    <li>An RTC-step consists of one or more fair-steps:</li>
+    <ul>
+      <li>During the first fair-step, only the input event (or timer event) that triggered the RTC-step is active.</li>
+      <li>During a fair-step, orthogonal regions are visited in <em>lexicographical order</em>. For instance, if you have regions labeled A and B, then A will be visited before B.
+        <ul>
+          <li>Within one fair step, every (orthogonal / non-overlapping) region is allowed to fire <em>at most one transition</em>. A region will fire a transition only if it has an enabled transition (wrt. the currently active event, and the transition's guard condition).</li>
+          <ul>
+            <li>When a transition fires: first, all the exit actions of all the exited states are executed (in order: child to parent), then the action of the transition itself, followed by the enter actions of the entered states (in order: parent to child)
+              <figure>
+                <figcaption>In <a href="https://deemz.org/public/statebuddy/#eJx9ldtu3CAQhl8l4tpSzcEY+y5NUqnqQZXSu6qV0Jo0Vr0QYZzsZrXvXjA4iw/kxtod+D+GmWHmBPhg1I2SUuwMqI0eRDaa7ndadR2oH3jXW9NTx6Vx23pQn84Z6B/Vyxdx7N82vCq1BzXMQCt7oc031QhQAyMOBgT1d753pmbY74/WJprWKH1vuLHWE9BqkIbLv52wzF8nMLSN3UztRqOevooH4zYdQF2WJANHexKmzo32VYQFVMJxgWBiF/610umVBudsguUrGKKlh5EljFYBViZgcAXDORo1iKAFLPcuY5jyrFzBGAwwvIIVHpazBIytYSRoSjaH2XuHYBYXGLffCw2t74l90AjKE7R8SfudjZUQZxZi4I32t7j6cPVHHMTup+ayb02r5PXOffvV4ZSGLFN2jpJBIpg0+jgCpRFaNNcrBoE+HJBVMaNIMz5uMLwfiJGYQdOMmySDUBozyjTjdsWoIAuFCmMGSzPuNhjhLvOYVmnGpzUD+XqFNI4pyiPGoTU+z615NxoVigkwRdjISU7D0yhjAkoRtirDv1QE42ginCJs5ANhf4uiiAkkRXgnGyzOBipShK1ckEt926fHtVYv8dtz9+kN129tsKiihyvcuw0dbWqPcTjIUl15NcrhXE1CMHF8kWKhxkXoTWyhrnIfSBiXA8wXcja5WM3lrAj9E81qGi7lZSiZsWdf5FMScIljOVrICQtOlovTyWSnYwaalu+VbFwO7L/HtreT7+j/SJvTz7fu8Vm06MTY99xSGLJhNI/NcJq1zv5Dqyc7Z1sxN9/ZLjq43baV7sQ00EeBm8HBOg31iOF86fmzaMYtwcDtwc8iHGUdzs//AZNxcAM=">this example</a>, when firing the transition from A to F, first the exit actions of A, B, and C are executed, then the actions of the transition itself, and finally the enter actions of D, E and F (in that order).</figcaption>
+              </figure>
+            </li>
+            <li>Any internal events that are raised (as a result of firing transitions), are added to the internal event (FIFO) queue.</li>
+          </ul>
+        </ul>
+      </li>
+      <li>When a fair-step has completed:
+        <ul>
+          <li>if the internal event (FIFO) queue is not empty, then a new fair-step starts. The next event is popped from the queue, and it becomes the new active event.</li>
+          <li>if the internal event queue is empty, then no more fair-steps are executed, and the RTC-step ends.</li>
+        </ul>
+      </li>
+    </ul>
+  </ul>
+  <p><b>Example:</b>
+    Consider the <a href="https://deemz.org/public/statebuddy/#eJyVVltv2jAU/ivIz2j1PQlvW9tJ0y6a1L1N3WSBaaNBjBLTQhH/fSfJSbFjOo0XRI79fed+fA7EbL27dlVl557MfL210050N6/dakVmS7NqQLRZmcq31xoyOxynpHl0z5/tvnm98OLcmszYlJRVY2v/1S0smRFvd54g+ptZt6LFdr3eg8wuSu/qO288SA+kdtvKm+phZYHz54FsywVcZgxuerf5Ype+vbUjM51PyR400bw1o3yxKGdMF92JzBWc/CmrlsDA73H6SscTuoL2dDyL6YTOejaZn9hcHZBpmZDlWiCbGLEpimzZG2xMJGwyR1e5upgtS9hUoQKHwsCJni3Xb4WNp2FjhUA2fimbVmkSssEhfSkb02c87UFcjdl4n9Ocv+lpmgWGWeCKXsqmU9sKrZBN/ifb/bTrorArZE56Ify/upq8T7RwhTYX2fFkjiwi2IcUpmWfhkIGMEUj2HXakZqhNh3CWAS7OQPTqI2FMH6C2cnV5NfvZWpn3isUeWRnEJUzIJ0VCAqt1Dyykr2blJMHN1mWdeNTvRnvG1KJkEJEFBwpGjt3kL/UDBw4KvRax6m5TauQCo1BDn3O4tx8PIOTDKdiEeLYP2PFqJIYrDxExcES6Kl/LOvUUdDclzqToBmq2NS1e46GO2Aab+oBgZHp+sy2DYBzfRj4NDCF5yOw5hgfqiK4Rk94FG9ejOAcBw2nLILDDOnlUoWdpMfwIV4iG8HxFRFhI6psbLzC2pSxdj00JEzZoFjGcAgNdiAVcewoL9D8MPt6HDyorsH+YkQg8FGVtEviojRrKOs2jfD1WDbwhu/7jwoK49MNpBFehsauYJ8oXdUe4bqASwYIT1tDK/9euw1sDKWNxbc7O9+2t3/UZm6H1aQDtNsESof1JOBobWnMk110V1BgQPGTRVVgMD3+Bdcwk9o=">linked Statechart</a>.
+    After initialization, the current states are: OrthogonalState, A, C, E.
+    Then, the Statechart remains idle until it receives an input event. Suppose at time T=5s, the input event <em>e</em> is received. This triggers the execution of an RTC step.
+    The RTC step starts with a fair-step, where regions <em>r1</em>, <em>r2</em> and <em>r3</em> (in that order) are allowed to fire at most one transition each.
+    Only <em>r1</em> has an enabled transition (because event <em>e</em> is active), so only <em>r1</em> fires.
+    During the firing of that transition, the internal event <em>f</em> is raised, an appended to the internal event queue.
+    The fair-step ends, and one more fair-step is executed, because the internal event queue is not empty.
+    So again, <em>r1</em>, <em>r2</em> and <em>r3</em> are allowed to fire at most one transition.
+    This time, the regions <em>r2</em> and <em>r3</em> will fire, because event <em>f</em> is active.
+    The second fair-step ends, and since the internal event queue is empty, the RTC step also ends.
+    Even though all transitions fired in a certain order, all of it happened at the same point in (simulated) time.
+    Now, the Statechart will again remain idle until another input event occurs.
+    <figure>
+      <table>
+        <tr><th>Time</th><th></th>                                  <th></th>                             <th><em>r1</em></th>                                         <th><em>r2</em></th>      <th><em>r3</em></th>       </tr>
+        <tr><td>=0</td><td>Initialization</td>              <td></td>                             <td>enter <em>A</em></td>                                    <td>enter <em>C</em></td> <td>enter <em>E</em></td>  </tr>
+        <tr><td>>0 &amp;&amp; <5s</td><td>Idle</td>              </tr>
+        <tr><td>=5s</td><td>RTC step (input=<em>e</em>)</td> <td>Fair-step (event=<em>e</em>)</td> <td>fire (exit <em>A</em>, raise <em>f</em>, enter <em>B</em>)</td> <td></td>                 <td></td>                  </tr>
+        <tr><td></td><td>                           </td> <td>Fair-step (event=<em>f</em>)</td> <td>                                                         <td>fire (exit <em>C</em>, enter <em>D)</em></td>  <td>fire (exit <em>E</em>, enter <em>F</em>)</td></tr>
+        <tr><td>=5s</td><td>End of RTC step</td></tr>
+      </table>
+    </figure>
+  </p>
+  Please remember that these precise semantics are specific to StateBuddy, although they are very similar to YAKINDU / Itemis Create. Other Statechart tools (e.g., STATEMATE, Rhapsody, StateFlow) have different semantics.
+</div>
+
+<h2>Introduction to Assignment</h2>
+
+<p>You will use the Statecharts formalism to model the controller of a classic digital watch (before smart watches existed).</p>
+
+<figure>
+  <img src="screenshot-dwatch.png"/>
+  <figcaption></figcaption>
+</figure>
+
+<p>All user input happens through 4 buttons (one in each corner).</p>
+<p>The watch can display 6 numbers, in the form HH:MM:SS when displaying the current time, or the time of the alarm, or in the form MM:SS:HS (HS means hectoseconds) when displaying the chronometer.</p>
+<p>The watch has a background light that can be on or off.</p>
+<p>The watch can make a beep-sound.<p>
+<p>The time can be edited.</p>
+<p>An alarm can be turned on or off. The alarm time can also be edited.</p>
+<p>The chronometer can be started, paused, and reset.</p>
+
+
+<h2>Interfaces</h2>
+<p><em>You</em> will implement the plant (= digital watch) controller as a Statechart. The controller only talks to the plant via input-events and output-events. In StateBuddy, you can also interactively raise input events directly into the controller statechart (Debugger UI). Finally, the plant also has its own UI, which sends input events to the plant.</p>
+<p>For the curious student: Yes, the (simulated) plant is also <a href="https://deemz.org/public/statebuddy/#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">implemented as a (rather big) Statechart</a>.</p>
+<figure>
+  <img style="width: 700px" src="sus.png"/>
+  <figcaption>Overview of our simulated system-under-study.</figcaption>
+</figure>
+
+The plant can send the following events to the controller:
+<table>
+  <tr>
+    <th>Controller input event(s)</th><th>Received when...</th>
+  </tr>
+  <tr>
+    <td>topLeftPressed, topRightPressed, bottomLeftPressed, bottomRightPressed</td>
+    <td>one of the 4 buttons is pressed</td>
+  </tr>
+  <tr>
+    <td>topLeftReleased, topRightReleased, bottomLeftReleased, bottomRightReleased</td>
+    <td>one of the 4 buttons is released</td>
+  </tr>
+  <tr>
+    <td>alarm</td>
+    <td>the alarm should go off</td>
+  </tr>
+</table>
+<br/>
+
+The controller can send the following events to the plant:
+<table>
+  <tr>
+    <th>Controller output event(s)</th><th>Effect</th>
+  </tr>
+  <tr>
+    <td>lightOn, lightOff</td>
+    <td>turns on / off the background light</td>
+  </tr>
+  <tr>
+    <td>beep</td>
+    <td>make a beep sound for 10ms</td>
+  </tr>
+  <tr>
+    <td>incTime</td>
+    <td>increment the watch's time by one second</td>
+  </tr>
+  <tr>
+    <td>incChrono</td>
+    <td>increment the watch's chrono by 1/100 second</td>
+  </tr>
+  <tr>
+    <td>resetChrono</td>
+    <td>sets the chronometer back to 00:00:00</td>
+  </tr>
+  <tr>
+    <td>displayTime</td>
+    <td>puts the watch into a mode where it displays the current time</td>
+  </tr>
+  <tr>
+    <td>displayChrono</td>
+    <td>puts the watch into a mode where it displays the chronometer</td>
+  </tr>
+  <tr>
+    <td>displayAlarm</td>
+    <td>puts the watch into a mode where it displays the time of the alarm</td>
+  </tr>
+  <tr>
+    <td>setAlarm(boolean)</td>
+    <td>turns the alarm on (true) or off (false). if the alarm is on, and the plant detects that the current time is equal to the alarm time, then the plant will immediately send the 'alarm' event (explained above) to the controller.</td>
+  </tr>
+
+  <tr>
+    <td>beginEdit</td>
+    <td>puts the plant into 'edit mode'. if the plant was displaying the current time, you can now edit the current time. if the plant was dispalying the alarm time, then you can now edit the alarm time. After entering edit mode, the 'hours' part of the display will start blinking, indicating that the 'hours' can be edited.
+  </tr>
+  <tr>
+    <td>endEdit</td>
+    <td>ends the 'edit mode'.
+  </tr>
+  <tr>
+    <td>incSelection</td>
+    <td>when in 'edit mode', will increase the currently blinking part (i.e, hours, minutes or seconds) of the display by one</td>
+  </tr>
+  <tr>
+    <td>selectNext</td>
+    <td>when in 'edit mode', will select the next item (hours -> minutes -> seconds -> hours) to edit</td>
+  </tr>
+</table>
+
+<h2>Behavioral Requirements</h2>
+<ol start="0" class="requirements">
+  <li>As long as the top-right button is pressed, the light should be on, and after the top-right button is released, the light should remain on for 2 seconds.</li>
+</ol>
+
+<h2>Testing your solution</h2>
+<p>To test your solution, initialize the execution, and interact with the plant UI. The execution can run in (scaled) real-time, with the ability to pause/resume.</p>
+<p>To gain more confidence that you correctly implemented the requirements, you can write Metric Temporal Logic (MTL) properties. An example of such a property is:
+  <pre>G (topRightPressed -> (lightOn U (~topRightPressed & F[0,2] lightOn)))</pre>
+meaning: "as long as the top-right button is pressed, the light should be on, and after the top-right button is released, the light should remain on for 2 seconds" AKA Requirement 1.
+</p>
+
+<div class="tip">Tip: ChatGPT is quite good at translating natural language to MTL properties!</div>
+
+<p>Note that none of these testing approaches are exhaustive (unlike model checking, which <em>is</em> exhaustive). Any property you write will only be checked on the current simulation trace.</p>
+
+<h2>Report</h2>
+<p>You are also <b>required</b> to write a small(*) (HTML or PDF) report.</p>
+<p>(*) I don't have time to read 100 pages!</p>
+<p>It must include the following:</p>
+<ul>
+  <li>The <b>names and student IDs</b> of the team members</li>
+  <li>The amount of <b>time spent</b> working on the project: Please be honest, this helps us estimate the workload for future assignments.</li>
+  <li>Your <em>workflow</em>: How did you work together? (pair programming / divided the work / ...) In what order did you implement different features? Encountered any difficulties?</li>
+  <li>A link to your solution (just copy the big URL including the hashtag when you're done).
+    <ul><li>If there are non-trivial parts in your solution that require explanation, then include this explanation either in the model itself (as comments (starting with '//')), or in your report, whatever you prefer.</li></ul></li>
+</ul>
+
+
+<h2>What is expected</h2>
+<p>Your solution needs to be <b>precisely</b> correct: superficially correct behavior when running the generated code with the GUI (e.g., seeing the water levels change) is <b>not enough</b>: the timing-related requirements are <b>exact</b>.</p>
+<p>The assignment has been designed specifically to encourage use of as many Statechart features as possible:</p>
+<ul>
+  <li>composite states</li>
+  <li>orthogonal states</li>
+  <li>timed transitions</li>
+  <li>internal events</li>
+  <li>guard conditions</li>
+  <li>transition actions</li>
+  <li>enter/exit actions</li>
+  <li>(variables)</li>
+  <li>(history)</li>
+</ul>
+<p>Make sure you understand these features, and use them, where you think they are appropriate.</p>
+<p>To give you an indication of the complexity, my own solution consists of 19 AND-states, 10 OR-states, and 36 transitions.</p>
+
+
+<h2>Additional resources</h2>
+<ul>
+  <li>Microwave example</li>
+  <li>Traffic light example</li>
+</ul>
+
+<dtml-var standard_html_footer>
