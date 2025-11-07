@@ -326,6 +326,7 @@ function attemptSrcState(simtime: number, sourceState: AbstractState, event: RT_
 
 // A fair step is a response to one (input|internal) event, where possibly multiple transitions are made as long as their arenas do not overlap. A reasonably accurate and more intuitive explanation is that every orthogonal region is allowed to fire at most one transition.
 export function fairStep(simtime: number, event: RT_Event, statechart: Statechart, activeParent: StableState, {arenasFired, environment, ...config}: RT_Statechart & RaisedEvents): RT_Statechart & RaisedEvents {
+  console.log('fair step', event, activeParent);
   environment = environment.enterScope(activeParent.uid);
   // console.log('fairStep', arenasFired);
   for (const state of activeParent.children) {
@@ -346,6 +347,7 @@ export function fairStep(simtime: number, event: RT_Event, statechart: Statechar
 }
 
 export function handleInputEvent(simtime: number, event: RT_Event, statechart: Statechart, {mode, environment, history}: {mode: Mode, environment: Environment, history: RT_History}): BigStep {
+  console.log('handleInputEvent', event);
   let raised = initialRaised;
 
   ({mode, environment, ...raised} = fairStep(simtime, event, statechart, statechart.root, {mode, environment, history, arenasFired: [], ...raised}));
@@ -354,11 +356,12 @@ export function handleInputEvent(simtime: number, event: RT_Event, statechart: S
 }
 
 export function handleInternalEvents(simtime: number, statechart: Statechart, {internalEvents, ...rest}: RT_Statechart & RaisedEvents) {
+  console.log('handleInternalEvents');
   while (internalEvents.length > 0) {
     const [nextEvent, ...remainingEvents] = internalEvents;
     ({internalEvents, ...rest} = fairStep(simtime, 
       {kind: "input", ...nextEvent}, // internal event becomes input event
-      statechart, statechart.root, { arenasFired: [], internalEvents: remainingEvents, ...rest}));
+      statechart, statechart.root, { ...rest, arenasFired: [], internalEvents: remainingEvents, }));
   }
   return rest;
 }
