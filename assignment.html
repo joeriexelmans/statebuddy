@@ -11,7 +11,7 @@
 
 <h2 id="practical-stuff">Practical stuff</h2>
 <ul>
-  <li> <b>Due Date:</b> ?? November 2025, before 23:59 (Blackboard's clock).</li>
+  <li> <b>Due Date:</b> 23 November 2025, before 23:59 (Blackboard's clock).</li>
   <li> <b>Team Size:</b> 2 (pair design/programming)!<br/>
   <i>Note that as of the 2017-2018 Academic Year, each International student should team up with "local"
     (i.e., whose Bachelor degree was obtained at the University of Antwerp).</i></li>
@@ -29,7 +29,7 @@
         <em>Only one</em> member of each team submits a full solution. Either a ZIP-archive if you have multiple files, or just a PDF containing your report.
       </li>
       <li>
-        The other team member <em>must</em> submit a single (plain text or HTML) file containing <em>only</em> the names of both team members. This will allow us to put in grades for both team members in BlackBoard.
+        The other team member <em>must</em> submits a single (plain text or HTML) file containing <em>only</em> the names of both team members. This will allow us to put in grades for both team members in BlackBoard.
       </li>
     </ul>
   </li>
@@ -44,7 +44,8 @@
 </ul>
 
 <h2 id="goals">Goals</h2>
-<p>The goal of this assignment is to familiarize yourself with Statechart modeling, simulation, debugging and, to a lesser extend, checking formal properties on your solution.</p>
+<p>The goal of this assignment is to familiarize yourself with Statechart modeling, simulation, debugging and, 
+   to a lesser extent, automatically checking requirements -specified as temporal logic formulas over behaviour traces- on your solution.</p>
 
 <style>
   figcaption {
@@ -88,9 +89,11 @@
 <h2 id="getting-started">Getting Started</h2>
 <p>We will use the brand-new Statechart editor, simulation and testing environment <a href="https://deemz.org/git/research/statebuddy">StateBuddy</a>, created by yours truly.</p>
 <img src="./logo-playful.svg"/>
-<p>No need to install anything. <a href="https://deemz.org/public/statebuddy">StateBuddy</a> runs in the browser.</p>
+<p>No need to install anything. StateBuddy runs in the browser.</p>
 <div class="tip">
-Note: StateBuddy will be updated from time to time, to fix bugs or add new features. To make sure you have the latest version, in StateBuddy, use the shortcut <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd> to refresh the page while clearing your browser cache.
+Note: StateBuddy will be updated from time to time, to fix bugs or add new features.
+To make sure you have the latest version, in StateBuddy, use the shortcut <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd> to refresh the page while clearing your browser cache.
+StateBuddy was tested in Firefox 144.0 and Chromium 141.0.7390.107.
 </div>
 
 <h2 id="exercises">Exercises</h2>
@@ -284,8 +287,33 @@ The controller can send the following events to the plant:
 
 <h2>Behavioral Requirements</h2>
 <ol start="0" class="requirements">
-  <li>As long as the top-right button is pressed, the light should be on, and after the top-right button is released, the light should remain on for 2 seconds.</li>
+  <li>You may assume that initially, the plant is displaying the current time, the light is off, the alarm is off, the speaker is not beeping, and we are not in 'edit mode'. The chrono is zero and not running.</li>
+
+  <li>For as long as the top-right button is pressed, the light should be on, and after the top-right button is released, the light should remain on for 2 seconds.</li>
+
+  <li>When displaying the time, or displaying the chrono, pressing the top-left button toggles between time and chrono mode.</li>
+
+  <li>When in chrono mode, pressing the bottom-right button toggles the chrono between 'paused' and 'running'.</li>
+  <li>When in chrono mode, pressing the bottom-left button resets the chronometer to zero.</li>
+
+  <li>When the chrono is running, the chronometer value is incremented by 1/100 second 100 times per second. The chronometer remains running until it is paused, even if we leave the chrono mode.</li>
+
+  <li>The current time is incremented (ticks) by 1 second every second, even when we are not displaying the current time, except when we are editing the current time: then the time should not tick.</li>
+
+  <li>Pressing the bottom-left button when the time is being displayed will show the alarm time <b>and</b> toggle the alarm (on/off).</li>
+  <li>If then, the bottom-left button is held pressed for 2 seconds, we go into alarm edit mode.</li>
+
+  <li>Likewise, when displaying the current time, and pressing and holding the bottom-right button for 2 seconds, we go into time edit mode.</li>
+
+  <li>In edit mode, pressing the bottom-left button will immediately increment the current selected (blinking) numbers.</li>
+  <li>In edit mode, holding the bottom-left button has the additional effect incrementing the current selected numbers every 100ms.</li>
+
+  <li>In edit mode, pressing the bottom-right button will select the next numbers (hours -> minutes -> seconds -> hours).</li>
 </ol>
+
+<h2>Starting point</h2>
+
+<p>Use <a href="https://deemz.org/public/statebuddy/#eJx9Vm1v2jAQ/itWPmwgUZoAfePDpKntpmlbV/XlE2KSSQ6wFmxmO1Basd++u7wRJ6FSVcnP89zj893Z4c3jiVXXSkoIrTe2OoFeCj2GWsWxN57z2CC0jrm0JDPe+C1b9RPRt2r9A+b2p0oM3Kit9MaTjPR6XoOb9pzAB7FYHo2skdXQmbJWrY5Ht/JNg6N5t9G11EvyeX3sxMgcPW8jyqHeO6sb2cK+c8622Fq6JuxrMGCvl1pJVZVX4UwYCYPkril1iUwcU46/nDIXkOP2JFbQ4pXCVaf5vGmFWCYBGd1GwlYVBZQJhAybaR/ATDSDhZB1nwOYibAon2OuV1VNiZWbPUKMt0soWdvvgBdutL6DF+v6lWjpWK9TAZXtL4bqHhtnICKtCSvDVuDVABqGFn0Vbvg/YHK8bYOSKEN4UahUx4sSZWRllOsptFC1sLbEm0zbXo3027iW3Y7EOVQxRuDeO1pP98gt1fY77Ezx6L4qhdUJqJcGNN7KCDvsWWp7vv8dp6bjnVgIy2O25TZc0mzjOCr9aLkFepu1SqTlchEDWk/evERglt65f37oJslevPHIP+8PznrezhsPRhf9M0pKvELOBqNh/yJjLzPyj5BkxfH/Hg9HqblbXHoZSqK5Bc0Cw07Z72I46/ufnaFvusFw6O/3vdIo8A9Gp6fsaSkMwz+7BGYs11bIBVsrIS1T8xTlxoiFXAH2iNHtRBD1hkoSLjGgx8RqHQMJKJbHcRoWKmnpKwf6o2EzWPKNUBorq+FvInQqN/1m2v4gTzsIqIBO5oGTuVbKNst+WdR1iEZO9MCJtiLEki+aBnn44KoeP3Ti75QFPCe36WGxC3ESQcTWWq1xwHasswEt5juqCAnSV5TNEhxkWS1Bl20FFmzORcyUDIHtVIImeKnSMMztRFdCW+pVtDkbqT0ND9dabd3puaC3jtpbjsdhPC/9ffqIF1SQFzAd20oF/KuaySgopzi4osI7PqMLPx//IG3klL44fKVkRKnhCscI79YuW0is7Lcbb3wejIpXOXvTi+uc/4xCsLzVBN9nBRfgoLcvECakfdI8BEdPl91B1xWHifeVdWrPODv5xDr5B5U9s86/Ov+BfZn4vcGU5aJut5u+T3wDUbpTfl6O2W8gTxiP7e//A16saTI=">this link to the starting point</a> for this assignment.</p>
 
 <h2>Testing your solution</h2>
 <p>To test your solution, initialize the execution, and interact with the plant UI. The execution can run in (scaled) real-time, with the ability to pause/resume.</p>
@@ -331,8 +359,8 @@ meaning: "as long as the top-right button is pressed, the light should be on, an
 
 <h2>Additional resources</h2>
 <ul>
-  <li>Microwave example</li>
-  <li>Traffic light example</li>
+  <li><a href="https://deemz.org/public/statebuddy/#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">Microwave example</a></li>
+  <li><a href="https://deemz.org/public/statebuddy/#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">Traffic light example</a></li>
 </ul>
 
 <dtml-var standard_html_footer>
