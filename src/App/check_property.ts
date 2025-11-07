@@ -36,7 +36,10 @@ export async function checkProperty(plant: Plant<RT_Statechart, any>, property: 
       return [entry];
     }, [] as {simtime: number, state: any}[]);
 
-  let traces = {} as {[key: string]: [number, any][]};
+  let traces = {
+    'true': [0, true] as [number, any],
+    'false': [0, false] as [number, any],
+  } as {[key: string]: [number, any][]};
   for (const {simtime, state} of cleanPlantStates) {
     for (const [key, value] of Object.entries(state)) {
       // just append
