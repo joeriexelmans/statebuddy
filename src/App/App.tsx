@@ -68,7 +68,7 @@ export function App() {
         if (recoveredState.editorState !== undefined) {
           const {editorState, ...appState} = recoveredState as AppState & {editorState: VisualEditorState};
           setEditHistory(() => ({current: editorState, history: [], future: []}));
-          setAppState(() => appState);
+          setAppState(defaultAppState => Object.assign({}, defaultAppState, appState));
         }          
       }
     },

@@ -45,7 +45,7 @@ export const defaultSideBarState = {
   showInputEvents: true,
   showInternalEvents: true,
   showOutputEvents: true,
-  showPlant: false,
+  showPlant: true,
   showConnections: false,
   showProperties: false,
   showExecutionTrace: true,
