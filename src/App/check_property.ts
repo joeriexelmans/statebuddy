@@ -1,6 +1,6 @@
 import { RT_Statechart } from "@/statecharts/runtime_types";
-import { TraceItem } from "./App";
 import { Plant } from "./Plant/Plant";
+import { TraceItem } from "./useSimulator";
 
 // const endpoint = "http://localhost:15478/check_property";
 const endpoint = "https://deemz.org/apis/mtl-aas/check_property";
@@ -37,8 +37,8 @@ export async function checkProperty(plant: Plant<RT_Statechart, any>, property: 
     }, [] as {simtime: number, state: any}[]);
 
   let traces = {
-    'true': [0, true] as [number, any],
-    'false': [0, false] as [number, any],
+    'true': [[0, true] as [number, any]],
+    'false': [[0, false] as [number, any]],
   } as {[key: string]: [number, any][]};
   for (const {simtime, state} of cleanPlantStates) {
     for (const [key, value] of Object.entries(state)) {

@@ -1,6 +1,5 @@
 import { Dispatch, memo, ReactElement, SetStateAction, useCallback, useEffect, useRef, useState } from "react";
 
-import { TraceState } from "@/App/App";
 import { InsertMode } from "../TopPanel/InsertModes";
 import { Mode } from "@/statecharts/runtime_types";
 import { arraysEqual, objectsEqual, setsEqual } from "@/util/util";
@@ -17,7 +16,6 @@ import { useCopyPaste } from "./useCopyPaste";
 
 import "./VisualEditor.css";
 import { useMouse } from "./useMouse";
-import { Selecting } from "./Selection";
 
 export type ConcreteSyntax = {
   rountangles: Rountangle[];
@@ -59,7 +57,8 @@ type VisualEditorProps = {
   setState: Dispatch<(v:VisualEditorState) => VisualEditorState>,
   conns: Connections,
   syntaxErrors: TraceableError[],
-  trace: TraceState | null,
+  // trace: TraceState | null,
+  // activeStates: Set<string>,
   insertMode: InsertMode,
   highlightActive: Set<string>,
   highlightTransitions: string[],
@@ -68,7 +67,7 @@ type VisualEditorProps = {
   zoom: number;
 };
 
-export const VisualEditor = memo(function VisualEditor({state, setState, trace, conns, syntaxErrors: errors, insertMode, highlightActive, highlightTransitions, setModal, makeCheckPoint, zoom}: VisualEditorProps) {
+export const VisualEditor = memo(function VisualEditor({state, setState, conns, syntaxErrors: errors, insertMode, highlightActive, highlightTransitions, setModal, makeCheckPoint, zoom}: VisualEditorProps) {
 
   // uid's of selected rountangles
   const selection = state.selection || [];
@@ -87,7 +86,7 @@ export const VisualEditor = memo(function VisualEditor({state, setState, trace, 
         })
       });
     })
-  }, [trace && trace.idx]);
+  }, [highlightTransitions]);
 
 
   const {onCopy, onPaste, onCut, deleteSelection} = useCopyPaste(makeCheckPoint, state, setState, selection);
@@ -167,15 +166,12 @@ export const VisualEditor = memo(function VisualEditor({state, setState, trace, 
     }
   }, [setState]);
 
-  // @ts-ignore
-  const active = trace && trace.trace[trace.idx].mode || new Set();
-
   const rootErrors = errors.filter(({shapeUid}) => shapeUid === "root").map(({message}) => message);
 
   const size = 4000*zoom;
 
   return <svg width={size} height={size}
-      className={"svgCanvas"+(active.has("root")?" active":"")/*+(dragging ? " dragging" : "")*/}
+      className={"svgCanvas"+(highlightActive.has("root")?" active":"")/*+(dragging ? " dragging" : "")*/}
       onMouseDown={onMouseDown}
       onContextMenu={e => e.preventDefault()}
       ref={refSVG}

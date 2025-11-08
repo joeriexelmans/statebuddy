@@ -3,7 +3,7 @@ import { TimerElapseEvent, Timers } from "../../statecharts/runtime_types";
 import { getSimTime, setPaused, setRealtime, TimeMode } from "../../statecharts/time";
 import { InsertMode } from "./InsertModes";
 import { About } from "../Modals/About";
-import { EditHistory, TraceState } from "../App";
+import { EditHistory } from "../App";
 import { KeyInfoHidden, KeyInfoVisible } from "./KeyInfo";
 import { UndoRedoButtons } from "./UndoRedoButtons";
 import { ZoomButtons } from "./ZoomButtons";
@@ -21,6 +21,7 @@ import { InsertModes } from "./InsertModes";
 import { usePersistentState } from "@/App/persistent_state";
 import { RotateButtons } from "./RotateButtons";
 import { SpeedControl } from "./SpeedControl";
+import { TraceState } from "../useSimulator";
 
 export type TopPanelProps = {
   trace: TraceState | null,
