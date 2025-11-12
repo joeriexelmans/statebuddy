@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { TraceableError } from "../statecharts/parser";
+import { TraceableError } from "../../statecharts/parser";
 
 import "./BottomPanel.css";
 
-import logo from "../../artwork/logo-playful.svg";
-import { PersistentDetailsLocalStorage } from "./PersistentDetails";
+import logo from "../../../artwork/logo-playful.svg";
+import { PersistentDetailsLocalStorage } from "../PersistentDetails";
 
 export function BottomPanel(props: {errors: TraceableError[]}) {
   const [greeting, setGreeting] = useState(

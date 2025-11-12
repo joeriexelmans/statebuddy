@@ -2,10 +2,10 @@ import { rountangleMinSize } from "@/statecharts/concrete_syntax";
 import { addV2D, area, isEntirelyWithin, normalizeRect, scaleV2D, subtractV2D, transformLine, transformRect } from "@/util/geometry";
 import { getBBoxInSvgCoords } from "@/util/svg_helper";
 import { Dispatch, useCallback, useEffect, useState } from "react";
-import { MIN_ROUNTANGLE_SIZE } from "../parameters";
-import { InsertMode } from "../TopPanel/InsertModes";
-import { Selecting, SelectingState } from "./Selection";
-import { Selection, VisualEditorState } from "./VisualEditor";
+import { MIN_ROUNTANGLE_SIZE } from "../../parameters";
+import { InsertMode } from "../../TopPanel/InsertModes";
+import { Selecting, SelectingState } from "../Selection";
+import { Selection, VisualEditorState } from "../VisualEditor";
 
 export function useMouse(makeCheckPoint: () => void, insertMode: InsertMode, zoom: number, refSVG: {current: SVGSVGElement|null}, state: VisualEditorState, setState: Dispatch<(v: VisualEditorState) => VisualEditorState>, deleteSelection: () => void) {
   const [dragging, setDragging] = useState(false);

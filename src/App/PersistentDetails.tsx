@@ -1,4 +1,4 @@
-import { usePersistentState } from "@/App/persistent_state"
+import { usePersistentState } from "@/hooks/usePersistentState"
 import { DetailsHTMLAttributes, Dispatch, PropsWithChildren, SetStateAction } from "react";
 
 type Props = {

@@ -18,10 +18,10 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import SkipNextIcon from '@mui/icons-material/SkipNext';
 import StopIcon from '@mui/icons-material/Stop';
 import { InsertModes } from "./InsertModes";
-import { usePersistentState } from "@/App/persistent_state";
+import { usePersistentState } from "@/hooks/usePersistentState";
 import { RotateButtons } from "./RotateButtons";
 import { SpeedControl } from "./SpeedControl";
-import { TraceState } from "../useSimulator";
+import { TraceState } from "../hooks/useSimulator";
 
 export type TopPanelProps = {
   trace: TraceState | null,

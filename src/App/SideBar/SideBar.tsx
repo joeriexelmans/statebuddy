@@ -8,14 +8,15 @@ import { Conns } from '@/statecharts/timed_reactive';
 import { Dispatch, Ref, SetStateAction, useEffect, useRef, useState } from 'react';
 import { Statechart } from '@/statecharts/abstract_syntax';
 import { ShowAST, ShowInputEvents, ShowInternalEvents, ShowOutputEvents } from './ShowAST';
-import { Plant } from './Plant/Plant';
+import { Plant } from '../Plant/Plant';
 import { checkProperty, PropertyCheckResult } from './check_property';
-import { Setters } from './makePartialSetter';
+import { Setters } from '../makePartialSetter';
 import { RTHistory } from './RTHistory';
-import { BigStepCause, TraceState } from './useSimulator';
-import { plants, UniversalPlantState } from './plants';
+import { BigStepCause, TraceState } from '../hooks/useSimulator';
+import { plants, UniversalPlantState } from '../plants';
 import { TimeMode } from '@/statecharts/time';
-import { PersistentDetails } from './PersistentDetails';
+import { PersistentDetails } from '../PersistentDetails';
+import "./SideBar.css";
 
 type SavedTraces = [string, BigStepCause[]][];
 

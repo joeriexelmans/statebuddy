@@ -1,17 +1,17 @@
-import { useEffect } from "react";
+import { useEffect, useLayoutEffect } from "react";
 
 // persist state in URL hash
-export function useUrlHashState<T>(recoverCallback: (recoveredState: T) => void): (toPersist: T) => void {
+export function useUrlHashState<T>(recoverCallback: (recoveredState: (T|null)) => void): (toPersist: T) => void {
 
   // recover editor state from URL - we need an effect here because decompression is asynchronous
-  useEffect(() => {
+  // layout effect because we want to run it before rendering the first frame
+  useLayoutEffect(() => {
     console.log('recovering state...');
     const compressedState = window.location.hash.slice(1);
     if (compressedState.length === 0) {
       // empty URL hash
       console.log("no state to recover");
-      // setEditHistory(() => ({current: emptyState, history: [], future: []}));
-      return;
+      return recoverCallback(null);
     }
     let compressedBuffer;
     try {
@@ -19,8 +19,7 @@ export function useUrlHashState<T>(recoverCallback: (recoveredState: T) => void)
     } catch (e) {
       // probably invalid base64
       console.error("failed to recover state:", e);
-      // setEditHistory(() => ({current: emptyState, history: [], future: []}));
-      return;
+      return recoverCallback(null);
     }
     const ds = new DecompressionStream("deflate");
     const writer = ds.writable.getWriter();
@@ -29,12 +28,13 @@ export function useUrlHashState<T>(recoverCallback: (recoveredState: T) => void)
     new Response(ds.readable).arrayBuffer()
       .then(decompressedBuffer => {
         const recoveredState = JSON.parse(new TextDecoder().decode(decompressedBuffer));
+        console.log('successfully recovered state');
         recoverCallback(recoveredState);
       })
       .catch(e => {
         // any other error: invalid JSON, or decompression failed.
         console.error("failed to recover state:", e);
-        // setEditHistory({current: emptyState, history: [], future: []});
+        recoverCallback(null);
       });
   }, []);
 

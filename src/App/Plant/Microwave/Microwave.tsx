@@ -12,7 +12,7 @@ import { RT_Statechart } from "@/statecharts/runtime_types";
 import { memo, useEffect } from "react";
 
 import "./Microwave.css";
-import { useAudioContext } from "../../useAudioContext";
+import { useAudioContext } from "../../../hooks/useAudioContext";
 import { makeStatechartPlant, PlantRenderProps, StatechartPlantSpec } from "../Plant";
 import { detectConnections } from "@/statecharts/detect_connections";
 import { parseStatechart } from "@/statecharts/parser";

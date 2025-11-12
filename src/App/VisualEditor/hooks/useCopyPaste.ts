@@ -1,6 +1,6 @@
 import { Arrow, Diamond, Rountangle, Text, History } from "@/statecharts/concrete_syntax";
 import { ClipboardEvent, Dispatch, SetStateAction, useCallback, useEffect } from "react";
-import { Selection, VisualEditorState } from "./VisualEditor";
+import { Selection, VisualEditorState } from "../VisualEditor";
 import { addV2D } from "@/util/geometry";
 
 // const offset = {x: 40, y: 40};

@@ -1,21 +1,20 @@
-import { Dispatch, memo, ReactElement, SetStateAction, useCallback, useEffect, useRef, useState } from "react";
+import { Dispatch, memo, ReactElement, SetStateAction, useCallback, useEffect, useRef } from "react";
 
-import { InsertMode } from "../TopPanel/InsertModes";
 import { Mode } from "@/statecharts/runtime_types";
 import { arraysEqual, objectsEqual, setsEqual } from "@/util/util";
 import { Arrow, ArrowPart, Diamond, History, RectSide, Rountangle, Text } from "../../statecharts/concrete_syntax";
 import { Connections } from "../../statecharts/detect_connections";
 import { TraceableError } from "../../statecharts/parser";
 import { ArcDirection, arcDirection } from "../../util/geometry";
+import { InsertMode } from "../TopPanel/InsertModes";
 import { ArrowSVG } from "./ArrowSVG";
 import { DiamondSVG } from "./DiamondSVG";
 import { HistorySVG } from "./HistorySVG";
 import { RountangleSVG } from "./RountangleSVG";
 import { TextSVG } from "./TextSVG";
-import { useCopyPaste } from "./useCopyPaste";
-
 import "./VisualEditor.css";
-import { useMouse } from "./useMouse";
+import { useCopyPaste } from "./hooks/useCopyPaste";
+import { useMouse } from "./hooks/useMouse";
 
 export type ConcreteSyntax = {
   rountangles: Rountangle[];

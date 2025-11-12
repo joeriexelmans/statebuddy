@@ -5,16 +5,18 @@ import { ReactElement, useCallback, useEffect, useMemo, useRef, useState } from 
 
 import { detectConnections } from "@/statecharts/detect_connections";
 import { parseStatechart } from "../statecharts/parser";
-import { BottomPanel } from "./BottomPanel";
-import { defaultSideBarState, SideBar, SideBarState } from "./SideBar";
+import { BottomPanel } from "./BottomPanel/BottomPanel";
+import { defaultSideBarState, SideBar, SideBarState } from "./SideBar/SideBar";
 import { InsertMode } from "./TopPanel/InsertModes";
 import { TopPanel } from "./TopPanel/TopPanel";
 import { VisualEditor, VisualEditorState } from "./VisualEditor/VisualEditor";
-import { makeIndividualSetters } from "./makePartialSetter";
-import { useEditor } from "./useEditor";
-import { useSimulator } from "./useSimulator";
-import { useUrlHashState } from "./useUrlHashState";
+import { makeAllSetters } from "./makePartialSetter";
+import { useEditor } from "./hooks/useEditor";
+import { useSimulator } from "./hooks/useSimulator";
+import { useUrlHashState } from "../hooks/useUrlHashState";
 import { plants } from "./plants";
+import { emptyState } from "@/statecharts/concrete_syntax";
+import { ModalOverlay } from "./Modals/ModalOverlay";
 
 export type EditHistory = {
   current: VisualEditorState,
@@ -56,9 +58,12 @@ export function App() {
 
   const persist = useUrlHashState<VisualEditorState | AppState & {editorState: VisualEditorState}>(
     recoveredState => {
+      if (recoveredState === null) {
+        setEditHistory(() => ({current: emptyState, history: [], future: []}));
+      }
       // we support two formats
       // @ts-ignore
-      if (recoveredState.nextID) {
+      else if (recoveredState.nextID) {
         // old format
         setEditHistory(() => ({current: recoveredState as VisualEditorState, history: [], future: []}));
       }
@@ -77,6 +82,7 @@ export function App() {
   useEffect(() => {
     const timeout = setTimeout(() => {
       if (editorState !== null) {
+        console.log('persisting state to url');
         persist({editorState, ...appState});
       }
     }, 100);
@@ -104,7 +110,15 @@ export function App() {
 
   const simulator = useSimulator(ast, plant, plantConns, scrollDownSidebar);
   
-  const setters = makeIndividualSetters(setAppState, Object.keys(appState) as (keyof AppState)[]);
+  // console.log('render app', {ast, plant, appState});
+  // useDetectChange(ast, 'ast');
+  // useDetectChange(plant, 'plant');
+  // useDetectChange(scrollDownSidebar, 'scrollDownSidebar');
+  // useDetectChange(appState, 'appState');
+  // useDetectChange(simulator.time, 'simulator.time');
+  // useDetectChange(simulator.trace, 'simulator.trace');
+
+  const setters = makeAllSetters(setAppState, Object.keys(appState) as (keyof AppState)[]);
 
   const syntaxErrors = parsed && parsed[1] || [];
   const currentTraceItem = simulator.trace && simulator.trace.trace[simulator.trace.idx];
@@ -121,63 +135,51 @@ export function App() {
 
   const plantState = currentBigStep && currentBigStep.state.plant || plant.execution.initial()[1];
 
-  return <>
+  return <ModalOverlay modal={modal} setModal={setModal}>
+    {/* top-to-bottom: everything -> bottom panel */}
+    <div className="stackVertical" style={{height:'100%'}}>
 
-  {/* Modal dialog */}
-  {modal && <div
-    className="modalOuter"
-    onMouseDown={() => setModal(null)}>
-    <div className="modalInner">
-      <span onMouseDown={e => e.stopPropagation()}>
-      {modal}
-      </span>
-    </div>
-  </div>}
+      {/* left-to-right: main -> sidebar */}
+      <div className="stackHorizontal" style={{flexGrow:1, overflow: "auto"}}>
 
-  {/* top-to-bottom: everything -> bottom panel */}
-  <div className="stackVertical" style={{height:'100%'}}>
-
-    {/* left-to-right: main -> sidebar */}
-    <div className="stackHorizontal" style={{flexGrow:1, overflow: "auto"}}>
-
-      {/* top-to-bottom: top bar, editor */}
-      <div className="stackVertical" style={{flexGrow:1, overflow: "auto"}}>
-        {/* Top bar */}
-        <div
-          className="shadowBelow"
-          style={{flex: '0 0 content'}}
-        >
-          {editHistory && <TopPanel
-            {...{onUndo, onRedo, onRotate, setModal, editHistory, ...simulator, ...setters, ...appState}}
-          />}
+        {/* top-to-bottom: top bar, editor */}
+        <div className="stackVertical" style={{flexGrow:1, overflow: "auto"}}>
+          {/* Top bar */}
+          <div
+            className="shadowBelow"
+            style={{flex: '0 0 content'}}
+          >
+            {editHistory && <TopPanel
+              {...{onUndo, onRedo, onRotate, setModal, editHistory, ...simulator, ...setters, ...appState}}
+            />}
+          </div>
+          {/* Editor */}
+          <div style={{flexGrow: 1, overflow: "auto"}}>
+            {editorState && conns && syntaxErrors &&
+              <VisualEditor {...{state: editorState, setState: setEditorState, conns, syntaxErrors: allErrors, highlightActive, highlightTransitions, setModal, makeCheckPoint, ...appState}}/>}
+          </div>
         </div>
-        {/* Editor */}
-        <div style={{flexGrow: 1, overflow: "auto"}}>
-          {editorState && conns && syntaxErrors &&
-            <VisualEditor {...{state: editorState, setState: setEditorState, conns, syntaxErrors: allErrors, highlightActive, highlightTransitions, setModal, makeCheckPoint, ...appState}}/>}
-        </div>
-      </div>
 
-      {/* Right: sidebar */}
-      <div style={{
-        flex: '0 0 content',
-        borderLeft: '1px solid lightgrey',
-        overflowY: "auto",
-        overflowX: "auto",
-        maxWidth: 'min(400px, 50vw)',
-      }}>
-        <div className="stackVertical" style={{height:'100%'}}>
-          <SideBar {...{...appState, refRightSideBar, ast, plantState, ...simulator, ...setters}} />
+        {/* Right: sidebar */}
+        <div style={{
+          flex: '0 0 content',
+          borderLeft: '1px solid lightgrey',
+          overflowY: "auto",
+          overflowX: "auto",
+          maxWidth: 'min(400px, 50vw)',
+        }}>
+          <div className="stackVertical" style={{height:'100%'}}>
+            <SideBar {...{...appState, refRightSideBar, ast, plantState, ...simulator, ...setters}} />
+          </div>
         </div>
       </div>
-    </div>
 
-    {/* Bottom panel */}
-    <div style={{flex: '0 0 content'}}>
-      {syntaxErrors && <BottomPanel {...{errors: syntaxErrors}}/>}
+      {/* Bottom panel */}
+      <div style={{flex: '0 0 content'}}>
+        {syntaxErrors && <BottomPanel {...{errors: syntaxErrors}}/>}
+      </div>
     </div>
-  </div>
-  </>;
+  </ModalOverlay>;
 }
 
 export default App;

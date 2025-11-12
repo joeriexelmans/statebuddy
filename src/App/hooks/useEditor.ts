@@ -1,8 +1,7 @@
 import { addV2D, rotateLine90CCW, rotateLine90CW, rotatePoint90CCW, rotatePoint90CW, rotateRect90CCW, rotateRect90CW, scaleV2D, subtractV2D, Vec2D } from "@/util/geometry";
-import { HISTORY_RADIUS } from "./parameters";
+import { HISTORY_RADIUS } from "../parameters";
 import { Dispatch, SetStateAction, useCallback, useEffect } from "react";
-import { EditHistory } from "./App";
-import { VisualEditorState } from "./VisualEditor/VisualEditor";
+import { EditHistory } from "../App";
 
 export function useEditor(setEditHistory: Dispatch<SetStateAction<EditHistory|null>>) {
   useEffect(() => {

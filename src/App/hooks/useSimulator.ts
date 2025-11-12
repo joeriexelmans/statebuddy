@@ -3,9 +3,9 @@ import { RuntimeError } from "@/statecharts/interpreter";
 import { BigStep, RaisedEvent } from "@/statecharts/runtime_types";
 import { Conns, coupledExecution, statechartExecution } from "@/statecharts/timed_reactive";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Plant } from "./Plant/Plant";
+import { Plant } from "../Plant/Plant";
 import { getSimTime, getWallClkDelay, TimeMode } from "@/statecharts/time";
-import { UniversalPlantState } from "./plants";
+import { UniversalPlantState } from "../plants";
 
 type CoupledState = {
   sc: BigStep,
@@ -107,6 +107,7 @@ export function useSimulator(ast: Statechart|null, plant: Plant<any, UniversalPl
 
   // timer elapse events are triggered by a change of the simulated time (possibly as a scheduled JS event loop timeout)
   useEffect(() => {
+    // console.log('time effect:', time, currentTraceItem);
     let timeout: NodeJS.Timeout | undefined;
     if (currentTraceItem !== null && cE !== null) {
       if (currentTraceItem.kind === "bigstep") {

@@ -1,4 +1,4 @@
-import { useAudioContext } from "@/App/useAudioContext";
+import { useAudioContext } from "@/hooks/useAudioContext";
 import { ConcreteSyntax } from "@/App/VisualEditor/VisualEditor";
 import { detectConnections } from "@/statecharts/detect_connections";
 import { parseStatechart } from "@/statecharts/parser";

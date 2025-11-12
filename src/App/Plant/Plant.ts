@@ -3,7 +3,6 @@ import { Statechart } from "@/statecharts/abstract_syntax";
 import { EventTrigger } from "@/statecharts/label_ast";
 import { BigStep, RaisedEvent, RT_Statechart } from "@/statecharts/runtime_types";
 import { statechartExecution, TimedReactive } from "@/statecharts/timed_reactive";
-import { setsEqual } from "@/util/util";
 
 export type PlantRenderProps<StateType> = {
   state: StateType,

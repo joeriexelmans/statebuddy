@@ -1,7 +1,9 @@
-import { ConcreteState, UnstableState, stateDescription, Transition } from "../statecharts/abstract_syntax";
-import { Action, EventTrigger, Expression } from "../statecharts/label_ast";
-
-import "./AST.css";
+import BoltIcon from '@mui/icons-material/Bolt';
+import { memo, useEffect } from "react";
+import { usePersistentState } from "../../hooks/usePersistentState";
+import { ConcreteState, stateDescription, Transition, UnstableState } from "../../statecharts/abstract_syntax";
+import { Action, EventTrigger, Expression } from "../../statecharts/label_ast";
+import { KeyInfoHidden, KeyInfoVisible } from "../TopPanel/KeyInfo";
 
 export function ShowTransition(props: {transition: Transition}) {
   return <>➝ {stateDescription(props.transition.tgt)}</>;
@@ -46,10 +48,6 @@ export const ShowAST = memo(function ShowASTx(props: {root: ConcreteState | Unst
   </li>;
 });
 
-import BoltIcon from '@mui/icons-material/Bolt';
-import { KeyInfoHidden, KeyInfoVisible } from "./TopPanel/KeyInfo";
-import { memo, useEffect } from "react";
-import { usePersistentState } from "./persistent_state";
 
 export function ShowInputEvents({inputEvents, onRaise, disabled, showKeys}: {inputEvents: EventTrigger[], onRaise: (e: string, p: any) => void, disabled: boolean, showKeys: boolean}) {
   const raiseHandlers = inputEvents.map(({event}) => {

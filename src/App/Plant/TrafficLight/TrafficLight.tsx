@@ -13,7 +13,7 @@ import { ConcreteSyntax } from "@/App/VisualEditor/VisualEditor";
 import { detectConnections } from "@/statecharts/detect_connections";
 import { makeStatechartPlant, PlantRenderProps, StatechartPlantSpec } from "../Plant";
 import { RT_Statechart } from "@/statecharts/runtime_types";
-import { useAudioContext } from "@/App/useAudioContext";
+import { useAudioContext } from "@/hooks/useAudioContext";
 import { memo, useEffect } from "react";
 import { objectsEqual } from "@/util/util";
 
