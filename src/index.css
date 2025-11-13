@@ -19,7 +19,7 @@ html, body {
   --inactive-bg-color: light-dark(#f7f7f7, rgb(29, 29, 29));
   --inactive-fg-color: light-dark(grey, rgb(70, 70, 70));
   --button-bg-color: light-dark(#fcfcfc, rgb(20, 20, 20));
-  --modal-backdrop-color: light-dark(rgba(200,200,200,0.7), rgba(59, 7, 7, 0.849));
+  --modal-backdrop-color: light-dark(rgba(200,200,200,0.7), rgba(23, 22, 32, 0.849));
   --status-inactive-color: light-dark(grey, grey);
   --status-ok-color: light-dark(forestgreen, forestgreen);
   --or-state-bg-color: light-dark(#eee, #1a1a1a);
