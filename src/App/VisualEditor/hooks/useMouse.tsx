@@ -9,6 +9,9 @@ import { Selection, VisualEditorState } from "../VisualEditor";
 
 export function useMouse(makeCheckPoint: () => void, insertMode: InsertMode, zoom: number, refSVG: {current: SVGSVGElement|null}, state: VisualEditorState, setState: Dispatch<(v: VisualEditorState) => VisualEditorState>, deleteSelection: () => void) {
   const [dragging, setDragging] = useState(false);
+  const [shiftOrCtrlPressed, setShiftOrCtrlPressed] = useState(false);
+
+  console.log(shiftOrCtrlPressed);
 
   // not null while the user is making a selection
   const [selectingState, setSelectingState] = useState<SelectingState>(null);
@@ -29,7 +32,7 @@ export function useMouse(makeCheckPoint: () => void, insertMode: InsertMode, zoo
     const currentPointer = getCurrentPointer(e);
     if (e.button === 2) {
       makeCheckPoint();
-      // ignore selection, middle mouse button always inserts
+      // ignore selection, right mouse button always inserts
       setState(state => {
         const newID = state.nextID.toString();
         if (insertMode === "and" || insertMode === "or") {
@@ -43,7 +46,7 @@ export function useMouse(makeCheckPoint: () => void, insertMode: InsertMode, zoo
               kind: insertMode,
             }],
             nextID: state.nextID+1,
-            selection: [{uid: newID, parts: ["bottom", "right"]}],
+            selection: [{uid: newID, part: "bottom"}, {uid: newID, part: "right"}],
           };
         }
         else if (insertMode === "pseudo") {
@@ -55,7 +58,7 @@ export function useMouse(makeCheckPoint: () => void, insertMode: InsertMode, zoo
               size: MIN_ROUNTANGLE_SIZE,
             }],
             nextID: state.nextID+1,
-            selection: [{uid: newID, parts: ["bottom", "right"]}],
+            selection: [{uid: newID, part: "bottom"}, {uid: newID, part: "right"}],
           };
         }
         else if (insertMode === "shallow" || insertMode === "deep") {
@@ -67,7 +70,7 @@ export function useMouse(makeCheckPoint: () => void, insertMode: InsertMode, zoo
               topLeft: currentPointer,
             }],
             nextID: state.nextID+1,
-            selection: [{uid: newID, parts: ["history"]}],
+            selection: [{uid: newID, part: "history"}],
           }
         }
         else if (insertMode === "transition") {
@@ -79,7 +82,7 @@ export function useMouse(makeCheckPoint: () => void, insertMode: InsertMode, zoo
               end: currentPointer,
             }],
             nextID: state.nextID+1,
-            selection: [{uid: newID, parts: ["end"]}],
+            selection: [{uid: newID, part: "end"}],
           }
         }
         else if (insertMode === "text") {
@@ -91,7 +94,7 @@ export function useMouse(makeCheckPoint: () => void, insertMode: InsertMode, zoo
               topLeft: currentPointer,
             }],
             nextID: state.nextID+1,
-            selection: [{uid: newID, parts: ["text"]}],
+            selection: [{uid: newID, part: "text"}],
           }
         }
         throw new Error("unreachable, mode=" + insertMode); // shut up typescript
@@ -101,38 +104,40 @@ export function useMouse(makeCheckPoint: () => void, insertMode: InsertMode, zoo
     }
 
     if (e.button === 0) {
-      // left mouse button on a shape will drag that shape (and everything else that's selected). if the shape under the pointer was not in the selection then the selection is reset to contain only that shape.
-      const uid = e.target?.dataset.uid;
-      const parts: string[] = e.target?.dataset.parts?.split(' ').filter((p:string) => p!=="") || [];
-      if (uid && parts.length > 0) {
-        makeCheckPoint();
+      if (!shiftOrCtrlPressed) {
+        // left mouse button on a shape will drag that shape (and everything else that's selected). if the shape under the pointer was not in the selection then the selection is reset to contain only that shape.
+        const uid = e.target?.dataset.uid;
+        const parts: string[] = e.target?.dataset.parts?.split(' ').filter((p:string) => p!=="") || [];
+        if (uid && parts.length > 0) {
+          makeCheckPoint();
 
-        // if the mouse button is pressed outside of the current selection, we reset the selection to whatever shape the mouse is on
-        let allPartsInSelection = true;
-        for (const part of parts) {
-          if (!(selection.find(s => s.uid === uid)?.parts || [] as string[]).includes(part)) {
-            allPartsInSelection = false;
-            break;
+          // if the mouse button is pressed outside of the current selection, we reset the selection to whatever shape the mouse is on
+          let allPartsInSelection = true;
+          for (const part of parts) {
+            // is there anything in our existing selection that is not under the cursor?
+            if (!(selection.some(s => (s.uid === uid) && (s.part === part)))) {
+              allPartsInSelection = false;
+              break;
+            }
           }
+          if (!allPartsInSelection) {
+            if (e.target.classList.contains("helper")) {
+              setSelection(() => parts.map(part => ({uid, part})) as Selection);
+            }
+            else {
+              setDragging(false);
+              setSelectingState({
+                topLeft: currentPointer,
+                size: {x: 0, y: 0},
+              });
+              setSelection(() => []);
+              return;
+            }
+          }
+          // start dragging
+          setDragging(true);
+          return;
         }
-        if (!allPartsInSelection) {
-          if (e.target.classList.contains("helper")) {
-            setSelection(() => [{uid, parts}] as Selection);
-          }
-          else {
-            setDragging(false);
-            setSelectingState({
-              topLeft: currentPointer,
-              size: {x: 0, y: 0},
-            });
-            setSelection(() => []);
-            return;
-          }
-        }
-
-        // start dragging
-        setDragging(true);
-        return;
       }
     }
 
@@ -142,40 +147,45 @@ export function useMouse(makeCheckPoint: () => void, insertMode: InsertMode, zoo
       topLeft: currentPointer,
       size: {x: 0, y: 0},
     });
-    setSelection(() => []);
-  }, [getCurrentPointer, makeCheckPoint, insertMode, selection]);
+    if (!shiftOrCtrlPressed) {
+      setSelection(() => []);
+    }
+  }, [getCurrentPointer, makeCheckPoint, insertMode, selection, shiftOrCtrlPressed]);
 
   const onMouseMove = useCallback((e: {pageX: number, pageY: number, movementX: number, movementY: number}) => {
     const currentPointer = getCurrentPointer(e);
     if (dragging) {
       // const pointerDelta = subtractV2D(currentPointer, dragging.lastMousePos);
       const pointerDelta = {x: e.movementX/zoom, y: e.movementY/zoom};
+      const getParts = (uid: string) => {
+        return state.selection.filter(s => s.uid === uid).map(s => s.part);
+      }
       setState(state => ({
         ...state,
         rountangles: state.rountangles.map(r => {
-          const parts = state.selection.find(selected => selected.uid === r.uid)?.parts || [];
-          if (parts.length === 0) {
+          const selectedParts = getParts(r.uid);
+          if (selectedParts.length === 0) {
             return r;
           }
           return {
             ...r,
-            ...transformRect(r, parts, pointerDelta),
+            ...transformRect(r, selectedParts, pointerDelta),
           };
         })
         .toSorted((a,b) => area(b) - area(a)), // sort: smaller rountangles are drawn on top
         diamonds: state.diamonds.map(d => {
-          const parts = state.selection.find(selected => selected.uid === d.uid)?.parts || [];
-          if (parts.length === 0) {
+          const selectedParts = getParts(d.uid);
+          if (selectedParts.length === 0) {
             return d;
           }
           return {
             ...d,
-            ...transformRect(d, parts, pointerDelta),
+            ...transformRect(d, selectedParts, pointerDelta),
           }
         }),
         history: state.history.map(h => {
-          const parts = state.selection.find(selected => selected.uid === h.uid)?.parts || [];
-          if (parts.length === 0) {
+          const selectedParts = getParts(h.uid);
+          if (selectedParts.length === 0) {
             return h;
           }
           return {
@@ -184,18 +194,18 @@ export function useMouse(makeCheckPoint: () => void, insertMode: InsertMode, zoo
           }
         }),
         arrows: state.arrows.map(a => {
-          const parts = state.selection.find(selected => selected.uid === a.uid)?.parts || [];
-          if (parts.length === 0) {
+          const selectedParts = getParts(a.uid);
+          if (selectedParts.length === 0) {
             return a;
           }
           return {
             ...a,
-            ...transformLine(a, parts, pointerDelta),
+            ...transformLine(a, selectedParts, pointerDelta),
           }
         }),
         texts: state.texts.map(t => {
-          const parts = state.selection.find(selected => selected.uid === t.uid)?.parts || [];
-          if (parts.length === 0) {
+          const selectedParts = getParts(t.uid);
+          if (selectedParts.length === 0) {
             return t;
           }
           return {
@@ -239,12 +249,12 @@ export function useMouse(makeCheckPoint: () => void, insertMode: InsertMode, zoo
       if (selectingState.size.x === 0 && selectingState.size.y === 0) {
         const uid = e.target?.dataset.uid;
         if (uid) {
-          const parts = e.target?.dataset.parts.split(' ').filter((p: string) => p!=="");
+          const parts = e.target?.dataset.parts.split(' ').filter((p: string) => p!=="") || [];
           if (uid) {
-            setSelection(() => [{
-              uid,
-              parts,
-            }]);
+            setSelection(oldSelection => [
+              ...oldSelection,
+              ...parts.map((part: string) => ({uid, part})),
+            ]);
           }
         }
       }
@@ -261,25 +271,44 @@ export function useMouse(makeCheckPoint: () => void, insertMode: InsertMode, zoo
           return isEntirelyWithin(scaledBBox, normalizedSS);
         }).filter(el => !el.classList.contains("corner"));
         
-        const uidToParts = new Map();
-        for (const shape of shapesInSelection) {
-          const uid = shape.dataset.uid;
-          if (uid) {
-            const parts: Set<string> = uidToParts.get(uid) || new Set();
-            for (const part of shape.dataset.parts?.split(' ') || []) {
-              parts.add(part);
+        // @ts-ignore
+        setSelection(oldSelection => {
+          const newSelection = [];
+          const common = [];
+          for (const shape of shapesInSelection) {
+            const uid = shape.dataset.uid;
+            if (uid) {
+              const parts = shape.dataset.parts?.split(' ') || [];
+              for (const part of parts) {
+                if (oldSelection.some(({uid: oldUid, part: oldPart}) =>
+                  uid === oldUid && part === oldPart)) {
+                    common.push({uid, part});
+                  
+                }
+                else {
+                  newSelection.push({uid, part});
+                }
+              } 
             }
-            uidToParts.set(uid, parts);
           }
-        }
-        setSelection(() => [...uidToParts.entries()].map(([uid,parts]) => ({
-          uid,
-          parts: [...parts],
-        })));
+          return [...oldSelection, ...newSelection];
+        })
       }
     }
     setSelectingState(null); // no longer making a selection
   }, [dragging, selectingState, refSVG.current]);
+
+  const trackShiftKey = useCallback((e: KeyboardEvent) => {
+    // @ts-ignore
+    if (["INPUT", "TEXTAREA", "SELECT"].includes(e.target?.tagName)) return;
+
+    if (e.shiftKey || e.ctrlKey) {
+      setShiftOrCtrlPressed(true);
+    }
+    else {
+      setShiftOrCtrlPressed(false);
+    }
+  }, []);
 
   const onKeyDown = useCallback((e: KeyboardEvent) => {
     // don't capture keyboard events when focused on an input element:
@@ -318,11 +347,11 @@ export function useMouse(makeCheckPoint: () => void, insertMode: InsertMode, zoo
           ...state,
           // @ts-ignore
           selection: [
-          ...state.rountangles.map(r => ({uid: r.uid, parts: ["left", "top", "right", "bottom"]})),
-          ...state.diamonds.map(d => ({uid: d.uid, parts: ["left", "top", "right", "bottom"]})),
-          ...state.arrows.map(a => ({uid: a.uid, parts: ["start", "end"]})),
-          ...state.texts.map(t => ({uid: t.uid, parts: ["text"]})),
-          ...state.history.map(h => ({uid: h.uid, parts: ["history"]})),
+          ...state.rountangles.map(r => ["left", "top", "right", "bottom"].map(part => ({uid: r.uid, part}))),
+          ...state.diamonds.map(d => ["left", "top", "right", "bottom"].map(part => ({uid: d.uid, part}))),
+          ...state.arrows.map(a => ["start", "end"].map(part => ({uid: a.uid, part}))),
+          ...state.texts.map(t => ({uid: t.uid, part: "text"})),
+          ...state.history.map(h => ({uid: h.uid, part: "history"})),
         ]
         }))
       }
@@ -334,10 +363,14 @@ export function useMouse(makeCheckPoint: () => void, insertMode: InsertMode, zoo
     window.addEventListener("mouseup", onMouseUp);
     window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keydown", trackShiftKey);
+    window.addEventListener("keyup", trackShiftKey);
     return () => {
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseup", onMouseUp);
       window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keydown", trackShiftKey);
+      window.removeEventListener("keyup", trackShiftKey);
     };
   }, [selectingState, dragging]);
 

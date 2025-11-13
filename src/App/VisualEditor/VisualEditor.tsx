@@ -30,21 +30,19 @@ export type VisualEditorState = ConcreteSyntax & {
 };
 
 export type RountangleSelectable = {
-  // kind: "rountangle";
-  parts: RectSide[];
+  part: RectSide;
   uid: string;
 }
 type ArrowSelectable = {
-  // kind: "arrow";
-  parts: ArrowPart[];
+  part: ArrowPart;
   uid: string;
 }
 type TextSelectable = {
-  parts: ["text"];
+  part: "text";
   uid: string;
 }
 type HistorySelectable = {
-  parts: ["history"];
+  part: "history";
   uid: string;
 }
 type Selectable = RountangleSelectable | ArrowSelectable | TextSelectable | HistorySelectable;
@@ -113,12 +111,10 @@ export const VisualEditor = memo(function VisualEditor({state, setState, conns, 
     for (const textUid of texts) {
       textsToHighlight[textUid] = true;
     }
-    for (const part of selected.parts) {
-      const arrows = conns.side2ArrowMap.get(selected.uid + '/' + part) || [];
-      if (arrows) {
-        for (const [arrowPart, arrowUid] of arrows) {
-          arrowsToHighlight[arrowUid] = true;
-        }
+    const arrows = conns.side2ArrowMap.get(selected.uid + '/' + selected.part) || [];
+    if (arrows) {
+      for (const [arrowPart, arrowUid] of arrows) {
+        arrowsToHighlight[arrowUid] = true;
       }
     }
     const arrow2 = conns.text2ArrowMap.get(selected.uid);
@@ -229,7 +225,7 @@ export const VisualEditor = memo(function VisualEditor({state, setState, conns, 
       return <ArrowSVG
         key={arrow.uid}
         arrow={arrow}
-        selected={selection.find(a => a.uid === arrow.uid)?.parts as ArrowPart[] || []}
+        selected={selection.filter(a => a.uid === arrow.uid).map(({part})=> part as ArrowPart)}
         error={errors
           .filter(({shapeUid}) => shapeUid === arrow.uid)
           .map(({message}) => message).join(', ')}
@@ -252,7 +248,7 @@ const Rountangles = memo(function Rountangles({rountangles, selection, sidesToHi
     return <RountangleSVG
       key={rountangle.uid}
       rountangle={rountangle}
-      selected={selection.find(r => r.uid === rountangle.uid)?.parts as RectSide[] || []}
+      selected={selection.filter(r => r.uid === rountangle.uid).map(({part}) => part as RectSide)}
       highlight={[...(sidesToHighlight[rountangle.uid] || []), ...(rountanglesToHighlight[rountangle.uid]?["left","right","top","bottom"]:[]) as RectSide[]]}
       error={errors
         .filter(({shapeUid}) => shapeUid === rountangle.uid)
@@ -273,7 +269,7 @@ const Diamonds = memo(function Diamonds({diamonds, selection, sidesToHighlight, 
     <DiamondSVG
       key={diamond.uid}
       diamond={diamond}
-      selected={selection.find(r => r.uid === diamond.uid)?.parts as RectSide[] || []}
+      selected={selection.filter(r => r.uid === diamond.uid).map(({part})=>part as RectSide)}
       highlight={[...(sidesToHighlight[diamond.uid] || []), ...(rountanglesToHighlight[diamond.uid]?["left","right","top","bottom"]:[]) as RectSide[]]}
       error={errors
         .filter(({shapeUid}) => shapeUid === diamond.uid)
@@ -294,7 +290,7 @@ const Texts = memo(function Texts({texts, selection, textsToHighlight, errors, o
       key={txt.uid}
       error={errors.find(({shapeUid}) => txt.uid === shapeUid)}
       text={txt}
-      selected={Boolean(selection.find(s => s.uid === txt.uid)?.parts?.length)}
+      selected={Boolean(selection.filter(s => s.uid === txt.uid).length)}
       highlight={textsToHighlight.hasOwnProperty(txt.uid)}
       onEdit={onEditText}
       setModal={setModal}
