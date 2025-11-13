@@ -284,6 +284,7 @@ export function useMouse(makeCheckPoint: () => void, insertMode: InsertMode, zoo
                   
                 }
                 else {
+                  // @ts-ignore
                   newSelection.push({uid, part});
                 }
               } 
@@ -291,7 +292,7 @@ export function useMouse(makeCheckPoint: () => void, insertMode: InsertMode, zoo
           }
           // console.log({newSelection, oldSelection, common});
           // return [...oldSelection, ...newSelection];
-          return newSelection;xxxxxxxx  
+          return newSelection;
         })
       }
     }

@@ -9,8 +9,10 @@ export const HistorySVG = memo(function HistorySVG(props: {uid: string, topLeft:
       cx={props.topLeft.x+HISTORY_RADIUS}
       cy={props.topLeft.y+HISTORY_RADIUS}
       r={HISTORY_RADIUS}
-      fill="white"
-      stroke="black"
+      style={{
+        fill: 'var(--and-state-bg-color)',
+        stroke: 'var(--rountangle-stroke-color)'
+      }}
       strokeWidth={2}
       data-uid={props.uid}
       data-parts="history"
@@ -20,6 +22,7 @@ export const HistorySVG = memo(function HistorySVG(props: {uid: string, topLeft:
       y={props.topLeft.y+HISTORY_RADIUS+5}
       textAnchor="middle"
       fontWeight={500}
+      style={{fill: 'var(--rountangle-stroke-color)'}}
       >{text}</text>
     <circle
       className="helper"
