@@ -2,6 +2,8 @@ import { Dispatch, memo, SetStateAction, useCallback, useEffect } from "react";
 import { KeyInfoHidden, KeyInfoVisible } from "./KeyInfo";
 import { setRealtime, TimeMode } from "@/statecharts/time";
 
+import SpeedIcon from '@mui/icons-material/Speed';
+
 export const SpeedControl = memo(function SpeedControl({showKeys, timescale, setTimescale, setTime}: {showKeys: boolean, timescale: number, setTimescale: Dispatch<SetStateAction<number>>, setTime: Dispatch<SetStateAction<TimeMode>>}) {
 
   const onTimeScaleChange = useCallback((newValue: string, wallclktime: number) => {
@@ -51,7 +53,7 @@ export const SpeedControl = memo(function SpeedControl({showKeys, timescale, set
 
   const KeyInfo = showKeys ? KeyInfoVisible : KeyInfoHidden;
   return <>
-    <label htmlFor="number-timescale">speed</label>&nbsp;
+    <label htmlFor="number-timescale"><SpeedIcon fontSize="small"/></label>&nbsp;
     <KeyInfo keyInfo={<kbd>S</kbd>}>
       <button title="slower" onClick={onSlower}>÷2</button>
     </KeyInfo>

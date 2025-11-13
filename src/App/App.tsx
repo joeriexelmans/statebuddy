@@ -17,7 +17,6 @@ import { useUrlHashState } from "../hooks/useUrlHashState";
 import { plants } from "./plants";
 import { emptyState } from "@/statecharts/concrete_syntax";
 import { ModalOverlay } from "./Modals/ModalOverlay";
-import { usePersistentState } from "@/hooks/usePersistentState";
 
 export type EditHistory = {
   current: VisualEditorState,

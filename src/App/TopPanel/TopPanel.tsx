@@ -1,4 +1,4 @@
-import { Dispatch, memo, ReactElement, SetStateAction, useCallback, useEffect, useState } from "react";
+import { Dispatch, memo, ReactElement, SetStateAction, useCallback, useEffect, useMemo, useState } from "react";
 import { TimerElapseEvent, Timers } from "../../statecharts/runtime_types";
 import { getSimTime, setPaused, setRealtime, TimeMode } from "../../statecharts/time";
 import { InsertMode } from "./InsertModes";
@@ -12,6 +12,9 @@ import { formatTime } from "../../util/util";
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import BrightnessAutoIcon from '@mui/icons-material/BrightnessAuto';
+
+import SpeedIcon from '@mui/icons-material/Speed';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
 
 import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
 import CachedIcon from '@mui/icons-material/Cached';
@@ -52,7 +55,7 @@ export type TopPanelProps = {
 const ShortCutShowKeys = <kbd>~</kbd>;
 
 export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, onRedo, onRotate, onInit, onClear, onBack, insertMode, setInsertMode, setModal, zoom, setZoom, showKeys, setShowKeys, editHistory}: TopPanelProps) {
-  const [displayTime, setDisplayTime] = useState("0.000");
+  const [displayTime, setDisplayTime] = useState(0);
   const [timescale, setTimescale] = usePersistentState("timescale", 1);
 
   const config = trace && trace.trace[trace.idx];
@@ -62,8 +65,15 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
   const updateDisplayedTime = useCallback(() => {
     const now = Math.round(performance.now());
     const timeMs = getSimTime(time, now);
-    setDisplayTime(formatTime(timeMs));
+    setDisplayTime((timeMs));
   }, [time, setDisplayTime]);
+
+  const formattedDisplayTime = useMemo(() => formatTime(displayTime), [displayTime]);
+
+  // const lastSimTime = useMemo(() => time.kind === "realtime" ? time.since.simtime : time.simtime, [time]);
+
+  const lastSimTime = config?.simtime || 0;
+
 
   useEffect(() => {
     // This has no effect on statechart execution. In between events, the statechart is doing nothing. However, by updating the displayed time, we give the illusion of continuous progress.
@@ -104,6 +114,9 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
       });
     }
   }, [nextTimedTransition, setTime]);
+
+
+  console.log({lastSimTime, displayTime, nxt: nextTimedTransition?.[0]});
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -228,15 +241,20 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
       {/* time, next */}
       <div className="toolbarGroup">
         <div className="toolbarGroup">
-          <label htmlFor="time">time (s)</label>&nbsp;
-          <input title="the current simulated time" id="time" disabled={!config} value={displayTime} readOnly={true} className="readonlyTextBox" />
+          <label htmlFor="time"><AccessTimeIcon fontSize="small"/></label>&nbsp;
+          <progress style={{position:'absolute', width: 60, marginTop: 23, height: 2, background: 'rgba(0,0,0,0)', border: 0, accentColor: 'var(--accent-border-color)', appearance: 'none'}} max={1} value={(displayTime-lastSimTime)/((nextTimedTransition?.[0]||Infinity)-lastSimTime)}/>
+          <input title="the current simulated time" id="time" disabled={!config} value={formattedDisplayTime} readOnly={true} className="readonlyTextBox" />
+
         </div>
+
         &emsp;
         <div className="toolbarGroup">
-          <label htmlFor="next-timeout">next (s)</label>&nbsp;
+          <label htmlFor="next-timeout"><AccessAlarmIcon fontSize="small"/></label>&nbsp;
           <input title="next point in simulated time where a timed transition may fire" id="next-timeout" disabled={!config} value={nextTimedTransition ? formatTime(nextTimedTransition[0]) : '+inf'} readOnly={true} className="readonlyTextBox"/>
           <KeyInfo keyInfo={<kbd>Tab</kbd>}>
-            <button title="advance time just enough for the next timer to elapse" disabled={nextTimedTransition===undefined} onClick={onSkip}><SkipNextIcon fontSize="small"/><AccessAlarmIcon fontSize="small"/></button>
+            <button title="advance time just enough for the next timer to elapse" disabled={nextTimedTransition===undefined} onClick={onSkip}>
+              <SkipNextIcon fontSize="small"/>
+            </button>
           </KeyInfo>
           &emsp;
         </div>
