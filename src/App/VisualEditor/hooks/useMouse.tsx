@@ -271,16 +271,16 @@ export function useMouse(makeCheckPoint: () => void, insertMode: InsertMode, zoo
         
         // @ts-ignore
         setSelection(oldSelection => {
-          const newSelection = [];
+          const newSelection = [...oldSelection];
           const common = [];
           for (const shape of shapesInSelection) {
             const uid = shape.dataset.uid;
             if (uid) {
               const parts = shape.dataset.parts?.split(' ') || [];
               for (const part of parts) {
-                if (oldSelection.some(({uid: oldUid, part: oldPart}) =>
+                if (newSelection.some(({uid: oldUid, part: oldPart}) =>
                   uid === oldUid && part === oldPart)) {
-                    common.push({uid, part});
+                    // common.push({uid, part});
                   
                 }
                 else {
@@ -289,7 +289,9 @@ export function useMouse(makeCheckPoint: () => void, insertMode: InsertMode, zoo
               } 
             }
           }
-          return [...oldSelection, ...newSelection];
+          // console.log({newSelection, oldSelection, common});
+          // return [...oldSelection, ...newSelection];
+          return newSelection;xxxxxxxx  
         })
       }
     }
