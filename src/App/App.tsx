@@ -174,7 +174,7 @@ export function App() {
         {/* Right: sidebar */}
         <div style={{
           flex: '0 0 content',
-          borderLeft: '1px solid lightgrey',
+          borderLeft: '1px solid var(--separator-color)',
           overflowY: "auto",
           overflowX: "auto",
           maxWidth: 'min(400px, 50vw)',

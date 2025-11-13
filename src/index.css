@@ -8,17 +8,19 @@ html, body {
 :root {
   color-scheme: light dark;
 
-  --background-color: light-dark(white, rgb(0, 0, 0));
+  --background-color: light-dark(white, rgb(31, 33, 36));
   --text-color: light-dark(black, white);
   --error-color: light-dark(rgb(163, 0, 0), rgb(255, 82, 82));
   --error-bg-color: light-dark(lightpink, rgb(75, 0, 0));
   --error-hover-bg-color: light-dark(rgb(102, 0, 0), rgb(238, 153, 153));
   --light-accent-color: light-dark(rgba(0,0,255,0.2), rgba(78, 186, 248, 0.377));
   --accent-border-color: light-dark(blue, rgb(64, 185, 255));
+  --accent-opaque-color: rgba(78, 186, 248, 1);
   --separator-color: light-dark(lightgrey, rgb(44, 44, 44));
   --inactive-bg-color: light-dark(#f7f7f7, rgb(29, 29, 29));
   --inactive-fg-color: light-dark(grey, rgb(70, 70, 70));
-  --button-bg-color: light-dark(#fcfcfc, rgb(20, 20, 20));
+  --button-bg-color: light-dark(#fcfcfc, rgb(44, 50, 63));
+  --textbox-bg-color: light-dark(white, rgb(36, 41, 40));
   --modal-backdrop-color: light-dark(rgba(200,200,200,0.7), rgba(23, 22, 32, 0.849));
   --status-inactive-color: light-dark(grey, grey);
   --status-ok-color: light-dark(forestgreen, forestgreen);
@@ -31,13 +33,22 @@ html, body {
   --firing-transition-color: light-dark(rgba(255, 128, 9, 1), rgba(255, 128, 9, 1));
   --associated-color: light-dark(green, rgb(186, 245, 119));
   --bottom-panel-bg-color: light-dark(rgb(255, 249, 235), rgb(24, 40, 70));
-  --summary-hover-bg-color: light-dark(#eee, #242424);
+  --summary-hover-bg-color: light-dark(#eee, #313131);
   --internal-event-bg-color: light-dark(rgb(255, 218, 252), rgb(99, 27, 94));
   --input-event-bg-color: light-dark(rgb(224, 247, 209), rgb(59, 95, 37));
   --input-event-hover-bg-color: light-dark(rgb(195, 224, 176), rgb(59, 88, 40));
   --input-event-active-bg-color: light-dark(rgb(176, 204, 158), rgb(77, 117, 53));
   --output-event-bg-color: light-dark(rgb(230, 249, 255), rgb(28, 83, 104));
+
+  background-color: var(--background-color);
+  color: var(--text-color);
 }
+
+input {
+  background-color: var(--textbox-bg-color);
+  border: 1px solid var(--separator-color);
+}
+
 
 div#root {
   height: 100%;
@@ -63,7 +74,7 @@ kbd:active { transform: translateY(1px); }
 
 input {
   /* border: solid blue 2px; */
-  accent-color: var(--light-accent-color);
+  accent-color: var(--accent-opaque-color);
 }
 
 ::selection {
