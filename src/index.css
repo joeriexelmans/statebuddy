@@ -8,11 +8,11 @@ html, body {
 :root {
   color-scheme: light dark;
 
-  --background-color: light-dark(white, rgb(26, 26, 26));
+  --background-color: light-dark(white, rgb(0, 0, 0));
   --text-color: light-dark(black, white);
   --error-color: light-dark(rgb(163, 0, 0), rgb(255, 82, 82));
   --error-bg-color: light-dark(lightpink, rgb(75, 0, 0));
-  --error-hover-bg-color: light-dark(rgb(102, 0, 0), rgb(102, 0, 0));
+  --error-hover-bg-color: light-dark(rgb(102, 0, 0), rgb(238, 153, 153));
   --light-accent-color: light-dark(rgba(0,0,255,0.2), rgba(78, 186, 248, 0.377));
   --accent-border-color: light-dark(blue, rgb(64, 185, 255));
   --separator-color: light-dark(lightgrey, rgb(44, 44, 44));
@@ -37,12 +37,6 @@ html, body {
   --input-event-hover-bg-color: light-dark(rgb(195, 224, 176), rgb(59, 88, 40));
   --input-event-active-bg-color: light-dark(rgb(176, 204, 158), rgb(77, 117, 53));
   --output-event-bg-color: light-dark(rgb(230, 249, 255), rgb(28, 83, 104));
-}
-
-/* for some reason i need to add this or some elements are rendered in OS color rather than 'forced' color */
-div {
-  color: var(--text-color);
-  background-color: var(--background-color);
 }
 
 div#root {

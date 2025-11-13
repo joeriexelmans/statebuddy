@@ -1,7 +1,7 @@
 .errorStatus {
   /* background-color: rgb(230,0,0); */
   background-color: var(--error-color);
-  color: white;
+  color: var(--background-color);
 }
 
 .bottom {

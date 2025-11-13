@@ -37,8 +37,8 @@ export type TopPanelProps = {
   onInit: () => void,
   onClear: () => void,
   onBack: () => void,
-  lightMode: LightMode,
-  setLightMode: Dispatch<SetStateAction<LightMode>>,
+  // lightMode: LightMode,
+  // setLightMode: Dispatch<SetStateAction<LightMode>>,
   insertMode: InsertMode,
   setInsertMode: Dispatch<SetStateAction<InsertMode>>,
   setModal: Dispatch<SetStateAction<ReactElement|null>>,
@@ -51,7 +51,7 @@ export type TopPanelProps = {
 
 const ShortCutShowKeys = <kbd>~</kbd>;
 
-export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, onRedo, onRotate, onInit, onClear, onBack, lightMode, setLightMode, insertMode, setInsertMode, setModal, zoom, setZoom, showKeys, setShowKeys, editHistory}: TopPanelProps) {
+export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, onRedo, onRotate, onInit, onClear, onBack, insertMode, setInsertMode, setModal, zoom, setZoom, showKeys, setShowKeys, editHistory}: TopPanelProps) {
   const [displayTime, setDisplayTime] = useState("0.000");
   const [timescale, setTimescale] = usePersistentState("timescale", 1);
 
@@ -152,7 +152,8 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
   }, [config, time, onInit, onChangePaused, setShowKeys, onSkip, onBack, onClear]);
 
   return <div className="toolbar">
-    {/* light / dark mode */}
+
+    {/* light / dark mode
     <div className="toolbarGroup">
       <button title="force light mode" className={lightMode==="light"?"active":""} onClick={() => setLightMode("light")}>
         <LightModeIcon fontSize="small"/>
@@ -164,7 +165,7 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
         <DarkModeIcon fontSize="small"/>
       </button>
       &emsp;
-    </div>
+    </div> */}
 
     {/* shortcuts / about */}
     <div className="toolbarGroup">

@@ -45,7 +45,8 @@ export function App() {
   const [editHistory, setEditHistory] = useState<EditHistory|null>(null);
   const [modal, setModal] = useState<ReactElement|null>(null);
 
-  const [lightMode, setLightMode] = usePersistentState<LightMode>("lightMode", "auto");
+  // const [lightMode, setLightMode] = usePersistentState<LightMode>("lightMode", "auto");
+  const lightMode = "auto";
 
   const {makeCheckPoint, onRedo, onUndo, onRotate} = useEditor(setEditHistory);
 
@@ -140,7 +141,11 @@ export function App() {
 
   const plantState = currentBigStep && currentBigStep.state.plant || plant.execution.initial()[1];
 
-  return <div style={{height:'100%', colorScheme: lightMode!=="auto"?lightMode:undefined}}>
+  return <div style={{
+    height:'100%',
+    // doesn't work:
+    colorScheme: lightMode!=="auto"?lightMode:undefined,
+  }}>
     <ModalOverlay modal={modal} setModal={setModal}>
     {/* top-to-bottom: everything -> bottom panel */}
     <div className="stackVertical" style={{height:'100%'}}>
@@ -156,7 +161,7 @@ export function App() {
             style={{flex: '0 0 content'}}
           >
             {editHistory && <TopPanel
-              {...{onUndo, onRedo, onRotate, lightMode, setLightMode, setModal, editHistory, ...simulator, ...setters, ...appState}}
+              {...{onUndo, onRedo, onRotate, setModal, editHistory, ...simulator, ...setters, ...appState}}
             />}
           </div>
           {/* Editor */}

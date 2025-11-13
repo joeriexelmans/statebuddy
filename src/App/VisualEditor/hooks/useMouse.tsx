@@ -356,8 +356,6 @@ export function useMouse(makeCheckPoint: () => void, insertMode: InsertMode, zoo
     }
   }, [makeCheckPoint, deleteSelection, setState, setDragging]);
 
-  console.log(state.selection);
-
   useEffect(() => {
     // mousemove and mouseup are global event handlers so they keep working when pointer is outside of browser window
     window.addEventListener("mouseup", onMouseUp);
