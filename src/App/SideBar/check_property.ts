@@ -52,8 +52,6 @@ export async function checkProperty(plant: Plant<RT_Statechart, any>, property: 
     }
   }
 
-  console.log({cleanPlantStates, traces});
-
   try {
     const response = await fetch(endpoint, {
       method: "POST",
