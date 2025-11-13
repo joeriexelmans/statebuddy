@@ -15,7 +15,7 @@ html, body {
   --error-hover-bg-color: light-dark(rgb(102, 0, 0), rgb(238, 153, 153));
   --light-accent-color: light-dark(rgba(0,0,255,0.2), rgba(78, 186, 248, 0.377));
   --accent-border-color: light-dark(blue, rgb(64, 185, 255));
-  --accent-opaque-color: rgba(78, 186, 248, 1);
+  --accent-opaque-color: light-dark(#ccccff, #305b73);
   --separator-color: light-dark(lightgrey, rgb(44, 44, 44));
   --inactive-bg-color: light-dark(#f7f7f7, rgb(29, 29, 29));
   --inactive-fg-color: light-dark(grey, rgb(70, 70, 70));
