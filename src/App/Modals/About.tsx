@@ -1,9 +1,9 @@
+import { Logo } from "@/Logo/Logo";
 import { Dispatch, ReactElement, SetStateAction } from "react";
-import logo from "../../../artwork/logo-playful.svg";
 
 export function About(props: {setModal: Dispatch<SetStateAction<ReactElement|null>>}) {
   return <div style={{maxWidth: '500px', padding: 4}}>
-    <p><img src={logo} style={{maxWidth:'100%'}}/></p>
+    <p><Logo/></p>
 
     <p>StateBuddy is an <a target="_blank" href="https://deemz.org/git/research/statebuddy">open source</a> tool for <a target="_blank" href="https://dl.acm.org/doi/10.1016/0167-6423(87)90035-9">Statechart</a> editing, simulation, (omniscient) debugging and testing.</p>
 

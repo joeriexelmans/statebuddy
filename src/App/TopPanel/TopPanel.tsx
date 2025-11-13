@@ -3,11 +3,15 @@ import { TimerElapseEvent, Timers } from "../../statecharts/runtime_types";
 import { getSimTime, setPaused, setRealtime, TimeMode } from "../../statecharts/time";
 import { InsertMode } from "./InsertModes";
 import { About } from "../Modals/About";
-import { EditHistory } from "../App";
+import { EditHistory, LightMode } from "../App";
 import { KeyInfoHidden, KeyInfoVisible } from "./KeyInfo";
 import { UndoRedoButtons } from "./UndoRedoButtons";
 import { ZoomButtons } from "./ZoomButtons";
 import { formatTime } from "../../util/util";
+
+import DarkModeIcon from '@mui/icons-material/DarkMode';
+import LightModeIcon from '@mui/icons-material/LightMode';
+import BrightnessAutoIcon from '@mui/icons-material/BrightnessAuto';
 
 import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
 import CachedIcon from '@mui/icons-material/Cached';
@@ -33,6 +37,8 @@ export type TopPanelProps = {
   onInit: () => void,
   onClear: () => void,
   onBack: () => void,
+  lightMode: LightMode,
+  setLightMode: Dispatch<SetStateAction<LightMode>>,
   insertMode: InsertMode,
   setInsertMode: Dispatch<SetStateAction<InsertMode>>,
   setModal: Dispatch<SetStateAction<ReactElement|null>>,
@@ -45,7 +51,7 @@ export type TopPanelProps = {
 
 const ShortCutShowKeys = <kbd>~</kbd>;
 
-export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, onRedo, onRotate, onInit, onClear, onBack, insertMode, setInsertMode, setModal, zoom, setZoom, showKeys, setShowKeys, editHistory}: TopPanelProps) {
+export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, onRedo, onRotate, onInit, onClear, onBack, lightMode, setLightMode, insertMode, setInsertMode, setModal, zoom, setZoom, showKeys, setShowKeys, editHistory}: TopPanelProps) {
   const [displayTime, setDisplayTime] = useState("0.000");
   const [timescale, setTimescale] = usePersistentState("timescale", 1);
 
@@ -146,6 +152,20 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
   }, [config, time, onInit, onChangePaused, setShowKeys, onSkip, onBack, onClear]);
 
   return <div className="toolbar">
+    {/* light / dark mode */}
+    <div className="toolbarGroup">
+      <button title="force light mode" className={lightMode==="light"?"active":""} onClick={() => setLightMode("light")}>
+        <LightModeIcon fontSize="small"/>
+      </button>
+      <button title="auto light / dark mode (follows system theme)" className={lightMode==="auto"?"active":""} onClick={() => setLightMode("auto")}>
+        <BrightnessAutoIcon fontSize="small"/>
+      </button>
+      <button title="force dark mode" className={lightMode==="dark"?"active":""} onClick={() => setLightMode("dark")}>
+        <DarkModeIcon fontSize="small"/>
+      </button>
+      &emsp;
+    </div>
+
     {/* shortcuts / about */}
     <div className="toolbarGroup">
       <KeyInfo keyInfo={ShortCutShowKeys}>

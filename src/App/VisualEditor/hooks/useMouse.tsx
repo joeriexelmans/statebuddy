@@ -11,8 +11,6 @@ export function useMouse(makeCheckPoint: () => void, insertMode: InsertMode, zoo
   const [dragging, setDragging] = useState(false);
   const [shiftOrCtrlPressed, setShiftOrCtrlPressed] = useState(false);
 
-  console.log(shiftOrCtrlPressed);
-
   // not null while the user is making a selection
   const [selectingState, setSelectingState] = useState<SelectingState>(null);
 
@@ -347,16 +345,18 @@ export function useMouse(makeCheckPoint: () => void, insertMode: InsertMode, zoo
           ...state,
           // @ts-ignore
           selection: [
-          ...state.rountangles.map(r => ["left", "top", "right", "bottom"].map(part => ({uid: r.uid, part}))),
-          ...state.diamonds.map(d => ["left", "top", "right", "bottom"].map(part => ({uid: d.uid, part}))),
-          ...state.arrows.map(a => ["start", "end"].map(part => ({uid: a.uid, part}))),
-          ...state.texts.map(t => ({uid: t.uid, part: "text"})),
-          ...state.history.map(h => ({uid: h.uid, part: "history"})),
-        ]
+            ...state.rountangles.flatMap(r => ["left", "top", "right", "bottom"].map(part => ({uid: r.uid, part}))),
+            ...state.diamonds.flatMap(d => ["left", "top", "right", "bottom"].map(part => ({uid: d.uid, part}))),
+            ...state.arrows.flatMap(a => ["start", "end"].map(part => ({uid: a.uid, part}))),
+            ...state.texts.map(t => ({uid: t.uid, part: "text"})),
+            ...state.history.map(h => ({uid: h.uid, part: "history"})),
+          ]
         }))
       }
     }
   }, [makeCheckPoint, deleteSelection, setState, setDragging]);
+
+  console.log(state.selection);
 
   useEffect(() => {
     // mousemove and mouseup are global event handlers so they keep working when pointer is outside of browser window

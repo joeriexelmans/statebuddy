@@ -18,12 +18,19 @@ export function PseudoStateIcon(props: {}) {
         ${w - 1} ${h / 2},
         ${w / 2} ${h - 1},
         ${1}   ${h / 2},
-      `} fill="white" stroke="black" strokeWidth={1.2} />
+      `}
+      style={{
+        fill: 'var(--and-state-bg-color',
+        stroke: 'var(--rountangle-stroke-color',
+      }} strokeWidth={1.2} />
   </svg>;
 }
 
 export function HistoryIcon(props: { kind: "shallow" | "deep"; }) {
   const w = 20, h = 20;
   const text = props.kind === "shallow" ? "H" : "H*";
-  return <svg width={w} height={h}><circle cx={w / 2} cy={h / 2} r={Math.min(w, h) / 2 - 1} fill="white" stroke="black" /><text x={w / 2} y={h / 2 + 4} textAnchor="middle" fontSize={11} fontWeight={400}>{text}</text></svg>;
+  return <svg width={w} height={h}><circle cx={w / 2} cy={h / 2} r={Math.min(w, h) / 2 - 1} style={{
+    fill: 'var(--and-state-bg-color',
+    stroke: 'var(--rountangle-stroke-color',
+  }}/><text x={w / 2} y={h / 2 + 4} style={{fill: 'var(--rountangle-stroke-color'}} textAnchor="middle" fontSize={11} fontWeight={400}>{text}</text></svg>;
 }

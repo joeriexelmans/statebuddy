@@ -1,6 +1,6 @@
 .svgCanvas {
   cursor: crosshair;
-  background-color: #eee;
+  background-color: var(--or-state-bg-color);
 }
 
 .svgCanvas.dragging  {
@@ -19,16 +19,15 @@
 
 /* rectangle drawn while a selection is being made */
 .selecting {
-  fill: blue;
-  fill-opacity: 0.2;
+  fill: var(--light-accent-color);
   stroke-width: 1px;
-  stroke:black;
+  stroke: var(--accent-border-color);
   stroke-dasharray: 7 6;
 }
 
 .rountangle {
-  fill: white;
-  stroke: black;
+  fill: var(--and-state-bg-color);
+  stroke: var(--rountangle-stroke-color);
   stroke-width: 2px;
 }
 
@@ -39,9 +38,10 @@
   stroke: var(--error-color);
 }
 .rountangle.active {
-  stroke: rgb(205, 133, 0);
+  stroke: var(--active-state-border-color);
   /* stroke: none; */
-  fill:rgb(255, 240, 214);
+  /* fill:rgb(255, 240, 214); */
+  fill: var(--active-state-bg-color);
   /* filter: drop-shadow( 2px 2px 2px rgba(124, 37, 10, 0.729)); */
 }
 
@@ -54,8 +54,7 @@ line.helper {
   stroke-width: 16px;
 }
 line.helper:hover:not(:active) {
-  stroke: blue;
-  stroke-opacity: 0.2;
+  stroke: var(--light-accent-color);
   cursor: grab;
 }
 
@@ -65,8 +64,7 @@ path.helper {
   stroke-width: 16px;
 }
 path.helper:hover:not(:active) {
-  stroke: blue;
-  stroke-opacity: 0.2;
+  stroke: var(--light-accent-color);
   cursor: grab;
 }
 
@@ -74,23 +72,22 @@ circle.helper {
   fill: rgba(0, 0, 0, 0);
 }
 circle.helper:hover:not(:active) {
-  fill: blue;
-  fill-opacity: 0.2;
+  fill: var(--light-accent-color);
   cursor: grab;
 }
 
 .rountangle.or {
   stroke-dasharray: 7 6;
-  fill: #eee;
+  fill: var(--or-state-bg-color);
 }
 
 .arrow {
   fill: none;
-  stroke: black;
+  stroke: var(--rountangle-stroke-color);
   stroke-width: 2px;
 }
 .arrow.selected {
-  stroke: blue;
+  stroke: var(--accent-border-color);
   stroke-width: 3px;
 }
 
@@ -110,19 +107,14 @@ circle.helper:hover:not(:active) {
 }
 
 line.selected, circle.selected {
-  fill: rgba(0, 0, 255, 0.2);
-  /* stroke-dasharray: 7 6; */
-  stroke: blue;
+  fill: var(--light-accent-color);
+  stroke: var(--accent-border-color);
   stroke-width: 4px;
 }
 
 .draggableText.selected, .draggableText.selected:hover {
-  fill: blue;
+  fill: var(--accent-border-color);
   font-weight: 600;
-}
-.draggableText:hover:not(:active) {
-  /* fill: blue; */
-  /* cursor: grab; */
 }
 text.helper {
   fill: rgba(0,0,0,0);
@@ -130,14 +122,14 @@ text.helper {
   stroke-width: 6px;
 }
 text.helper:hover {
-  stroke: blue;
-  stroke-opacity: 0.2;
+  stroke: var(--light-accent-color);
   cursor: grab;
 }
 
 .draggableText, .draggableText.highlight {
   paint-order: stroke;
-  stroke: white;
+  fill: var(--text-color);
+  stroke: var(--background-color);
   stroke-width: 4px;
   stroke-linecap: butt;
   stroke-linejoin: miter;
@@ -146,12 +138,16 @@ text.helper:hover {
 }
 
 .draggableText.highlight:not(.selected) {
-  fill: green;
+  fill: var(--associated-color);
   font-weight: 600;
 }
 
+.draggableText.selected {
+  fill: var(--accent-border-color);
+}
+
 .highlight:not(.selected):not(text) {
-  stroke: green;
+  stroke: var(--associated-color);
   stroke-width: 3px;
   fill: none;
 }
@@ -160,19 +156,19 @@ text.helper:hover {
   stroke: var(--error-color);
 }
 .arrow.fired {
-    stroke: rgb(160 0 168);
+  stroke: var(--fired-transition-color);
   stroke-width: 3px;
   animation: blinkTransition 1s;
 }
 
 @keyframes blinkTransition {
   0% {
-    stroke: rgb(255, 128, 9);
+    stroke: var(--firing-transition-color);
     stroke-width: 6px;
-    filter: drop-shadow(0 0 5px rgba(255, 128, 9, 1));
+    filter: drop-shadow(0 0 5px var(--firing-transition-color));
   }
   100% {
-    stroke: rgb(160 0 168);
+    stroke: var(--fired-transition-color);
   }
 }
 
@@ -191,5 +187,5 @@ g:hover > .errorHover {
 }
 
 text.uid {
-  fill: lightgrey;
+  fill: var(--separator-color);
 }

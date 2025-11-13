@@ -1,61 +1,44 @@
-/* details {
-  padding-left: 20;
-}
-summary {
-  margin-left: -20;
-} */
-
 details:has(+ details) {
-  border-bottom: 1px lightgrey solid;
+  border-bottom: 1px var(--separator-color) solid;
 }
 
 .runtimeState {
   padding: 4px;
-  /* padding-left: 4px;
-  padding-right: 4px;
-  padding-top: 2px;
-  padding-bottom: 2px; */
 }
 
 .runtimeState:has(+.runtimeState) {
-  border-bottom: 1px lightgrey solid;
+  border-bottom: 1px var(--separator-color) solid;
 }
 .runtimeState:has(+.runtimeState.active) {
   border-bottom: 0;
 }
 
 .runtimeState:hover {
-  /* background-color: rgba(255, 140, 0, 0.2); */
-  background-color: rgba(0,0,255,0.2);
+  background-color: var(--light-accent-color);
   cursor: pointer;
 }
 .runtimeState.active {
-  background-color: rgba(0,0,255,0.2);
-  border: solid blue 1px;
+  background-color: var(--light-accent-color);
+  border: solid var(--accent-border-color) 1px;
 }
 .runtimeState.plantStep:not(.active) {
-  background-color: #f7f7f7;
+  background-color: var(--inactive-bg-color);
 }
 .runtimeState.plantStep * {
-  color: grey;
+  color: var(--inactive-fg-color);
 }
 
 .runtimeState.runtimeError {
-  background-color: lightpink;
-  color: darkred;
+  background-color: var(--error-bg-color);
+  color: var(--error-color); /* used to be darkred, but this one's a bit lighter */
 }
 
 .runtimeState.runtimeError.active {
-  border-color: darkred;
+  border-color: var(--error-color);/* used to be darkred, but this one's a bit lighter */
 }
-
-/* details:not(:has(details)) > summary::marker {
-  color: white;
-} */
 
 .readonlyTextBox {
   width: 56;
-  background-color:"#eee";
   text-align: "right";
 }
 
@@ -78,20 +61,23 @@ details:has(+ details) {
 }
 
 button {
-  background-color: #fcfcfc;
-  border: 1px lightgrey solid;
+  background-color: var(--button-bg-color);
+  border: 1px var(--separator-color) solid;
 }
 
 button:not(:disabled):hover {
-  background-color: rgba(0, 0, 255, 0.2);
+  background-color: var(--light-accent-color);
+}
+
+button:disabled {
+  background-color: var(--inactive-bg-color);
+  color: var(--inactive-fg-color);
 }
 
 button.active {
-  border: solid blue 1px;
-  background-color: rgba(0,0,255,0.2);
-  /* margin-right: 1px; */
-  /* margin-left: 0; */
-  color: black;
+  border: solid var(--accent-border-color) 1px;
+  background-color: var(--light-accent-color);
+  color: var(--text-color);
 }
 
 .modalOuter {
@@ -102,7 +88,7 @@ button.active {
   justify-content: center;
   align-items: center;
   text-align: center;
-  background-color: rgba(200,200,200,0.7);
+  background-color: var(--modal-backdrop-color);
   z-index: 1000;
 }
 
@@ -110,7 +96,7 @@ button.active {
   position: relative;
   text-align: center;
   display: inline-block;
-  background-color: white;
+  background-color: var(--background-color);
   max-height: 100vh;
   overflow: auto;
 }
@@ -128,7 +114,7 @@ div.stackHorizontal {
 div.status {
   display: inline-block;
   vertical-align: middle;
-  background-color: grey;
+  background-color: var(--status-inactive-color);
   border-radius: 50%;
   height: 12px;
   width: 12px;
@@ -141,6 +127,6 @@ div.status.violated {
 }
 
 div.status.satisfied {
-  background-color: forestgreen;
+  background-color: var(--status-ok-color);
 }
 

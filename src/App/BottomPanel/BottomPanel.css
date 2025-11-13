@@ -5,6 +5,6 @@
 }
 
 .bottom {
-  border-top: 1px lightgrey solid;
-  background-color: rgb(255, 249, 235);
+  border-top: 1px var(--separator-color) solid;
+  background-color: var(--bottom-panel-bg-color);
 }

@@ -3,14 +3,14 @@ import { TraceableError } from "../../statecharts/parser";
 
 import "./BottomPanel.css";
 
-import logo from "../../../artwork/logo-playful.svg";
 import { PersistentDetailsLocalStorage } from "../PersistentDetails";
+import { Logo } from "@/Logo/Logo";
 
 export function BottomPanel(props: {errors: TraceableError[]}) {
   const [greeting, setGreeting] = useState(
     <div style={{textAlign:'center'}}>
       <span style={{fontSize: 18, fontStyle: 'italic'}}>
-        Welcome to <img src={logo} style={{maxWidth:'100%'}}/>
+        Welcome to <Logo/>
       </span>
     </div>);
 

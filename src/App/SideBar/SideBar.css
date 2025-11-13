@@ -1,78 +1,51 @@
-details.active  {
-  border: rgb(192, 125, 0);
-  background-color:rgb(255, 251, 244);
-  filter: drop-shadow( 0px 0px 3px rgba(192, 125, 0, 0.856));
-}
 
 details > summary {
   padding: 2px;
 }
 
-/* these two rules add a bit of padding to an opened <details> node */
-/* details:open > summary:has(+ *) {
-  margin-bottom: 4px;
-}
-details:open:has(>summary:has(+ *)) {
-  padding-bottom: 8px;
-} */
-
 details > summary:hover {
-  background-color: #eee;
+  background-color: var(--summary-hover-bg-color);
   cursor: default;
 }
 
 .errorStatus details > summary:hover {
-  background-color: rgb(102, 0, 0);
+  background-color: var(--error-hover-bg-color);
 }
 
 .stateTree > * { 
   padding-left: 10px;
-  /* border: 1px black solid; */
   background-color: white;
-  /* margin-bottom: 4px; */
-  /* padding-right: 2px; */
-  /* padding-top: 2px; */
-  /* padding-bottom: 2px; */
-  /* color: black; */
-  /* width: fit-content; */
-  /* border-radius: 10px; */
 }
 
-/* if <details> has no children (besides the obvious <summary> child), then hide the marker */
-/* details:not(:has(:not(summary))) > summary::marker {
-  content: "    ";
-} */
-
 .outputEvent {
-  border: 1px black solid;
+  cursor: default;
+  border: 1px var(--separator-color) solid;
   border-radius: 6px;
-  /* margin-left: 4px; */
   padding-left: 2px;
   padding-right: 2px;
-  background-color: rgb(230, 249, 255);
-  color: black;
+  background-color: var(--output-event-bg-color);
+  color: var(--text-color);
   display: inline-block;
 }
 
 .internalEvent {
-  border: 1px black solid;
+  cursor: default;
+  border: 1px var(--separator-color) solid;
   border-radius: 6px;
-  /* margin-left: 4px; */
   padding-left: 2px;
   padding-right: 2px;
-  background-color: rgb(255, 218, 252);
-  color: black;
+  background-color: var(--internal-event-bg-color);
+  color: var(--text-color);
   display: inline-block;
 }
 
 .inputEvent {
-  border: 1px black solid;
+  border: 1px var(--separator-color) solid;
   border-radius: 6px;
-  /* margin-left: 4px; */
   padding-left: 2px;
   padding-right: 2px;
-  background-color: rgb(224, 247, 209);
-  color: black;
+  background-color: var(--input-event-bg-color);
+  color: var(--text-color);
   display: inline-block;
 }
 .inputEvent:disabled {
@@ -82,21 +55,24 @@ details > summary:hover {
   vertical-align: middle;
 }
 button.inputEvent:hover:not(:disabled) {
-  background-color: rgb(195, 224, 176);
+  background-color: var(--input-event-hover-bg-color);
 }
 button.inputEvent:active:not(:disabled) {
-  background-color: rgb(176, 204, 158);
+  background-color: var(--input-event-active-bg-color);
 }
 
 .activeState {
-  border: rgb(192, 125, 0);
-  background-color:rgb(255, 251, 244);
-  filter: drop-shadow( 0px 0px 3px rgba(192, 125, 0, 0.856));
+  /* border: rgb(192, 125, 0); */
+  /* background-color:rgb(255, 251, 244); */
+  border: var(--active-state-border-color) 1px solid;
+  background-color: var(--active-state-bg-color);
+  /* filter: drop-shadow( 0px 0px 3px rgba(192, 125, 0, 0.856)); */
   border-radius: 6px;
   margin-left: 4px;
   padding-left: 2px;
   padding-right: 2px;
   display: inline-block;
+  color: var(--text-color);
 }
 
 /* hr {

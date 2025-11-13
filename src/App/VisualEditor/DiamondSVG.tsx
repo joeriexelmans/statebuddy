@@ -14,7 +14,8 @@ export const DiamondShape = memo(function DiamondShape(props: {size: Vec2D, extr
       ${minSize.x/2} ${minSize.y},
       ${0}           ${minSize.y/2}
     `}
-    fill="white"
+    style={{fill: 'var(--and-state-bg-color', stroke: 'var(--rountangle-stroke-color)'}}
+    // fill="white"
     stroke="black"
     strokeWidth={2}
     {...props.extraAttrs}

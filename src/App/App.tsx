@@ -17,6 +17,7 @@ import { useUrlHashState } from "../hooks/useUrlHashState";
 import { plants } from "./plants";
 import { emptyState } from "@/statecharts/concrete_syntax";
 import { ModalOverlay } from "./Modals/ModalOverlay";
+import { usePersistentState } from "@/hooks/usePersistentState";
 
 export type EditHistory = {
   current: VisualEditorState,
@@ -38,9 +39,13 @@ const defaultAppState: AppState = {
   ...defaultSideBarState,
 }
 
+export type LightMode = "light" | "auto" | "dark";
+
 export function App() {
   const [editHistory, setEditHistory] = useState<EditHistory|null>(null);
   const [modal, setModal] = useState<ReactElement|null>(null);
+
+  const [lightMode, setLightMode] = usePersistentState<LightMode>("lightMode", "auto");
 
   const {makeCheckPoint, onRedo, onUndo, onRotate} = useEditor(setEditHistory);
 
@@ -135,7 +140,8 @@ export function App() {
 
   const plantState = currentBigStep && currentBigStep.state.plant || plant.execution.initial()[1];
 
-  return <ModalOverlay modal={modal} setModal={setModal}>
+  return <div style={{height:'100%', colorScheme: lightMode!=="auto"?lightMode:undefined}}>
+    <ModalOverlay modal={modal} setModal={setModal}>
     {/* top-to-bottom: everything -> bottom panel */}
     <div className="stackVertical" style={{height:'100%'}}>
 
@@ -150,7 +156,7 @@ export function App() {
             style={{flex: '0 0 content'}}
           >
             {editHistory && <TopPanel
-              {...{onUndo, onRedo, onRotate, setModal, editHistory, ...simulator, ...setters, ...appState}}
+              {...{onUndo, onRedo, onRotate, lightMode, setLightMode, setModal, editHistory, ...simulator, ...setters, ...appState}}
             />}
           </div>
           {/* Editor */}
@@ -179,7 +185,8 @@ export function App() {
         {syntaxErrors && <BottomPanel {...{errors: syntaxErrors}}/>}
       </div>
     </div>
-  </ModalOverlay>;
+  </ModalOverlay>
+  </div>;
 }
 
 export default App;

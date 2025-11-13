@@ -5,9 +5,44 @@ html, body {
   font-size: 10pt;
 }
 
-body {
-  /* --error-color: darkred; */
-  --error-color: rgb(163, 0, 0);
+:root {
+  color-scheme: light dark;
+
+  --background-color: light-dark(white, rgb(26, 26, 26));
+  --text-color: light-dark(black, white);
+  --error-color: light-dark(rgb(163, 0, 0), rgb(255, 82, 82));
+  --error-bg-color: light-dark(lightpink, rgb(75, 0, 0));
+  --error-hover-bg-color: light-dark(rgb(102, 0, 0), rgb(102, 0, 0));
+  --light-accent-color: light-dark(rgba(0,0,255,0.2), rgba(78, 186, 248, 0.377));
+  --accent-border-color: light-dark(blue, rgb(64, 185, 255));
+  --separator-color: light-dark(lightgrey, rgb(44, 44, 44));
+  --inactive-bg-color: light-dark(#f7f7f7, rgb(29, 29, 29));
+  --inactive-fg-color: light-dark(grey, rgb(70, 70, 70));
+  --button-bg-color: light-dark(#fcfcfc, rgb(20, 20, 20));
+  --modal-backdrop-color: light-dark(rgba(200,200,200,0.7), rgba(59, 7, 7, 0.849));
+  --status-inactive-color: light-dark(grey, grey);
+  --status-ok-color: light-dark(forestgreen, forestgreen);
+  --or-state-bg-color: light-dark(#eee, #1a1a1a);
+  --and-state-bg-color: light-dark(white, rgb(0, 0, 0));
+  --rountangle-stroke-color: light-dark(black, #d4d4d4);
+  --active-state-bg-color: light-dark(rgb(255, 240, 214), rgb(53, 37, 18));
+  --active-state-border-color: light-dark(rgb(205, 133, 0), rgb(235, 124, 21));
+  --fired-transition-color: light-dark(rgb(160, 0, 168), rgb(160, 0, 168));
+  --firing-transition-color: light-dark(rgba(255, 128, 9, 1), rgba(255, 128, 9, 1));
+  --associated-color: light-dark(green, rgb(186, 245, 119));
+  --bottom-panel-bg-color: light-dark(rgb(255, 249, 235), rgb(41, 4, 4));
+  --summary-hover-bg-color: light-dark(#eee, #242424);
+  --internal-event-bg-color: light-dark(rgb(255, 218, 252), rgb(99, 27, 94));
+  --input-event-bg-color: light-dark(rgb(224, 247, 209), rgb(59, 95, 37));
+  --input-event-hover-bg-color: light-dark(rgb(195, 224, 176), rgb(59, 88, 40));
+  --input-event-active-bg-color: light-dark(rgb(176, 204, 158), rgb(77, 117, 53));
+  --output-event-bg-color: light-dark(rgb(230, 249, 255), rgb(28, 83, 104));
+}
+
+/* for some reason i need to add this or some elements are rendered in OS color rather than 'forced' color */
+div {
+  color: var(--text-color);
+  background-color: var(--background-color);
 }
 
 div#root {
@@ -27,17 +62,18 @@ kbd {
   box-shadow: inset 0 -1.5px 0 #aaa;
   vertical-align: middle;
   user-select: none;
+  color: black;
 }
 kbd:active { transform: translateY(1px); }
 
 
 input {
   /* border: solid blue 2px; */
-  accent-color: rgba(0,0,255,0.2);
+  accent-color: var(--light-accent-color);
 }
 
 ::selection {
-  background-color: rgba(0,0,255,0.2);
+  background-color: var(--light-accent-color);
 }
 
 label {
