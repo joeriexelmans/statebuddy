@@ -2,8 +2,8 @@ import { RT_Statechart } from "@/statecharts/runtime_types";
 import { Plant } from "../Plant/Plant";
 import { TraceItem } from "../hooks/useSimulator";
 
-const endpoint = "http://localhost:15478/check_property";
-// const endpoint = "https://deemz.org/apis/mtl-aas/check_property";
+// const endpoint = "http://localhost:15478/check_property";
+const endpoint = "https://deemz.org/apis/mtl-aas/check_property";
 
 export type PropertyTrace = {
   timestamp: number,
