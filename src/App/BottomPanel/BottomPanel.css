@@ -4,6 +4,11 @@
   color: var(--background-color);
 }
 
+.greeter {
+  /* border-top: 1px var(--separator-color) solid; */
+  background-color: var(--greeter-bg-color);
+}
+
 .bottom {
   border-top: 1px var(--separator-color) solid;
   background-color: var(--bottom-panel-bg-color);

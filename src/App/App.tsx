@@ -1,7 +1,7 @@
 import "../index.css";
 import "./App.css";
 
-import { ReactElement, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Dispatch, ReactElement, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { detectConnections } from "@/statecharts/detect_connections";
 import { parseStatechart } from "../statecharts/parser";
@@ -16,7 +16,8 @@ import { useSimulator } from "./hooks/useSimulator";
 import { useUrlHashState } from "../hooks/useUrlHashState";
 import { plants } from "./plants";
 import { emptyState } from "@/statecharts/concrete_syntax";
-import { ModalOverlay } from "./Modals/ModalOverlay";
+import { ModalOverlay } from "./Overlays/ModalOverlay";
+import { FindReplace } from "./BottomPanel/FindReplace";
 
 export type EditHistory = {
   current: VisualEditorState,
@@ -28,13 +29,18 @@ export type AppState = {
   showKeys: boolean,
   zoom: number,
   insertMode: InsertMode,
+  showFindReplace: boolean,
+  findText: string,
+  replaceText: string,
 } & SideBarState;
 
 const defaultAppState: AppState = {
   showKeys: true,
   zoom: 1,
   insertMode: 'and',
-
+  showFindReplace: false,
+  findText: "",
+  replaceText: "",
   ...defaultSideBarState,
 }
 
@@ -143,55 +149,61 @@ export function App() {
   return <div style={{
     height:'100%',
     // doesn't work:
-    colorScheme: lightMode!=="auto"?lightMode:undefined,
+    // colorScheme: lightMode !== "auto" ? lightMode : undefined,
   }}>
     <ModalOverlay modal={modal} setModal={setModal}>
-    {/* top-to-bottom: everything -> bottom panel */}
-    <div className="stackVertical" style={{height:'100%'}}>
+      {/* top-to-bottom: everything -> bottom panel */}
+      <div className="stackVertical" style={{height:'100%'}}>
 
-      {/* left-to-right: main -> sidebar */}
-      <div className="stackHorizontal" style={{flexGrow:1, overflow: "auto"}}>
+        {/* left-to-right: main -> sidebar */}
+        <div className="stackHorizontal" style={{flexGrow:1, overflow: "auto"}}>
 
-        {/* top-to-bottom: top bar, editor */}
-        <div className="stackVertical" style={{flexGrow:1, overflow: "auto"}}>
-          {/* Top bar */}
-          <div
-            className="shadowBelow"
-            style={{flex: '0 0 content'}}
-          >
-            {editHistory && <TopPanel
-              {...{onUndo, onRedo, onRotate, setModal, editHistory, ...simulator, ...setters, ...appState}}
-            />}
+          {/* top-to-bottom: top bar, editor */}
+          <div className="stackVertical" style={{flexGrow:1, overflow: "auto"}}>
+            {/* Top bar */}
+            <div
+              className="shadowBelow"
+              style={{flex: '0 0 content'}}
+            >
+              {editHistory && <TopPanel
+                {...{onUndo, onRedo, onRotate, setModal, editHistory, ...simulator, ...setters, ...appState, setEditorState}}
+              />}
+            </div>
+            {/* Editor */}
+            <div style={{flexGrow: 1, overflow: "auto"}}>
+              {editorState && conns && syntaxErrors &&
+                <VisualEditor {...{state: editorState, setState: setEditorState, conns, syntaxErrors: allErrors, highlightActive, highlightTransitions, setModal, makeCheckPoint, ...appState}}/>}
+            </div>
+            
+            {appState.showFindReplace &&
+              <div>
+                <FindReplace setCS={setEditorState} hide={() => setters.setShowFindReplace(false)}/>
+              </div>
+            }
+
           </div>
-          {/* Editor */}
-          <div style={{flexGrow: 1, overflow: "auto"}}>
-            {editorState && conns && syntaxErrors &&
-              <VisualEditor {...{state: editorState, setState: setEditorState, conns, syntaxErrors: allErrors, highlightActive, highlightTransitions, setModal, makeCheckPoint, ...appState}}/>}
+
+          {/* Right: sidebar */}
+          <div style={{
+            flex: '0 0 content',
+            borderLeft: '1px solid var(--separator-color)',
+            overflowY: "auto",
+            overflowX: "auto",
+            maxWidth: 'min(400px, 50vw)',
+          }}>
+            <div className="stackVertical" style={{height:'100%'}}>
+              <SideBar {...{...appState, refRightSideBar, ast, plantState, ...simulator, ...setters}} />
+            </div>
           </div>
         </div>
 
-        {/* Right: sidebar */}
-        <div style={{
-          flex: '0 0 content',
-          borderLeft: '1px solid var(--separator-color)',
-          overflowY: "auto",
-          overflowX: "auto",
-          maxWidth: 'min(400px, 50vw)',
-        }}>
-          <div className="stackVertical" style={{height:'100%'}}>
-            <SideBar {...{...appState, refRightSideBar, ast, plantState, ...simulator, ...setters}} />
-          </div>
+        {/* Bottom panel */}
+        <div style={{flex: '0 0 content'}}>
+          {syntaxErrors && <BottomPanel {...{errors: syntaxErrors, ...appState, setEditorState, ...setters}}/>}
         </div>
       </div>
-
-      {/* Bottom panel */}
-      <div style={{flex: '0 0 content'}}>
-        {syntaxErrors && <BottomPanel {...{errors: syntaxErrors}}/>}
-      </div>
-    </div>
-  </ModalOverlay>
+    </ModalOverlay>
   </div>;
 }
 
 export default App;
-

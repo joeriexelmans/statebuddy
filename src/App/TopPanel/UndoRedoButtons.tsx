@@ -3,27 +3,14 @@ import { KeyInfoHidden, KeyInfoVisible } from "./KeyInfo";
 
 import UndoIcon from '@mui/icons-material/Undo';
 import RedoIcon from '@mui/icons-material/Redo';
+import { useShortcuts } from "@/hooks/useShortcuts";
 
 export const UndoRedoButtons = memo(function UndoRedoButtons({showKeys, onUndo, onRedo, historyLength, futureLength}: {showKeys: boolean, onUndo: () => void, onRedo: () => void, historyLength: number, futureLength: number}) {
 
-  const onKeyDown = useCallback((e: KeyboardEvent) => {
-    if (e.ctrlKey) {
-      // ctrl is down
-      if (e.key === "z") {
-        e.preventDefault();
-        onUndo();
-      }
-      if (e.key === "Z") {
-        e.preventDefault();
-        onRedo();
-      }
-    }
-  }, [onUndo, onRedo]);
-
-  useEffect(() => {
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [onKeyDown]);
+  useShortcuts([
+    {keys: ["Ctrl", "z"], action: onUndo},
+    {keys: ["Ctrl", "Shift", "Z"], action: onRedo},
+  ])
 
   const KeyInfo = showKeys ? KeyInfoVisible : KeyInfoHidden;
   return <>

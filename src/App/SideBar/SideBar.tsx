@@ -15,7 +15,7 @@ import { RTHistory } from './RTHistory';
 import { BigStepCause, TraceState } from '../hooks/useSimulator';
 import { plants, UniversalPlantState } from '../plants';
 import { TimeMode } from '@/statecharts/time';
-import { PersistentDetails } from '../PersistentDetails';
+import { PersistentDetails } from '../Components/PersistentDetails';
 import "./SideBar.css";
 
 type SavedTraces = [string, BigStepCause[]][];

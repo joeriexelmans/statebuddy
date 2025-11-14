@@ -53,9 +53,11 @@ TODO
     - hovering over event in side panel should highlight all occurrences of the event in the SC
     - rename events / variables
         find/replace?
+
     - hovering over error in bottom panel should highlight that error in the SC
     - highlight selected shapes while making a selection
     - highlight about-to-fire transitions
+    
     - integrate undo-history with browser history (back/forward buttons)
 
     - ability to 'freeze' editor (e.g., to show plant SC)
@@ -74,3 +76,4 @@ TODO
 
 Publish StateBuddy paper(s):
     compare CS approach to other tools, not only YAKINDU
+z

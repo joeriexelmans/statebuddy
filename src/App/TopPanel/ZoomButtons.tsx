@@ -4,11 +4,19 @@ import { KeyInfoHidden, KeyInfoVisible } from "./KeyInfo";
 
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import ZoomOutIcon from '@mui/icons-material/ZoomOut';
+import { useShortcuts } from "@/hooks/useShortcuts";
 
 const shortcutZoomIn = <><kbd>Ctrl</kbd>+<kbd>-</kbd></>;
 const shortcutZoomOut = <><kbd>Ctrl</kbd>+<kbd>+</kbd></>;
 
 export const ZoomButtons = memo(function ZoomButtons({showKeys, zoom, setZoom}: {showKeys: boolean, zoom: number, setZoom: Dispatch<SetStateAction<number>>}) {
+
+  useShortcuts([
+    {keys: ["Ctrl", "+"], action: onZoomIn}, // plus on numerical keypad
+    {keys: ["Ctrl", "Shift", "+"], action: onZoomIn}, // plus on normal keyboard requires Shift key
+    {keys: ["Ctrl", "="], action: onZoomIn}, // most browsers also bind this shortcut so it would be confusing if we also did not override it
+    {keys: ["Ctrl", "-"], action: onZoomOut},
+  ]);
 
   const KeyInfo = showKeys ? KeyInfoVisible : KeyInfoHidden;
 
@@ -19,27 +27,6 @@ export const ZoomButtons = memo(function ZoomButtons({showKeys, zoom, setZoom}: 
     setZoom(zoom => Math.max(zoom / ZOOM_STEP, ZOOM_MIN));
   }
   
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey) {
-          if (e.key === "+" || e.key === "=") {
-          e.preventDefault();
-          e.stopPropagation();
-          onZoomIn();
-        }
-        if (e.key === "-") {
-          e.preventDefault();
-          e.stopPropagation();
-          onZoomOut();
-        }
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => {
-      window.removeEventListener("keydown", onKeyDown);
-    };
-  }, []);
-
   return <>
     <KeyInfo keyInfo={shortcutZoomOut}>
       <button title="zoom out" onClick={onZoomOut} disabled={zoom <= ZOOM_MIN}><ZoomOutIcon fontSize="small"/></button>

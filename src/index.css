@@ -32,8 +32,9 @@ html, body {
   --fired-transition-color: light-dark(rgb(160, 0, 168), rgb(160, 0, 168));
   --firing-transition-color: light-dark(rgba(255, 128, 9, 1), rgba(255, 128, 9, 1));
   --associated-color: light-dark(green, rgb(186, 245, 119));
-  --bottom-panel-bg-color: light-dark(rgb(255, 249, 235), rgb(24, 40, 70));
-  --summary-hover-bg-color: light-dark(#eee, #313131);
+  --greeter-bg-color: light-dark(rgb(255, 249, 235), rgb(24, 40, 70));
+  /* --bottom-panel-bg-color: light-dark(rgb(219, 219, 219), rgb(31, 33, 36)); */
+  --summary-hover-bg-color: light-dark(#eee, #2e2f35);
   --internal-event-bg-color: light-dark(rgb(255, 218, 252), rgb(99, 27, 94));
   --input-event-bg-color: light-dark(rgb(224, 247, 209), rgb(59, 95, 37));
   --input-event-hover-bg-color: light-dark(rgb(195, 224, 176), rgb(59, 88, 40));
@@ -49,6 +50,25 @@ input {
   border: 1px solid var(--separator-color);
 }
 
+button {
+  background-color: var(--button-bg-color);
+  border: 1px var(--separator-color) solid;
+}
+
+button:not(:disabled):hover {
+  background-color: var(--light-accent-color);
+}
+
+button:disabled {
+  background-color: var(--inactive-bg-color);
+  color: var(--inactive-fg-color);
+}
+
+button.active {
+  border: solid var(--accent-border-color) 1px;
+  background-color: var(--light-accent-color);
+  color: var(--text-color);
+}
 
 div#root {
   height: 100%;

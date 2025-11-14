@@ -3,6 +3,7 @@ import { KeyInfoHidden, KeyInfoVisible } from "./KeyInfo";
 import { HistoryIcon, PseudoStateIcon, RountangleIcon } from "./Icons";
 
 import TrendingFlatIcon from '@mui/icons-material/TrendingFlat';
+import { useShortcuts } from "@/hooks/useShortcuts";
 
 export type InsertMode = "and" | "or" | "pseudo" | "shallow" | "deep" | "transition" | "text";
 
@@ -18,45 +19,14 @@ const insertModes: [InsertMode, string, ReactElement, ReactElement][] = [
 
 export const InsertModes = memo(function InsertModes({showKeys, insertMode, setInsertMode}: {showKeys: boolean, insertMode: InsertMode, setInsertMode: Dispatch<SetStateAction<InsertMode>>}) {
 
-  const onKeyDown = useCallback((e: KeyboardEvent) => {
-    // @ts-ignore
-    if (["INPUT", "TEXTAREA", "SELECT"].includes(e.target?.tagName)) return;
-
-    if (!e.ctrlKey) {
-      if (e.key === "a") {
-        e.preventDefault();
-        setInsertMode("and");
-      }
-      if (e.key === "o") {
-        e.preventDefault();
-        setInsertMode("or");
-      }
-      if (e.key === "p") {
-        e.preventDefault();
-        setInsertMode("pseudo");
-      }
-      if (e.key === "t") {
-        e.preventDefault();
-        setInsertMode("transition");
-      }
-      if (e.key === "x") {
-        e.preventDefault();
-        setInsertMode("text");
-      }
-      if (e.key === "h") {
-        e.preventDefault();
-        setInsertMode(oldMode => {
-          if (oldMode === "shallow") return "deep";
-          return "shallow";
-        })
-      }
-    }
-  }, [setInsertMode]);
-
-  useEffect(() => {
-    window.addEventListener("keydown", onKeyDown);
-    () => window.removeEventListener("keydown", onKeyDown);
-  }, [onKeyDown]);
+  useShortcuts([
+    {keys: ["a"], action: () => setInsertMode("and")},
+    {keys: ["o"], action: () => setInsertMode("or")},
+    {keys: ["p"], action: () => setInsertMode("pseudo")},
+    {keys: ["t"], action: () => setInsertMode("transition")},
+    {keys: ["x"], action: () => setInsertMode("text")},
+    {keys: ["h"], action: () => setInsertMode(mode => mode === "shallow" ? "deep" : "shallow")},
+  ]);
 
   const KeyInfo = showKeys ? KeyInfoVisible : KeyInfoHidden;
   return <>{insertModes.map(([m, hint, buttonTxt, keyInfo]) => <KeyInfo key={m} keyInfo={keyInfo}>

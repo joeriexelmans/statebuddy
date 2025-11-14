@@ -1,9 +1,8 @@
 import { Dispatch, memo, ReactElement, SetStateAction, useCallback, useEffect, useMemo, useState } from "react";
 import { TimerElapseEvent, Timers } from "../../statecharts/runtime_types";
 import { getSimTime, setPaused, setRealtime, TimeMode } from "../../statecharts/time";
-import { InsertMode } from "./InsertModes";
 import { About } from "../Modals/About";
-import { EditHistory, LightMode } from "../App";
+import { AppState, EditHistory, LightMode } from "../App";
 import { KeyInfoHidden, KeyInfoVisible } from "./KeyInfo";
 import { UndoRedoButtons } from "./UndoRedoButtons";
 import { ZoomButtons } from "./ZoomButtons";
@@ -15,6 +14,8 @@ import BrightnessAutoIcon from '@mui/icons-material/BrightnessAuto';
 
 import SpeedIcon from '@mui/icons-material/Speed';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import FindInPageIcon from '@mui/icons-material/FindInPage';
+import FindInPageOutlinedIcon from '@mui/icons-material/FindInPageOutlined';
 
 import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
 import CachedIcon from '@mui/icons-material/Cached';
@@ -29,10 +30,16 @@ import { usePersistentState } from "@/hooks/usePersistentState";
 import { RotateButtons } from "./RotateButtons";
 import { SpeedControl } from "./SpeedControl";
 import { TraceState } from "../hooks/useSimulator";
+import { FindReplace } from "../BottomPanel/FindReplace";
+import { VisualEditorState } from "../VisualEditor/VisualEditor";
+import { Setters } from "../makePartialSetter";
+import { TwoStateButton } from "../Components/TwoStateButton";
+import { useShortcuts } from "@/hooks/useShortcuts";
 
 export type TopPanelProps = {
   trace: TraceState | null,
   time: TimeMode,
+
   setTime: Dispatch<SetStateAction<TimeMode>>,
   onUndo: () => void,
   onRedo: () => void,
@@ -40,27 +47,31 @@ export type TopPanelProps = {
   onInit: () => void,
   onClear: () => void,
   onBack: () => void,
+
   // lightMode: LightMode,
   // setLightMode: Dispatch<SetStateAction<LightMode>>,
-  insertMode: InsertMode,
-  setInsertMode: Dispatch<SetStateAction<InsertMode>>,
+  // insertMode: InsertMode,
+  // setInsertMode: Dispatch<SetStateAction<InsertMode>>,
   setModal: Dispatch<SetStateAction<ReactElement|null>>,
-  zoom: number,
-  setZoom: Dispatch<SetStateAction<number>>,
-  showKeys: boolean,
-  setShowKeys: Dispatch<SetStateAction<boolean>>,
+  // zoom: number,
+  // setZoom: Dispatch<SetStateAction<number>>,
+  // showKeys: boolean,
+  // setShowKeys: Dispatch<SetStateAction<boolean>>,
   editHistory: EditHistory,
-}
+  setEditorState: Dispatch<(oldState: VisualEditorState) => VisualEditorState>,
+} & AppState & Setters<AppState>
 
 const ShortCutShowKeys = <kbd>~</kbd>;
 
-export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, onRedo, onRotate, onInit, onClear, onBack, insertMode, setInsertMode, setModal, zoom, setZoom, showKeys, setShowKeys, editHistory}: TopPanelProps) {
+function toggle(booleanSetter: Dispatch<(state: boolean) => boolean>) {
+  return () => booleanSetter(x => !x);
+}
+
+export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, onRedo, onRotate, onInit, onClear, onBack, insertMode, setInsertMode, setModal, zoom, setZoom, showKeys, setShowKeys, editHistory, showFindReplace, setShowFindReplace, setEditorState}: TopPanelProps) {
   const [displayTime, setDisplayTime] = useState(0);
   const [timescale, setTimescale] = usePersistentState("timescale", 1);
 
   const config = trace && trace.trace[trace.idx];
-
-  const KeyInfo = showKeys ? KeyInfoVisible : KeyInfoHidden;
 
   const updateDisplayedTime = useCallback(() => {
     const now = Math.round(performance.now());
@@ -69,11 +80,7 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
   }, [time, setDisplayTime]);
 
   const formattedDisplayTime = useMemo(() => formatTime(displayTime), [displayTime]);
-
-  // const lastSimTime = useMemo(() => time.kind === "realtime" ? time.since.simtime : time.simtime, [time]);
-
   const lastSimTime = config?.simtime || 0;
-
 
   useEffect(() => {
     // This has no effect on statechart execution. In between events, the statechart is doing nothing. However, by updating the displayed time, we give the illusion of continuous progress.
@@ -115,54 +122,18 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
     }
   }, [nextTimedTransition, setTime]);
 
+  useShortcuts([
+    {keys: ["`"], action: toggle(setShowKeys)},
+    {keys: ["Ctrl", "Shift", "F"], action: toggle(setShowFindReplace)},
+    {keys: ["i"], action: onInit},
+    {keys: ["c"], action: onClear},
+    {keys: ["Tab"], action: config && onSkip || onInit},
+    {keys: ["Backspace"], action: onBack},
+    {keys: ["Shift", "Tab"], action: onBack},
+    {keys: [" "], action: () => config && onChangePaused(time.kind !== "paused", Math.round(performance.now()))},
+  ]);
 
-  console.log({lastSimTime, displayTime, nxt: nextTimedTransition?.[0]});
-
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      // don't capture keyboard events when focused on an input element:
-      // @ts-ignore
-      if (["INPUT", "TEXTAREA", "SELECT"].includes(e.target?.tagName)) return;
-
-      if (!e.ctrlKey) {
-        if (e.key === " ") {
-          e.preventDefault();
-          if (config) {
-            onChangePaused(time.kind !== "paused", Math.round(performance.now()));
-          }
-        };
-        if (e.key === "i") {
-          e.preventDefault();
-          onInit();
-        }
-        if (e.key === "c") {
-          e.preventDefault();
-          onClear();
-        }
-        if (e.key === "Tab") {
-          if (config === null) {
-            onInit();
-          }
-          else {
-            onSkip();
-          }
-          e.preventDefault();
-        }
-        if (e.key === "`") {
-          e.preventDefault();
-          setShowKeys(show => !show);
-        }
-        if (e.key === "Backspace") {
-          e.preventDefault();
-          onBack();
-        }
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => {
-      window.removeEventListener("keydown", onKeyDown);
-    };
-  }, [config, time, onInit, onChangePaused, setShowKeys, onSkip, onBack, onClear]);
+  const KeyInfo = showKeys ? KeyInfoVisible : KeyInfoHidden;
 
   return <div className="toolbar">
 
@@ -207,8 +178,23 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
       &emsp;
     </div>
 
+    {/* rotate */}
     <div className="toolbarGroup">
       <RotateButtons selection={editHistory.current.selection} onRotate={onRotate}/>
+      &emsp;
+    </div>
+
+    {/* find, replace */}
+    <div className="toolbarGroup">
+      <KeyInfo keyInfo={<><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd></>}>
+        <TwoStateButton
+          title="show find & replace"
+          active={showFindReplace}
+          onClick={() => setShowFindReplace(x => !x)}
+        >
+          <FindInPageOutlinedIcon fontSize="small"/>
+        </TwoStateButton>
+      </KeyInfo>
       &emsp;
     </div>
 

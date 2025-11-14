@@ -3,6 +3,7 @@ import { KeyInfoHidden, KeyInfoVisible } from "./KeyInfo";
 import { setRealtime, TimeMode } from "@/statecharts/time";
 
 import SpeedIcon from '@mui/icons-material/Speed';
+import { useShortcuts } from "@/hooks/useShortcuts";
 
 export const SpeedControl = memo(function SpeedControl({showKeys, timescale, setTimescale, setTime}: {showKeys: boolean, timescale: number, setTimescale: Dispatch<SetStateAction<number>>, setTime: Dispatch<SetStateAction<TimeMode>>}) {
 
@@ -31,25 +32,10 @@ export const SpeedControl = memo(function SpeedControl({showKeys, timescale, set
     onTimeScaleChange((timescale*2).toString(), Math.round(performance.now()));
   }, [onTimeScaleChange, timescale]);
 
-  const onKeyDown = useCallback((e: KeyboardEvent) => {
-    // @ts-ignore
-    if (["INPUT", "TEXTAREA", "SELECT"].includes(e.target?.tagName)) return;
-    if (!e.ctrlKey) {
-      if (e.key === "s") {
-        e.preventDefault();
-        onSlower();
-      }
-      if (e.key === "f") {
-        e.preventDefault();
-        onFaster();
-      }
-    }
-  }, [onSlower, onFaster])
-
-  useEffect(() => {
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [onKeyDown])
+  useShortcuts([
+    {keys: ["s"], action: onSlower},
+    {keys: ["f"], action: onFaster},
+  ]);
 
   const KeyInfo = showKeys ? KeyInfoVisible : KeyInfoHidden;
   return <>

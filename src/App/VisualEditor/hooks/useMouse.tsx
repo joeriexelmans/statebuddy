@@ -6,6 +6,7 @@ import { MIN_ROUNTANGLE_SIZE } from "../../parameters";
 import { InsertMode } from "../../TopPanel/InsertModes";
 import { Selecting, SelectingState } from "../Selection";
 import { Selection, VisualEditorState } from "../VisualEditor";
+import { useShortcuts } from "@/hooks/useShortcuts";
 
 export function useMouse(makeCheckPoint: () => void, insertMode: InsertMode, zoom: number, refSVG: {current: SVGSVGElement|null}, state: VisualEditorState, setState: Dispatch<(v: VisualEditorState) => VisualEditorState>, deleteSelection: () => void) {
   const [dragging, setDragging] = useState(false);
@@ -300,76 +301,47 @@ export function useMouse(makeCheckPoint: () => void, insertMode: InsertMode, zoo
   }, [dragging, selectingState, refSVG.current]);
 
   const trackShiftKey = useCallback((e: KeyboardEvent) => {
-    // @ts-ignore
-    if (["INPUT", "TEXTAREA", "SELECT"].includes(e.target?.tagName)) return;
-
-    if (e.shiftKey || e.ctrlKey) {
-      setShiftOrCtrlPressed(true);
-    }
-    else {
-      setShiftOrCtrlPressed(false);
-    }
+    setShiftOrCtrlPressed(e.shiftKey || e.ctrlKey);
   }, []);
 
-  const onKeyDown = useCallback((e: KeyboardEvent) => {
-    // don't capture keyboard events when focused on an input element:
-    // @ts-ignore
-    if (["INPUT", "TEXTAREA", "SELECT"].includes(e.target?.tagName)) return;
+  const onSelectAll = useCallback(() => {
+    setDragging(false);
+    setState(state => ({
+      ...state,
+      // @ts-ignore
+      selection: [
+        ...state.rountangles.flatMap(r => ["left", "top", "right", "bottom"].map(part => ({uid: r.uid, part}))),
+        ...state.diamonds.flatMap(d => ["left", "top", "right", "bottom"].map(part => ({uid: d.uid, part}))),
+        ...state.arrows.flatMap(a => ["start", "end"].map(part => ({uid: a.uid, part}))),
+        ...state.texts.map(t => ({uid: t.uid, part: "text"})),
+        ...state.history.map(h => ({uid: h.uid, part: "history"})),
+      ],
+    }));
+  }, [setState, setDragging]);
 
-    if (e.key === "o") {
-      // selected states become OR-states
-      setState(state => ({
-        ...state,
-        rountangles: state.rountangles.map(r => state.selection.some(rs => rs.uid === r.uid) ? ({...r, kind: "or"}) : r),
-      }));
-    }
-    if (e.key === "a") {
-      // selected states become AND-states
-      setState(state => ({
-        ...state,
-        rountangles: state.rountangles.map(r => state.selection.some(rs => rs.uid === r.uid) ? ({...r, kind: "and"}) : r),
-      }));
-    }
-    // if (e.key === "p") {
-    //   // selected states become pseudo-states
-    //   setSelection(selection => {
-    //     setState(state => ({
-    //       ...state,
-    //       rountangles: state.rountangles.map(r => selection.some(rs => rs.uid === r.uid) ? ({...r, kind: "pseudo"}) : r),
-    //     }));
-    //     return selection;
-    //   });
-    // }
-    if (e.ctrlKey) {
-      if (e.key === "a") {
-        e.preventDefault();
-        setDragging(false);
-        setState(state => ({
-          ...state,
-          // @ts-ignore
-          selection: [
-            ...state.rountangles.flatMap(r => ["left", "top", "right", "bottom"].map(part => ({uid: r.uid, part}))),
-            ...state.diamonds.flatMap(d => ["left", "top", "right", "bottom"].map(part => ({uid: d.uid, part}))),
-            ...state.arrows.flatMap(a => ["start", "end"].map(part => ({uid: a.uid, part}))),
-            ...state.texts.map(t => ({uid: t.uid, part: "text"})),
-            ...state.history.map(h => ({uid: h.uid, part: "history"})),
-          ]
-        }))
-      }
-    }
-  }, [makeCheckPoint, deleteSelection, setState, setDragging]);
+  const convertSelection = useCallback((kind: "or"|"and") => {
+    makeCheckPoint();
+    setState(state => ({
+      ...state,
+      rountangles: state.rountangles.map(r => state.selection.some(rs => rs.uid === r.uid) ? ({...r, kind}) : r),
+    }));
+  }, [makeCheckPoint, setState]);
+
+  useShortcuts([
+    {keys: ["o"], action: useCallback(() => convertSelection("or"), [convertSelection])},
+    {keys: ["a"], action: useCallback(() => convertSelection("and"), [convertSelection])},
+    {keys: ["Ctrl", "a"], action: onSelectAll},
+  ]);
 
   useEffect(() => {
     // mousemove and mouseup are global event handlers so they keep working when pointer is outside of browser window
     window.addEventListener("mouseup", onMouseUp);
     window.addEventListener("mousemove", onMouseMove);
-    window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keydown", trackShiftKey);
     window.addEventListener("keyup", trackShiftKey);
     return () => {
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseup", onMouseUp);
-      window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keydown", trackShiftKey);
       window.removeEventListener("keyup", trackShiftKey);
     };
