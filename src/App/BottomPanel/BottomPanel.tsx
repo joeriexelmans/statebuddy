@@ -4,7 +4,7 @@ import { TraceableError } from "../../statecharts/parser";
 import "./BottomPanel.css";
 
 import { PersistentDetailsLocalStorage } from "../PersistentDetails";
-import { Logo } from "@/Logo/Logo";
+import { Logo } from "@/App/Logo/Logo";
 
 export function BottomPanel(props: {errors: TraceableError[]}) {
   const [greeting, setGreeting] = useState(

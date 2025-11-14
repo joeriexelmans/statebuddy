@@ -92,7 +92,7 @@ export const Microwave = memo(function Microwave({state: {bellRinging, magnetron
         src: url(${fontDigital});
       }
     `}</style>
-    <svg width='400px' height='auto' viewBox="0 0 520 348">
+    <svg width='380px' height='auto' viewBox="0 0 520 348">
       {/* @ts-ignore */}
       <image xlinkHref={imgs[doorOpen][magnetronRunning]} width={520} height={348}/>
 

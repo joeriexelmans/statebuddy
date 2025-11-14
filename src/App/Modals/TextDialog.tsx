@@ -29,12 +29,14 @@ export function TextDialog(props: {setModal: Dispatch<SetStateAction<ReactElemen
   }
 
   return <div onKeyDown={onKeyDown} style={{padding: 4}}>
-    Text label:<br/>
+    {/* Text label:<br/> */}
     <textarea autoFocus style={{fontFamily: 'Roboto', width: 400, height: 60}} onChange={e=>setText(e.target.value)} value={text} onFocus={e => e.target.select()}/>
     <br/>
     <span style={{color: 'var(--error-color)'}}>{parseError}</span><br/>
-    <p><kbd>Enter</kbd> to confirm. <kbd>Esc</kbd> to cancel.
-    </p>
-    (Tip: <kbd>Shift</kbd>+<kbd>Enter</kbd> to insert newline.)
+    {/* <p> */}
+      <kbd>Enter</kbd> to confirm. <kbd>Esc</kbd> to cancel.
+    {/* </p> */}
+    {/* <br/> */}
+    {/* (Tip: <kbd>Shift</kbd>+<kbd>Enter</kbd> to insert newline.) */}
   </div>;
 }

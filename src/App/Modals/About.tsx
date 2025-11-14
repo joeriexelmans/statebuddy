@@ -1,4 +1,4 @@
-import { Logo } from "@/Logo/Logo";
+import { Logo } from "@/App/Logo/Logo";
 import { Dispatch, ReactElement, SetStateAction } from "react";
 
 export function About(props: {setModal: Dispatch<SetStateAction<ReactElement|null>>}) {
