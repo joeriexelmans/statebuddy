@@ -5,7 +5,7 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import { Conns } from '@/statecharts/timed_reactive';
-import { Dispatch, Ref, SetStateAction, useEffect, useRef, useState } from 'react';
+import { Dispatch, memo, Ref, SetStateAction, useCallback, useEffect, useRef, useState } from 'react';
 import { Statechart } from '@/statecharts/abstract_syntax';
 import { ShowAST, ShowInputEvents, ShowInternalEvents, ShowOutputEvents } from './ShowAST';
 import { Plant } from '../Plant/Plant';
@@ -17,6 +17,7 @@ import { plants, UniversalPlantState } from '../plants';
 import { TimeMode } from '@/statecharts/time';
 import { PersistentDetails } from '../Components/PersistentDetails';
 import "./SideBar.css";
+import { objectsEqual } from '@/util/util';
 
 type SavedTraces = [string, BigStepCause[]][];
 
@@ -76,20 +77,20 @@ type SideBarProps = SideBarState & {
   time: TimeMode,
 } & Setters<SideBarState>;
 
-export function SideBar({showExecutionTrace, showConnections, plantName, showPlantTrace, showProperties, activeProperty, autoConnect, autoScroll, plantConns, properties, savedTraces, refRightSideBar, ast, plant, setSavedTraces, trace, setTrace, setProperties, setShowPlantTrace, setActiveProperty, setPlantConns, setPlantName, setAutoConnect, setShowProperties, setAutoScroll, time, plantState, onReplayTrace, onRaise, setTime, setShowConnections, setShowExecutionTrace, showPlant, setShowPlant, showOutputEvents, setShowOutputEvents, setShowInternalEvents, showInternalEvents, setShowInputEvents, setShowStateTree, showInputEvents, showStateTree}: SideBarProps) {
+export const SideBar = memo(function SideBar({showExecutionTrace, showConnections, plantName, showPlantTrace, showProperties, activeProperty, autoConnect, autoScroll, plantConns, properties, savedTraces, refRightSideBar, ast, plant, setSavedTraces, trace, setTrace, setProperties, setShowPlantTrace, setActiveProperty, setPlantConns, setPlantName, setAutoConnect, setShowProperties, setAutoScroll, time, plantState, onReplayTrace, onRaise, setTime, setShowConnections, setShowExecutionTrace, showPlant, setShowPlant, showOutputEvents, setShowOutputEvents, setShowInternalEvents, showInternalEvents, setShowInputEvents, setShowStateTree, showInputEvents, showStateTree}: SideBarProps) {
 
   const [propertyResults, setPropertyResults] = useState<PropertyCheckResult[] | null>(null);
 
   const speed = time.kind === "paused" ? 0 : time.scale;
 
-  const onSaveTrace = () => {
+  const onSaveTrace = useCallback(() => {
     if (trace) {
       setSavedTraces(savedTraces => [
         ...savedTraces,
         ["untitled", trace.trace.map((item) => item.cause)] as [string, BigStepCause[]],
       ]);
     }
-  }
+  }, [trace, setSavedTraces]);
 
   // if some properties change, re-evaluate them:
   useEffect(() => {
@@ -115,6 +116,9 @@ export function SideBar({showExecutionTrace, showConnections, plantName, showPla
     }
   }, [ast, plant, autoConnect]);
 
+  const raiseDebugEvent = useCallback((e,p) => onRaise("debug."+e,p), [onRaise]);
+  const raiseUIEvent = useCallback(e => onRaise("plant.ui."+e.name, e.param), [onRaise]);
+
   return <>
     <div
       className={showExecutionTrace ? "shadowBelow" : ""}
@@ -132,7 +136,7 @@ export function SideBar({showExecutionTrace, showConnections, plantName, showPla
         <summary>input events</summary>
         {ast && <ShowInputEvents
           inputEvents={ast.inputEvents}
-          onRaise={(e,p) => onRaise("debug."+e,p)}
+          onRaise={raiseDebugEvent}
           disabled={trace===null || trace.trace[trace.idx].kind === "error"}
         />}
       </PersistentDetails>
@@ -153,14 +157,14 @@ export function SideBar({showExecutionTrace, showConnections, plantName, showPla
           disabled={trace!==null}
           value={plantName}
           onChange={e => setPlantName(() => e.target.value)}>
-          {plants.map(([plantName, p]) =>
-            <option>{plantName}</option>
+          {plants.map(([plantName]) =>
+            <option key={plantName}>{plantName}</option>
           )}
         </select>
         <br/>
         {/* Render plant */}
         {<plant.render state={plant.cleanupState(plantState)} speed={speed}
-          raiseUIEvent={e => onRaise("plant.ui."+e.name, e.param)}
+          raiseUIEvent={raiseUIEvent}
           />}
       </PersistentDetails>
       {/* Connections */}
@@ -251,7 +255,9 @@ export function SideBar({showExecutionTrace, showConnections, plantName, showPla
           </div>
       </div>}
   </>;
-}
+}, (prevProps, nextProps) => {
+  return objectsEqual(prevProps, nextProps);
+});
 
 function autoDetectConns(ast: Statechart, plant: Plant<any, any>, setPlantConns: Dispatch<SetStateAction<Conns>>) {
   for (const {event: a} of plant.uiEvents) {
@@ -289,7 +295,7 @@ function ConnEditor(ast: Statechart, plant: Plant<any, any>, plantConns: Conns, 
   return <>
     
     {/* SC output events can go to Plant */}
-    {[...ast.outputEvents].map(e => <div style={{width:'100%', textAlign:'right'}}>
+    {[...ast.outputEvents].map(e => <div key={e} style={{width:'100%', textAlign:'right'}}>
       <label htmlFor={`select-dst-sc-${e}`} style={{width:'50%'}}>sc.{e}&nbsp;→&nbsp;</label>
       <select id={`select-dst-sc-${e}`}
         style={{width:'50%'}}
@@ -302,7 +308,7 @@ function ConnEditor(ast: Statechart, plant: Plant<any, any>, plantConns: Conns, 
     </div>)}
 
     {/* Plant output events can go to Statechart */}
-    {[...plant.outputEvents.map(e => <div style={{width:'100%', textAlign:'right'}}>
+    {[...plant.outputEvents.map(e => <div key={e.event} style={{width:'100%', textAlign:'right'}}>
       <label htmlFor={`select-dst-plant-${e.event}`} style={{width:'50%'}}>plant.{e.event}&nbsp;→&nbsp;</label>
       <select id={`select-dst-plant-${e.event}`}
         style={{width:'50%'}}
@@ -315,7 +321,7 @@ function ConnEditor(ast: Statechart, plant: Plant<any, any>, plantConns: Conns, 
     </div>)]}
 
     {/* Plant UI events typically go to the Plant */}
-    {plant.uiEvents.map(e => <div style={{width:'100%', textAlign:'right'}}>
+    {plant.uiEvents.map(e => <div key={e.event} style={{width:'100%', textAlign:'right'}}>
       <label htmlFor={`select-dst-plant-ui-${e.event}`} style={{width:'50%', color: 'grey'}}>ui.{e.event}&nbsp;→&nbsp;</label>
       <select id={`select-dst-plant-ui-${e.event}`}
         style={{width:'50%'}}

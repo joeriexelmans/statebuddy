@@ -5,6 +5,7 @@ import { ConcreteState, stateDescription, Transition, UnstableState } from "../.
 import { Action, EventTrigger, Expression } from "../../statecharts/label_ast";
 import { KeyInfoHidden, KeyInfoVisible } from "../TopPanel/KeyInfo";
 import { useShortcuts } from '@/hooks/useShortcuts';
+import { arraysEqual, jsonDeepEqual } from '@/util/util';
 
 export function ShowTransition(props: {transition: Transition}) {
   return <>➝ {stateDescription(props.transition.tgt)}</>;
@@ -50,7 +51,7 @@ export const ShowAST = memo(function ShowASTx(props: {root: ConcreteState | Unst
 });
 
 
-export function ShowInputEvents({inputEvents, onRaise, disabled}: {inputEvents: EventTrigger[], onRaise: (e: string, p: any) => void, disabled: boolean}) {
+export const ShowInputEvents = memo(function ShowInputEvents({inputEvents, onRaise, disabled}: {inputEvents: EventTrigger[], onRaise: (e: string, p: any) => void, disabled: boolean}) {
   const raiseHandlers = inputEvents.map(({event}) => {
     return () => {
       // @ts-ignore
@@ -105,17 +106,22 @@ export function ShowInputEvents({inputEvents, onRaise, disabled}: {inputEvents: 
       &nbsp;
     </div>;
   })
-}
+}, (prevProps, nextProps) => {
+  console.log('onRaise changed:', prevProps.onRaise === nextProps.onRaise, prevProps.onRaise, nextProps.onRaise);
+  return prevProps.onRaise === nextProps.onRaise
+     && prevProps.disabled === nextProps.disabled
+     && jsonDeepEqual(prevProps.inputEvents, nextProps.inputEvents);
+});
 
 export function ShowInternalEvents(props: {internalEvents: EventTrigger[]}) {
   return [...props.internalEvents].map(({event, paramName}) => {
-      return <><div className="internalEvent">{event}{paramName===undefined?<></>:<>({paramName})</>}</div> </>;
+      return <div className="internalEvent" key={event}>{event}{paramName===undefined?<></>:<>({paramName})</>}</div>;
     });
 }
 
 
 export function ShowOutputEvents(props: {outputEvents: Set<string>}) {
   return [...props.outputEvents].map(eventName => {
-      return <><div className="outputEvent">{eventName}</div> </>;
+      return <div className="outputEvent" key={eventName}>{eventName}</div>;
     });
 }

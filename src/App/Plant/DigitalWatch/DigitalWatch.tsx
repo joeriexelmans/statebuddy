@@ -12,7 +12,7 @@ import digitalFont from "./digital-font.ttf";
 import "./DigitalWatch.css";
 import imgNote from "./noteSmall.png";
 import imgWatch from "./watch.png";
-import { objectsEqual } from "@/util/util";
+import { jsonDeepEqual } from "@/util/util";
 
 export const [dwatchAbstractSyntax, dwatchErrors] = parseStatechart(dwatchConcreteSyntax as ConcreteSyntax, detectConnections(dwatchConcreteSyntax as ConcreteSyntax));
 
@@ -140,7 +140,7 @@ export const DigitalWatch = memo(function DigitalWatch({state: {displayingTime, 
       }
     </svg>
   </>;
-}, objectsEqual);
+}, jsonDeepEqual);
 
 export const digitalWatchPlant = makeStatechartPlant({
   ast: dwatchAbstractSyntax,

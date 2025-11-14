@@ -40,6 +40,8 @@ export type TraceState = {
   idx: number,
 };
 
+const ignoreRaise = (inputEvent: string, param: any) => {};
+
 
 export function useSimulator(ast: Statechart|null, plant: Plant<any, UniversalPlantState>, plantConns: Conns, onStep: () => void) {
   const [time, setTime] = useState<TimeMode>({kind: "paused", simtime: 0});
@@ -53,7 +55,7 @@ export function useSimulator(ast: Statechart|null, plant: Plant<any, UniversalPl
   }, {
     ...plantConns,
     ...Object.fromEntries(ast.inputEvents.map(({event}) => ["debug."+event, ['sc',event] as [string,string]])),
-  }), [ast]);
+  }), [ast, plant, plantConns]);
 
   const onInit = useCallback(() => {
     if (cE === null) return;
@@ -92,18 +94,51 @@ export function useSimulator(ast: Statechart|null, plant: Plant<any, UniversalPl
     setTime({kind: "paused", simtime: 0});
   }, [setTrace, setTime]);
 
+  const appendNewConfig = useCallback((simtime: number, cause: BigStepCause, computeNewState: () => [RaisedEvent[], CoupledState]) => {
+    let newItem: TraceItem;
+    const metadata = {simtime, cause}
+    try {
+      const [outputEvents, state] = computeNewState(); // may throw RuntimeError
+      newItem = {kind: "bigstep", ...metadata, state, outputEvents};
+    }
+    catch (error) {
+      if (error instanceof RuntimeError) {
+        newItem = {kind: "error", ...metadata, error};
+        // also pause the simulation, for dramatic effect:
+        setTime({kind: "paused", simtime});
+      }
+      else {
+        throw error;
+      }
+    }
+    // @ts-ignore
+    setTrace(trace => ({
+      trace: [
+        ...trace!.trace.slice(0, trace!.idx+1), // remove everything after current item
+        newItem,
+      ],
+      // idx: 0,
+      idx: trace!.idx+1,
+    }));
+    onStep();
+  }, [onStep, setTrace, setTime]);
+
   // raise input event, producing a new runtime configuration (or a runtime error)
-  const onRaise = (inputEvent: string, param: any) => {
-    if (cE === null) return;
-    if (currentTraceItem !== null /*&& ast.inputEvents.some(e => e.event === inputEvent)*/) {
+  const onRaise = useMemo(() => {
+    if (cE === null || currentTraceItem === null) {
+      return ignoreRaise; // this speeds up rendering of components that depend on onRaise if the model is being edited while there is no ongoing trace
+    }
+    else return (inputEvent: string, param: any) => {
       if (currentTraceItem.kind === "bigstep") {
         const simtime = getSimTime(time, Math.round(performance.now()));
         appendNewConfig(simtime, {kind: "input", simtime, eventName: inputEvent, param}, () => {
           return cE.extTransition(simtime, currentTraceItem.state, {kind: "input", name: inputEvent, param});
         });
       }
-    }
-  };
+    };
+  }, [cE, currentTraceItem, time, appendNewConfig]);
+
+  console.log({onRaise});
 
   // timer elapse events are triggered by a change of the simulated time (possibly as a scheduled JS event loop timeout)
   useEffect(() => {
@@ -137,35 +172,6 @@ export function useSimulator(ast: Statechart|null, plant: Plant<any, UniversalPl
     }
   }, [time, currentTraceItem]); // <-- todo: is this really efficient?
 
-  function appendNewConfig(simtime: number, cause: BigStepCause, computeNewState: () => [RaisedEvent[], CoupledState]) {
-    let newItem: TraceItem;
-    const metadata = {simtime, cause}
-    try {
-      const [outputEvents, state] = computeNewState(); // may throw RuntimeError
-      newItem = {kind: "bigstep", ...metadata, state, outputEvents};
-    }
-    catch (error) {
-      if (error instanceof RuntimeError) {
-        newItem = {kind: "error", ...metadata, error};
-        // also pause the simulation, for dramatic effect:
-        setTime({kind: "paused", simtime});
-      }
-      else {
-        throw error;
-      }
-    }
-    // @ts-ignore
-    setTrace(trace => ({
-      trace: [
-        ...trace!.trace.slice(0, trace!.idx+1), // remove everything after current item
-        newItem,
-      ],
-      // idx: 0,
-      idx: trace!.idx+1,
-    }));
-    onStep();
-  }
-
   const onBack = useCallback(() => {
     if (trace !== null) {
       setTime(() => {
@@ -182,9 +188,9 @@ export function useSimulator(ast: Statechart|null, plant: Plant<any, UniversalPl
         idx: trace.idx-1,
       });
     }
-  }, [trace]);
+  }, [trace, setTime, setTrace]);
 
-  const onReplayTrace = (causes: BigStepCause[]) => {
+  const onReplayTrace = useCallback((causes: BigStepCause[]) => {
     if (cE) {
       function run_until(simtime: number) {
         while (true) {
@@ -218,7 +224,7 @@ export function useSimulator(ast: Statechart|null, plant: Plant<any, UniversalPl
       setTrace({trace: newTrace, idx: newTrace.length-1});
       setTime({kind: "paused", simtime: lastSimtime});
     }
-  }
+  }, [setTrace, setTime, cE]);
 
   return {trace, setTrace, plant, onInit, onClear, onBack, onRaise, onReplayTrace, time, setTime};
 }

@@ -1,11 +1,7 @@
 import {  ConcreteState, HistoryState, OrState, UnstableState, Statechart, stateDescription, Transition } from "./abstract_syntax";
-import { Rountangle } from "./concrete_syntax";
-import { isEntirelyWithin, Rect2D } from "../util/geometry";
 import { Action, EventTrigger, Expression, ParsedText } from "./label_ast";
 import { parse as parseLabel, SyntaxError } from "./label_parser";
-import { Connections } from "./detect_connections";
-import { HISTORY_RADIUS } from "../App/parameters";
-import { ConcreteSyntax } from "./concrete_syntax";
+import { Connections, ReducedConcreteSyntax } from "./detect_connections";
 import { memoize } from "@/util/util";
 
 export type TraceableError = {
@@ -34,7 +30,7 @@ function addEvent(events: EventTrigger[], e: EventTrigger, textUid: string) {
   }
 }
 
-export function parseStatechart(state: ConcreteSyntax, conns: Connections): [Statechart, TraceableError[]] {
+export function parseStatechart(concreteSyntax: ReducedConcreteSyntax, conns: Connections): [Statechart, TraceableError[]] {
   const errors: TraceableError[] = [];
 
   // implicitly, the root is always an Or-state
@@ -54,36 +50,14 @@ export function parseStatechart(state: ConcreteSyntax, conns: Connections): [Sta
   const uid2State = new Map<string, ConcreteState|UnstableState>([["root", root]]);
   const label2State = new Map<string, ConcreteState>();
   const historyStates: HistoryState[] = [];
-
-  // we will always look for the smallest parent rountangle
-  const parentCandidates: Rountangle[] = [{
-    kind: "or",
-    uid: root.uid,
-    topLeft: {x: -Infinity, y: -Infinity},
-    size: {x: Infinity, y: Infinity},
-  }];
-
   const parentLinks = new Map<string, string>();
-
-  function findParent(geom: Rect2D): ConcreteState {
-    // iterate in reverse:
-    for (let i=parentCandidates.length-1; i>=0; i--) {
-      const candidate = parentCandidates[i];
-      if (candidate.uid === "root" || isEntirelyWithin(geom, candidate)) {
-        // found our parent
-        return uid2State.get(candidate.uid)! as ConcreteState;
-      }
-    }
-    throw new Error("impossible: should always find a parent state");
-  }
 
   // step 1: figure out state hierarchy
 
   const startTime = performance.now();
 
-  // IMPORTANT ASSUMPTION: state.rountangles is sorted from big to small surface area:
-  for (const rt of state.rountangles) {
-    const parent = findParent(rt);
+  for (const rt of concreteSyntax.rountangles) {
+    const parent = uid2State.get(conns.insidenessMap.get(rt.uid)!)! as ConcreteState;
     const common = {
       kind: rt.kind,
       uid: rt.uid,
@@ -112,12 +86,11 @@ export function parseStatechart(state: ConcreteSyntax, conns: Connections): [Sta
       };
     }
     parent.children.push(state as ConcreteState);
-    parentCandidates.push(rt);
     parentLinks.set(rt.uid, parent.uid);
     uid2State.set(rt.uid, state as ConcreteState);
   }
-  for (const d of state.diamonds) {
-    const parent = findParent(d);
+  for (const d of concreteSyntax.diamonds) {
+    const parent = uid2State.get(conns.insidenessMap.get(d.uid)!)! as ConcreteState;
     const pseudoState = {
       kind: "pseudo",
       uid: d.uid,
@@ -130,8 +103,8 @@ export function parseStatechart(state: ConcreteSyntax, conns: Connections): [Sta
     uid2State.set(d.uid, pseudoState);
     parent.children.push(pseudoState);
   }
-  for (const h of state.history) {
-    const parent = findParent({topLeft: h.topLeft, size: {x: HISTORY_RADIUS*2, y: HISTORY_RADIUS*2}});
+  for (const h of concreteSyntax.history) {
+    const parent = uid2State.get(conns.insidenessMap.get(h.uid)!)! as ConcreteState;
     const historyState = {
       kind: h.kind,
       uid: h.uid,
@@ -152,7 +125,7 @@ export function parseStatechart(state: ConcreteSyntax, conns: Connections): [Sta
   const transitions = new Map<string, Transition[]>();
   const uid2Transition = new Map<string, Transition>();
 
-  for (const arr of state.arrows) {
+  for (const arr of concreteSyntax.arrows) {
     const srcUID = conns.arrow2SideMap.get(arr.uid)?.[0]?.uid;
     const tgtUID = conns.arrow2SideMap.get(arr.uid)?.[1]?.uid;
     const historyTgtUID = conns.arrow2HistoryMap.get(arr.uid);
@@ -243,7 +216,7 @@ export function parseStatechart(state: ConcreteSyntax, conns: Connections): [Sta
 
   // step 3: figure out labels
 
-  const textsSorted = state.texts.toSorted((a,b) => a.topLeft.y - b.topLeft.y);
+  const textsSorted = concreteSyntax.texts.toSorted((a,b) => a.topLeft.y - b.topLeft.y);
   for (const text of textsSorted) {
     let parsed: ParsedText;
     try {

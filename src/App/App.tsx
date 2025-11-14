@@ -3,7 +3,7 @@ import "./App.css";
 
 import { ReactElement, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { detectConnections } from "@/statecharts/detect_connections";
+import { connectionsEqual, detectConnections, reducedConcreteSyntaxEqual } from "@/statecharts/detect_connections";
 import { parseStatechart } from "../statecharts/parser";
 import { BottomPanel } from "./BottomPanel/BottomPanel";
 import { defaultSideBarState, SideBar, SideBarState } from "./SideBar/SideBar";
@@ -18,6 +18,7 @@ import { plants } from "./plants";
 import { emptyState } from "@/statecharts/concrete_syntax";
 import { ModalOverlay } from "./Overlays/ModalOverlay";
 import { FindReplace } from "./BottomPanel/FindReplace";
+import { useCustomMemo } from "@/hooks/useCustomMemo";
 
 export type EditHistory = {
   current: VisualEditorState,
@@ -59,7 +60,17 @@ export function App() {
 
   // parse concrete syntax always:
   const conns = useMemo(() => editorState && detectConnections(editorState), [editorState]);
-  const parsed = useMemo(() => editorState && conns && parseStatechart(editorState, conns), [editorState, conns]);
+  const parsed = useCustomMemo(() => editorState && conns && parseStatechart(editorState, conns),
+  [editorState, conns] as const,
+  // only parse again if anything changed to the connectedness / insideness...
+  // parsing is fast, BUT re-rendering everything that depends on the AST is slow, and it's difficult to check if the AST changed because AST objects have recursive structure.
+  ([prevState, prevConns], [nextState, nextConns]) => {
+    if ((prevState === null) !== (nextState === null)) return false;
+    if ((prevConns === null) !== (nextConns === null)) return false;
+    // the following check is much cheaper than re-rendering everything that depends on
+    return connectionsEqual(prevConns!, nextConns!)
+      && reducedConcreteSyntaxEqual(prevState!, nextState!);
+  });
   const ast = parsed && parsed[0];
 
   const [appState, setAppState] = useState<AppState>(defaultAppState);
@@ -118,14 +129,6 @@ export function App() {
 
   const simulator = useSimulator(ast, plant, plantConns, scrollDownSidebar);
   
-  // console.log('render app', {ast, plant, appState});
-  // useDetectChange(ast, 'ast');
-  // useDetectChange(plant, 'plant');
-  // useDetectChange(scrollDownSidebar, 'scrollDownSidebar');
-  // useDetectChange(appState, 'appState');
-  // useDetectChange(simulator.time, 'simulator.time');
-  // useDetectChange(simulator.trace, 'simulator.trace');
-
   const setters = makeAllSetters(setAppState, Object.keys(appState) as (keyof AppState)[]);
 
   const syntaxErrors = parsed && parsed[1] || [];
@@ -141,7 +144,9 @@ export function App() {
   const highlightActive = (currentBigStep && currentBigStep.state.sc.mode) || new Set();
   const highlightTransitions = currentBigStep && currentBigStep.state.sc.firedTransitions || [];
 
-  const plantState = currentBigStep && currentBigStep.state.plant || plant.execution.initial()[1];
+  const plantState = useMemo(() =>
+    currentBigStep && currentBigStep.state.plant || plant.execution.initial()[1],
+  [currentBigStep, plant]);
 
   return <div style={{
     height:'100%',
