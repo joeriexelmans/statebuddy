@@ -2,6 +2,7 @@ import { Arrow, Diamond, Rountangle, Text, History } from "@/statecharts/concret
 import { ClipboardEvent, Dispatch, SetStateAction, useCallback, useEffect } from "react";
 import { Selection, VisualEditorState } from "../VisualEditor";
 import { addV2D } from "@/util/geometry";
+import { useShortcuts } from "@/hooks/useShortcuts";
 
 // const offset = {x: 40, y: 40};
 const offset = {x: 0, y: 0};
@@ -12,6 +13,7 @@ export function useCopyPaste(makeCheckPoint: () => void, state: VisualEditorStat
     if (data) {
       try {
         const parsed = JSON.parse(data);
+        makeCheckPoint();
         setState(state => {
           try {
             let nextID = state.nextID;
@@ -49,7 +51,6 @@ export function useCopyPaste(makeCheckPoint: () => void, state: VisualEditorStat
               ...copiedTexts.map(t => ({uid: t.uid, parts: ["text"]})),
               ...copiedHistories.map(h => ({uid: h.uid, parts: ["history"]})),
             ];
-            makeCheckPoint();
             return {
               ...state,
               rountangles: [...state.rountangles, ...copiedRountangles],
@@ -72,7 +73,7 @@ export function useCopyPaste(makeCheckPoint: () => void, state: VisualEditorStat
       }
       e.preventDefault();
     }
-  }, [setState]);
+  }, [makeCheckPoint, setState]);
 
   const copyInternal = useCallback((state: VisualEditorState, selection: Selection, e: ClipboardEvent) => {
     const uidsToCopy = new Set(selection.map(shape => shape.uid));
@@ -106,6 +107,7 @@ export function useCopyPaste(makeCheckPoint: () => void, state: VisualEditorStat
   }, [state, selection]);
 
   const deleteSelection = useCallback(() => {
+    makeCheckPoint();
     setState(state => ({
       ...state,
       rountangles: state.rountangles.filter(r => !state.selection.some(rs => rs.uid === r.uid)),
@@ -115,23 +117,11 @@ export function useCopyPaste(makeCheckPoint: () => void, state: VisualEditorStat
       texts: state.texts.filter(t => !state.selection.some(ts => ts.uid === t.uid)),
       selection: [],
     }));
-  }, [setState]);
+  }, [makeCheckPoint, setState]);
 
-  const onKeyDown = (e: KeyboardEvent) => {
-    // @ts-ignore
-    if (["INPUT", "TEXTAREA", "SELECT"].includes(e.target?.tagName)) return;
-    if (e.key === "Delete") {
-      // delete selection
-      makeCheckPoint();
-      deleteSelection();
-      e.preventDefault();
-    }
-  }
-
-  useEffect(() => {
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  })
+  useShortcuts([
+    {keys: ["Delete"], action: deleteSelection},
+  ])
 
   return {onCopy, onPaste, onCut, deleteSelection};
 }

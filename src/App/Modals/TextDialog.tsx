@@ -1,24 +1,20 @@
-import { Dispatch, ReactElement, SetStateAction, useState, KeyboardEvent, useEffect, useRef } from "react";
+import { Dispatch, ReactElement, SetStateAction, useState, useCallback } from "react";
 
 import { cachedParseLabel } from "@/statecharts/parser";
+import { useShortcuts } from "@/hooks/useShortcuts";
 
 export function TextDialog(props: {setModal: Dispatch<SetStateAction<ReactElement|null>>, text: string, done: (newText: string|undefined) => void}) {
   const [text, setText] = useState(props.text);
 
-  function onKeyDown(e: KeyboardEvent) {
-    if (e.key === "Enter") {
-      if (!e.shiftKey) {
-        e.preventDefault();
+  useShortcuts([
+    {keys: ["Enter"], action: useCallback(() => {
         props.done(text);
         props.setModal(null);
-      }
-    }
-    if (e.key === "Escape") {
-      props.setModal(null);
-      e.stopPropagation();
-    }
-    e.stopPropagation();
-  }
+      }, [text, props.done, props.setModal])},
+    {keys: ["Escape"], action: useCallback(() => {
+        props.setModal(null);
+      }, [props.setModal])},
+  ], false);
 
   let parseError = "";
   try {
@@ -28,7 +24,7 @@ export function TextDialog(props: {setModal: Dispatch<SetStateAction<ReactElemen
     parseError = e.message;
   }
 
-  return <div onKeyDown={onKeyDown} style={{padding: 4}}>
+  return <div style={{padding: 4}}>
     {/* Text label:<br/> */}
     <textarea autoFocus style={{fontFamily: 'Roboto', width: 400, height: 60}} onChange={e=>setText(e.target.value)} value={text} onFocus={e => e.target.select()}/>
     <br/>

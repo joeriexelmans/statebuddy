@@ -31,7 +31,8 @@
 TODO
 
 - bugs
-    editing SC <-> Plant connections at runtime doesn't seem to work
+    (*) editing SC <-> Plant connections at runtime doesn't seem to work
+    (*) non-determinism error highlights only one of enabled transitions
 
 - maybe support:
     - explicit order of:
@@ -63,6 +64,10 @@ TODO
     - ability to 'freeze' editor (e.g., to show plant SC)
     - show insert mode also next to cursor
     - plot plant signals
+
+    - show error when states partially overlap?
+        useful when accidentally pasting the same data multiple times
+            (otherwise, you can't see that you have multiple states)
 
 - performance:
     maybe try this for rendering the execution trace:

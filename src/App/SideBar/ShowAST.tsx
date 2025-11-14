@@ -4,6 +4,7 @@ import { usePersistentState } from "../../hooks/usePersistentState";
 import { ConcreteState, stateDescription, Transition, UnstableState } from "../../statecharts/abstract_syntax";
 import { Action, EventTrigger, Expression } from "../../statecharts/label_ast";
 import { KeyInfoHidden, KeyInfoVisible } from "../TopPanel/KeyInfo";
+import { useShortcuts } from '@/hooks/useShortcuts';
 
 export function ShowTransition(props: {transition: Transition}) {
   return <>➝ {stateDescription(props.transition.tgt)}</>;
@@ -49,7 +50,7 @@ export const ShowAST = memo(function ShowASTx(props: {root: ConcreteState | Unst
 });
 
 
-export function ShowInputEvents({inputEvents, onRaise, disabled, showKeys}: {inputEvents: EventTrigger[], onRaise: (e: string, p: any) => void, disabled: boolean, showKeys: boolean}) {
+export function ShowInputEvents({inputEvents, onRaise, disabled}: {inputEvents: EventTrigger[], onRaise: (e: string, p: any) => void, disabled: boolean}) {
   const raiseHandlers = inputEvents.map(({event}) => {
     return () => {
       // @ts-ignore
@@ -67,23 +68,16 @@ export function ShowInputEvents({inputEvents, onRaise, disabled, showKeys}: {inp
       onRaise(event, paramParsed);
     };
   });
-  const onKeyDown = (e: KeyboardEvent) => {
-    // don't capture keyboard events when focused on an input element:
-    // @ts-ignore
-    if (["INPUT", "TEXTAREA", "SELECT"].includes(e.target?.tagName)) return;
 
-    const n = (parseInt(e.key)+9) % 10;
-    if (raiseHandlers[n] !== undefined) {
-      raiseHandlers[n]();
-      e.stopPropagation();
-      e.preventDefault();
-    }
-  }
-  useEffect(() => {
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [raiseHandlers]);
-  // const KeyInfo = showKeys ? KeyInfoVisible : KeyInfoHidden;
+  const shortcutSpec = raiseHandlers.map((handler, i) => {
+    const n = (i+1)%10;
+    return {
+      keys: [n.toString()],
+      action: handler,
+    };
+  });
+  useShortcuts(shortcutSpec);
+
   const KeyInfo = KeyInfoVisible; // always show keyboard shortcuts on input events, we can't expect the user to remember them
 
   const [inputParams, setInputParams] = usePersistentState<{[eventName:string]: string}>("inputParams", {});

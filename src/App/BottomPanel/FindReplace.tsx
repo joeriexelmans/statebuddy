@@ -4,6 +4,7 @@ import { usePersistentState } from "@/hooks/usePersistentState";
 
 import CloseIcon from '@mui/icons-material/Close';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
+import { useShortcuts } from "@/hooks/useShortcuts";
 
 type FindReplaceProps = {
   setCS: Dispatch<(oldState: VisualEditorState) => VisualEditorState>,
@@ -27,26 +28,14 @@ export function FindReplace({setCS, hide}: FindReplaceProps) {
     });
   }, [findTxt, replaceTxt]);
 
-  const onKeyDown = useCallback((e: KeyboardEvent) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      e.stopPropagation();
-      onReplace();
-      // setModal(null);
-    }
-  }, [onReplace]);
+  useShortcuts([
+    {keys: ["Enter"], action: onReplace},
+  ])
 
   const onSwap = useCallback(() => {
     setReplaceTxt(findTxt);
     setFindText(replaceTxt);
   }, [findTxt, replaceTxt]);
-
-  useEffect(() => {
-    window.addEventListener("keydown", onKeyDown);
-    return () => {
-      window.removeEventListener("keydown", onKeyDown);
-    }
-  }, [])
 
   return <div className="toolbar toolbarGroup" style={{display: 'flex'}}>
     <input placeholder="find" value={findTxt} onChange={e  => setFindText(e.target.value)} style={{width:300}}/>
