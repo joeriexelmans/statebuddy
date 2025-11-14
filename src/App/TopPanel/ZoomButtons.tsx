@@ -22,7 +22,7 @@ export const ZoomButtons = memo(function ZoomButtons({showKeys, zoom, setZoom}: 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey) {
-          if (e.key === "+") {
+          if (e.key === "+" || e.key === "=") {
           e.preventDefault();
           e.stopPropagation();
           onZoomIn();
