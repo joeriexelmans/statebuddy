@@ -37,6 +37,9 @@ TODO
     - explicit order of:
         - outgoing transitions?
 
+- write documentation
+    although ideally the tool should explain itself...
+
 - usability stuff:
     - action language: add increment operations (++) and (--)
        and (+=) and (-=)
@@ -48,10 +51,16 @@ TODO
 
     - ability to hide statechart and only show the plant?
     - hovering over event in side panel should highlight all occurrences of the event in the SC
-    - hovering over error in bottom panel should highlight that rror in the SC
+    - rename events / variables
+        find/replace?
+    - hovering over error in bottom panel should highlight that error in the SC
     - highlight selected shapes while making a selection
     - highlight about-to-fire transitions
     - integrate undo-history with browser history (back/forward buttons)
+
+    - ability to 'freeze' editor (e.g., to show plant SC)
+    - show insert mode also next to cursor
+    - plot plant signals
 
 - performance:
     maybe try this for rendering the execution trace:
@@ -62,12 +71,6 @@ TODO
         stable tree layout?
             https://pub.dev/packages/ploeg_tree_layout
     - local variable scopes
-
-for the assignment:
-    *ALL* features
-        add history (look at original Harel paper)
-    add microwave oven
-    add traffic light
 
 Publish StateBuddy paper(s):
     compare CS approach to other tools, not only YAKINDU
