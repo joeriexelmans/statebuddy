@@ -28,6 +28,14 @@ export type History = {
   topLeft: Vec2D;
 };
 
+export type ConcreteSyntax = {
+  rountangles: Rountangle[];
+  texts: Text[];
+  arrows: Arrow[];
+  diamonds: Diamond[];
+  history: History[];
+};
+
 // independently moveable parts of our shapes:
 export type RectSide = "left" | "top" | "right" | "bottom";
 export type ArrowPart = "start" | "end";

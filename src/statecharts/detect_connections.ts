@@ -1,4 +1,5 @@
-import { ConcreteSyntax, VisualEditorState } from "@/App/VisualEditor/VisualEditor";
+import { VisualEditorState } from "@/App/VisualEditor/VisualEditor";
+import { ConcreteSyntax } from "./concrete_syntax";
 import { findNearestArrow, findNearestHistory, findNearestSide, findRountangle, RectSide } from "./concrete_syntax";
 
 export type Connections = {

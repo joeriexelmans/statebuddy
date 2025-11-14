@@ -2,6 +2,8 @@ import { addV2D, rotateLine90CCW, rotateLine90CW, rotatePoint90CCW, rotatePoint9
 import { HISTORY_RADIUS } from "../parameters";
 import { Dispatch, SetStateAction, useCallback, useEffect } from "react";
 import { EditHistory } from "../App";
+import { jsonDeepEqual } from "@/util/util";
+import { VisualEditorState } from "../VisualEditor/VisualEditor";
 
 export function useEditor(setEditHistory: Dispatch<SetStateAction<EditHistory|null>>) {
   useEffect(() => {
@@ -11,13 +13,27 @@ export function useEditor(setEditHistory: Dispatch<SetStateAction<EditHistory|nu
     }
   }, []);
 
-  // append editor state to undo history
-  const makeCheckPoint = useCallback(() => {
-    setEditHistory(historyState => historyState && ({
-      ...historyState,
-      history: [...historyState.history, historyState.current],
-      future: [],
-    }));
+  const commitState = useCallback((callback: (oldState: VisualEditorState) => VisualEditorState) => {
+    setEditHistory(historyState => {
+      if (historyState === null) return null; // no change
+      const newEditorState = callback(historyState.current);
+        return {
+          current: newEditorState,
+          history: [...historyState.history, historyState.current],
+          future: [],
+        }
+      // }
+    });
+  }, [setEditHistory]);
+  const replaceState = useCallback((callback: (oldState: VisualEditorState) => VisualEditorState) => {
+    setEditHistory(historyState => {
+      if (historyState === null) return null; // no change
+      const newEditorState = callback(historyState.current);
+      return {
+        ...historyState,
+        current: newEditorState,
+      };
+    });
   }, [setEditHistory]);
   const onUndo = useCallback(() => {
     setEditHistory(historyState => {
@@ -46,62 +62,54 @@ export function useEditor(setEditHistory: Dispatch<SetStateAction<EditHistory|nu
     });
   }, [setEditHistory]);
   const onRotate = useCallback((direction: "ccw" | "cw") => {
-    makeCheckPoint();
-    setEditHistory(historyState => {
-      if (historyState === null) return null;
-
-      const selection = historyState.current.selection;
-
+    commitState(editorState => {
+      const selection = editorState.selection;
       if (selection.length === 0) {
-        return historyState;
+        return editorState;
       }
 
       // determine bounding box... in a convoluted manner
       let minX = -Infinity, minY = -Infinity, maxX = Infinity, maxY = Infinity;
-
       function addPointToBBox({x,y}: Vec2D) {
         minX = Math.max(minX, x);
         minY = Math.max(minY, y);
         maxX = Math.min(maxX, x);
         maxY = Math.min(maxY, y);
       }
-
-      for (const rt of historyState.current.rountangles) {
+      for (const rt of editorState.rountangles) {
         if (selection.some(s => s.uid === rt.uid)) {
           addPointToBBox(rt.topLeft);
           addPointToBBox(addV2D(rt.topLeft, rt.size));
         }
       }
-      for (const d of historyState.current.diamonds) {
+      for (const d of editorState.diamonds) {
         if (selection.some(s => s.uid === d.uid)) {
           addPointToBBox(d.topLeft);
           addPointToBBox(addV2D(d.topLeft, d.size));
         }
       }
-      for (const arr of historyState.current.arrows) {
+      for (const arr of editorState.arrows) {
         if (selection.some(s => s.uid === arr.uid)) {
           addPointToBBox(arr.start);
           addPointToBBox(arr.end);
         }
       }
-      for (const txt of historyState.current.texts) {
+      for (const txt of editorState.texts) {
         if (selection.some(s => s.uid === txt.uid)) {
           addPointToBBox(txt.topLeft);
         }
       }
       const historySize = {x: HISTORY_RADIUS, y: HISTORY_RADIUS};
-      for (const h of historyState.current.history) {
+      for (const h of editorState.history) {
         if (selection.some(s => s.uid === h.uid)) {
           addPointToBBox(h.topLeft);
           addPointToBBox(addV2D(h.topLeft, scaleV2D(historySize, 2)));
         }
       }
-
       const center: Vec2D = {
         x: (minX + maxX) / 2,
         y: (minY + maxY) / 2,
       };
-
       const mapIfSelected = (shape: {uid: string}, cb: (shape:any)=>any) => {
         if (selection.some(s => s.uid === shape.uid)) {
           return cb(shape);
@@ -110,56 +118,51 @@ export function useEditor(setEditHistory: Dispatch<SetStateAction<EditHistory|nu
           return shape;
         }
       }
-
       return {
-        ...historyState,
-        current: {
-          ...historyState.current,
-          rountangles: historyState.current.rountangles.map(rt => mapIfSelected(rt, rt => {
-            return {
-              ...rt,
-              ...(direction === "ccw"
-                ? rotateRect90CCW(rt, center)
-                : rotateRect90CW(rt, center)),
-            }
-          })),
-          arrows: historyState.current.arrows.map(arr => mapIfSelected(arr, arr => {
-            return {
-              ...arr,
-              ...(direction === "ccw"
-                ? rotateLine90CCW(arr, center)
-                : rotateLine90CW(arr, center)),
-            };
-          })),
-          diamonds: historyState.current.diamonds.map(d => mapIfSelected(d, d => {
-            return {
-              ...d,
-              ...(direction === "ccw"
-                ? rotateRect90CCW(d, center)
-                : rotateRect90CW(d, center)),
-            };
-          })),
-          texts: historyState.current.texts.map(txt => mapIfSelected(txt, txt => {
-              return {
-                ...txt,
-                topLeft: (direction === "ccw"
-                  ? rotatePoint90CCW(txt.topLeft, center)
-                  : rotatePoint90CW(txt.topLeft, center)),
-              };
-          })),
-          history: historyState.current.history.map(h => mapIfSelected(h, h => {
-              return {
-                ...h,
-                topLeft: (direction === "ccw"
-                  ? subtractV2D(rotatePoint90CCW(addV2D(h.topLeft, historySize), center), historySize)
-                  : subtractV2D(rotatePoint90CW(addV2D(h.topLeft, historySize), center), historySize)
-                ),
-              };
-          })),
-        },
-      }
-    })
+        ...editorState,
+        rountangles: editorState.rountangles.map(rt => mapIfSelected(rt, rt => {
+          return {
+            ...rt,
+            ...(direction === "ccw"
+              ? rotateRect90CCW(rt, center)
+              : rotateRect90CW(rt, center)),
+          }
+        })),
+        arrows: editorState.arrows.map(arr => mapIfSelected(arr, arr => {
+          return {
+            ...arr,
+            ...(direction === "ccw"
+              ? rotateLine90CCW(arr, center)
+              : rotateLine90CW(arr, center)),
+          };
+        })),
+        diamonds: editorState.diamonds.map(d => mapIfSelected(d, d => {
+          return {
+            ...d,
+            ...(direction === "ccw"
+              ? rotateRect90CCW(d, center)
+              : rotateRect90CW(d, center)),
+          };
+        })),
+        texts: editorState.texts.map(txt => mapIfSelected(txt, txt => {
+          return {
+            ...txt,
+            topLeft: (direction === "ccw"
+              ? rotatePoint90CCW(txt.topLeft, center)
+              : rotatePoint90CW(txt.topLeft, center)),
+          };
+        })),
+        history: editorState.history.map(h => mapIfSelected(h, h => {
+          return {
+            ...h,
+            topLeft: (direction === "ccw"
+              ? subtractV2D(rotatePoint90CCW(addV2D(h.topLeft, historySize), center), historySize)
+              : subtractV2D(rotatePoint90CW(addV2D(h.topLeft, historySize), center), historySize)
+            ),
+          };
+        })),
+      };
+    });
   }, [setEditHistory]);
-  
-  return {makeCheckPoint, onUndo, onRedo, onRotate};
+  return {commitState, replaceState, onUndo, onRedo, onRotate};
 }

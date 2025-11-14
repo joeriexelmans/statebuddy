@@ -3,7 +3,7 @@ import { rountangleMinSize } from "@/statecharts/concrete_syntax";
 import { Vec2D } from "../../util/geometry";
 import { RectHelper } from "./RectHelpers";
 import { memo } from "react";
-import { arraysEqual } from "@/util/util";
+import { arraysEqual, jsonDeepEqual } from "@/util/util";
 
 export const DiamondShape = memo(function DiamondShape(props: {size: Vec2D, extraAttrs: object}) {
   const minSize = rountangleMinSize(props.size);
@@ -42,7 +42,7 @@ export const DiamondSVG = memo(function DiamondSVG(props: { diamond: Diamond; se
     <RectHelper uid={props.diamond.uid} size={minSize} highlight={props.highlight} selected={props.selected} />
   </g>;
 }, (prevProps, nextProps) => {
-  return prevProps.diamond === nextProps.diamond
+  return jsonDeepEqual(prevProps.diamond, nextProps.diamond)
     && arraysEqual(prevProps.selected, nextProps.selected)
     && arraysEqual(prevProps.highlight, nextProps.highlight)
     && prevProps.error === nextProps.error

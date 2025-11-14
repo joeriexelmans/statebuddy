@@ -1,8 +1,8 @@
-import { Dispatch, memo, ReactElement, SetStateAction, useCallback, useEffect, useRef } from "react";
+import { Dispatch, memo, ReactElement, SetStateAction, useCallback, useEffect, useRef, useState } from "react";
 
 import { Mode } from "@/statecharts/runtime_types";
 import { arraysEqual, objectsEqual, setsEqual } from "@/util/util";
-import { Arrow, ArrowPart, Diamond, History, RectSide, Rountangle, Text } from "../../statecharts/concrete_syntax";
+import { ArrowPart, ConcreteSyntax, Diamond, RectSide, Rountangle, Text } from "../../statecharts/concrete_syntax";
 import { Connections } from "../../statecharts/detect_connections";
 import { TraceableError } from "../../statecharts/parser";
 import { ArcDirection, arcDirection } from "../../util/geometry";
@@ -15,14 +15,6 @@ import { TextSVG } from "./TextSVG";
 import "./VisualEditor.css";
 import { useCopyPaste } from "./hooks/useCopyPaste";
 import { useMouse } from "./hooks/useMouse";
-
-export type ConcreteSyntax = {
-  rountangles: Rountangle[];
-  texts: Text[];
-  arrows: Arrow[];
-  diamonds: Diamond[];
-  history: History[];
-};
 
 export type VisualEditorState = ConcreteSyntax & {
   nextID: number;
@@ -51,23 +43,26 @@ export type Selection = Selectable[];
 
 type VisualEditorProps = {
   state: VisualEditorState,
-  setState: Dispatch<(v:VisualEditorState) => VisualEditorState>,
+  commitState: Dispatch<(v:VisualEditorState) => VisualEditorState>,
+  replaceState: Dispatch<(v:VisualEditorState) => VisualEditorState>,
   conns: Connections,
   syntaxErrors: TraceableError[],
-  // trace: TraceState | null,
-  // activeStates: Set<string>,
   insertMode: InsertMode,
   highlightActive: Set<string>,
   highlightTransitions: string[],
   setModal: Dispatch<SetStateAction<ReactElement|null>>,
-  makeCheckPoint: () => void;
   zoom: number;
 };
 
-export const VisualEditor = memo(function VisualEditor({state, setState, conns, syntaxErrors: errors, insertMode, highlightActive, highlightTransitions, setModal, makeCheckPoint, zoom}: VisualEditorProps) {
+export const VisualEditor = memo(function VisualEditor({state, commitState, replaceState, conns, syntaxErrors: errors, insertMode, highlightActive, highlightTransitions, setModal, zoom}: VisualEditorProps) {
+
+  // While dragging, the editor is in a temporary state (a state that is not committed to the edit history). If the temporary state is not null, then this state will be what you see.
+  // const [temporaryState, setTemporaryState] = useState<VisualEditorState | null>(null);
+
+  // const state = temporaryState || committedState;
 
   // uid's of selected rountangles
-  const selection = state.selection || [];
+  const selection = state.selection;
 
   const refSVG = useRef<SVGSVGElement>(null);
 
@@ -86,9 +81,12 @@ export const VisualEditor = memo(function VisualEditor({state, setState, conns, 
   }, [highlightTransitions]);
 
 
-  const {onCopy, onPaste, onCut, deleteSelection} = useCopyPaste(makeCheckPoint, state, setState, selection);
+  const {onCopy, onPaste, onCut} = useCopyPaste(state, commitState, selection);
 
-  const {onMouseDown, selectionRect} = useMouse(makeCheckPoint, insertMode, zoom, refSVG, state, setState, deleteSelection);
+  const {onMouseDown, selectionRect} = useMouse(insertMode, zoom, refSVG,
+    state,
+    commitState,
+    replaceState);
 
 
   // for visual feedback, when selecting/moving one thing, we also highlight (in green) all the things that belong to the thing we selected.
@@ -138,13 +136,13 @@ export const VisualEditor = memo(function VisualEditor({state, setState, conns, 
   const onEditText = useCallback((text: Text, newText: string) => {
     if (newText === "") {
       // delete text node
-      setState(state => ({
+      commitState(state => ({
         ...state,
         texts: state.texts.filter(t => t.uid !== text.uid),
       }));
     }
     else {
-      setState(state => ({
+      commitState(state => ({
         ...state,
         texts: state.texts.map(t => {
           if (t.uid === text.uid) {
@@ -159,14 +157,14 @@ export const VisualEditor = memo(function VisualEditor({state, setState, conns, 
         }),
       }));
     }
-  }, [setState]);
+  }, [commitState]);
 
   const rootErrors = errors.filter(({shapeUid}) => shapeUid === "root").map(({message}) => message);
 
   const size = 4000*zoom;
 
   return <svg width={size} height={size}
-      className={"svgCanvas"+(highlightActive.has("root")?" active":"")/*+(dragging ? " dragging" : "")*/}
+      className={"svgCanvas"+(highlightActive.has("root")?" active":"")}
       onMouseDown={onMouseDown}
       onContextMenu={e => e.preventDefault()}
       ref={refSVG}

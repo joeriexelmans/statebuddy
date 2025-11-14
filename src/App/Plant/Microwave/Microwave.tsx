@@ -18,7 +18,7 @@ import { detectConnections } from "@/statecharts/detect_connections";
 import { parseStatechart } from "@/statecharts/parser";
 
 import microwaveConcreteSyntax from "./model.json";
-import { ConcreteSyntax } from "@/App/VisualEditor/VisualEditor";
+import { ConcreteSyntax } from "@/statecharts/concrete_syntax";
 import { objectsEqual } from "@/util/util";
 
 export const [microwaveAbstractSyntax, microwaveErrors] = parseStatechart(microwaveConcreteSyntax as ConcreteSyntax, detectConnections(microwaveConcreteSyntax as ConcreteSyntax));

@@ -5,7 +5,7 @@ import { Action, EventTrigger, Expression, ParsedText } from "./label_ast";
 import { parse as parseLabel, SyntaxError } from "./label_parser";
 import { Connections } from "./detect_connections";
 import { HISTORY_RADIUS } from "../App/parameters";
-import { ConcreteSyntax } from "@/App/VisualEditor/VisualEditor";
+import { ConcreteSyntax } from "./concrete_syntax";
 import { memoize } from "@/util/util";
 
 export type TraceableError = {

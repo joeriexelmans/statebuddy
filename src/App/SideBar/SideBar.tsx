@@ -134,7 +134,7 @@ export function SideBar({showExecutionTrace, showConnections, plantName, showPla
           inputEvents={ast.inputEvents}
           onRaise={(e,p) => onRaise("debug."+e,p)}
           disabled={trace===null || trace.trace[trace.idx].kind === "error"}
-          showKeys={true}/>}
+        />}
       </PersistentDetails>
       {/* Internal events */}
       <PersistentDetails state={showInternalEvents} setState={setShowInternalEvents}>

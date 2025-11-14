@@ -1,7 +1,7 @@
 import "../index.css";
 import "./App.css";
 
-import { Dispatch, ReactElement, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ReactElement, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { detectConnections } from "@/statecharts/detect_connections";
 import { parseStatechart } from "../statecharts/parser";
@@ -50,10 +50,7 @@ export function App() {
   const [editHistory, setEditHistory] = useState<EditHistory|null>(null);
   const [modal, setModal] = useState<ReactElement|null>(null);
 
-  // const [lightMode, setLightMode] = usePersistentState<LightMode>("lightMode", "auto");
-  const lightMode = "auto";
-
-  const {makeCheckPoint, onRedo, onUndo, onRotate} = useEditor(setEditHistory);
+  const {commitState, replaceState, onRedo, onUndo, onRotate} = useEditor(setEditHistory);
 
   const editorState = editHistory && editHistory.current;
   const setEditorState = useCallback((cb: (value: VisualEditorState) => VisualEditorState) => {
@@ -172,7 +169,7 @@ export function App() {
             {/* Editor */}
             <div style={{flexGrow: 1, overflow: "auto"}}>
               {editorState && conns && syntaxErrors &&
-                <VisualEditor {...{state: editorState, setState: setEditorState, conns, syntaxErrors: allErrors, highlightActive, highlightTransitions, setModal, makeCheckPoint, ...appState}}/>}
+                <VisualEditor {...{state: editorState, commitState, replaceState, conns, syntaxErrors: allErrors, highlightActive, highlightTransitions, setModal, ...appState}}/>}
             </div>
             
             {appState.showFindReplace &&

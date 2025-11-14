@@ -9,7 +9,7 @@ import { preload } from "react-dom";
 
 import trafficLightConcreteSyntax from "./model.json";
 import { parseStatechart } from "@/statecharts/parser";
-import { ConcreteSyntax } from "@/App/VisualEditor/VisualEditor";
+import { ConcreteSyntax } from "@/statecharts/concrete_syntax";
 import { detectConnections } from "@/statecharts/detect_connections";
 import { makeStatechartPlant, PlantRenderProps, StatechartPlantSpec } from "../Plant";
 import { RT_Statechart } from "@/statecharts/runtime_types";

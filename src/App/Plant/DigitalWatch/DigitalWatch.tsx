@@ -1,5 +1,5 @@
 import { useAudioContext } from "@/hooks/useAudioContext";
-import { ConcreteSyntax } from "@/App/VisualEditor/VisualEditor";
+import { ConcreteSyntax } from "@/statecharts/concrete_syntax";
 import { detectConnections } from "@/statecharts/detect_connections";
 import { parseStatechart } from "@/statecharts/parser";
 import { RT_Statechart } from "@/statecharts/runtime_types";

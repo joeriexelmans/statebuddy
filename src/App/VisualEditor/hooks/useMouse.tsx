@@ -8,7 +8,14 @@ import { Selecting, SelectingState } from "../Selection";
 import { Selection, VisualEditorState } from "../VisualEditor";
 import { useShortcuts } from "@/hooks/useShortcuts";
 
-export function useMouse(makeCheckPoint: () => void, insertMode: InsertMode, zoom: number, refSVG: {current: SVGSVGElement|null}, state: VisualEditorState, setState: Dispatch<(v: VisualEditorState) => VisualEditorState>, deleteSelection: () => void) {
+export function useMouse(
+  insertMode: InsertMode,
+  zoom: number,
+  refSVG: {current: SVGSVGElement|null},
+  state: VisualEditorState,
+  commitState: Dispatch<(v: VisualEditorState) => VisualEditorState>,
+  replaceState: Dispatch<(v: VisualEditorState) => VisualEditorState>)
+{
   const [dragging, setDragging] = useState(false);
   const [shiftOrCtrlPressed, setShiftOrCtrlPressed] = useState(false);
 
@@ -16,8 +23,13 @@ export function useMouse(makeCheckPoint: () => void, insertMode: InsertMode, zoo
   const [selectingState, setSelectingState] = useState<SelectingState>(null);
 
   const selection = state.selection;
-  const setSelection = useCallback((cb: (oldSelection: Selection) => Selection) =>
-    setState(oldState => ({...oldState, selection: cb(oldState.selection)})),[setState]);
+  const commitSelection = useCallback((cb: (oldSelection: Selection) => Selection) => {
+    commitState(oldState => ({...oldState, selection: cb(oldState.selection)}));
+  },[commitState]);
+
+  const replaceSelection = useCallback((cb: (oldSelection: Selection) => Selection) =>
+    replaceState(oldState => ({...oldState, selection: cb(oldState.selection)})),[replaceState]);
+
 
   const getCurrentPointer = useCallback((e: {pageX: number, pageY: number}) => {
     const bbox = refSVG.current!.getBoundingClientRect();
@@ -30,9 +42,8 @@ export function useMouse(makeCheckPoint: () => void, insertMode: InsertMode, zoo
   const onMouseDown = useCallback((e: {button: number, target: any, pageX: number, pageY: number}) => {
     const currentPointer = getCurrentPointer(e);
     if (e.button === 2) {
-      makeCheckPoint();
       // ignore selection, right mouse button always inserts
-      setState(state => {
+      commitState(state => {
         const newID = state.nextID.toString();
         if (insertMode === "and" || insertMode === "or") {
           // insert rountangle
@@ -102,64 +113,81 @@ export function useMouse(makeCheckPoint: () => void, insertMode: InsertMode, zoo
       return;
     }
 
-    if (e.button === 0) {
-      if (!shiftOrCtrlPressed) {
-        // left mouse button on a shape will drag that shape (and everything else that's selected). if the shape under the pointer was not in the selection then the selection is reset to contain only that shape.
-        const uid = e.target?.dataset.uid;
-        const parts: string[] = e.target?.dataset.parts?.split(' ').filter((p:string) => p!=="") || [];
-        if (uid && parts.length > 0) {
-          makeCheckPoint();
+    let appendTo: Selection;
+    if (shiftOrCtrlPressed) {
+      appendTo = selection;
+    }
+    else {
+      appendTo = [];
+    }
 
-          // if the mouse button is pressed outside of the current selection, we reset the selection to whatever shape the mouse is on
-          let allPartsInSelection = true;
-          for (const part of parts) {
-            // is there anything in our existing selection that is not under the cursor?
-            if (!(selection.some(s => (s.uid === uid) && (s.part === part)))) {
-              allPartsInSelection = false;
-              break;
-            }
+    const startMakingSelection = () => {
+      setDragging(false);
+      setSelectingState({
+        topLeft: currentPointer,
+        size: {x: 0, y: 0},
+      });
+      commitSelection(_ => appendTo);
+    }
+
+    if (e.button === 0) {
+      // left mouse button
+      const uid = e.target?.dataset.uid;
+      const parts: string[] = e.target?.dataset.parts?.split(' ').filter((p:string) => p!=="") || [];
+      if (uid && parts.length > 0) {
+        // mouse hovers over a shape or part of a shape
+        let allPartsInSelection = true;
+        for (const part of parts) {
+          if (!(selection.some(s => (s.uid === uid) && (s.part === part)))) {
+            allPartsInSelection = false;
+            break;
           }
-          if (!allPartsInSelection) {
-            if (e.target.classList.contains("helper")) {
-              setSelection(() => parts.map(part => ({uid, part})) as Selection);
-            }
-            else {
-              setDragging(false);
-              setSelectingState({
-                topLeft: currentPointer,
-                size: {x: 0, y: 0},
-              });
-              setSelection(() => []);
-              return;
-            }
+        }
+        if (!allPartsInSelection) {
+          // the part is not in existing selection
+          if (e.target.classList.contains("helper")) {
+            // it's only a helper
+            // -> update selection by the part and start dragging it
+            commitSelection(() => [
+              ...appendTo,
+              ...parts.map(part => ({uid, part})) as Selection,
+            ]);
+            setDragging(true);
           }
-          // start dragging
+          else {
+            // it's an actual shape
+            // (we treat shapes differently from helpers because in a big hierarchical model it is nearly impossible to click anywhere without clicking inside a shape)
+            startMakingSelection();
+          }
+        }
+        else {
+          // the part is in existing selection
+          // -> just start dragging
+          commitSelection(s => s); // <-- but also create an undo-checkpoint!
           setDragging(true);
-          return;
         }
       }
+      else {
+        // mouse is not on any shape
+        startMakingSelection();
+      }
     }
-
-    // otherwise, just start making a selection
-    setDragging(false);
-    setSelectingState({
-      topLeft: currentPointer,
-      size: {x: 0, y: 0},
-    });
-    if (!shiftOrCtrlPressed) {
-      setSelection(() => []);
+    else {
+      // any other mouse button (e.g., middle mouse button)
+      // -> just start making a selection
+      startMakingSelection();
     }
-  }, [getCurrentPointer, makeCheckPoint, insertMode, selection, shiftOrCtrlPressed]);
+  }, [commitState, commitSelection, getCurrentPointer, insertMode, selection, shiftOrCtrlPressed]);
 
   const onMouseMove = useCallback((e: {pageX: number, pageY: number, movementX: number, movementY: number}) => {
     const currentPointer = getCurrentPointer(e);
     if (dragging) {
-      // const pointerDelta = subtractV2D(currentPointer, dragging.lastMousePos);
+      // we're moving / resizing
       const pointerDelta = {x: e.movementX/zoom, y: e.movementY/zoom};
       const getParts = (uid: string) => {
-        return state.selection.filter(s => s.uid === uid).map(s => s.part);
+        return selection.filter(s => s.uid === uid).map(s => s.part);
       }
-      setState(state => ({
+      replaceState(state => ({
         ...state,
         rountangles: state.rountangles.map(r => {
           const selectedParts = getParts(r.uid);
@@ -216,6 +244,7 @@ export function useMouse(makeCheckPoint: () => void, insertMode: InsertMode, zoo
       setDragging(true);
     }
     else if (selectingState) {
+      // we're making a selection
       setSelectingState(ss => {
         const selectionSize = subtractV2D(currentPointer, ss!.topLeft);
         return {
@@ -224,13 +253,15 @@ export function useMouse(makeCheckPoint: () => void, insertMode: InsertMode, zoo
         };
       });
     }
-  }, [getCurrentPointer, selectingState, dragging]);
+  }, [replaceState, getCurrentPointer, selectingState, setSelectingState, selection, dragging]);
 
   const onMouseUp = useCallback((e: {target: any, pageX: number, pageY: number}) => {
     if (dragging) {
+      // we were moving / resizing
       setDragging(false);
+
       // do not persist sizes smaller than 40x40
-      setState(state => {
+      replaceState(state => {
         return {
           ...state,
           rountangles: state.rountangles.map(r => ({
@@ -245,12 +276,16 @@ export function useMouse(makeCheckPoint: () => void, insertMode: InsertMode, zoo
       });
     }
     if (selectingState) {
+      // we were making a selection
       if (selectingState.size.x === 0 && selectingState.size.y === 0) {
+        // it was only a click (mouse didn't move)
+        // -> select the clicked part(s)
+        // (btw, this is only here to allow selecting rountangles by clicking inside them, all other shapes can be selected entirely by their 'helpers')
         const uid = e.target?.dataset.uid;
         if (uid) {
           const parts = e.target?.dataset.parts.split(' ').filter((p: string) => p!=="") || [];
           if (uid) {
-            setSelection(oldSelection => [
+            replaceSelection(oldSelection => [
               ...oldSelection,
               ...parts.map((part: string) => ({uid, part})),
             ]);
@@ -258,7 +293,7 @@ export function useMouse(makeCheckPoint: () => void, insertMode: InsertMode, zoo
         }
       }
       else {
-        // we were making a selection
+        // complete selection
         const normalizedSS = normalizeRect(selectingState);
         const shapes = Array.from(refSVG.current?.querySelectorAll("rect, line, circle, text") || []) as SVGGraphicsElement[];
         const shapesInSelection = shapes.filter(el => {
@@ -271,9 +306,8 @@ export function useMouse(makeCheckPoint: () => void, insertMode: InsertMode, zoo
         }).filter(el => !el.classList.contains("corner"));
         
         // @ts-ignore
-        setSelection(oldSelection => {
+        replaceSelection(oldSelection => {
           const newSelection = [...oldSelection];
-          const common = [];
           for (const shape of shapesInSelection) {
             const uid = shape.dataset.uid;
             if (uid) {
@@ -281,8 +315,6 @@ export function useMouse(makeCheckPoint: () => void, insertMode: InsertMode, zoo
               for (const part of parts) {
                 if (newSelection.some(({uid: oldUid, part: oldPart}) =>
                   uid === oldUid && part === oldPart)) {
-                    // common.push({uid, part});
-                  
                 }
                 else {
                   // @ts-ignore
@@ -291,14 +323,12 @@ export function useMouse(makeCheckPoint: () => void, insertMode: InsertMode, zoo
               } 
             }
           }
-          // console.log({newSelection, oldSelection, common});
-          // return [...oldSelection, ...newSelection];
           return newSelection;
         })
       }
     }
     setSelectingState(null); // no longer making a selection
-  }, [dragging, selectingState, refSVG.current]);
+  }, [replaceState, replaceSelection, dragging, selectingState, setSelectingState, refSVG.current]);
 
   const trackShiftKey = useCallback((e: KeyboardEvent) => {
     setShiftOrCtrlPressed(e.shiftKey || e.ctrlKey);
@@ -306,7 +336,7 @@ export function useMouse(makeCheckPoint: () => void, insertMode: InsertMode, zoo
 
   const onSelectAll = useCallback(() => {
     setDragging(false);
-    setState(state => ({
+    commitState(state => ({
       ...state,
       // @ts-ignore
       selection: [
@@ -317,15 +347,14 @@ export function useMouse(makeCheckPoint: () => void, insertMode: InsertMode, zoo
         ...state.history.map(h => ({uid: h.uid, part: "history"})),
       ],
     }));
-  }, [setState, setDragging]);
+  }, [commitState, setDragging]);
 
   const convertSelection = useCallback((kind: "or"|"and") => {
-    makeCheckPoint();
-    setState(state => ({
+    commitState(state => ({
       ...state,
       rountangles: state.rountangles.map(r => state.selection.some(rs => rs.uid === r.uid) ? ({...r, kind}) : r),
     }));
-  }, [makeCheckPoint, setState]);
+  }, [commitState]);
 
   useShortcuts([
     {keys: ["o"], action: useCallback(() => convertSelection("or"), [convertSelection])},

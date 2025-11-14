@@ -2,6 +2,7 @@ import { TextDialog } from "@/App/Modals/TextDialog";
 import { TraceableError } from "../../statecharts/parser";
 import {Text} from "../../statecharts/concrete_syntax";
 import { Dispatch, memo, ReactElement, SetStateAction } from "react";
+import { jsonDeepEqual } from "@/util/util";
 
 export const TextSVG = memo(function TextSVG(props: {text: Text, error: TraceableError|undefined, selected: boolean, highlight: boolean, onEdit: (text: Text, newText: string) => void, setModal: Dispatch<SetStateAction<ReactElement|null>>}) {
   const commonProps = {
@@ -44,4 +45,11 @@ export const TextSVG = memo(function TextSVG(props: {text: Text, error: Traceabl
       {textNode}
       <text className="draggableText helper" textAnchor="middle" data-uid={props.text.uid} data-parts="text" style={{whiteSpace: "preserve"}}>{props.text.text}</text>
     </g>;
+}, (prevProps, newProps) => {
+  return jsonDeepEqual(prevProps.text, newProps)
+    && prevProps.highlight === newProps.highlight
+    && prevProps.onEdit === newProps.onEdit
+    && prevProps.setModal === newProps.setModal
+    && prevProps.error === newProps.error
+    && prevProps.selected === newProps.selected
 });

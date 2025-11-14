@@ -7,14 +7,13 @@ import { useShortcuts } from "@/hooks/useShortcuts";
 // const offset = {x: 40, y: 40};
 const offset = {x: 0, y: 0};
 
-export function useCopyPaste(makeCheckPoint: () => void, state: VisualEditorState, setState: Dispatch<(v:VisualEditorState) => VisualEditorState>, selection: Selection) {
+export function useCopyPaste(state: VisualEditorState, commitState: Dispatch<(v:VisualEditorState) => VisualEditorState>, selection: Selection) {
   const onPaste = useCallback((e: ClipboardEvent) => {
     const data = e.clipboardData?.getData("text/plain");
     if (data) {
       try {
         const parsed = JSON.parse(data);
-        makeCheckPoint();
-        setState(state => {
+        commitState(state => {
           try {
             let nextID = state.nextID;
             const copiedRountangles: Rountangle[] = parsed.rountangles.map((r: Rountangle) => ({
@@ -73,7 +72,7 @@ export function useCopyPaste(makeCheckPoint: () => void, state: VisualEditorStat
       }
       e.preventDefault();
     }
-  }, [makeCheckPoint, setState]);
+  }, [commitState]);
 
   const copyInternal = useCallback((state: VisualEditorState, selection: Selection, e: ClipboardEvent) => {
     const uidsToCopy = new Set(selection.map(shape => shape.uid));
@@ -107,8 +106,7 @@ export function useCopyPaste(makeCheckPoint: () => void, state: VisualEditorStat
   }, [state, selection]);
 
   const deleteSelection = useCallback(() => {
-    makeCheckPoint();
-    setState(state => ({
+    commitState(state => ({
       ...state,
       rountangles: state.rountangles.filter(r => !state.selection.some(rs => rs.uid === r.uid)),
       diamonds: state.diamonds.filter(d => !state.selection.some(ds => ds.uid === d.uid)),
@@ -117,7 +115,7 @@ export function useCopyPaste(makeCheckPoint: () => void, state: VisualEditorStat
       texts: state.texts.filter(t => !state.selection.some(ts => ts.uid === t.uid)),
       selection: [],
     }));
-  }, [makeCheckPoint, setState]);
+  }, [commitState]);
 
   useShortcuts([
     {keys: ["Delete"], action: deleteSelection},

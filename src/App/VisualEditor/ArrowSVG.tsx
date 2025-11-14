@@ -2,7 +2,7 @@ import { memo } from "react";
 import { Arrow, ArrowPart } from "../../statecharts/concrete_syntax";
 import { ArcDirection, euclideanDistance } from "../../util/geometry";
 import { CORNER_HELPER_RADIUS } from "../parameters";
-import { arraysEqual } from "@/util/util";
+import { arraysEqual, jsonDeepEqual } from "@/util/util";
 
 
 export const ArrowSVG = memo(function(props: { arrow: Arrow; selected: ArrowPart[]; error: string; highlight: boolean; fired: boolean; arc: ArcDirection; initialMarker: boolean }) {
@@ -81,7 +81,7 @@ export const ArrowSVG = memo(function(props: { arrow: Arrow; selected: ArrowPart
 
   </g>;
 }, (prevProps, nextProps) => {
-  return prevProps.arrow === nextProps.arrow
+  return jsonDeepEqual(prevProps.arrow, nextProps.arrow)
     && arraysEqual(prevProps.selected, nextProps.selected)
     && prevProps.highlight === nextProps.highlight
     && prevProps.error === nextProps.error

@@ -3,7 +3,7 @@ import { Rountangle, RectSide } from "../../statecharts/concrete_syntax";
 import { ROUNTANGLE_RADIUS } from "../parameters";
 import { RectHelper } from "./RectHelpers";
 import { rountangleMinSize } from "@/statecharts/concrete_syntax";
-import { arraysEqual } from "@/util/util";
+import { arraysEqual, jsonDeepEqual } from "@/util/util";
 
 
 export const RountangleSVG = memo(function RountangleSVG(props: {rountangle: Rountangle; selected: RectSide[]; highlight: RectSide[]; error?: string; active: boolean; }) {
@@ -40,7 +40,7 @@ export const RountangleSVG = memo(function RountangleSVG(props: {rountangle: Rou
       highlight={props.highlight} />
   </g>;
 }, (prevProps, nextProps) => {
-  return prevProps.rountangle === nextProps.rountangle
+  return jsonDeepEqual(prevProps.rountangle, nextProps.rountangle)
     && arraysEqual(prevProps.selected, nextProps.selected)
     && arraysEqual(prevProps.highlight, nextProps.highlight)
     && prevProps.error === nextProps.error
