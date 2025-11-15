@@ -17,7 +17,7 @@ html, body {
   --accent-border-color: light-dark(blue, rgb(64, 185, 255));
   --accent-opaque-color: light-dark(#ccccff, #305b73);
 
-  --statusbar-bg-color: light-dark(rgb(157, 200, 255), rgb(48, 48, 68));
+  --statusbar-bg-color: light-dark(rgb(225, 229, 235), rgb(48, 48, 68));
   --statusbar-fg-color: light-dark(rgb(0, 0, 0), white);
   --statusbar-error-bg-color: light-dark(rgb(163, 0, 0), rgb(255, 82, 82));
   --statusbar-error-fg-color: light-dark(white, black);

@@ -13,10 +13,10 @@ import gitRev from "@/git-rev.txt";
 
 export function BottomPanel(props: {errors: TraceableError[], setEditorState: Dispatch<(state: VisualEditorState) => VisualEditorState>} & AppState & Setters<AppState>) {
   const [greeting, setGreeting] = useState(
-    <div className="greeter" style={{textAlign:'center'}}>
+    <div className="greeter" style={{textAlign:'center'}} onClick={() => setGreeting(<></>)}>
       <span style={{fontSize: 18, fontStyle: 'italic'}}>
         Welcome to
-        <Logo width={300} height="auto" style={{verticalAlign: 'middle'}}/>
+        <Logo width={250} height="auto" style={{verticalAlign: 'middle'}}/>
       </span>
     </div>);
 
@@ -45,18 +45,15 @@ export function BottomPanel(props: {errors: TraceableError[], setEditorState: Di
           </div>
         </PersistentDetailsLocalStorage>
       </div>
-      {/* <div ></div> */}
-      <div>
+      <div style={{display: 'flex', alignItems: 'center'}}>
         switch to&nbsp;
         {location.host === "localhost:3000" ?
           <a href={`https://deemz.org/public/statebuddy/${location.hash}`}>production</a>
           : <a href={`http://localhost:3000/${location.hash}`}>development</a>
         }
         &nbsp;mode
-      </div>
       &nbsp;|&nbsp;
-      <div>
-        Rev: <a title={"git"} href={`https://deemz.org/git/research/statebuddy/commit/${gitRev}`}>{gitRev.slice(0,8)}</a>
+        Rev:&nbsp;<a title={"git"} href={`https://deemz.org/git/research/statebuddy/commit/${gitRev}`}>{gitRev.slice(0,8)}</a>
       </div>
     </div>
   </div>;

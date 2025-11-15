@@ -40,8 +40,23 @@ export type ConcreteSyntax = {
 export type RectSide = "left" | "top" | "right" | "bottom";
 export type ArrowPart = "start" | "end";
 
-export const emptyState: VisualEditorState = {
-  rountangles: [], texts: [], arrows: [], diamonds: [], history: [], nextID: 0, selection: [],
+export const initialEditorState: VisualEditorState = {
+  rountangles: [{
+    uid:"0",
+    topLeft:{x:76.25,y:122.5},
+    size:{x:133.75,y:103.75},
+    kind:"and"
+  }],
+  diamonds:[],
+  history:[],
+  arrows:[{
+    uid:"39",
+    start:{x:85,y:67.5},
+    end:{x:116.25,y:116.25}
+  }],
+  texts:[],
+  nextID: 1,
+  selection: [],
 };
 
 // used to find which rountangle an arrow connects to (src/tgt)

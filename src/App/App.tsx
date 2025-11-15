@@ -15,7 +15,7 @@ import { useEditor } from "./hooks/useEditor";
 import { useSimulator } from "./hooks/useSimulator";
 import { useUrlHashState } from "../hooks/useUrlHashState";
 import { plants } from "./plants";
-import { emptyState } from "@/statecharts/concrete_syntax";
+import { initialEditorState } from "@/statecharts/concrete_syntax";
 import { ModalOverlay } from "./Overlays/ModalOverlay";
 import { FindReplace } from "./BottomPanel/FindReplace";
 import { useCustomMemo } from "@/hooks/useCustomMemo";
@@ -89,7 +89,7 @@ export function App() {
   const persist = useUrlHashState<VisualEditorState | AppState & {editorState: VisualEditorState}>(
     recoveredState => {
       if (recoveredState === null) {
-        setEditHistory(() => ({current: emptyState, history: [], future: []}));
+        setEditHistory(() => ({current: initialEditorState, history: [], future: []}));
       }
       // we support two formats
       // @ts-ignore

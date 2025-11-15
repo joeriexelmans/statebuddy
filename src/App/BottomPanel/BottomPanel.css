@@ -21,7 +21,7 @@
 
 .greeter {
   /* border-top: 1px var(--separator-color) solid; */
-  background-color: var(--statusbar-bg-color);
+  background-color: var(--background-color);
 }
 
 .bottom {
