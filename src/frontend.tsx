@@ -11,9 +11,9 @@ import { App } from "./App/App";
 
 const elem = document.getElementById("root")!;
 const app = (
-  // <StrictMode>
+  <StrictMode>
     <App />
-  // </StrictMode>
+  </StrictMode>
 );
 
 if (import.meta.hot) {

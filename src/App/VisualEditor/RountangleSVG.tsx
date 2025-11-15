@@ -33,7 +33,7 @@ export const RountangleSVG = memo(function RountangleSVG(props: {rountangle: Rou
     <text x={10} y={20} className="uid">{props.rountangle.uid}</text>
 
     {props.error &&
-      <text className="error" x={10} y={40} data-uid={uid} data-parts="left top right bottom">{props.error}</text>}
+      <text className="errorHover" x={30} y={20} data-uid={uid} data-parts="left top right bottom">{props.error}</text>}
 
     <RectHelper uid={uid} size={minSize}
       selected={props.selected}

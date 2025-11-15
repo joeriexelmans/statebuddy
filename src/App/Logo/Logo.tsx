@@ -1,6 +1,8 @@
+import { SVGAttributes, SVGProps } from "react";
+
 // i couldn't find a better way to make the text in the logo adapt to light/dark mode...
-export function Logo() {
-  return <svg style={{maxWidth: '100%'}} width="424.29" height="105.72" version="1.1" viewBox="0 0 424.29 105.72">
+export function Logo(props: SVGAttributes<SVGElement>) {
+  return <svg style={{maxWidth: '100%'}} width="424.29" height="105.72" version="1.1" viewBox="0 0 424.29 105.72" {...props} >
     <style>{`
       .logoText {
         fill: var(--text-color);

@@ -32,7 +32,7 @@ export const ArrowSVG = memo(function(props: { arrow: Arrow; selected: ArrowPart
       data-parts="start end" />
 
     {props.error && <text
-      className="error"
+      className="errorHover"
       x={(start.x + end.x) / 2 + 5}
       y={(start.y + end.y) / 2}
       textAnchor="middle"

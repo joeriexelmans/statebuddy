@@ -19,6 +19,7 @@ import { emptyState } from "@/statecharts/concrete_syntax";
 import { ModalOverlay } from "./Overlays/ModalOverlay";
 import { FindReplace } from "./BottomPanel/FindReplace";
 import { useCustomMemo } from "@/hooks/useCustomMemo";
+import { usePersistentState } from "@/hooks/usePersistentState";
 
 export type EditHistory = {
   current: VisualEditorState,
@@ -51,6 +52,8 @@ export function App() {
   const [editHistory, setEditHistory] = useState<EditHistory|null>(null);
   const [modal, setModal] = useState<ReactElement|null>(null);
 
+  const [[findText, replaceText], setFindReplaceText] = usePersistentState("findReplaceTxt", ["", ""]);
+
   const {commitState, replaceState, onRedo, onUndo, onRotate} = useEditor(setEditHistory);
 
   const editorState = editHistory && editHistory.current;
@@ -67,9 +70,17 @@ export function App() {
   ([prevState, prevConns], [nextState, nextConns]) => {
     if ((prevState === null) !== (nextState === null)) return false;
     if ((prevConns === null) !== (nextConns === null)) return false;
+    if (prevConns === null) {
+      return nextConns === null;
+    }
+    if (prevState === null) {
+      return nextState === null;
+    }
+    if (nextConns === null) return false;
+    if (nextState === null) return false;
     // the following check is much cheaper than re-rendering everything that depends on
-    return connectionsEqual(prevConns!, nextConns!)
-      && reducedConcreteSyntaxEqual(prevState!, nextState!);
+    return connectionsEqual(prevConns, nextConns)
+      && reducedConcreteSyntaxEqual(prevState, nextState);
   });
   const ast = parsed && parsed[0];
 
@@ -161,7 +172,7 @@ export function App() {
         <div className="stackHorizontal" style={{flexGrow:1, overflow: "auto"}}>
 
           {/* top-to-bottom: top bar, editor */}
-          <div className="stackVertical" style={{flexGrow:1, overflow: "auto"}}>
+          <div className="stackVertical" style={{flexGrow:1, overflow: "hidden"}}>
             {/* Top bar */}
             <div
               className="shadowBelow"
@@ -174,12 +185,12 @@ export function App() {
             {/* Editor */}
             <div style={{flexGrow: 1, overflow: "auto"}}>
               {editorState && conns && syntaxErrors &&
-                <VisualEditor {...{state: editorState, commitState, replaceState, conns, syntaxErrors: allErrors, highlightActive, highlightTransitions, setModal, ...appState}}/>}
+                <VisualEditor {...{state: editorState, commitState, replaceState, conns, syntaxErrors: allErrors, highlightActive, highlightTransitions, setModal, ...appState, findText:findText}}/>}
             </div>
             
-            {appState.showFindReplace &&
-              <div>
-                <FindReplace setCS={setEditorState} hide={() => setters.setShowFindReplace(false)}/>
+            {editorState && appState.showFindReplace &&
+              <div style={{}}>
+                <FindReplace findText={findText} replaceText={replaceText} setFindReplaceText={setFindReplaceText} cs={editorState} setCS={setEditorState} hide={() => setters.setShowFindReplace(false)}/>
               </div>
             }
 

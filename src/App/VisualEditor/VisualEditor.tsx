@@ -52,9 +52,10 @@ type VisualEditorProps = {
   highlightTransitions: string[],
   setModal: Dispatch<SetStateAction<ReactElement|null>>,
   zoom: number;
+  findText: string;
 };
 
-export const VisualEditor = memo(function VisualEditor({state, commitState, replaceState, conns, syntaxErrors: errors, insertMode, highlightActive, highlightTransitions, setModal, zoom}: VisualEditorProps) {
+export const VisualEditor = memo(function VisualEditor({state, commitState, replaceState, conns, syntaxErrors: errors, insertMode, highlightActive, highlightTransitions, setModal, zoom, findText}: VisualEditorProps) {
 
   // While dragging, the editor is in a temporary state (a state that is not committed to the edit history). If the temporary state is not null, then this state will be what you see.
   // const [temporaryState, setTemporaryState] = useState<VisualEditorState | null>(null);
@@ -199,8 +200,6 @@ export const VisualEditor = memo(function VisualEditor({state, commitState, repl
         </marker>
       </defs>
 
-    {(rootErrors.length>0) && <text className="error" x={5} y={20}>{rootErrors.join(' ')}</text>}
-
     <Rountangles rountangles={state.rountangles} {...{selection, sidesToHighlight, rountanglesToHighlight, errors, highlightActive}}/>
     <Diamonds diamonds={state.diamonds} {...{selection, sidesToHighlight, rountanglesToHighlight, errors}}/>
 
@@ -235,7 +234,9 @@ export const VisualEditor = memo(function VisualEditor({state, commitState, repl
       }
     )}
 
-    <Texts texts={state.texts} {...{selection, textsToHighlight, errors, onEditText, setModal}}/>
+    <Texts texts={state.texts} {...{selection, textsToHighlight, errors, onEditText, setModal, findText}}/>
+
+    {(rootErrors.length>0) && <text className="errorHover" x={5} y={20} style={{display:'inline'}}>{rootErrors.join('\n')}</text>}
 
     {selectionRect}
   </svg>;
@@ -282,7 +283,7 @@ const Diamonds = memo(function Diamonds({diamonds, selection, sidesToHighlight, 
     && arraysEqual(p.errors, n.errors);
 });
 
-const Texts = memo(function Texts({texts, selection, textsToHighlight, errors, onEditText, setModal}: {texts: Text[], selection: Selection, textsToHighlight: {[key: string]: boolean}, errors: TraceableError[], onEditText: (text: Text, newText: string) => void, setModal: Dispatch<SetStateAction<ReactElement|null>>}) {
+const Texts = memo(function Texts({texts, selection, textsToHighlight, errors, onEditText, setModal, findText}: {texts: Text[], selection: Selection, textsToHighlight: {[key: string]: boolean}, errors: TraceableError[], onEditText: (text: Text, newText: string) => void, setModal: Dispatch<SetStateAction<ReactElement|null>>, findText: string}) {
   return <>{texts.map(txt => {
     return <TextSVG
       key={txt.uid}
@@ -292,6 +293,7 @@ const Texts = memo(function Texts({texts, selection, textsToHighlight, errors, o
       highlight={textsToHighlight.hasOwnProperty(txt.uid)}
       onEdit={onEditText}
       setModal={setModal}
+      findText={findText}
     />
   })}</>;
 }, (p, n) => {
@@ -300,6 +302,7 @@ const Texts = memo(function Texts({texts, selection, textsToHighlight, errors, o
     && objectsEqual(p.textsToHighlight, n.textsToHighlight)
     && arraysEqual(p.errors, n.errors)
     && p.onEditText === n.onEditText
-    && p.setModal === n.setModal;
+    && p.setModal === n.setModal
+    && p.findText === n.findText;
 });
 

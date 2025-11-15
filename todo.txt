@@ -79,6 +79,9 @@ TODO
             https://pub.dev/packages/ploeg_tree_layout
     - local variable scopes
 
+Breaking changes (after mosis25 is finished):
+    - state names start with # (not with //)
+
 Publish StateBuddy paper(s):
     compare CS approach to other tools, not only YAKINDU
 z

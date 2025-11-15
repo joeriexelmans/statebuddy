@@ -70,14 +70,15 @@ export const ShowInputEvents = memo(function ShowInputEvents({inputEvents, onRai
     };
   });
 
-  const shortcutSpec = raiseHandlers.map((handler, i) => {
-    const n = (i+1)%10;
+  // less painful and more readable than figuring out the equivalent of range(n) in JS:
+  // (btw, useShortcuts must always be called with an array of the same size)
+  useShortcuts([0,1,2,3,4,5,6,7,8,9].map(i => {
+    const n = (i+1) % 10;
     return {
       keys: [n.toString()],
-      action: handler,
+      action: raiseHandlers[n] || (() => {}),
     };
-  });
-  useShortcuts(shortcutSpec);
+  }));
 
   const KeyInfo = KeyInfoVisible; // always show keyboard shortcuts on input events, we can't expect the user to remember them
 
@@ -107,7 +108,6 @@ export const ShowInputEvents = memo(function ShowInputEvents({inputEvents, onRai
     </div>;
   })
 }, (prevProps, nextProps) => {
-  console.log('onRaise changed:', prevProps.onRaise === nextProps.onRaise, prevProps.onRaise, nextProps.onRaise);
   return prevProps.onRaise === nextProps.onRaise
      && prevProps.disabled === nextProps.disabled
      && jsonDeepEqual(prevProps.inputEvents, nextProps.inputEvents);

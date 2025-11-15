@@ -16,6 +16,12 @@ html, body {
   --light-accent-color: light-dark(rgba(0,0,255,0.2), rgba(78, 186, 248, 0.377));
   --accent-border-color: light-dark(blue, rgb(64, 185, 255));
   --accent-opaque-color: light-dark(#ccccff, #305b73);
+
+  --statusbar-bg-color: light-dark(rgb(157, 200, 255), rgb(48, 48, 68));
+  --statusbar-fg-color: light-dark(rgb(0, 0, 0), white);
+  --statusbar-error-bg-color: light-dark(rgb(163, 0, 0), rgb(255, 82, 82));
+  --statusbar-error-fg-color: light-dark(white, black);
+
   --separator-color: light-dark(lightgrey, rgb(58, 58, 58));
   --inactive-bg-color: light-dark(#f7f7f7, rgb(29, 29, 29));
   --inactive-fg-color: light-dark(grey, rgb(70, 70, 70));
@@ -40,6 +46,7 @@ html, body {
   --input-event-hover-bg-color: light-dark(rgb(195, 224, 176), rgb(59, 88, 40));
   --input-event-active-bg-color: light-dark(rgb(176, 204, 158), rgb(77, 117, 53));
   --output-event-bg-color: light-dark(rgb(230, 249, 255), rgb(28, 83, 104));
+  --foundtext-color: light-dark(rgb(0, 189, 164), rgb(202, 149, 218));
 
   background-color: var(--background-color);
   color: var(--text-color);
@@ -50,16 +57,16 @@ input {
   border: 1px solid var(--separator-color);
 }
 
-button {
+button, input[type="submit"] {
   background-color: var(--button-bg-color);
   border: 1px var(--separator-color) solid;
 }
 
-button:not(:disabled):hover {
+button:not(:disabled):hover, input[type="submit"]:not(:disabled):hover {
   background-color: var(--light-accent-color);
 }
 
-button:disabled {
+button:disabled, input[type="submit"]:disabled {
   background-color: var(--inactive-bg-color);
   color: var(--inactive-fg-color);
 }

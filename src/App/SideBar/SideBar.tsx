@@ -196,7 +196,7 @@ export const SideBar = memo(function SideBar({showExecutionTrace, showConnection
             <button title="see in trace (below)" className={activeProperty === i ? "active" : ""} onClick={() => setActiveProperty(i)}>
               <VisibilityIcon fontSize="small"/>
             </button>
-            <input type="text" style={{width:'calc(100% - 90px)'}} value={property} onChange={e => setProperties(properties => properties.toSpliced(i, 1, e.target.value))}/>
+            <input type="text" style={{width:'calc(100% - 90px)'}} value={property} onChange={e => setProperties(properties => properties.toSpliced(i, 1, e.target.value))} placeholder='write MTL property...'/>
             <button title="delete this property" onClick={() => setProperties(properties => properties.toSpliced(i, 1))}>
               <DeleteOutlineIcon fontSize="small"/>
             </button>

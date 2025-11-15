@@ -47,7 +47,8 @@ details:has(+ details) {
 }
 
 .toolbar input {
-  height: 22px;
+  height: 26px;
+  box-sizing: border-box;
 }
 .toolbar div {
   vertical-align: bottom;

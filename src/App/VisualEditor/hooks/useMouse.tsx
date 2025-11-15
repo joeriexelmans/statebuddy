@@ -239,7 +239,7 @@ export function useMouse(
             ...t,
             topLeft: addV2D(t.topLeft, pointerDelta),
           }
-        }),
+        }).toSorted((a,b) => a.topLeft.y - b.topLeft.y),
       }));
       setDragging(true);
     }

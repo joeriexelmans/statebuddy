@@ -112,10 +112,6 @@ line.selected, circle.selected {
   stroke-width: 4px;
 }
 
-.draggableText.selected, .draggableText.selected:hover {
-  fill: var(--accent-border-color);
-  font-weight: 600;
-}
 text.helper {
   fill: rgba(0,0,0,0);
   stroke: rgba(0,0,0,0);
@@ -126,24 +122,41 @@ text.helper:hover {
   cursor: grab;
 }
 
-.draggableText, .draggableText.highlight {
+.draggableText {
   paint-order: stroke;
   fill: var(--text-color);
   stroke: var(--background-color);
   stroke-width: 4px;
-  stroke-linecap: butt;
-  stroke-linejoin: miter;
-  stroke-opacity: 1;
-  fill-opacity:1;
+  text-anchor: middle;
+  white-space: preserve;
 }
-
-.draggableText.highlight:not(.selected) {
-  fill: var(--associated-color);
-  font-weight: 600;
-}
-
 .draggableText.selected {
   fill: var(--accent-border-color);
+  font-weight: 600;
+}
+.draggableText.highlight:not(.selected) {
+  fill: var(--associated-color);
+}
+.draggableText.error:not(.selected) {
+  fill: var(--error-color);
+}
+
+text.errorHover {
+  display: none;
+  paint-order: stroke;
+  fill: var(--error-color);
+  stroke: var(--background-color);
+  stroke-width: 4px;
+  font-weight: 600;
+  white-space: preserve;
+}
+g:hover > text.errorHover {
+  display: inline;
+}
+
+tspan.findText {
+  fill: var(--foundtext-color);
+  font-weight: 600;
 }
 
 .highlight:not(.selected):not(text) {
@@ -152,7 +165,7 @@ text.helper:hover {
   fill: none;
 }
 
-.arrow.error {
+.arrow.error:not(.selected) {
   stroke: var(--error-color);
 }
 .arrow.fired {
@@ -172,19 +185,13 @@ text.helper:hover {
   }
 }
 
-
-text.error, tspan.error {
-  fill: var(--error-color);
-  font-weight: 600;
-}
-
-.errorHover {
+/* .errorHover {
   display: none;
 }
 
 g:hover > .errorHover {
   display: inline;
-}
+} */
 
 text.uid {
   fill: var(--separator-color);

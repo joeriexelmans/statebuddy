@@ -1,36 +1,46 @@
 import { TextDialog } from "@/App/Modals/TextDialog";
 import { TraceableError } from "../../statecharts/parser";
 import {Text} from "../../statecharts/concrete_syntax";
-import { Dispatch, memo, ReactElement, SetStateAction } from "react";
+import { Dispatch, memo, ReactElement, SetStateAction, SVGTextElementAttributes } from "react";
 import { jsonDeepEqual } from "@/util/util";
 
-export const TextSVG = memo(function TextSVG(props: {text: Text, error: TraceableError|undefined, selected: boolean, highlight: boolean, onEdit: (text: Text, newText: string) => void, setModal: Dispatch<SetStateAction<ReactElement|null>>}) {
-  const commonProps = {
-    "data-uid": props.text.uid,
-    "data-parts": "text",
-    textAnchor: "middle" as "middle",
-    className: "draggableText"
-      + (props.selected ? " selected":"")
-      + (props.highlight ? " highlight":""),
-    style: {whiteSpace: "preserve"},
-  }
-
-  let textNode;
-  if (props.error?.data?.location) {
-    const {start,end} = props.error.data.location;
-    textNode = <><text {...commonProps}>
-      {props.text.text.slice(0, start.offset)}
-      <tspan className="error" data-uid={props.text.uid} data-parts="text">
-        {props.text.text.slice(start.offset, end.offset)}
-        {start.offset === end.offset && <>_</>}
+export const FragmentedText = function FragmentedText({start, end, text, highlightClassName, uid, parts, ...rest}: {start: number, end: number, text: string, highlightClassName: string, uid: string, parts: string} & SVGTextElementAttributes<SVGTextElement>) {
+  if (start !== -1 && start !== end) {
+    return <text data-uid={uid} data-parts={parts} {...rest}>
+      {text.slice(0, start)}
+      <tspan className={highlightClassName} data-uid={uid} data-parts="text">
+        {text.slice(start, end)}
       </tspan>
-      {props.text.text.slice(end.offset)}
-    </text>
-    <text className="error errorHover" y={20} textAnchor="middle">{props.error.message}</text></>;
+      {text.slice(end)}
+    </text>;
   }
   else {
-    textNode = <text {...commonProps}>{props.text.text}</text>;
+    return <text data-uid={uid} data-parts={parts} {...rest}>
+      {text}
+    </text>
   }
+}
+
+export const TextSVG = memo(function TextSVG(props: {text: Text, error: TraceableError|undefined, selected: boolean, highlight: boolean, onEdit: (text: Text, newText: string) => void, setModal: Dispatch<SetStateAction<ReactElement|null>>, findText: string}) {
+
+  const className = "draggableText"
+    + (props.selected ? " selected":"")
+    + (props.highlight ? " highlight":"")
+    + (props.error ? " error":"");
+
+  const found = props.text.text.indexOf(props.findText);
+  const start = (found >= 0) ? found : -1
+  const end = (found >= 0) ? found + props.findText.length : -1;
+
+  const textNode = <FragmentedText
+    {...{start, end}}
+    text={props.text.text}
+    textAnchor="middle"
+    className={className}
+    highlightClassName="findText"
+    uid={props.text.uid}
+    parts="text"
+    />;
 
   return <g
     key={props.text.uid}
@@ -44,6 +54,9 @@ export const TextSVG = memo(function TextSVG(props: {text: Text, error: Traceabl
     }}>
       {textNode}
       <text className="draggableText helper" textAnchor="middle" data-uid={props.text.uid} data-parts="text" style={{whiteSpace: "preserve"}}>{props.text.text}</text>
+      {props.error &&
+        <text className="errorHover" y={-20} textAnchor="middle">{props.error.message}</text>
+      }
     </g>;
 }, (prevProps, newProps) => {
   return jsonDeepEqual(prevProps.text, newProps)
@@ -52,4 +65,5 @@ export const TextSVG = memo(function TextSVG(props: {text: Text, error: Traceabl
     && prevProps.setModal === newProps.setModal
     && prevProps.error === newProps.error
     && prevProps.selected === newProps.selected
+    && prevProps.findText === newProps.findText
 });

@@ -138,8 +138,6 @@ export function useSimulator(ast: Statechart|null, plant: Plant<any, UniversalPl
     };
   }, [cE, currentTraceItem, time, appendNewConfig]);
 
-  console.log({onRaise});
-
   // timer elapse events are triggered by a change of the simulated time (possibly as a scheduled JS event loop timeout)
   useEffect(() => {
     // console.log('time effect:', time, currentTraceItem);

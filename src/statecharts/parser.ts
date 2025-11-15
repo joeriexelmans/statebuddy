@@ -203,7 +203,7 @@ export function parseStatechart(concreteSyntax: ReducedConcreteSyntax, conns: Co
       else if (state.initial.length === 0) {
         errors.push({
           shapeUid: state.uid, 
-          message: "no initial state",
+          message: "needs initial state",
         });
       }
     }
@@ -216,8 +216,8 @@ export function parseStatechart(concreteSyntax: ReducedConcreteSyntax, conns: Co
 
   // step 3: figure out labels
 
-  const textsSorted = concreteSyntax.texts.toSorted((a,b) => a.topLeft.y - b.topLeft.y);
-  for (const text of textsSorted) {
+  // ASSUMPTION: text is sorted by y-coordinate
+  for (const text of concreteSyntax.texts) {
     let parsed: ParsedText;
     try {
       parsed = cachedParseLabel(text.text); // may throw
@@ -226,7 +226,7 @@ export function parseStatechart(concreteSyntax: ReducedConcreteSyntax, conns: Co
       if (e instanceof SyntaxError) {
         errors.push({
           shapeUid: text.uid,
-          message: e.message,
+          message: 'parser: ' + e.message,
           data: e,
         });
         parsed = {
@@ -248,7 +248,7 @@ export function parseStatechart(concreteSyntax: ReducedConcreteSyntax, conns: Co
         // triggers
         if (parsed.trigger.kind === "event") {
           if (src.kind === "pseudo") {
-            errors.push({shapeUid: text.uid, message: "pseudo state outgoing transition must not have event trigger"});
+            errors.push({shapeUid: text.uid, message: "cannot have trigger"});
           }
           else {
             const {event} = parsed.trigger;
@@ -262,7 +262,7 @@ export function parseStatechart(concreteSyntax: ReducedConcreteSyntax, conns: Co
         }
         else if (parsed.trigger.kind === "after") {
           if (src.kind === "pseudo") {
-            errors.push({shapeUid: text.uid, message: "pseudo state outgoing transition must not have after-trigger"});
+            errors.push({shapeUid: text.uid, message: "cannot have trigger"});
           }
           else {
             src.timers.push(parsed.trigger.durationMs);
@@ -274,7 +274,7 @@ export function parseStatechart(concreteSyntax: ReducedConcreteSyntax, conns: Co
         }
         else if (parsed.trigger.kind === "triggerless") {
           if (src.kind !== "pseudo") {
-            errors.push({shapeUid: text.uid, message: "triggerless transitions only allowed on pseudo-states"});
+            errors.push({shapeUid: text.uid, message: "needs trigger"});
           }
         }
       }
@@ -296,7 +296,7 @@ export function parseStatechart(concreteSyntax: ReducedConcreteSyntax, conns: Co
         else {
           errors.push({
             shapeUid: text.uid,
-            message: "states can only have entry/exit triggers",
+            message: "must belong to transition",
             data: {start: {offset: 0}, end: {offset: text.text.length}},
           });
         }
