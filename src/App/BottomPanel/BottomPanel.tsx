@@ -53,7 +53,7 @@ export function BottomPanel(props: {errors: TraceableError[], setEditorState: Di
         }
         &nbsp;mode
       &nbsp;|&nbsp;
-        Rev:&nbsp;<a title={"git"} href={`https://deemz.org/git/research/statebuddy/commit/${gitRev}`}>{gitRev.slice(0,8)}</a>
+        Rev:&nbsp;<a title={"git"} href={`https://deemz.org/git/research/statebuddy/commit/${gitRev}`} target="_blank">{gitRev.slice(0,8)}</a>
       </div>
     </div>
   </div>;
