@@ -1,3 +1,4 @@
+import { usePersistentState } from "@/hooks/usePersistentState";
 import "./Plot.css";
 import { SVGAttributes, useEffect, useLayoutEffect, useRef, useState } from "react";
 
@@ -5,11 +6,9 @@ export function Plot({traces, displayTime, ...rest}: {traces: {[name: string]: [
   const refSVG = useRef(null);
   const [width, setWidth] = useState<null|number>(null);
 
-  const [visible, setVisible] = useState<{[name: string]: boolean}>({});
+  const [visible, setVisible] = usePersistentState<{[name: string]: boolean}>("visibleSignals", {});
 
   const numVisible = Object.values(visible).reduce((n, item) => item ? n + 1 : n, 0);
-  console.log({numVisible});
-
   const height = 20*numVisible;
 
   traces = Object.fromEntries(Object.entries(traces).filter(([name]) => !["true", "false"].includes(name)))
@@ -69,8 +68,6 @@ export function Plot({traces, displayTime, ...rest}: {traces: {[name: string]: [
   const markerEveryXMs = Math.max(250*2**Math.ceil(Math.log2(displayTime/1000/30/width*2000)), 250);
   const labelEveryXMarkers = 2;
 
-  // console.log({markerEveryXMs, labelEveryXMarkers});
-
   const marks = [];
   for (let i=0; i<displayTime; i+=markerEveryXMs) {
     marks.push(i);
@@ -83,7 +80,7 @@ export function Plot({traces, displayTime, ...rest}: {traces: {[name: string]: [
         {marks.map((m,i) => {
           const x = i*(markerEveryXMs)/maxTime*width;
           return <>
-            <line x1={x} x2={x} y1={0} y2={height+2} stroke="var(--separator-color)"/>
+            <line x1={x} x2={x} y1={0} y2={height+2 } stroke="var(--separator-color)"/>
             {i%labelEveryXMarkers===0 &&
               <text x={x} y={height+16} textAnchor="middle" style={{fill: 'var(--text-color)'}}>{m/1000}</text>
             }
