@@ -8,7 +8,7 @@ export function Plot({traces, displayTime, ...rest}: {traces: {[name: string]: [
 
   const [visible, setVisible] = usePersistentState<{[name: string]: boolean}>("visibleSignals", {});
 
-  const numVisible = Object.values(visible).reduce((n, item) => item ? n + 1 : n, 0);
+  const numVisible = Object.entries(visible).reduce((n, [name, visible]) => (visible && Object.hasOwn(traces, name)) ? n + 1 : n, 0);
   const height = 20*numVisible;
 
   traces = Object.fromEntries(Object.entries(traces).filter(([name]) => !["true", "false"].includes(name)))
@@ -83,7 +83,7 @@ export function Plot({traces, displayTime, ...rest}: {traces: {[name: string]: [
         {marks.map((m,i) => {
           const x = i*(markerEveryXMs)/maxTime*width;
           return <>
-            <line x1={x} x2={x} y1={0} y2={height+2 } stroke="var(--separator-color)"/>
+            <line x1={x} x2={x} y1={0} y2={height+2} stroke="var(--separator-color)"/>
             {i%labelEveryXMarkers===0 &&
               <text x={x} y={height+16} textAnchor="middle" style={{fill: 'var(--text-color)'}}>{m/1000}</text>
             }
