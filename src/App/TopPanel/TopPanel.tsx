@@ -39,7 +39,7 @@ import { useShortcuts } from "@/hooks/useShortcuts";
 export type TopPanelProps = {
   trace: TraceState | null,
   time: TimeMode,
-  
+
   displayTime: number,
   refreshDisplayTime: () => void,
 
@@ -198,7 +198,15 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
       <div className="toolbarGroup">
         <div className="toolbarGroup">
           <label htmlFor="time"><AccessTimeIcon fontSize="small"/></label>&nbsp;
-          <progress style={{position:'absolute', width: 60, marginTop: 23, height: 2, background: 'rgba(0,0,0,0)', border: 0, accentColor: 'var(--accent-border-color)', appearance: 'none'}} max={1} value={(displayTime-lastSimTime)/((nextTimedTransition?.[0]||Infinity)-lastSimTime)}/>
+          <div style={{
+            position: 'absolute',
+            marginTop: -4,
+            marginLeft: 20,
+            height: 4,
+            borderWidth: 0,
+            backgroundColor: 'var(--accent-border-color)',
+            width: (displayTime-lastSimTime)/((nextTimedTransition?.[0]||Infinity)-lastSimTime)*55,
+            }}/>
           <input title="the current simulated time" id="time" disabled={!config} value={formattedDisplayTime} readOnly={true} className="readonlyTextBox" />
 
         </div>
