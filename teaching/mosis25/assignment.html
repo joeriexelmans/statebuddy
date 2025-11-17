@@ -84,6 +84,9 @@
     border:1px solid black;
     padding: 4pt;
   }
+  pre {
+    font-weight: 600;
+  }
 </style>
 
 <h2 id="getting-started">Getting Started</h2>
@@ -304,15 +307,24 @@ The controller can send the following events to the plant:
 
   <li>The current time is incremented (ticks) by 1 second every second, even when we are not displaying the current time, except when we are editing the current time: then the time should not tick.</li>
 
-  <li>Pressing the bottom-left button when the time is being displayed will show the alarm time <b>and</b> toggle the alarm (on/off).</li>
-  <li>If then, the bottom-left button is held pressed for 2 seconds, we go into alarm edit mode.</li>
+  <li>Pressing the bottom-left button when the time is being displayed (not in edit mode) will show the alarm time <b>and</b> toggle the alarm (on/off). Releasing the bottom-left button will show the current time again.</li>
 
-  <li>Likewise, when displaying the current time, and pressing and holding the bottom-right button for 2 seconds, we go into time edit mode.</li>
+  <li>If however the bottom-left button is held pressed for 2 seconds, we go into alarm edit mode.</li>
+
+  <li>Likewise, when displaying the current time (not in edit mode), and pressing and holding the bottom-right button for 2 seconds, we go into time edit mode.</li>
 
   <li>In edit mode, pressing the bottom-left button will immediately increment the current selected (blinking) numbers.</li>
   <li>In edit mode, holding the bottom-left button has the additional effect incrementing the current selected numbers every 100ms.</li>
 
   <li>In edit mode, pressing the bottom-right button will select the next numbers (hours -> minutes -> seconds -> hours).</li>
+
+  <li>Not pressing the bottom left or bottom right buttons in edit mode for 5 seconds, will end the edit mode, and go back to displaying the current time.</li>
+
+  <li>When the alarm goes off, the light should start blinking, meaning 500 ms on, then 500 ms off, repeatedly. The blinking ends on its own after 4-seconds.</li>
+
+  <li>During the blinking, a 'beep' must occur every time the screen turns on/off (for a total of 8 beeps if we let the blinking run its entire 4 seconds).</li>
+
+  <li>If any button is pressed while the alarm is blinking, the blinking ends, <b>and</b> the alarm is turned off as well. (if the blinking ends on its own (after 4 seconds), the alarm remains on)</li>
 </ol>
 
 <h2>Starting point</h2>
