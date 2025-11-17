@@ -39,7 +39,8 @@ export function Plot({traces, displayTime, ...rest}: {traces: {[name: string]: [
   let i=0;
   for (const [name, trace] of Object.entries(traces)) {
     if (visible[name]) {
-      let path = "M0,0";
+      const y = ((yDiff-margin)) + yDiff*(i);
+      let path = `M0,${y}`;
       let prevY;
       for (const [time, value] of trace) {
         const x = time / maxTime * width;
@@ -56,13 +57,34 @@ export function Plot({traces, displayTime, ...rest}: {traces: {[name: string]: [
     }
   }
 
-  const colors = ["blue", "green", "red", "darkorange", "brown", "magenta"];
+  const colors = [
+    "var(--plot-color-0)",
+    "var(--plot-color-1)",
+    "var(--plot-color-2)",
+    "var(--plot-color-3)",
+    "var(--plot-color-4)",
+    "var(--plot-color-5)",
+  ]
+
+  const marks = [];
+  for (let i=0; i<displayTime; i+=100) {
+    marks.push(i);
+  }
 
   return <div className="statusBar">
     <details>
       <summary>plot</summary>
-      <svg style={{height}} ref={refSVG} viewBox={`0 0 ${width} ${height}`} {...rest}>
-        {Object.entries(traces).map(([name], i) => {
+      <svg style={{height: height+30}} ref={refSVG} viewBox={`0 0 ${width} ${height+30}`} {...rest}>
+        {marks.map((m,i) => {
+          const x = i*100/maxTime*width;
+          return <>
+            <line x1={x} x2={x} y1={0} y2={height} stroke="var(--separator-color)"/>
+            {i%5===0 &&
+            <text x={x} y={height+16} textAnchor="middle" style={{fill: 'var(--text-color)'}}>{m/1000}</text>
+            }
+            </>;
+        })}
+        {Object.entries(paths).map(([name], i) => {
           if (visible[name]) {
             return <path d={paths[name]} className="plotLine" style={{stroke: colors[i%colors.length]}} />;
           }
@@ -72,12 +94,14 @@ export function Plot({traces, displayTime, ...rest}: {traces: {[name: string]: [
         })}
       </svg>
       <div>
-        {Object.entries(traces).map(([name], i) =>
-          <label key={name} htmlFor={`checkbox-trace-${name}`}>
-            <input type="checkbox" id={`checkbox-trace-${name}`} checked={visible[name]} onChange={e => setVisible(visible => ({...visible, [name]: e.target.checked}))}/>
-            <span style={{color: colors[i%colors.length]}}>{name}</span>
-          </label>
-        )}
+        {(() => {
+          let i=0;
+          return Object.entries(traces).map(([name]) => 
+            <label key={name} htmlFor={`checkbox-trace-${name}`}>
+              <input type="checkbox" id={`checkbox-trace-${name}`} checked={visible[name]} onChange={e => setVisible(visible => ({...visible, [name]: e.target.checked}))}/>
+              <span style={{color: visible[name] ? colors[(i++)%colors.length] : 'var(--text-color)'}}>{name}</span>
+            </label>
+        )})()}
       </div>
     </details>
   </div>;
