@@ -5,16 +5,13 @@ import { TraceItem } from "../hooks/useSimulator";
 // const endpoint = "http://localhost:15478/check_property";
 const endpoint = "https://deemz.org/apis/mtl-aas/check_property";
 
-export type PropertyTrace = {
-  timestamp: number,
-  satisfied: boolean,
-}[];
+export type PropertyTrace = [number, boolean][];
 
 export type PropertyCheckResult = [null|PropertyTrace, null|string];
 
-export async function checkProperty(plant: Plant<RT_Statechart, any>, property: string, trace: [TraceItem, ...TraceItem[]]): Promise<PropertyCheckResult> {
-  // pre-process data...
+export type PreparedTraces = { [name: string]: PropertyTrace };
 
+export function prepareTrace(plant: Plant<RT_Statechart, any>, trace: [TraceItem, ...TraceItem[]]): PreparedTraces {
   const cleanPlantStates0 = trace
     .map(v => {
       return {
@@ -23,7 +20,7 @@ export async function checkProperty(plant: Plant<RT_Statechart, any>, property: 
       };
     });
 
-  const cleanPlantStates = cleanPlantStates0 && cleanPlantStates0
+  const cleanPlantStates = cleanPlantStates0
     // we can never have multiple states at the same point in simtime or Argus will panic
     .reduce((trace, entry, i) => {
       const prevEntry = cleanPlantStates0[i-1];
@@ -37,8 +34,8 @@ export async function checkProperty(plant: Plant<RT_Statechart, any>, property: 
     }, [] as {simtime: number, state: any}[]);
 
   let traces = {
-    'true': [[0, true] as [number, any]],
-    'false': [[0, false] as [number, any]],
+    'true': [[0, true] as [number, boolean]],
+    'false': [[0, false] as [number, boolean]],
   } as {[key: string]: [number, any][]};
   for (const {simtime, state} of cleanPlantStates) {
     for (const [key, value] of Object.entries(state)) {
@@ -52,6 +49,12 @@ export async function checkProperty(plant: Plant<RT_Statechart, any>, property: 
     }
   }
 
+  return traces;
+}
+
+export async function checkProperty(property: string, preparedTraces: PreparedTraces): Promise<PropertyCheckResult> {
+  // pre-process data...
+
   try {
     const response = await fetch(endpoint, {
       method: "POST",
@@ -60,7 +63,7 @@ export async function checkProperty(plant: Plant<RT_Statechart, any>, property: 
       },
       body: JSON.stringify({
         property,
-        traces,
+        traces: preparedTraces,
       }),
     });
 

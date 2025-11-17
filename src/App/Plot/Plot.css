@@ -1,0 +1,7 @@
+.plotLine {
+  fill: none;
+  /* stroke: 2px solid black; */
+  stroke-width: 1.2px;
+  stroke: var(--rountangle-stroke-color);
+  /* vector-effect: non-scaling-stroke; */
+}

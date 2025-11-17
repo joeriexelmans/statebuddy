@@ -20,6 +20,10 @@ import { ModalOverlay } from "./Overlays/ModalOverlay";
 import { FindReplace } from "./BottomPanel/FindReplace";
 import { useCustomMemo } from "@/hooks/useCustomMemo";
 import { usePersistentState } from "@/hooks/usePersistentState";
+import { Plot } from "./Plot/Plot";
+import { prepareTrace } from "./SideBar/check_property";
+import { getSimTime } from "@/statecharts/time";
+import { useDisplayTime } from "@/hooks/useDisplayTime";
 
 export type EditHistory = {
   current: VisualEditorState,
@@ -139,6 +143,7 @@ export function App() {
   }, [refRightSideBar.current, autoScroll]);
 
   const simulator = useSimulator(ast, plant, plantConns, scrollDownSidebar);
+  const {displayTime, refreshDisplayTime} = useDisplayTime(simulator.time);
   
   const setters = makeAllSetters(setAppState, Object.keys(appState) as (keyof AppState)[]);
 
@@ -159,10 +164,11 @@ export function App() {
     currentBigStep && currentBigStep.state.plant || plant.execution.initial()[1],
   [currentBigStep, plant]);
 
+  const preparedTraces = simulator.trace && prepareTrace(plant, simulator.trace.trace);
+  const simtime = getSimTime(simulator.time, performance.now());
+
   return <div style={{
-    height:'100%',
-    // doesn't work:
-    // colorScheme: lightMode !== "auto" ? lightMode : undefined,
+    height: '100%',
   }}>
     <ModalOverlay modal={modal} setModal={setModal}>
       {/* top-to-bottom: everything -> bottom panel */}
@@ -179,7 +185,7 @@ export function App() {
               style={{flex: '0 0 content'}}
             >
               {editHistory && <TopPanel
-                {...{onUndo, onRedo, onRotate, setModal, editHistory, ...simulator, ...setters, ...appState, setEditorState}}
+                {...{onUndo, onRedo, onRotate, setModal, editHistory, ...simulator, ...setters, ...appState, setEditorState, displayTime, refreshDisplayTime}}
               />}
             </div>
             {/* Editor */}
@@ -211,7 +217,9 @@ export function App() {
         </div>
 
         {/* Bottom panel */}
-        <div style={{flex: '0 0 content'}}>
+        <div style={{flex: '0 0 content', borderTop: '1px solid var(--separator-color'}}>
+          {preparedTraces &&
+            <Plot width="100%" traces={preparedTraces} displayTime={displayTime} />}
           {syntaxErrors && <BottomPanel {...{errors: syntaxErrors, ...appState, setEditorState, ...setters}}/>}
         </div>
       </div>

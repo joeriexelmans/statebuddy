@@ -9,7 +9,7 @@ import { Dispatch, memo, Ref, SetStateAction, useCallback, useEffect, useRef, us
 import { Statechart } from '@/statecharts/abstract_syntax';
 import { ShowAST, ShowInputEvents, ShowInternalEvents, ShowOutputEvents } from './ShowAST';
 import { Plant } from '../Plant/Plant';
-import { checkProperty, PropertyCheckResult } from './check_property';
+import { checkProperty, prepareTrace, PropertyCheckResult } from './check_property';
 import { Setters } from '../makePartialSetter';
 import { RTHistory } from './RTHistory';
 import { BigStepCause, TraceState } from '../hooks/useSimulator';
@@ -99,7 +99,8 @@ export const SideBar = memo(function SideBar({showExecutionTrace, showConnection
       setPropertyResults(null);
       timeout = setTimeout(() => {
         Promise.all(properties.map((property, i) => {
-          return checkProperty(plant, property, trace.trace);
+          const preparedTrace = prepareTrace(plant, trace.trace);
+          return checkProperty(property, preparedTrace);
         }))
         .then(results => {
           setPropertyResults(results);

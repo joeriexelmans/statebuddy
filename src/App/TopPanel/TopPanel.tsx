@@ -39,6 +39,9 @@ import { useShortcuts } from "@/hooks/useShortcuts";
 export type TopPanelProps = {
   trace: TraceState | null,
   time: TimeMode,
+  
+  displayTime: number,
+  refreshDisplayTime: () => void,
 
   setTime: Dispatch<SetStateAction<TimeMode>>,
   onUndo: () => void,
@@ -67,30 +70,11 @@ function toggle(booleanSetter: Dispatch<(state: boolean) => boolean>) {
   return () => booleanSetter(x => !x);
 }
 
-export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, onRedo, onRotate, onInit, onClear, onBack, insertMode, setInsertMode, setModal, zoom, setZoom, showKeys, setShowKeys, editHistory, showFindReplace, setShowFindReplace, setEditorState}: TopPanelProps) {
-  const [displayTime, setDisplayTime] = useState(0);
+export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, onRedo, onRotate, onInit, onClear, onBack, insertMode, setInsertMode, setModal, zoom, setZoom, showKeys, setShowKeys, editHistory, showFindReplace, setShowFindReplace, displayTime, refreshDisplayTime}: TopPanelProps) {
   const [timescale, setTimescale] = usePersistentState("timescale", 1);
-
   const config = trace && trace.trace[trace.idx];
-
-  const updateDisplayedTime = useCallback(() => {
-    const now = Math.round(performance.now());
-    const timeMs = getSimTime(time, now);
-    setDisplayTime((timeMs));
-  }, [time, setDisplayTime]);
-
   const formattedDisplayTime = useMemo(() => formatTime(displayTime), [displayTime]);
   const lastSimTime = config?.simtime || 0;
-
-  useEffect(() => {
-    // This has no effect on statechart execution. In between events, the statechart is doing nothing. However, by updating the displayed time, we give the illusion of continuous progress.
-    const interval = setInterval(() => {
-      updateDisplayedTime();
-    }, 43); // every X ms -> we want a value that makes the numbers 'dance' while not using too much CPU
-    return () => {
-      clearInterval(interval);
-    }
-  }, [time, updateDisplayedTime]);
 
   const onChangePaused = useCallback((paused: boolean, wallclktime: number) => {
     setTime(time => {
@@ -101,8 +85,8 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
         return setRealtime(time, timescale, wallclktime);
       }
     });
-    updateDisplayedTime();
-  }, [setTime, timescale, updateDisplayedTime]);
+    refreshDisplayTime();
+  }, [setTime, timescale, refreshDisplayTime]);
 
   // timestamp of next timed transition, in simulated time
   const timers: Timers = config?.kind === "bigstep" && config.state.sc.environment.get("_timers") || [];
@@ -136,20 +120,6 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
   const KeyInfo = showKeys ? KeyInfoVisible : KeyInfoHidden;
 
   return <div className="toolbar">
-
-    {/* light / dark mode
-    <div className="toolbarGroup">
-      <button title="force light mode" className={lightMode==="light"?"active":""} onClick={() => setLightMode("light")}>
-        <LightModeIcon fontSize="small"/>
-      </button>
-      <button title="auto light / dark mode (follows system theme)" className={lightMode==="auto"?"active":""} onClick={() => setLightMode("auto")}>
-        <BrightnessAutoIcon fontSize="small"/>
-      </button>
-      <button title="force dark mode" className={lightMode==="dark"?"active":""} onClick={() => setLightMode("dark")}>
-        <DarkModeIcon fontSize="small"/>
-      </button>
-      &emsp;
-    </div> */}
 
     {/* shortcuts / about */}
     <div className="toolbarGroup">
