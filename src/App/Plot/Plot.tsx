@@ -26,7 +26,10 @@ export function Plot({traces, displayTime, ...rest}: {traces: {[name: string]: [
   }, [refSVG.current])
 
   if (width === null) {
-    return <svg ref={refSVG} {...rest}></svg>;
+    <details>
+      <summary>plot</summary>
+      <svg ref={refSVG} {...rest}></svg>
+    </details>
   }
 
   const maxTime = displayTime;
