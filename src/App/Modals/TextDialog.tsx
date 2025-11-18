@@ -25,8 +25,7 @@ export function TextDialog(props: {setModal: Dispatch<SetStateAction<ReactElemen
     parseError = e.message;
   }
 
-  return <div style={{padding: 4}}>
-    {/* Text label:<br/> */}
+  return <div style={{padding: 20}}>
     <Tooltip tooltip={parseError} error={true} align="left">
     <textarea
       className={parseError ? "error" : ""}
@@ -38,11 +37,7 @@ export function TextDialog(props: {setModal: Dispatch<SetStateAction<ReactElemen
       />
     </Tooltip>
     <br/>
-    {/* <span style={{color: 'var(--error-color)'}}>{parseError}</span><br/> */}
-    {/* <p> */}
-      <kbd>Enter</kbd> to confirm. <kbd>Esc</kbd> to cancel.
-    {/* </p> */}
-    {/* <br/> */}
-    {/* (Tip: <kbd>Shift</kbd>+<kbd>Enter</kbd> to insert newline.) */}
+    <br/>
+    <kbd>Enter</kbd> to confirm. <kbd>Esc</kbd> to cancel.
   </div>;
 }
