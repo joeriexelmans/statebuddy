@@ -47,7 +47,6 @@ export function FindReplace({findText, replaceText, setFindReplaceText, cs, setC
             value={findText}
             onChange={e  => setFindReplaceText(([_, replaceText]) => [e.target.value, replaceText])} 
             style={{flexGrow: 1, minWidth: 20}}/>
-        <br/>
         <input tabIndex={0} placeholder="replace"
             title="new text"
             value={replaceText}

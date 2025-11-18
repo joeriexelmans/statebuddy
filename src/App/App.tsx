@@ -1,7 +1,7 @@
 import "../index.css";
 import "./App.css";
 
-import { ReactElement, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Dispatch, ReactElement, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { connectionsEqual, detectConnections, reducedConcreteSyntaxEqual } from "@/statecharts/detect_connections";
 import { parseStatechart } from "../statecharts/parser";
@@ -55,8 +55,6 @@ export type LightMode = "light" | "auto" | "dark";
 export function App() {
   const [editHistory, setEditHistory] = useState<EditHistory|null>(null);
   const [modal, setModal] = useState<ReactElement|null>(null);
-
-  const [[findText, replaceText], setFindReplaceText] = usePersistentState("findReplaceTxt", ["", ""]);
 
   const {commitState, replaceState, onRedo, onUndo, onRotate} = useEditor(setEditHistory);
 
@@ -147,6 +145,23 @@ export function App() {
   
   const setters = makeAllSetters(setAppState, Object.keys(appState) as (keyof AppState)[]);
 
+  const setFindReplaceText = useCallback((callback: SetStateAction<[string, string]>) => {
+    setAppState(appState => {
+      let findText, replaceText;
+      if (typeof callback === 'function') {
+        [findText, replaceText] = callback([appState.findText, appState.replaceText]);
+      }
+      else {
+        [findText, replaceText] = callback;
+      }
+      return {
+        ...appState,
+        findText,
+        replaceText,
+      }
+    })
+  }, [setAppState]);
+
   const syntaxErrors = parsed && parsed[1] || [];
   const currentTraceItem = simulator.trace && simulator.trace.trace[simulator.trace.idx];
   const currentBigStep = currentTraceItem && currentTraceItem.kind === "bigstep" && currentTraceItem;
@@ -191,12 +206,17 @@ export function App() {
             {/* Editor */}
             <div style={{flexGrow: 1, overflow: "auto"}}>
               {editorState && conns && syntaxErrors &&
-                <VisualEditor {...{state: editorState, commitState, replaceState, conns, syntaxErrors: allErrors, highlightActive, highlightTransitions, setModal, ...appState, findText:findText}}/>}
+                <VisualEditor {...{state: editorState, commitState, replaceState, conns, syntaxErrors: allErrors, highlightActive, highlightTransitions, setModal, ...appState}}/>}
             </div>
             
             {editorState && appState.showFindReplace &&
               <div style={{}}>
-                <FindReplace findText={findText} replaceText={replaceText} setFindReplaceText={setFindReplaceText} cs={editorState} setCS={setEditorState} hide={() => setters.setShowFindReplace(false)}/>
+                <FindReplace
+                  {...appState}
+                  setFindReplaceText={setFindReplaceText}
+                  cs={editorState}
+                  setCS={setEditorState}
+                  hide={() => setters.setShowFindReplace(false)}/>
               </div>
             }
 
