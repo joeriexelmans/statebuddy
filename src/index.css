@@ -135,3 +135,6 @@ label {
 input[type=text].error {
   background-color: var(--error-bg-color);
 }
+textarea.error {
+  background-color: var(--error-bg-color);
+}

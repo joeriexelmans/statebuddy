@@ -2,6 +2,7 @@ import { Dispatch, ReactElement, SetStateAction, useState, useCallback } from "r
 
 import { cachedParseLabel } from "@/statecharts/parser";
 import { useShortcuts } from "@/hooks/useShortcuts";
+import { Tooltip } from "../Components/Tooltip";
 
 export function TextDialog(props: {setModal: Dispatch<SetStateAction<ReactElement|null>>, text: string, done: (newText: string|undefined) => void}) {
   const [text, setText] = useState(props.text);
@@ -16,7 +17,7 @@ export function TextDialog(props: {setModal: Dispatch<SetStateAction<ReactElemen
       }, [props.setModal])},
   ], false);
 
-  let parseError = "";
+  let parseError: string | undefined;
   try {
     cachedParseLabel(text);
   } catch (e) {
@@ -26,9 +27,18 @@ export function TextDialog(props: {setModal: Dispatch<SetStateAction<ReactElemen
 
   return <div style={{padding: 4}}>
     {/* Text label:<br/> */}
-    <textarea autoFocus style={{fontFamily: 'Roboto', width: 400, height: 60}} onChange={e=>setText(e.target.value)} value={text} onFocus={e => e.target.select()}/>
+    <Tooltip tooltip={parseError} error={true} align="left">
+    <textarea
+      className={parseError ? "error" : ""}
+      autoFocus
+      style={{fontFamily: 'Roboto', width: 400, height: 60}}
+      onChange={e=>setText(e.target.value)}
+      value={text}
+      onFocus={e => e.target.select()}
+      />
+    </Tooltip>
     <br/>
-    <span style={{color: 'var(--error-color)'}}>{parseError}</span><br/>
+    {/* <span style={{color: 'var(--error-color)'}}>{parseError}</span><br/> */}
     {/* <p> */}
       <kbd>Enter</kbd> to confirm. <kbd>Esc</kbd> to cancel.
     {/* </p> */}
