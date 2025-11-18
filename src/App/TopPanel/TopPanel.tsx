@@ -212,7 +212,7 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
             height: 4,
             borderWidth: 0,
             backgroundColor: catchingUp
-              ? 'var(--error-color)'
+              ? 'var(--firing-transition-color)'
               : 'var(--accent-border-color)',
             width: Math.min(progress, 1)*56,
             }}
