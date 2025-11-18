@@ -14,7 +14,7 @@ import { detectConnections } from "@/statecharts/detect_connections";
 import { makeStatechartPlant, PlantRenderProps, StatechartPlantSpec } from "../Plant";
 import { RT_Statechart } from "@/statecharts/runtime_types";
 import { useAudioContext } from "@/hooks/useAudioContext";
-import { memo, useEffect } from "react";
+import { memo, useEffect, useMemo } from "react";
 import { objectsEqual } from "@/util/util";
 
 const [trafficLightAbstractSyntax, trafficLightErrors] = parseStatechart(trafficLightConcreteSyntax as ConcreteSyntax, detectConnections(trafficLightConcreteSyntax as ConcreteSyntax));
@@ -58,24 +58,28 @@ export const TrafficLight = memo(function TrafficLight({state: {redOn, yellowOn,
         };
       }
     }, [color]);
-  }
+  };
+
+  const timerColor = timerGreen ? "#59ae8b" : "#f9172e";
+
+  const style = useMemo(() => `
+    @font-face{
+      font-family: 'digital-font';
+      src: url(${fontDigital});
+    }
+    image {
+      transition: opacity ${300/speed}ms ease;
+    }
+    .hidden {
+      opacity: 0;
+    }
+    text.timer {
+      text-shadow: 0 0 5px ${timerColor}, 0 0 10px ${timerColor};
+    }`,
+    [timerColor, speed, fontDigital]);
 
   return <>
-    <style>{`
-      @font-face{
-        font-family: 'digital-font';
-        src: url(${fontDigital});
-      }
-      image {
-        transition: opacity ${300/speed}ms ease;
-      }
-      .hidden {
-        opacity: 0;
-      }
-      text.timer {
-        text-shadow: 0 0 5px currentColor, 0 0 10px currentColor;
-      }
-    `}</style>
+    <style>{style}</style>
     <svg width={200} height='auto' viewBox="0 0 424 791">
       <image xlinkHref={imgBackground} width={424} height={791}/>
 
@@ -85,7 +89,7 @@ export const TrafficLight = memo(function TrafficLight({state: {redOn, yellowOn,
 
       {timerValue >= 0 && <>
         <rect x={300} y={676} width={108} height={84} fill="black" />
-        <text x={400} y={750} className="timer" fontFamily="digital-font" fontSize={100} fill={timerGreen ? "#59ae8b" : "#f9172e"} textAnchor="end">{timerValue}</text>
+        <text x={400} y={750} className="timer" fontFamily="digital-font" fontSize={100} fill={timerColor} textAnchor="end">{timerValue}</text>
       </>}
     </svg>
     <br/>
