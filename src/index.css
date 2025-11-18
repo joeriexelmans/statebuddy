@@ -132,3 +132,6 @@ label {
   user-select: none;
 }
 
+input[type=text].error {
+  background-color: var(--error-bg-color);
+}

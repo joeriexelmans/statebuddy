@@ -206,25 +206,36 @@ export const SideBar = memo(function SideBar({showExecutionTrace, showConnection
             propertyError = result[1];
           }
           const status = (violated === null) ? "pending" : (violated ? "property violated" : "property satisfied");
-          return <div style={{width:'100%'}} key={i} className="toolbar">
-            <Tooltip tooltip={status} align="left">
-              <div className={"status" + (violated === null ? "" : (violated ? " violated" : " satisfied"))}/>
+          return <div style={{display: 'flex'}} key={i} className="toolbar">
+            <div>
+              <Tooltip tooltip={status} align="left">
+                <div className={"status" + (violated === null ? "" : (violated ? " violated" : " satisfied"))}/>
+              </Tooltip>
+              <Tooltip tooltip="see in trace (below)" align="left">
+                <button
+                  className={activeProperty === i ? "active" : ""}
+                  onClick={() => setActiveProperty(i)}>
+                  <VisibilityIcon fontSize="small"/>
+                </button>
+              </Tooltip>
+            </div>
+            <Tooltip tooltip={propertyError || ""} align='left' fullWidth={true} error={true}>
+              <input
+                className={propertyError && "error" || ""}
+                type="text"
+                style={{flexGrow: 1}}
+                value={property}
+                onChange={e => setProperties(properties => properties.toSpliced(i, 1, e.target.value))} 
+                placeholder='write MTL property...'
+              />
             </Tooltip>
-            <Tooltip tooltip="see in trace (below)" align="left">
-              <button
-                className={activeProperty === i ? "active" : ""}
-                onClick={() => setActiveProperty(i)}>
-                <VisibilityIcon fontSize="small"/>
-              </button>
-            </Tooltip>
-            <input type="text" style={{width:'calc(100% - 90px)'}} value={property} onChange={e => setProperties(properties => properties.toSpliced(i, 1, e.target.value))} placeholder='write MTL property...'/>
             <DoubleClickButton
               tooltip="delete this property"
               onDoubleClick={() => setProperties(properties => properties.toSpliced(i, 1))}
               align="right">
               <DeleteOutlineIcon fontSize="small"/>
             </DoubleClickButton>
-            {propertyError && <div style={{color: 'var(--error-color)'}}>{propertyError}</div>}
+            {/* {propertyError && <div style={{color: 'var(--error-color)'}}>{propertyError}</div>} */}
           </div>;
         })}
         <div className="toolbar">

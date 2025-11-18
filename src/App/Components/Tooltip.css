@@ -3,6 +3,13 @@
   display: inline-block;
 }
 
+.tooltipOuter.fullWidth {
+  /* display: block; */
+  /* width: 100%; */
+  display: flex;
+  flex-grow: 1;
+}
+
 .tooltipInner {
   display: inline-block;
   visibility: hidden; /* hidden until hover */
@@ -25,9 +32,16 @@
 }
 
 .tooltipOuter:hover > .tooltipInner:not(:hover),
-.tooltipOuter:hover > .tooltipArrow:not(:hover) {
+.tooltipOuter:hover > .tooltipArrow:not(:hover)
+ {
   visibility: visible;
   transition: visibility 0s linear 0.3s;
+}
+
+.tooltipOuter:focus-within > .tooltipInner,
+.tooltipOuter:focus-within > .tooltipArrow {
+  visibility: visible !important;
+  transition: none !important;
 }
 
 .tooltipInner.left {
@@ -37,11 +51,8 @@
   right: 0;
 }
 
-.tooltipInner.above {
-  top: revert;
-  bottom: 100%;
-  margin-top: 0;
-  margin-bottom: 4px;
+.tooltipInner.error {
+  background-color: var(--error-color);
 }
 
 .tooltipArrow {
@@ -50,6 +61,7 @@
   visibility: hidden;
   z-index: 1;
 
+  top: 100%;
   margin-top: 1px;
   width: 8px;
   height: 4px;
@@ -58,7 +70,20 @@
   background-color: var(--tooltip-bg-color);
 }
 
+.tooltipInner.above {
+  top: revert;
+  bottom: 100%;
+  margin-top: 0;
+  margin-bottom: 4px;
+}
+
 .tooltipArrow.above {
   clip-path: polygon(50% 100%, 0% 0%, 100% 0%);
+  top: revert;
+  bottom: 100%;
   margin-top: -4px;
+}
+
+.tooltipArrow.error {
+  background-color: var(--error-color);
 }
