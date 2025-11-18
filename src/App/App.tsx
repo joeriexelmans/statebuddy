@@ -183,7 +183,7 @@ export function App() {
     currentBigStep && currentBigStep.state.plant || plant.execution.initial()[1],
   [currentBigStep, plant]);
 
-  const preparedTraces = simulator.trace && prepareTrace(plant, simulator.trace.trace);
+  const preparedTraces = useMemo(() => simulator.trace && prepareTrace(plant, simulator.trace.trace), [simulator.trace, plant]);
 
   return <div style={{
     height: '100%',
