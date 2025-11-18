@@ -53,13 +53,16 @@ export function Plot({traces, displayTime, nextWakeup, visiblePlots, setVisibleP
   for (const [name, trace] of Object.entries(traces)) {
     if (visiblePlots[name]) {
       const y = ((yDiff-margin)) + yDiff*(i);
-      let path = `M0,${y}`;
+      let path = "";
       let prevY;
       for (const [time, value] of trace) {
         const x = toSVGcoords(time);
         const y = (value ? margin : (yDiff-margin)) + yDiff*(i);
         if (prevY) {
           path += ` L${x},${prevY}`;
+        }
+        else {
+          path += `M${x},${y}`
         }
         path += ` L${x},${y}`;
         prevY = y;
