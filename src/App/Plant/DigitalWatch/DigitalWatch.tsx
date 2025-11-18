@@ -168,6 +168,7 @@ export const digitalWatchPlant = makeStatechartPlant({
     "displayingTime",
     "displayingAlarm",
     "displayingChrono",
+    "editing",
     "hideH",
     "hideM",
     "hideS",
