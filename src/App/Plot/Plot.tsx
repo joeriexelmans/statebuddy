@@ -26,10 +26,12 @@ export function Plot({traces, displayTime, ...rest}: {traces: {[name: string]: [
   }, [refSVG.current])
 
   if (width === null) {
-    return <details>
-      <summary>plot</summary>
-      <svg ref={refSVG} {...rest}></svg>
-    </details>;
+    return <div className="statusBar">
+      <details>
+        <summary>plot</summary>
+        <svg ref={refSVG} {...rest}></svg>
+      </details>
+    </div>;
   }
 
   const maxTime = displayTime;
@@ -101,12 +103,15 @@ export function Plot({traces, displayTime, ...rest}: {traces: {[name: string]: [
       <div>
         {(() => {
           let i=0;
-          return Object.entries(traces).map(([name]) => 
-            <label key={name} htmlFor={`checkbox-trace-${name}`}>
-              <input type="checkbox" id={`checkbox-trace-${name}`} checked={visible[name]} onChange={e => setVisible(visible => ({...visible, [name]: e.target.checked}))}/>
-              <span style={{color: visible[name] ? colors[(i++)%colors.length] : 'var(--text-color)'}}>{name}</span>
-            </label>
-        )})()}
+          return Object.entries(traces).map(([name]) => {
+            const color = visible[name]
+              ? colors[(i++)%colors.length]
+              : 'var(--text-color)';
+            return <label key={name} htmlFor={`checkbox-trace-${name}`}>
+              <input type="checkbox" id={`checkbox-trace-${name}`} checked={visible[name]} onChange={e => setVisible(visible => ({...visible, [name]: e.target.checked}))} style={{accentColor: color}}/>
+              <span style={{color}}>{name}</span>
+            </label>;
+       })})()}
       </div>
     </details>
   </div>;
