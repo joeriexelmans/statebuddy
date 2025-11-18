@@ -9,7 +9,7 @@ import { Dispatch, memo, Ref, SetStateAction, useCallback, useEffect, useRef, us
 import { Statechart } from '@/statecharts/abstract_syntax';
 import { ShowAST, ShowInputEvents, ShowInternalEvents, ShowOutputEvents } from './ShowAST';
 import { Plant } from '../Plant/Plant';
-import { checkProperty, prepareTrace, PropertyCheckResult } from './check_property';
+import { checkProperty, PreparedTraces, prepareTrace, PropertyCheckResult } from './check_property';
 import { Setters } from '../makePartialSetter';
 import { RTHistory } from './RTHistory';
 import { BigStepCause, TraceState } from '../hooks/useSimulator';
@@ -75,9 +75,10 @@ type SideBarProps = SideBarState & {
   onReplayTrace: (causes: BigStepCause[]) => void,
   setTime: Dispatch<SetStateAction<TimeMode>>,
   time: TimeMode,
+  preparedTraces: PreparedTraces | null,
 } & Setters<SideBarState>;
 
-export const SideBar = memo(function SideBar({showExecutionTrace, showConnections, plantName, showPlantTrace, showProperties, activeProperty, autoConnect, autoScroll, plantConns, properties, savedTraces, refRightSideBar, ast, plant, setSavedTraces, trace, setTrace, setProperties, setShowPlantTrace, setActiveProperty, setPlantConns, setPlantName, setAutoConnect, setShowProperties, setAutoScroll, time, plantState, onReplayTrace, onRaise, setTime, setShowConnections, setShowExecutionTrace, showPlant, setShowPlant, showOutputEvents, setShowOutputEvents, setShowInternalEvents, showInternalEvents, setShowInputEvents, setShowStateTree, showInputEvents, showStateTree}: SideBarProps) {
+export const SideBar = memo(function SideBar({showExecutionTrace, showConnections, plantName, showPlantTrace, showProperties, activeProperty, autoConnect, autoScroll, plantConns, properties, savedTraces, refRightSideBar, ast, plant, setSavedTraces, trace, setTrace, setProperties, setShowPlantTrace, setActiveProperty, setPlantConns, setPlantName, setAutoConnect, setShowProperties, setAutoScroll, time, plantState, onReplayTrace, onRaise, setTime, setShowConnections, setShowExecutionTrace, showPlant, setShowPlant, showOutputEvents, setShowOutputEvents, setShowInternalEvents, showInternalEvents, setShowInputEvents, setShowStateTree, showInputEvents, showStateTree, preparedTraces}: SideBarProps) {
 
   const [propertyResults, setPropertyResults] = useState<PropertyCheckResult[] | null>(null);
 
@@ -95,12 +96,11 @@ export const SideBar = memo(function SideBar({showExecutionTrace, showConnection
   // if some properties change, re-evaluate them:
   useEffect(() => {
     let timeout: NodeJS.Timeout;
-    if (trace) {
+    if (preparedTraces) {
       setPropertyResults(null);
       timeout = setTimeout(() => {
         Promise.all(properties.map((property, i) => {
-          const preparedTrace = prepareTrace(plant, trace.trace);
-          return checkProperty(property, preparedTrace);
+          return checkProperty(property, preparedTraces);
         }))
         .then(results => {
           setPropertyResults(results);
@@ -108,7 +108,7 @@ export const SideBar = memo(function SideBar({showExecutionTrace, showConnection
       })
     }
     return () => clearTimeout(timeout);
-  }, [properties, trace, plant]);
+  }, [preparedTraces, properties]);
 
   // whenever the ast, the plant or 'autoconnect' option changes, detect connections:
   useEffect(() => {

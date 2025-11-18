@@ -1,17 +1,26 @@
-import { usePersistentState } from "@/hooks/usePersistentState";
 import "./Plot.css";
-import { SVGAttributes, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { SVGAttributes, useLayoutEffect, useRef, useState } from "react";
+import { Setters } from "../makePartialSetter";
 
-export function Plot({traces, displayTime, ...rest}: {traces: {[name: string]: [number, boolean][]}, displayTime: number} & SVGAttributes<SVGElement>) {
+export type PlotState = {
+  visiblePlots: {[name: string]: boolean},
+}
+
+export const defaultPlotState = {
+  visiblePlots: {},
+}
+
+type PlotProperties = PlotState & Setters<PlotState> & SVGAttributes<SVGElement> & {
+  traces: {[name: string]: [number, boolean][]},
+  displayTime: number,
+  nextWakeup: number, // nextEventTime is the furthest we can confidently extend the signal plots into the future.
+}
+
+const numColors = 6; // corresponds to CSS variables --plot-color-N in index.css
+
+export function Plot({traces, displayTime, nextWakeup, visiblePlots, setVisiblePlots, ...rest}: PlotProperties) {
   const refSVG = useRef(null);
-  const [width, setWidth] = useState<number>(1000);
-
-  const [visible, setVisible] = usePersistentState<{[name: string]: boolean}>("visibleSignals", {});
-
-  const numVisible = Object.entries(visible).reduce((n, [name, visible]) => (visible && Object.hasOwn(traces, name)) ? n + 1 : n, 0);
-  const height = 20*numVisible;
-
-  traces = Object.fromEntries(Object.entries(traces).filter(([name]) => !["true", "false"].includes(name)))
+  const [width, setWidth] = useState<number>(window.innerWidth);
 
   useLayoutEffect(() => {
     if (refSVG.current) {
@@ -23,31 +32,31 @@ export function Plot({traces, displayTime, ...rest}: {traces: {[name: string]: [
       });
       observer.observe(refSVG.current);
     }    
-  }, [refSVG.current])
+  }, [refSVG.current]);
 
-  // if (width === null) {
-  //   return <div className="statusBar">
-  //     <details>
-  //       <summary>plot</summary>
-  //       <svg ref={refSVG} {...rest}></svg>
-  //     </details>
-  //   </div>;
-  // }
+  const numVisible = Object.entries(visiblePlots).reduce((n, [name, visible]) => (visible && Object.hasOwn(traces, name)) ? n + 1 : n, 0);
+  const height = 20*numVisible;
 
-  const maxTime = displayTime;
+  traces = Object.fromEntries(Object.entries(traces).filter(([name]) => !["true", "false"].includes(name)))
 
-  const margin = 2;
+  const maxTime = Math.max(displayTime, 1);
+  const margin = 2; // if 0, the lines would overlap
   const yDiff = height / (numVisible);
 
+  function toSVGcoords(simtime: number) {
+    return simtime / maxTime * width;
+  }
+
+  // todo: render incrementally?
   const paths: {[name: string]: string} = {};
   let i=0;
   for (const [name, trace] of Object.entries(traces)) {
-    if (visible[name]) {
+    if (visiblePlots[name]) {
       const y = ((yDiff-margin)) + yDiff*(i);
       let path = `M0,${y}`;
       let prevY;
       for (const [time, value] of trace) {
-        const x = time / maxTime * width;
+        const x = toSVGcoords(time);
         const y = (value ? margin : (yDiff-margin)) + yDiff*(i);
         if (prevY) {
           path += ` L${x},${prevY}`;
@@ -55,20 +64,12 @@ export function Plot({traces, displayTime, ...rest}: {traces: {[name: string]: [
         path += ` L${x},${y}`;
         prevY = y;
       }
-      path += ` L${width},${prevY}`;
+      // extend signal to furthest point in simulated time
+      path += ` L${toSVGcoords(nextWakeup)},${prevY}`;
       paths[name] = path;
       i++;
     }
   }
-
-  const colors = [
-    "var(--plot-color-0)",
-    "var(--plot-color-1)",
-    "var(--plot-color-2)",
-    "var(--plot-color-3)",
-    "var(--plot-color-4)",
-    "var(--plot-color-5)",
-  ];
 
   const markerEveryXMs = Math.max(250*2**Math.ceil(Math.log2(displayTime/1000/30/width*2000)), 250);
   const labelEveryXMarkers = 2;
@@ -78,41 +79,40 @@ export function Plot({traces, displayTime, ...rest}: {traces: {[name: string]: [
     marks.push(i);
   }
 
-  return <div className="statusBar">
-    <details>
-      <summary>plot</summary>
-      <svg style={{height: height+18}} ref={refSVG} viewBox={`0 0 ${width} ${height+18}`} {...rest}>
-        {marks.map((m,i) => {
-          const x = i*(markerEveryXMs)/maxTime*width;
-          return <>
-            <line x1={x} x2={x} y1={0} y2={height+2} stroke="var(--separator-color)"/>
-            {i%labelEveryXMarkers===0 &&
-              <text x={x} y={height+16} textAnchor="middle" style={{fill: 'var(--text-color)'}}>{m/1000}</text>
-            }
-            </>;
-        })}
-        {Object.entries(paths).map(([name], i) => {
-          if (visible[name]) {
-            return <path d={paths[name]} className="plotLine" style={{stroke: colors[i%colors.length]}} />;
+  return <>
+    <svg style={{height: height+18}} ref={refSVG} viewBox={`0 0 ${width} ${height+18}`} {...rest}>
+      {marks.map((m,i) => {
+        const x = i*(markerEveryXMs)/maxTime*width;
+        return <>
+          <line x1={x} x2={x} y1={0} y2={height+2} stroke="var(--separator-color)"/>
+          {i%labelEveryXMarkers===0 &&
+            <text x={x} y={height+16} textAnchor="middle" style={{fill: 'var(--text-color)'}}>{m/1000}</text>
           }
-          else {
-            return <></>;
-          }
-        })}
-      </svg>
-      <div>
-        {(() => {
-          let i=0;
-          return Object.entries(traces).map(([name]) => {
-            const color = visible[name]
-              ? colors[(i++)%colors.length]
-              : 'var(--text-color)';
-            return <label key={name} htmlFor={`checkbox-trace-${name}`}>
-              <input type="checkbox" id={`checkbox-trace-${name}`} checked={visible[name]} onChange={e => setVisible(visible => ({...visible, [name]: e.target.checked}))} style={{accentColor: color}}/>
-              <span style={{color}}>{name}</span>
-            </label>;
-       })})()}
-      </div>
-    </details>
-  </div>;
+          </>;
+      })}
+      {Object.entries(paths).map(([name], i) => {
+        if (visiblePlots[name]) {
+          const color = `var(--plot-color-${i%numColors})`;
+          return <path d={paths[name]} className="plotLine" style={{stroke: color}} />;
+        }
+        else {
+          return <></>;
+        }
+      })}
+    </svg>
+    <div>
+      {(() => {
+        let i=0;
+        return Object.entries(traces).map(([name]) => {
+          const color = visiblePlots[name]
+            ? `var(--plot-color-${i%numColors})`
+            : 'var(--text-color)';
+          i++;
+          return <label key={name} htmlFor={`checkbox-trace-${name}`}>
+            <input type="checkbox" id={`checkbox-trace-${name}`} checked={visiblePlots[name]} onChange={e => setVisiblePlots(visible => ({...visible, [name]: e.target.checked}))} style={{accentColor: color}}/>
+            <span style={{color}}>{name}</span>
+          </label>;
+      })})()}
+    </div>
+  </>;
 }

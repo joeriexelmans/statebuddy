@@ -1,7 +1,7 @@
 import "../index.css";
 import "./App.css";
 
-import { Dispatch, ReactElement, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ReactElement, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { connectionsEqual, detectConnections, reducedConcreteSyntaxEqual } from "@/statecharts/detect_connections";
 import { parseStatechart } from "../statecharts/parser";
@@ -19,11 +19,11 @@ import { initialEditorState } from "@/statecharts/concrete_syntax";
 import { ModalOverlay } from "./Overlays/ModalOverlay";
 import { FindReplace } from "./BottomPanel/FindReplace";
 import { useCustomMemo } from "@/hooks/useCustomMemo";
-import { usePersistentState } from "@/hooks/usePersistentState";
-import { Plot } from "./Plot/Plot";
+import { defaultPlotState, Plot, PlotState } from "./Plot/Plot";
 import { prepareTrace } from "./SideBar/check_property";
-import { getSimTime } from "@/statecharts/time";
 import { useDisplayTime } from "@/hooks/useDisplayTime";
+import { Greeter } from "./BottomPanel/Greeter";
+import { PersistentDetails } from "./Components/PersistentDetails";
 
 export type EditHistory = {
   current: VisualEditorState,
@@ -38,7 +38,8 @@ export type AppState = {
   showFindReplace: boolean,
   findText: string,
   replaceText: string,
-} & SideBarState;
+  showPlot: boolean,
+} & PlotState & SideBarState;
 
 const defaultAppState: AppState = {
   showKeys: true,
@@ -47,7 +48,9 @@ const defaultAppState: AppState = {
   showFindReplace: false,
   findText: "",
   replaceText: "",
+  showPlot: false,
   ...defaultSideBarState,
+  ...defaultPlotState,
 }
 
 export type LightMode = "light" | "auto" | "dark";
@@ -180,7 +183,6 @@ export function App() {
   [currentBigStep, plant]);
 
   const preparedTraces = simulator.trace && prepareTrace(plant, simulator.trace.trace);
-  const simtime = getSimTime(simulator.time, performance.now());
 
   return <div style={{
     height: '100%',
@@ -231,15 +233,21 @@ export function App() {
             maxWidth: 'min(400px, 50vw)',
           }}>
             <div className="stackVertical" style={{height:'100%'}}>
-              <SideBar {...{...appState, refRightSideBar, ast, plantState, ...simulator, ...setters}} />
+              <SideBar {...{...appState, refRightSideBar, ast, preparedTraces, plantState, ...simulator, ...setters}} />
             </div>
           </div>
         </div>
 
         {/* Bottom panel */}
         <div style={{flex: '0 0 content', borderTop: '1px solid var(--separator-color'}}>
-          {preparedTraces &&
-            <Plot width="100%" traces={preparedTraces} displayTime={displayTime} />}
+          <Greeter/>
+          <div className="statusBar">
+            <PersistentDetails state={appState.showPlot} setState={setters.setShowPlot}>
+              <summary>plot</summary>
+              {preparedTraces &&
+                <Plot width="100%" traces={preparedTraces} displayTime={displayTime} nextWakeup={simulator.nextWakeup} {...appState} {...setters} />}
+            </PersistentDetails>
+          </div>
           {syntaxErrors && <BottomPanel {...{errors: syntaxErrors, ...appState, setEditorState, ...setters}}/>}
         </div>
       </div>

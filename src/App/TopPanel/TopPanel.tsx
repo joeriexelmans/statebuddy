@@ -42,6 +42,7 @@ export type TopPanelProps = {
 
   displayTime: number,
   refreshDisplayTime: () => void,
+  nextWakeup: number,
 
   setTime: Dispatch<SetStateAction<TimeMode>>,
   onUndo: () => void,
@@ -50,16 +51,7 @@ export type TopPanelProps = {
   onInit: () => void,
   onClear: () => void,
   onBack: () => void,
-
-  // lightMode: LightMode,
-  // setLightMode: Dispatch<SetStateAction<LightMode>>,
-  // insertMode: InsertMode,
-  // setInsertMode: Dispatch<SetStateAction<InsertMode>>,
   setModal: Dispatch<SetStateAction<ReactElement|null>>,
-  // zoom: number,
-  // setZoom: Dispatch<SetStateAction<number>>,
-  // showKeys: boolean,
-  // setShowKeys: Dispatch<SetStateAction<boolean>>,
   editHistory: EditHistory,
   setEditorState: Dispatch<(oldState: VisualEditorState) => VisualEditorState>,
 } & AppState & Setters<AppState>
@@ -70,7 +62,7 @@ function toggle(booleanSetter: Dispatch<(state: boolean) => boolean>) {
   return () => booleanSetter(x => !x);
 }
 
-export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, onRedo, onRotate, onInit, onClear, onBack, insertMode, setInsertMode, setModal, zoom, setZoom, showKeys, setShowKeys, editHistory, showFindReplace, setShowFindReplace, displayTime, refreshDisplayTime}: TopPanelProps) {
+export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, onRedo, onRotate, onInit, onClear, onBack, insertMode, setInsertMode, setModal, zoom, setZoom, showKeys, setShowKeys, editHistory, showFindReplace, setShowFindReplace, displayTime, refreshDisplayTime, nextWakeup}: TopPanelProps) {
   const [timescale, setTimescale] = usePersistentState("timescale", 1);
   const config = trace && trace.trace[trace.idx];
   const formattedDisplayTime = useMemo(() => formatTime(displayTime), [displayTime]);
@@ -88,23 +80,19 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
     refreshDisplayTime();
   }, [setTime, timescale, refreshDisplayTime]);
 
-  // timestamp of next timed transition, in simulated time
-  const timers: Timers = config?.kind === "bigstep" && config.state.sc.environment.get("_timers") || [];
-  const nextTimedTransition: [number, TimerElapseEvent] | undefined = timers[0];
-
   const onSkip = useCallback(() => {
     const now = Math.round(performance.now());
-    if (nextTimedTransition) {
+    if (nextWakeup !== Infinity) {
       setTime(time => {
         if (time.kind === "paused") {
-          return {kind: "paused", simtime: nextTimedTransition[0]};
+          return {kind: "paused", simtime: nextWakeup};
         }
         else {
-          return {kind: "realtime", scale: time.scale, since: {simtime: nextTimedTransition[0], wallclktime: now}};
+          return {kind: "realtime", scale: time.scale, since: {simtime: nextWakeup, wallclktime: now}};
         }
       });
     }
-  }, [nextTimedTransition, setTime]);
+  }, [nextWakeup, setTime]);
 
   const togglePaused = useCallback(() => config && onChangePaused(time.kind !== "paused", Math.round(performance.now())), [config, time]);
 
@@ -120,6 +108,9 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
   ]);
 
   const KeyInfo = showKeys ? KeyInfoVisible : KeyInfoHidden;
+
+  const progress = (displayTime-lastSimTime)/(nextWakeup-lastSimTime);
+  const catchingUp = progress > 1;
 
   return <div className="toolbar">
 
@@ -220,9 +211,15 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
             marginLeft: 20,
             height: 4,
             borderWidth: 0,
-            backgroundColor: 'var(--accent-border-color)',
-            width: (displayTime-lastSimTime)/((nextTimedTransition?.[0]||Infinity)-lastSimTime)*55,
-            }}/>
+            backgroundColor: catchingUp
+              ? 'var(--error-color)'
+              : 'var(--accent-border-color)',
+            width: Math.min(progress, 1)*56,
+            }}
+            title={catchingUp
+              ? "running behind schedule! (maybe slow down a bit so i can catch up?)"
+              : "are we there yet?"}
+            />
           <input title="the current simulated time" id="time" disabled={!config} value={formattedDisplayTime} readOnly={true} className="readonlyTextBox" />
 
         </div>
@@ -230,9 +227,9 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
         &emsp;
         <div className="toolbarGroup">
           <label htmlFor="next-timeout"><AccessAlarmIcon fontSize="small"/></label>&nbsp;
-          <input title="next point in simulated time where a timed transition may fire" id="next-timeout" disabled={!config} value={nextTimedTransition ? formatTime(nextTimedTransition[0]) : '+inf'} readOnly={true} className="readonlyTextBox"/>
+          <input title="next point in simulated time where a timed transition may fire" id="next-timeout" disabled={!config} value={formatTime(nextWakeup)} readOnly={true} className="readonlyTextBox"/>
           <KeyInfo keyInfo={<kbd>Tab</kbd>}>
-            <button title="advance time just enough for the next timer to elapse" disabled={nextTimedTransition===undefined} onClick={onSkip}>
+            <button title="advance time just enough for the next timer to elapse" disabled={nextWakeup !== Infinity} onClick={onSkip}>
               <SkipNextIcon fontSize="small"/>
             </button>
           </KeyInfo>

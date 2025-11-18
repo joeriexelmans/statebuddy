@@ -21,7 +21,7 @@
 
 .greeter {
   /* border-top: 1px var(--separator-color) solid; */
-  background-color: var(--background-color);
+  /* background-color: var(--background-color); */
 }
 
 .bottom {

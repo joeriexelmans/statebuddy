@@ -1,6 +1,6 @@
 import { Statechart } from "@/statecharts/abstract_syntax";
 import { RuntimeError } from "@/statecharts/interpreter";
-import { BigStep, RaisedEvent } from "@/statecharts/runtime_types";
+import { BigStep, RaisedEvent, TimerElapseEvent, Timers } from "@/statecharts/runtime_types";
 import { Conns, coupledExecution, statechartExecution } from "@/statecharts/timed_reactive";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Plant } from "../Plant/Plant";
@@ -224,5 +224,10 @@ export function useSimulator(ast: Statechart|null, plant: Plant<any, UniversalPl
     }
   }, [setTrace, setTime, cE]);
 
-  return {trace, setTrace, plant, onInit, onClear, onBack, onRaise, onReplayTrace, time, setTime};
+  // timestamp of next timed transition, in simulated time
+  const timers: Timers = currentTraceItem?.kind === "bigstep" && currentTraceItem.state.sc.environment.get("_timers") || [];
+  const nextTimedTransition = timers[0];
+  const nextWakeup = nextTimedTransition?.[0] || Infinity;
+
+  return {trace, setTrace, plant, onInit, onClear, onBack, onRaise, onReplayTrace, time, setTime, nextWakeup};
 }

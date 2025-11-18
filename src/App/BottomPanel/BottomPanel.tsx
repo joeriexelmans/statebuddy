@@ -12,27 +12,8 @@ import { Setters } from "../makePartialSetter";
 import gitRev from "@/git-rev.txt";
 
 export function BottomPanel(props: {errors: TraceableError[], setEditorState: Dispatch<(state: VisualEditorState) => VisualEditorState>} & AppState & Setters<AppState>) {
-  const [greeting, setGreeting] = useState(
-    <div className="greeter" style={{textAlign:'center'}} onClick={() => setGreeting(<></>)}>
-      <span style={{fontSize: 18, fontStyle: 'italic'}}>
-        Welcome to
-        <Logo width={250} height="auto" style={{verticalAlign: 'middle'}}/>
-      </span>
-    </div>);
-
-  useEffect(() => {
-    setTimeout(() => {
-      setGreeting(<></>);
-    }, 2000);
-  }, []);
 
   return <div className="bottom">
-    {greeting}
-    {/* {props.showFindReplace &&
-      <div>
-        <FindReplace setCS={props.setEditorState} hide={() => props.setShowFindReplace(false)}/>
-      </div>
-    } */}
     <div className={"stackHorizontal statusBar" + (props.errors.length ? " error" : "")}>
       <div style={{flexGrow:1}}>
       <PersistentDetailsLocalStorage initiallyOpen={false} localStorageKey="errorsExpanded">

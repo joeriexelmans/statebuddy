@@ -1,4 +1,7 @@
 export function formatTime(timeMs: number) {
+  if (timeMs === Infinity) {
+    return '+inf';
+  }
   const leadingZeros = "00" + Math.floor(timeMs) % 1000;
   const formatted = `${Math.floor(timeMs / 1000)}.${(leadingZeros).substring(leadingZeros.length-3)}`;
   return formatted;
