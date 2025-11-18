@@ -6,21 +6,23 @@ import { TimeMode, timeTravel } from "../../statecharts/time";
 import { Environment } from "@/statecharts/environment";
 import { BigStepCause, TraceItem, TraceState } from "../hooks/useSimulator";
 
+type PropertyTrace = [number, boolean][];
+
 type RTHistoryProps = {
   trace: TraceState|null,
   setTrace: Dispatch<SetStateAction<TraceState|null>>;
   ast: Statechart,
   setTime: Dispatch<SetStateAction<TimeMode>>,
   showPlantTrace: boolean,
-  propertyTrace: {timestamp: number, satisfied: boolean}[] | null,
+  propertyTrace: PropertyTrace | null,
 }
 
 type PropertyStatus = "unknown" | "satisfied" | "violated";
 
-function lookupPropertyStatus(simtime: number, propertyTrace: {timestamp: number, satisfied: boolean}[], startAt=0): [number, boolean | undefined] {
+function lookupPropertyStatus(simtime: number, propertyTrace: PropertyTrace, startAt=0): [number, boolean | undefined] {
   let i = startAt;
   while (i >= 0 && i < propertyTrace.length) {
-    const {timestamp} = propertyTrace[i];
+    const [timestamp] = propertyTrace[i];
     if (timestamp === simtime) {
       // exact match
       break;
@@ -34,7 +36,7 @@ function lookupPropertyStatus(simtime: number, propertyTrace: {timestamp: number
     i++;
   }
   i = Math.min(i, propertyTrace.length-1);
-  return [i, propertyTrace[i] && propertyTrace[i].satisfied];
+  return [i, propertyTrace[i] && propertyTrace[i][1]];
 }
 
 export function RTHistory({trace, setTrace, ast, setTime, showPlantTrace, propertyTrace}: RTHistoryProps) {

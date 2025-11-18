@@ -9,7 +9,7 @@ import { Dispatch, memo, Ref, SetStateAction, useCallback, useEffect, useRef, us
 import { Statechart } from '@/statecharts/abstract_syntax';
 import { ShowAST, ShowInputEvents, ShowInternalEvents, ShowOutputEvents } from './ShowAST';
 import { Plant } from '../Plant/Plant';
-import { checkProperty, PreparedTraces, prepareTrace, PropertyCheckResult } from './check_property';
+import { checkProperty, PreparedTraces, PropertyCheckResult } from './check_property';
 import { Setters } from '../makePartialSetter';
 import { RTHistory } from './RTHistory';
 import { BigStepCause, TraceState } from '../hooks/useSimulator';
@@ -18,6 +18,7 @@ import { TimeMode } from '@/statecharts/time';
 import { PersistentDetails } from '../Components/PersistentDetails';
 import "./SideBar.css";
 import { objectsEqual } from '@/util/util';
+import { RaisedEvent } from '@/statecharts/runtime_types';
 
 type SavedTraces = [string, BigStepCause[]][];
 
@@ -117,8 +118,8 @@ export const SideBar = memo(function SideBar({showExecutionTrace, showConnection
     }
   }, [ast, plant, autoConnect]);
 
-  const raiseDebugEvent = useCallback((e,p) => onRaise("debug."+e,p), [onRaise]);
-  const raiseUIEvent = useCallback(e => onRaise("plant.ui."+e.name, e.param), [onRaise]);
+  const raiseDebugEvent = useCallback((e: string, p: any) => onRaise("debug."+e,p), [onRaise]);
+  const raiseUIEvent = useCallback((e: RaisedEvent) => onRaise("plant.ui."+e.name, e.param), [onRaise]);
 
   return <>
     <div
@@ -189,7 +190,7 @@ export const SideBar = memo(function SideBar({showExecutionTrace, showConnection
           const result = propertyResults && propertyResults[i];
           let violated = null, propertyError = null;
           if (result) {
-            violated = result[0] && result[0].length > 0 && !result[0][0].satisfied;
+            violated = result[0] && result[0].length > 0 && !result[0][0][1];
             propertyError = result[1];
           }
           return <div style={{width:'100%'}} key={i} className="toolbar">

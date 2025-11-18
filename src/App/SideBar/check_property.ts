@@ -74,8 +74,7 @@ export async function checkProperty(property: string, preparedTraces: PreparedTr
       return [null, json];
     }
     else {
-      // @ts-ignore
-      return [json.map(([timestamp, satisfied]) => ({timestamp, satisfied})), null];
+      return [json, null];
     }
   }
   catch (e) {
