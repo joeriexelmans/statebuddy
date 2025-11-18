@@ -106,6 +106,8 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
     }
   }, [nextTimedTransition, setTime]);
 
+  const togglePaused = useCallback(() => config && onChangePaused(time.kind !== "paused", Math.round(performance.now())), [config, time]);
+
   useShortcuts([
     {keys: ["`"], action: toggle(setShowKeys)},
     {keys: ["Ctrl", "Shift", "F"], action: toggle(setShowFindReplace)},
@@ -114,7 +116,7 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
     {keys: ["Tab"], action: config && onSkip || onInit},
     {keys: ["Backspace"], action: onBack},
     {keys: ["Shift", "Tab"], action: onBack},
-    {keys: [" "], action: () => config && onChangePaused(time.kind !== "paused", Math.round(performance.now()))},
+    {keys: [" "], action: togglePaused},
   ]);
 
   const KeyInfo = showKeys ? KeyInfoVisible : KeyInfoHidden;
@@ -182,8 +184,22 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
         &emsp;
         {/* pause / real time */}
         <KeyInfo keyInfo={<><kbd>Space</kbd> toggles</>}>
-          <button title="pause the simulation" disabled={!config || time.kind==="paused"} className={(config && time.kind==="paused") ? "active":""} onClick={() => onChangePaused(true, Math.round(performance.now()))}><PauseIcon fontSize="small"/></button>
-          <button title="run the simulation in real time" disabled={!config || time.kind==="realtime"} className={(config && time.kind==="realtime") ? "active":""} onClick={() => onChangePaused(false, Math.round(performance.now()))}><PlayArrowIcon fontSize="small"/></button>
+          <TwoStateButton
+            title="pause the simulation"
+            active={config !== null && time.kind==="paused"}
+            disabled={config === null}
+            onClick={togglePaused}
+          >
+            <PauseIcon fontSize="small"/>
+          </TwoStateButton>
+          <TwoStateButton
+            title="run simulation in real time"
+            active={config !== null && time.kind==="realtime"}
+            disabled={config === null}
+            onClick={togglePaused}
+          >
+            <PlayArrowIcon fontSize="small"/>
+          </TwoStateButton>
         </KeyInfo>
         &emsp;
       </div>

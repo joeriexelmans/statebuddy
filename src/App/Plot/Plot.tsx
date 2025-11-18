@@ -4,7 +4,7 @@ import { SVGAttributes, useEffect, useLayoutEffect, useRef, useState } from "rea
 
 export function Plot({traces, displayTime, ...rest}: {traces: {[name: string]: [number, boolean][]}, displayTime: number} & SVGAttributes<SVGElement>) {
   const refSVG = useRef(null);
-  const [width, setWidth] = useState<null|number>(null);
+  const [width, setWidth] = useState<number>(1000);
 
   const [visible, setVisible] = usePersistentState<{[name: string]: boolean}>("visibleSignals", {});
 
@@ -25,14 +25,14 @@ export function Plot({traces, displayTime, ...rest}: {traces: {[name: string]: [
     }    
   }, [refSVG.current])
 
-  if (width === null) {
-    return <div className="statusBar">
-      <details>
-        <summary>plot</summary>
-        <svg ref={refSVG} {...rest}></svg>
-      </details>
-    </div>;
-  }
+  // if (width === null) {
+  //   return <div className="statusBar">
+  //     <details>
+  //       <summary>plot</summary>
+  //       <svg ref={refSVG} {...rest}></svg>
+  //     </details>
+  //   </div>;
+  // }
 
   const maxTime = displayTime;
 
