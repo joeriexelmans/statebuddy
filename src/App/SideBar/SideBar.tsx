@@ -4,6 +4,7 @@ import CachedOutlinedIcon from '@mui/icons-material/CachedOutlined';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import { Conns } from '@/statecharts/timed_reactive';
 import { Dispatch, memo, Ref, SetStateAction, useCallback, useEffect, useRef, useState } from 'react';
 import { Statechart } from '@/statecharts/abstract_syntax';
@@ -19,6 +20,8 @@ import { PersistentDetails } from '../Components/PersistentDetails';
 import "./SideBar.css";
 import { objectsEqual } from '@/util/util';
 import { RaisedEvent } from '@/statecharts/runtime_types';
+import { DoubleClickButton } from '../Components/DoubleClickButton';
+import { Tooltip } from '../Components/Tooltip';
 
 type SavedTraces = [string, BigStepCause[]][];
 
@@ -133,6 +136,7 @@ export const SideBar = memo(function SideBar({showExecutionTrace, showConnection
           {ast && <ShowAST {...{...ast, trace, highlightActive: new Set()}}/>}
         </ul>
       </PersistentDetails>
+
       {/* Input events */}
       <PersistentDetails state={showInputEvents} setState={setShowInputEvents}>
         <summary>input events</summary>
@@ -142,16 +146,19 @@ export const SideBar = memo(function SideBar({showExecutionTrace, showConnection
           disabled={trace===null || trace.trace[trace.idx].kind === "error"}
         />}
       </PersistentDetails>
+
       {/* Internal events */}
       <PersistentDetails state={showInternalEvents} setState={setShowInternalEvents}>
         <summary>internal events</summary>
         {ast && <ShowInternalEvents internalEvents={ast.internalEvents}/>}
       </PersistentDetails>
+
       {/* Output events */}
       <PersistentDetails state={showOutputEvents} setState={setShowOutputEvents}>
         <summary>output events</summary>
         {ast && <ShowOutputEvents outputEvents={ast.outputEvents}/>}
       </PersistentDetails>
+
       {/* Plant */}
       <PersistentDetails state={showPlant} setState={setShowPlant}>
         <summary>plant</summary>
@@ -169,15 +176,20 @@ export const SideBar = memo(function SideBar({showExecutionTrace, showConnection
           raiseUIEvent={raiseUIEvent}
           />}
       </PersistentDetails>
+
       {/* Connections */}
       <PersistentDetails state={showConnections} setState={setShowConnections}>
         <summary>connections</summary>
-        <button title="auto-connect (name-based)" className={autoConnect?"active":""}
-          onClick={() => setAutoConnect(c => !c)}>
-          <AutoAwesomeIcon fontSize="small"/>
-        </button>
+        <Tooltip tooltip="auto-connect (name-based)" align="left">
+          <button
+            className={autoConnect?"active":""}
+            onClick={() => setAutoConnect(c => !c)}>
+            <AutoAwesomeIcon fontSize="small"/>
+          </button>
+        </Tooltip>
         {ast && ConnEditor(ast, plant, plantConns, setPlantConns)}
       </PersistentDetails>
+
       {/* Properties */}
       <details open={showProperties} onToggle={e => setShowProperties(e.newState === "open")}>
         <summary>properties</summary>
@@ -193,22 +205,36 @@ export const SideBar = memo(function SideBar({showExecutionTrace, showConnection
             violated = result[0] && result[0].length > 0 && !result[0][0][1];
             propertyError = result[1];
           }
+          const status = (violated === null) ? "pending" : (violated ? "property violated" : "property satisfied");
           return <div style={{width:'100%'}} key={i} className="toolbar">
-            <div className={"status" + (violated === null ? "" : (violated ? " violated" : " satisfied"))}></div>
-            <button title="see in trace (below)" className={activeProperty === i ? "active" : ""} onClick={() => setActiveProperty(i)}>
-              <VisibilityIcon fontSize="small"/>
-            </button>
+            <Tooltip tooltip={status} align="left">
+              <div className={"status" + (violated === null ? "" : (violated ? " violated" : " satisfied"))}/>
+            </Tooltip>
+            <Tooltip tooltip="see in trace (below)" align="left">
+              <button
+                className={activeProperty === i ? "active" : ""}
+                onClick={() => setActiveProperty(i)}>
+                <VisibilityIcon fontSize="small"/>
+              </button>
+            </Tooltip>
             <input type="text" style={{width:'calc(100% - 90px)'}} value={property} onChange={e => setProperties(properties => properties.toSpliced(i, 1, e.target.value))} placeholder='write MTL property...'/>
-            <button title="delete this property" onClick={() => setProperties(properties => properties.toSpliced(i, 1))}>
+            <DoubleClickButton
+              tooltip="delete this property"
+              onDoubleClick={() => setProperties(properties => properties.toSpliced(i, 1))}
+              align="right">
               <DeleteOutlineIcon fontSize="small"/>
-            </button>
+            </DoubleClickButton>
             {propertyError && <div style={{color: 'var(--error-color)'}}>{propertyError}</div>}
           </div>;
         })}
         <div className="toolbar">
-          <button title="add property" onClick={() => setProperties(properties => [...properties, ""])}>
+          <button onClick={() => setProperties(properties => [...properties, ""])}>
             <AddIcon fontSize="small"/> add property
           </button>
+
+          <Tooltip tooltip='see MTL examples' align='left'>
+            <button onClick={() => window.open("https://github.com/mvcisback/py-metric-temporal-logic/blob/ceb2567ef90f3bd5d7a8d607806a9d2e7021639e/README.md#string-based-api", "_blank")?.focus()}><HelpOutlineIcon fontSize='small'/> help</button>
+          </Tooltip>
         </div>
       </details>
       {/* Traces */}
@@ -216,27 +242,46 @@ export const SideBar = memo(function SideBar({showExecutionTrace, showConnection
         <div>
           {savedTraces.map((savedTrace, i) =>
             <div key={i} className="toolbar">
-              <button title="replay trace (may give a different result if you changed your model since recording the trace because only input and timer events are recorded)" onClick={() => onReplayTrace(savedTrace[1])}>
+              <Tooltip tooltip="replay trace" align="left">
+              <button
+                onClick={() => onReplayTrace(savedTrace[1])}>
                 <CachedOutlinedIcon fontSize="small"/>
               </button>
+              </Tooltip>
               &nbsp;
               <span style={{display:'inline-block', width: 26, fontSize: 9}}>{(Math.floor(savedTrace[1].at(-1)!.simtime/1000))}s</span>
               <span style={{display:'inline-block', width: 22, fontSize: 9}}>({savedTrace[1].length})</span>
               &nbsp;
-              <input title="name of the trace (only for humans - names don't have to be unique or anything)" type="text" value={savedTrace[0]} style={{width: 'calc(100% - 124px)'}} onChange={e => setSavedTraces(savedTraces => savedTraces.toSpliced(i, 1, [e.target.value, savedTraces[i][1]]))}/>
-              <button title="forget trace" onClick={() => setSavedTraces(savedTraces => savedTraces.toSpliced(i, 1))}>
-                <DeleteOutlineIcon fontSize="small"/>
-              </button>
+              <input
+                placeholder="name of recorded trace"
+                type="text"
+                value={savedTrace[0]}
+                style={{width: 'calc(100% - 124px)'}}
+                onChange={e => setSavedTraces(savedTraces => savedTraces.toSpliced(i, 1, [e.target.value, savedTraces[i][1]]))}/>
+              <DoubleClickButton
+                tooltip="forget trace"
+                onDoubleClick={() => setSavedTraces(savedTraces => savedTraces.toSpliced(i, 1))}
+                align="right">
+                  <DeleteOutlineIcon fontSize="small"/>
+              </DoubleClickButton>
             </div>
           )}
         </div>
         <div className="toolbar">
-          <input id="checkbox-show-plant-items" type="checkbox" checked={showPlantTrace} onChange={e => setShowPlantTrace(e.target.checked)}/>
-          <label title="plant steps are steps where only the state of the plant changed" htmlFor="checkbox-show-plant-items">show plant steps</label>
+          <Tooltip tooltip="plant steps are steps where only the state of the plant changed" align="left">
+          <input id="checkbox-show-plant-items" type="checkbox"
+            checked={showPlantTrace}
+            onChange={e => setShowPlantTrace(e.target.checked)}/>
+          <label htmlFor="checkbox-show-plant-items">show plant steps</label>
+          </Tooltip>
+          <Tooltip tooltip="scroll down upon new events" align="left">
           <input id="checkbox-autoscroll" type="checkbox" checked={autoScroll} onChange={e => setAutoScroll(e.target.checked)}/>
-          <label title="automatically scroll down event trace when new events occur" htmlFor="checkbox-autoscroll">auto-scroll</label>
+          <label htmlFor="checkbox-autoscroll">auto-scroll</label>
+          </Tooltip>
           &emsp;
-          <button title="save current trace" disabled={trace === null} onClick={() => onSaveTrace()}>
+          <button
+            disabled={trace === null}
+            onClick={() => onSaveTrace()}>
             <SaveOutlinedIcon fontSize="small"/> save trace
           </button>
         </div>

@@ -4,6 +4,11 @@ import { setRealtime, TimeMode } from "@/statecharts/time";
 
 import SpeedIcon from '@mui/icons-material/Speed';
 import { useShortcuts } from "@/hooks/useShortcuts";
+import { Tooltip } from "../Components/Tooltip";
+
+import DirectionsWalkIcon from '@mui/icons-material/DirectionsWalk';
+import DirectionsRunIcon from '@mui/icons-material/DirectionsRun';
+import AssistWalkerIcon from '@mui/icons-material/AssistWalker';
 
 export const SpeedControl = memo(function SpeedControl({showKeys, timescale, setTimescale, setTime}: {showKeys: boolean, timescale: number, setTimescale: Dispatch<SetStateAction<number>>, setTime: Dispatch<SetStateAction<TimeMode>>}) {
 
@@ -39,13 +44,36 @@ export const SpeedControl = memo(function SpeedControl({showKeys, timescale, set
 
   const KeyInfo = showKeys ? KeyInfoVisible : KeyInfoHidden;
   return <>
-    <label htmlFor="number-timescale"><SpeedIcon fontSize="small"/></label>&nbsp;
-    <KeyInfo keyInfo={<kbd>S</kbd>}>
-      <button title="slower" onClick={onSlower}>÷2</button>
-    </KeyInfo>
-    <input title="controls how fast the simulation should run in real time mode - larger than 1 means: faster than wall-clock time" id="number-timescale" value={timescale.toFixed(3)} style={{width:40}} readOnly onChange={e => onTimeScaleChange(e.target.value, Math.round(performance.now()))}/>
-    <KeyInfo keyInfo={<kbd>F</kbd>}>
-      <button title="faster" onClick={onFaster}>×2</button>
-    </KeyInfo>
+    {/* <label htmlFor="number-timescale"> */}
+      {/* <SpeedIcon fontSize="small"/> */}
+      <KeyInfo keyInfo={<kbd>S</kbd>}>
+        <Tooltip tooltip="real time: slow down" align="left">
+          <button onClick={onSlower}>
+            {/* ÷2 */}
+            <AssistWalkerIcon fontSize="small"/>
+            {/* <DirectionsWalkIcon fontSize="small"/> */}
+            </button>
+        </Tooltip>
+      </KeyInfo>
+      <Tooltip tooltip={`current time scale
+(e.g., a value of '2' means:
+twice as fast as wall clock time)`} align="left">
+        
+        <input id="number-timescale"
+          value={timescale.toFixed(3)}
+          style={{width:40}}
+          readOnly
+          // onChange={e => onTimeScaleChange(e.target.value, Math.round(performance.now()))}
+        />
+      </Tooltip>
+      <KeyInfo keyInfo={<kbd>F</kbd>}>
+        <Tooltip tooltip="real time: speed up" align="left">
+          <button onClick={onFaster}>
+            {/* ×2 */}
+            <DirectionsRunIcon fontSize="small"/>
+          </button>
+        </Tooltip>
+      </KeyInfo>
+    {/* </label>&nbsp; */}
   </>
 });

@@ -35,6 +35,7 @@ import { VisualEditorState } from "../VisualEditor/VisualEditor";
 import { Setters } from "../makePartialSetter";
 import { TwoStateButton } from "../Components/TwoStateButton";
 import { useShortcuts } from "@/hooks/useShortcuts";
+import { Tooltip } from "../Components/Tooltip";
 
 export type TopPanelProps = {
   trace: TraceState | null,
@@ -113,13 +114,18 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
   const catchingUp = progress > 1;
 
   return <div className="toolbar">
-
     {/* shortcuts / about */}
     <div className="toolbarGroup">
       <KeyInfo keyInfo={ShortCutShowKeys}>
-        <button title="show/hide keyboard shortcuts" className={showKeys?"active":""} onClick={useCallback(() => setShowKeys(s => !s), [setShowKeys])}><KeyboardIcon fontSize="small"/></button>
+        <Tooltip tooltip="show/hide keyboard shortcuts" align="left">
+        <button className={showKeys?"active":""} onClick={useCallback(() => setShowKeys(s => !s), [setShowKeys])}><KeyboardIcon fontSize="small"/></button>
+        </Tooltip>
       </KeyInfo>
-      <button title="about StateBuddy" onClick={() => setModal(<About setModal={setModal}/>)}><InfoOutlineIcon fontSize="small"/></button>
+      <Tooltip tooltip="about StateBuddy" align="left">
+        <button onClick={() => setModal(<About setModal={setModal}/>)}>
+          <InfoOutlineIcon fontSize="small"/>
+        </button>
+      </Tooltip>
       &emsp;
     </div>
 
@@ -150,13 +156,14 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
     {/* find, replace */}
     <div className="toolbarGroup">
       <KeyInfo keyInfo={<><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd></>}>
-        <TwoStateButton
-          title="show find & replace"
-          active={showFindReplace}
-          onClick={() => setShowFindReplace(x => !x)}
-        >
-          <FindInPageOutlinedIcon fontSize="small"/>
-        </TwoStateButton>
+        <Tooltip tooltip="find & replace ..." align="right">
+          <TwoStateButton
+            active={showFindReplace}
+            onClick={() => setShowFindReplace(x => !x)}
+          >
+            <FindInPageOutlinedIcon fontSize="small"/>
+          </TwoStateButton>
+        </Tooltip>
       </KeyInfo>
       &emsp;
     </div>
@@ -167,30 +174,40 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
       <div className="toolbarGroup">
         {/* init / clear */}
         <KeyInfo keyInfo={<kbd>I</kbd>}>
-          <button title="(re)initialize simulation" onClick={onInit} ><PlayArrowIcon fontSize="small"/><CachedIcon fontSize="small"/></button>
+          <Tooltip tooltip="(re)initialize simulation" align="left">
+            <button onClick={onInit} ><PlayArrowIcon fontSize="small"/>
+              <CachedIcon fontSize="small"/>
+            </button>
+          </Tooltip>
         </KeyInfo>
         <KeyInfo keyInfo={<kbd>C</kbd>}>
-          <button title="clear the simulation" onClick={onClear} disabled={!config}><StopIcon fontSize="small"/></button>
+          <Tooltip tooltip="clear the simulation" align="left">
+            <button onClick={onClear} disabled={!config}>
+              <StopIcon fontSize="small"/>
+            </button>
+          </Tooltip>
         </KeyInfo>
         &emsp;
         {/* pause / real time */}
         <KeyInfo keyInfo={<><kbd>Space</kbd> toggles</>}>
-          <TwoStateButton
-            title="pause the simulation"
-            active={config !== null && time.kind==="paused"}
-            disabled={config === null}
-            onClick={togglePaused}
-          >
-            <PauseIcon fontSize="small"/>
-          </TwoStateButton>
-          <TwoStateButton
-            title="run simulation in real time"
-            active={config !== null && time.kind==="realtime"}
-            disabled={config === null}
-            onClick={togglePaused}
-          >
-            <PlayArrowIcon fontSize="small"/>
-          </TwoStateButton>
+          <Tooltip tooltip="pause simulation" align="left">
+            <TwoStateButton
+              active={config !== null && time.kind==="paused"}
+              disabled={config === null}
+              onClick={togglePaused}
+            >
+              <PauseIcon fontSize="small"/>
+            </TwoStateButton>
+          </Tooltip>
+          <Tooltip tooltip="run simulation in real time" align="left">
+            <TwoStateButton
+              active={config !== null && time.kind==="realtime"}
+              disabled={config === null}
+              onClick={togglePaused}
+            >
+              <PlayArrowIcon fontSize="small"/>
+            </TwoStateButton>
+          </Tooltip>
         </KeyInfo>
         &emsp;
       </div>
@@ -204,34 +221,52 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
       {/* time, next */}
       <div className="toolbarGroup">
         <div className="toolbarGroup">
-          <label htmlFor="time"><AccessTimeIcon fontSize="small"/></label>&nbsp;
-          <div style={{
-            position: 'absolute',
-            marginTop: -4,
-            marginLeft: 20,
-            height: 4,
-            borderWidth: 0,
-            backgroundColor: catchingUp
-              ? 'var(--firing-transition-color)'
-              : 'var(--accent-border-color)',
-            width: Math.min(progress, 1)*56,
-            }}
-            title={catchingUp
-              ? "running behind schedule! (maybe slow down a bit so i can catch up?)"
-              : "are we there yet?"}
-            />
-          <input title="the current simulated time" id="time" disabled={!config} value={formattedDisplayTime} readOnly={true} className="readonlyTextBox" />
+          <Tooltip tooltip="current simulated time" align="right">
+            <label htmlFor="time"><AccessTimeIcon fontSize="small"/></label>&nbsp;
+            <div style={{
+              position: 'absolute',
+              marginTop: -4,
+              marginLeft: 20,
+              height: 4,
+              borderWidth: 0,
+              backgroundColor: catchingUp
+                ? 'var(--firing-transition-color)'
+                : 'var(--accent-border-color)',
+              width: Math.min(progress, 1)*56,
+              }}
+              title={catchingUp
+                ? "running behind schedule! (maybe slow down a bit so i can catch up?)"
+                : "are we there yet?"}
+              />
+            <input id="time"
+              disabled={!config}
+              value={formattedDisplayTime}
+              readOnly={true}
+              className="readonlyTextBox" />
+          </Tooltip>
 
         </div>
 
         &emsp;
         <div className="toolbarGroup">
-          <label htmlFor="next-timeout"><AccessAlarmIcon fontSize="small"/></label>&nbsp;
-          <input title="next point in simulated time where a timed transition may fire" id="next-timeout" disabled={!config} value={formatTime(nextWakeup)} readOnly={true} className="readonlyTextBox"/>
+          <Tooltip tooltip="next timed transition occurs at ..." align="right">
+            <label htmlFor="next-timeout"><AccessAlarmIcon fontSize="small"/></label>&nbsp;
+            <input
+              id="next-timeout"
+              disabled={!config}
+              value={formatTime(nextWakeup)}
+              readOnly={true}
+              className="readonlyTextBox"
+            />
+          </Tooltip>
           <KeyInfo keyInfo={<kbd>Tab</kbd>}>
-            <button title="advance time just enough for the next timer to elapse" disabled={nextWakeup !== Infinity} onClick={onSkip}>
-              <SkipNextIcon fontSize="small"/>
-            </button>
+            <Tooltip tooltip="jump to next timed transition" align="right">
+              <button
+                disabled={nextWakeup !== Infinity}
+                onClick={onSkip}>
+                <SkipNextIcon fontSize="small"/>
+              </button>
+            </Tooltip>
           </KeyInfo>
           &emsp;
         </div>

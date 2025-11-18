@@ -3,6 +3,7 @@ import { VisualEditorState } from "../VisualEditor/VisualEditor";
 
 import CloseIcon from '@mui/icons-material/Close';
 import SwapVertIcon from '@mui/icons-material/SwapVert';
+import { Tooltip, TooltipAbove } from "../Components/Tooltip";
 
 type FindReplaceProps = {
   findText: string,
@@ -43,38 +44,40 @@ export function FindReplace({findText, replaceText, setFindReplaceText, cs, setC
     <div className="toolbar toolbarGroup" style={{display: 'flex', flexDirection: 'row'}}>
       <div style={{flexGrow:1, display: 'flex', flexDirection: 'column'}}>
         <input placeholder="find"
-            title="old text"
-            value={findText}
-            onChange={e  => setFindReplaceText(([_, replaceText]) => [e.target.value, replaceText])} 
-            style={{flexGrow: 1, minWidth: 20}}/>
+          value={findText}
+          onChange={e  => setFindReplaceText(([_, replaceText]) => [e.target.value, replaceText])} 
+          style={{flexGrow: 1, minWidth: 20}}/>
         <input tabIndex={0} placeholder="replace"
-            title="new text"
-            value={replaceText}
-            onChange={(e => setFindReplaceText(([findText, _]) => [findText, e.target.value]))}
-            style={{flexGrow: 1, minWidth: 20}}/>
+          value={replaceText}
+          onChange={(e => setFindReplaceText(([findText, _]) => [findText, e.target.value]))}
+          style={{flexGrow: 1, minWidth: 20}}/>
       </div>
-      <div style={{flex: '0 0 content', display: 'flex', justifyItems: 'flex-start', flexDirection: 'column'}}>
-        <div style={{display: 'flex'}}>
-          <button
-              type="button" // <-- prevent form submission on click
-              title="swap find/replace fields"
-              onClick={onSwap}
-              style={{flexGrow: 1}}>
-            <SwapVertIcon fontSize="small"/>
-          </button>
-          <button
-              type="button" // <-- prevent form submission on click
-              title="hide find & replace"
-              onClick={hide}
-              style={{flexGrow: 1 }}>
-            <CloseIcon fontSize="small"/>
-          </button>
+      <div style={{flex: '0 0 content'}}>
+        <div>
+          <TooltipAbove tooltip="swap fields" align="right">
+            <button
+                type="button" // <-- prevent form submission on click
+                onClick={onSwap}
+                style={{width: 40}}>
+              <SwapVertIcon fontSize="small"/>
+            </button>
+          </TooltipAbove>
+          <TooltipAbove tooltip="hide" align="left">
+            <button
+                type="button" // <-- prevent form submission on click
+                onClick={hide}
+                style={{width: 60}}
+                >
+              <CloseIcon fontSize="small"/>
+            </button>
+          </TooltipAbove>
         </div>
+        <TooltipAbove tooltip="replace all occurrences in model" align="right">
         <input type="submit"
             disabled={n===0}
-            title="replace all occurrences in model"
             value={`replace all (${n})`}
-            style={{height: 26}}/>
+            style={{height: 26, width: 100}}/>
+        </TooltipAbove>
       </div>
     </div>
   </form>;

@@ -1,0 +1,5 @@
+button.alert {
+  background-color: var(--error-color) !important;
+  border-color: var(--error-hover-bg-color) !important;
+  color: var(--background-color) !important;
+}

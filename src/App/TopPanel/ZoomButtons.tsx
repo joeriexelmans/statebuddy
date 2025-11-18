@@ -5,6 +5,7 @@ import { KeyInfoHidden, KeyInfoVisible } from "./KeyInfo";
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import ZoomOutIcon from '@mui/icons-material/ZoomOut';
 import { useShortcuts } from "@/hooks/useShortcuts";
+import { Tooltip } from "../Components/Tooltip";
 
 const shortcutZoomIn = <><kbd>Ctrl</kbd>+<kbd>-</kbd></>;
 const shortcutZoomOut = <><kbd>Ctrl</kbd>+<kbd>+</kbd></>;
@@ -29,11 +30,17 @@ export const ZoomButtons = memo(function ZoomButtons({showKeys, zoom, setZoom}: 
   
   return <>
     <KeyInfo keyInfo={shortcutZoomOut}>
-      <button title="zoom out" onClick={onZoomOut} disabled={zoom <= ZOOM_MIN}><ZoomOutIcon fontSize="small"/></button>
+      <Tooltip tooltip="zoom out" align="left">
+        <button onClick={onZoomOut} disabled={zoom <= ZOOM_MIN}><ZoomOutIcon fontSize="small"/></button>
+      </Tooltip>
     </KeyInfo>
-    <input title="current zoom level" value={zoom.toFixed(3)} style={{width:40}} readOnly/>
+    <Tooltip tooltip="current zoom level" align="left">
+      <input value={zoom.toFixed(3)} style={{width:40}} readOnly/>
+    </Tooltip>
     <KeyInfo keyInfo={shortcutZoomIn}>
-      <button title="zoom in" onClick={onZoomIn} disabled={zoom >= ZOOM_MAX}><ZoomInIcon fontSize="small"/></button>
+      <Tooltip tooltip="zoom in" align="left">
+        <button onClick={onZoomIn} disabled={zoom >= ZOOM_MAX}><ZoomInIcon fontSize="small"/></button>
+      </Tooltip>
     </KeyInfo>
   </>;
 });

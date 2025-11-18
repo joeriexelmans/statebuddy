@@ -6,6 +6,12 @@ import { TimeMode, timeTravel } from "../../statecharts/time";
 import { Environment } from "@/statecharts/environment";
 import { BigStepCause, TraceItem, TraceState } from "../hooks/useSimulator";
 
+import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import CachedIcon from '@mui/icons-material/Cached';
+
+
+
 type PropertyTrace = [number, boolean][];
 
 type RTHistoryProps = {
@@ -74,13 +80,18 @@ export function RTHistory({trace, setTrace, ast, setTime, showPlantTrace, proper
 
 function RTCause(props: {cause?: RT_Event}) {
   if (props.cause === undefined) {
-    return <>{"<init>"}</>;
+    return <></>;
   }
   if (props.cause.kind === "timer") {
-    return <>{"<timer>"}</>;
+    return <div className="inputEvent">
+      <AccessAlarmIcon fontSize="small"/>
+    </div>;
   }
   else if (props.cause.kind === "input") {
-    return <>{props.cause.name}<RTEventParam param={props.cause.param}/></>
+    return <div className="inputEvent">
+      {props.cause.name}
+      <RTEventParam param={props.cause.param}/>
+    </div>;
   }
   // console.log(props.cause);
   throw new Error("unreachable");
@@ -103,7 +114,7 @@ export const RTHistoryItem = memo(function RTHistoryItem({ast, idx, item, prevIt
         &emsp;
         {formatTime(item.simtime)}
         &emsp;
-        <div className="inputEvent"><RTCause cause={isPlantStep ? item.state.plant.inputEvent : item.state.sc.inputEvent}/></div>
+        <RTCause cause={isPlantStep ? item.state.plant.inputEvent : item.state.sc.inputEvent}/>
       </div>
       <ShowMode mode={newStates} statechart={ast}/>
       <ShowEnvironment environment={item.state.sc.environment}/>

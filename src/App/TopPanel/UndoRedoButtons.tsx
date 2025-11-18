@@ -4,6 +4,7 @@ import { KeyInfoHidden, KeyInfoVisible } from "./KeyInfo";
 import UndoIcon from '@mui/icons-material/Undo';
 import RedoIcon from '@mui/icons-material/Redo';
 import { useShortcuts } from "@/hooks/useShortcuts";
+import { Tooltip } from "../Components/Tooltip";
 
 export const UndoRedoButtons = memo(function UndoRedoButtons({showKeys, onUndo, onRedo, historyLength, futureLength}: {showKeys: boolean, onUndo: () => void, onRedo: () => void, historyLength: number, futureLength: number}) {
 
@@ -15,10 +16,18 @@ export const UndoRedoButtons = memo(function UndoRedoButtons({showKeys, onUndo, 
   const KeyInfo = showKeys ? KeyInfoVisible : KeyInfoHidden;
   return <>
     <KeyInfo keyInfo={<><kbd>Ctrl</kbd>+<kbd>Z</kbd></>}>
-      <button title="undo" onClick={onUndo} disabled={historyLength === 0}><UndoIcon fontSize="small"/>&nbsp;({historyLength})</button>
+      <Tooltip tooltip="undo" align="left">
+        <button onClick={onUndo} disabled={historyLength === 0}>
+          <UndoIcon fontSize="small"/>&nbsp;({historyLength})
+        </button>
+      </Tooltip>
     </KeyInfo>
     <KeyInfo keyInfo={<><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd></>}>
-      <button title="redo" onClick={onRedo} disabled={futureLength === 0}><RedoIcon fontSize="small"/>&nbsp;({futureLength})</button>
+      <Tooltip tooltip="redo" align="left">
+        <button onClick={onRedo} disabled={futureLength === 0}>
+          <RedoIcon fontSize="small"/>&nbsp;({futureLength})
+        </button>
+      </Tooltip>
     </KeyInfo>
   </>;
 });
