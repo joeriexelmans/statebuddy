@@ -9,6 +9,7 @@
   position: absolute;
   z-index: 1;
 
+  top: 100%;
   margin-top: 4px;
   background-color: var(--tooltip-bg-color);
   color: var(--background-color);
@@ -29,19 +30,16 @@
   transition: visibility 0s linear 0.3s;
 }
 
-
 .tooltipInner.left {
   left: 0;
 }
-
 .tooltipInner.right {
   right: 0;
 }
 
 .tooltipInner.above {
-  /* top: 0; */
+  top: revert;
   bottom: 100%;
-  /* transform: translateY(-100%); */
   margin-top: 0;
   margin-bottom: 4px;
 }
@@ -52,6 +50,7 @@
   visibility: hidden;
   z-index: 1;
 
+  margin-top: 1px;
   width: 8px;
   height: 4px;
   margin-left: 4px;

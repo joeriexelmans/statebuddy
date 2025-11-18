@@ -11,7 +11,6 @@ export function Tooltip({tooltip, children, align}: PropsWithChildren<TooltipPro
   return <span>
     <span className="tooltipOuter">
       {children}
-      <br/>
       <div className="tooltipArrow"/>
       <div className={"tooltipInner " + align}>
         {tooltip}
@@ -27,7 +26,6 @@ export function TooltipAbove({tooltip, children, align}: PropsWithChildren<Toolt
         {tooltip}
       </div>
       <div className="tooltipArrow above"/>
-      {/* <br/> */}
       {children}
     </span>
   </span>;

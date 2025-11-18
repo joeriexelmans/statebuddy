@@ -9,6 +9,7 @@ import { VisualEditorState } from "../VisualEditor/VisualEditor";
 import { Setters } from "../makePartialSetter";
 
 import gitRev from "@/git-rev.txt";
+import { Tooltip, TooltipAbove } from "../Components/Tooltip";
 
 export type BottomPanelState = {
   errorsExpanded: boolean,
@@ -35,13 +36,20 @@ export function BottomPanel(props: {errors: TraceableError[], setEditorState: Di
       </div>
       <div style={{display: 'flex', alignItems: 'center'}}>
         switch to&nbsp;
-        {location.host === "localhost:3000" ?
-          <a href={`https://deemz.org/public/statebuddy/${location.hash}`}>production</a>
-          : <a href={`http://localhost:3000/${location.hash}`}>development</a>
-        }
+        <TooltipAbove tooltip="only works if you are running a development server locally" align="right">
+          {location.host === "localhost:3000" ?
+            <a href={`https://deemz.org/public/statebuddy/${location.hash}`}>production</a>
+            : <a href={`http://localhost:3000/${location.hash}`}>development</a>
+          }
+        </TooltipAbove>
         &nbsp;mode
       &nbsp;|&nbsp;
-        Rev:&nbsp;<a title={"git"} href={`https://deemz.org/git/research/statebuddy/commit/${gitRev}`} target="_blank">{gitRev.slice(0,8)}</a>
+        Rev:&nbsp;
+        <TooltipAbove tooltip="view source code" align="right">
+          <a href={`https://deemz.org/git/research/statebuddy/commit/${gitRev}`} target="_blank">
+            {gitRev.slice(0,8)}
+          </a>
+        </TooltipAbove>
       </div>
     </div>
   </div>;

@@ -259,7 +259,7 @@ export const SideBar = memo(function SideBar({showExecutionTrace, showConnection
                 style={{width: 'calc(100% - 124px)'}}
                 onChange={e => setSavedTraces(savedTraces => savedTraces.toSpliced(i, 1, [e.target.value, savedTraces[i][1]]))}/>
               <DoubleClickButton
-                tooltip="forget trace"
+                tooltip="forget this trace"
                 onDoubleClick={() => setSavedTraces(savedTraces => savedTraces.toSpliced(i, 1))}
                 align="right">
                   <DeleteOutlineIcon fontSize="small"/>

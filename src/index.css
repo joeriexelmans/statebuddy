@@ -22,7 +22,7 @@ html, body {
   --statusbar-error-bg-color: light-dark(rgb(163, 0, 0), rgb(255, 82, 82));
   --statusbar-error-fg-color: light-dark(white, black);
 
-  --tooltip-bg-color: light-dark(rgba(28, 72, 129), lightyellow);
+  --tooltip-bg-color: light-dark(rgba(28, 72, 129), rgb(209, 209, 158));
 
   --separator-color: light-dark(lightgrey, rgb(58, 58, 58));
   --inactive-bg-color: light-dark(#f7f7f7, rgb(29, 29, 29));
@@ -69,6 +69,7 @@ input {
 button, input[type="submit"] {
   background-color: var(--button-bg-color);
   border: 1px var(--separator-color) solid;
+  box-sizing: border-box;
 }
 
 button:not(:disabled):hover, input[type="submit"]:not(:disabled):hover {
@@ -78,6 +79,16 @@ button:not(:disabled):hover, input[type="submit"]:not(:disabled):hover {
 button:disabled, input[type="submit"]:disabled {
   background-color: var(--inactive-bg-color);
   color: var(--inactive-fg-color);
+}
+
+button:active {
+  box-shadow: inset 0 0 4 2 rgba(0, 0, 0, 0.5);
+
+  /* padding-left: 6px;
+  padding-top: 4px; */
+  /* padding-right: 2px; */
+  /* padding-bottom: 2px; */
+  /* background-color: color-mix(in srgb, var(--text-color) 30%, var(--light-accent-color)) !important; */
 }
 
 button.active {

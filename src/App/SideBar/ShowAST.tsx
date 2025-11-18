@@ -6,6 +6,7 @@ import { Action, EventTrigger, Expression } from "../../statecharts/label_ast";
 import { KeyInfoHidden, KeyInfoVisible } from "../TopPanel/KeyInfo";
 import { useShortcuts } from '@/hooks/useShortcuts';
 import { arraysEqual, jsonDeepEqual } from '@/util/util';
+import { Tooltip } from '../Components/Tooltip';
 
 export function ShowTransition(props: {transition: Transition}) {
   return <>➝ {stateDescription(props.transition.tgt)}</>;
@@ -92,14 +93,15 @@ export const ShowInputEvents = memo(function ShowInputEvents({inputEvents, onRai
     const KI = (i < 10) ? KeyInfo : KeyInfoHidden;
     return <div key={key} className="toolbarGroup">
       <KI keyInfo={<kbd>{shortcut}</kbd>} horizontal={true}>
-        <button
-          className="inputEvent"
-          title={`raise this input event`}
-          disabled={disabled}
-          onClick={raiseHandlers[i]}>
-          <BoltIcon fontSize="small"/>
-          {event}
-        </button>
+        <Tooltip tooltip='click to raise' align='left'>
+          <button
+            className="inputEvent"
+            disabled={disabled}
+            onClick={raiseHandlers[i]}>
+            <BoltIcon fontSize="small"/>
+            {event}
+          </button>
+        </Tooltip>
       </KI>
       {paramName &&
         <><input id={`input-${event}-param`} style={{width, overflow: 'visible'}} placeholder={paramName} value={value} onChange={e => setInputParams(params => ({...params, [key]: e.target.value, }))}/></>
