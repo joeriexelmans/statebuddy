@@ -65,8 +65,9 @@ export function Plot({traces, displayTime, nextWakeup, visiblePlots, setVisibleP
       path += ` L${x},${y}`;
       prevY = y;
     }
-    // extend signal to furthest point in simulated time
-    path += ` L${toSVGcoords(nextWakeup)},${prevY}`;
+    // extend signal to next wakeup (this is reasonable)
+    const lastX = Math.min(nextWakeup, displayTime); // if nextWakeup is Infinity, draw the line to the end instead (we cannot draw a line to infinity)
+    path += ` L${toSVGcoords(lastX)},${prevY}`;
     return path;
   }
 
