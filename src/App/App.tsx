@@ -5,7 +5,7 @@ import { ReactElement, SetStateAction, useCallback, useEffect, useMemo, useRef, 
 
 import { connectionsEqual, detectConnections, reducedConcreteSyntaxEqual } from "@/statecharts/detect_connections";
 import { parseStatechart } from "../statecharts/parser";
-import { BottomPanel } from "./BottomPanel/BottomPanel";
+import { BottomPanel, BottomPanelState, defaultBottomPanelState } from "./BottomPanel/BottomPanel";
 import { defaultSideBarState, SideBar, SideBarState } from "./SideBar/SideBar";
 import { InsertMode } from "./TopPanel/InsertModes";
 import { TopPanel } from "./TopPanel/TopPanel";
@@ -39,7 +39,7 @@ export type AppState = {
   findText: string,
   replaceText: string,
   showPlot: boolean,
-} & PlotState & SideBarState;
+} & PlotState & SideBarState & BottomPanelState;
 
 const defaultAppState: AppState = {
   showKeys: true,
@@ -51,6 +51,7 @@ const defaultAppState: AppState = {
   showPlot: false,
   ...defaultSideBarState,
   ...defaultPlotState,
+  ...defaultBottomPanelState,
 }
 
 export type LightMode = "light" | "auto" | "dark";

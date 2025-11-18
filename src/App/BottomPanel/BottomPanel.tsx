@@ -1,22 +1,29 @@
-import { Dispatch, useEffect, useState } from "react";
+import { Dispatch } from "react";
 import { TraceableError } from "../../statecharts/parser";
 
 import "./BottomPanel.css";
 
-import { PersistentDetailsLocalStorage } from "../Components/PersistentDetails";
-import { Logo } from "@/App/Logo/Logo";
+import { PersistentDetails } from "../Components/PersistentDetails";
 import { AppState } from "../App";
 import { VisualEditorState } from "../VisualEditor/VisualEditor";
 import { Setters } from "../makePartialSetter";
 
 import gitRev from "@/git-rev.txt";
 
+export type BottomPanelState = {
+  errorsExpanded: boolean,
+}
+
+export const defaultBottomPanelState = {
+  errorsExpanded: false,
+}
+
 export function BottomPanel(props: {errors: TraceableError[], setEditorState: Dispatch<(state: VisualEditorState) => VisualEditorState>} & AppState & Setters<AppState>) {
 
   return <div className="bottom">
     <div className={"stackHorizontal statusBar" + (props.errors.length ? " error" : "")}>
       <div style={{flexGrow:1}}>
-      <PersistentDetailsLocalStorage initiallyOpen={false} localStorageKey="errorsExpanded">
+      <PersistentDetails state={props.errorsExpanded} setState={props.setErrorsExpanded}>
           <summary>{props.errors.length} errors</summary>
           <div style={{maxHeight: '20vh', overflow: 'auto'}}>
           {props.errors.map(({message, shapeUid})=>
@@ -24,7 +31,7 @@ export function BottomPanel(props: {errors: TraceableError[], setEditorState: Di
               {shapeUid}: {message}
             </div>)}
           </div>
-        </PersistentDetailsLocalStorage>
+        </PersistentDetails>
       </div>
       <div style={{display: 'flex', alignItems: 'center'}}>
         switch to&nbsp;
