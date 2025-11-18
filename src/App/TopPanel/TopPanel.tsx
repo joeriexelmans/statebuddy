@@ -262,7 +262,7 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
           <KeyInfo keyInfo={<kbd>Tab</kbd>}>
             <Tooltip tooltip="jump to next timed transition" align="right">
               <button
-                disabled={nextWakeup !== Infinity}
+                disabled={nextWakeup === Infinity}
                 onClick={onSkip}>
                 <SkipNextIcon fontSize="small"/>
               </button>

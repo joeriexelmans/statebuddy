@@ -41,7 +41,7 @@ export type AppState = {
   showPlot: boolean,
 } & PlotState & SideBarState & BottomPanelState;
 
-const defaultAppState: AppState = {
+export const defaultAppState: AppState = {
   showKeys: true,
   zoom: 1,
   insertMode: 'and',
@@ -121,7 +121,7 @@ export function App() {
         console.log('persisting state to url');
         persist({editorState, ...appState});
       }
-    }, 100);
+    }, 1);
     return () => clearTimeout(timeout);
   }, [editorState, appState]);
 
@@ -131,7 +131,7 @@ export function App() {
     plantName,
   } = appState;
 
-  const plant = plants.find(([pn, p]) => pn === plantName)![1];
+  const [_, plant, plantCS] = plants.find(([pn, p]) => pn === plantName)!;
 
   const refRightSideBar = useRef<HTMLDivElement>(null);
   const scrollDownSidebar = useCallback(() => {
@@ -234,7 +234,7 @@ export function App() {
             maxWidth: 'min(400px, 50vw)',
           }}>
             <div className="stackVertical" style={{height:'100%'}}>
-              <SideBar {...{...appState, refRightSideBar, ast, preparedTraces, plantState, ...simulator, ...setters}} />
+              <SideBar {...{...appState, refRightSideBar, ast, preparedTraces, plantCS, plantState, ...simulator, ...setters}} />
             </div>
           </div>
         </div>

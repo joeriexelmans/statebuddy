@@ -17,11 +17,13 @@ import { makeStatechartPlant, PlantRenderProps, StatechartPlantSpec } from "../P
 import { detectConnections } from "@/statecharts/detect_connections";
 import { parseStatechart } from "@/statecharts/parser";
 
-import microwaveConcreteSyntax from "./model.json";
+import microwaveJSON from "./model.json";
 import { ConcreteSyntax } from "@/statecharts/concrete_syntax";
 import { objectsEqual } from "@/util/util";
 
-export const [microwaveAbstractSyntax, microwaveErrors] = parseStatechart(microwaveConcreteSyntax as ConcreteSyntax, detectConnections(microwaveConcreteSyntax as ConcreteSyntax));
+export const microwaveConcreteSyntax = microwaveJSON as ConcreteSyntax;
+
+export const [microwaveAbstractSyntax, microwaveErrors] = parseStatechart(microwaveConcreteSyntax, detectConnections(microwaveConcreteSyntax));
 
 if (microwaveErrors.length > 0) {
   console.log({microwaveErrors});

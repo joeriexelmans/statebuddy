@@ -93,6 +93,8 @@ export function entryActions(simtime: number, state: TransitionSrcTgt, actionSco
     ];
     newTimers.sort((a,b) => a[0] - b[0]); // earliest timers come first
     environment = environment.set("_timers", newTimers);
+    // console.log('schedule timers of ', stateDescription(state));
+    // console.log('newTimers:', newTimers);
   }
   return {environment, ...rest};
 }
@@ -111,6 +113,8 @@ export function exitActions(simtime: number, state: TransitionSrcTgt, {enteredSt
     const timers: Timers = environment.get("_timers") || [];
     const newTimers = timers.filter(([_, {state: s}]) => s !== state.uid);
     environment = environment.set("_timers", newTimers);
+    // console.log('cancel timers of ', stateDescription(state));
+    // console.log('newTimers:', newTimers);
   }
 
   return {...actionScope, environment};
@@ -276,15 +280,16 @@ function attemptSrcState(simtime: number, sourceState: AbstractState, event: RT_
       triggered = labels.filter(([_t,l]) =>
         l.trigger.kind === "event" && l.trigger.event === event.name);
     }
-    else {
+    else if (event.kind === "timer") {
       // get transitions triggered by timeout
       triggered = labels.filter(([_t,l]) =>
         l.trigger.kind === "after" && sourceState.uid === event.state && l.trigger.durationMs === event.timeDurMs);
     }
   }
-    else {
+  else {
       triggered = labels.filter(([_t,l]) => l.trigger.kind === "triggerless");
   }
+
   // eval guard
   const inState = (stateLabel: string) => {
     for (const [uid, state] of statechart.uid2State.entries()) {
@@ -375,6 +380,7 @@ function resolveHistory(tgt: AbstractState, history: RT_History): Set<string> {
 }
 
 export function fire(simtime: number, t: Transition, ts: Map<string, Transition[]>, label: TransitionLabel, arena: OrState, {mode, environment, history, ...rest}: RT_Statechart & RaisedEvents, addEventParam: (env: Environment, label: TransitionLabel) => Environment): RT_Statechart & RaisedEvents {
+
   // console.log('will now fire', transitionDescription(t), 'arena', arena);
 
   const srcPath = computePath({ancestor: arena, descendant: t.src as ConcreteState}) as ConcreteState[];

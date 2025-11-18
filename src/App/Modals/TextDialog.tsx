@@ -26,11 +26,14 @@ export function TextDialog(props: {setModal: Dispatch<SetStateAction<ReactElemen
   }
 
   return <div style={{padding: 20}}>
+    Tip: <kbd>Shift</kbd>+<kbd>Enter</kbd> to insert new line.
+    <br/>
+    <br/>
     <Tooltip tooltip={parseError} error={true} align="left">
     <textarea
       className={parseError ? "error" : ""}
       autoFocus
-      style={{fontFamily: 'Roboto', width: 400, height: 60}}
+      style={{fontFamily: 'Roboto', width: 400, height: 60, boxSizing: 'border-box', border:'1px solid'}}
       onChange={e=>setText(e.target.value)}
       value={text}
       onFocus={e => e.target.select()}

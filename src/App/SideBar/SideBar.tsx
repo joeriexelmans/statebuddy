@@ -22,6 +22,9 @@ import { objectsEqual } from '@/util/util';
 import { RaisedEvent } from '@/statecharts/runtime_types';
 import { DoubleClickButton } from '../Components/DoubleClickButton';
 import { Tooltip } from '../Components/Tooltip';
+import { ConcreteSyntax } from '@/statecharts/concrete_syntax';
+import { toURL } from '@/hooks/useUrlHashState';
+import { defaultAppState } from '../App';
 
 type SavedTraces = [string, BigStepCause[]][];
 
@@ -71,6 +74,7 @@ type SideBarProps = SideBarState & {
   refRightSideBar: Ref<HTMLDivElement>,
   ast: Statechart | null,
   plant: Plant<any, UniversalPlantState>,
+  plantCS: ConcreteSyntax | null,
   // setSavedTraces: Dispatch<SetStateAction<SavedTraces>>,
   trace: TraceState|null,
   setTrace: Dispatch<SetStateAction<TraceState|null>>,
@@ -82,7 +86,7 @@ type SideBarProps = SideBarState & {
   preparedTraces: PreparedTraces | null,
 } & Setters<SideBarState>;
 
-export const SideBar = memo(function SideBar({showExecutionTrace, showConnections, plantName, showPlantTrace, showProperties, activeProperty, autoConnect, autoScroll, plantConns, properties, savedTraces, refRightSideBar, ast, plant, setSavedTraces, trace, setTrace, setProperties, setShowPlantTrace, setActiveProperty, setPlantConns, setPlantName, setAutoConnect, setShowProperties, setAutoScroll, time, plantState, onReplayTrace, onRaise, setTime, setShowConnections, setShowExecutionTrace, showPlant, setShowPlant, showOutputEvents, setShowOutputEvents, setShowInternalEvents, showInternalEvents, setShowInputEvents, setShowStateTree, showInputEvents, showStateTree, preparedTraces}: SideBarProps) {
+export const SideBar = memo(function SideBar({showExecutionTrace, showConnections, plantName, showPlantTrace, showProperties, activeProperty, autoConnect, autoScroll, plantConns, properties, savedTraces, refRightSideBar, ast, plant, plantCS, setSavedTraces, trace, setTrace, setProperties, setShowPlantTrace, setActiveProperty, setPlantConns, setPlantName, setAutoConnect, setShowProperties, setAutoScroll, time, plantState, onReplayTrace, onRaise, setTime, setShowConnections, setShowExecutionTrace, showPlant, setShowPlant, showOutputEvents, setShowOutputEvents, setShowInternalEvents, showInternalEvents, setShowInputEvents, setShowStateTree, showInputEvents, showStateTree, preparedTraces}: SideBarProps) {
 
   const [propertyResults, setPropertyResults] = useState<PropertyCheckResult[] | null>(null);
 
@@ -170,6 +174,17 @@ export const SideBar = memo(function SideBar({showExecutionTrace, showConnection
             <option key={plantName}>{plantName}</option>
           )}
         </select>
+        &nbsp;
+        <button
+          disabled={plantCS === null}
+          onClick={() => {
+            toURL({...plantCS, nextID: 9999, selection: []})
+            .then(urlHash => {
+              window.open("#"+urlHash, '_blank');
+            })
+            
+          }}
+        >see plant statechart</button>
         <br/>
         {/* Render plant */}
         {<plant.render state={plant.cleanupState(plantState)} speed={speed}

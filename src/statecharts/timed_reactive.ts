@@ -34,8 +34,10 @@ export function statechartExecution(ast: Statechart): TimedReactive<BigStep> {
       if (timers.length === 0) {
         throw new Error("cannot make intTransition - timeAdvance is infinity")
       }
-      const [when, timerElapseEvent] = timers[0];
-      const {outputEvents, ...rest} = handleInputEvent(when, timerElapseEvent, ast, c);
+      const [[when, timerElapseEvent], ...remainingTimers] = timers;
+      const newEnvironment = c.environment.set("_timers", remainingTimers);
+      const newC = {...c, environment: newEnvironment};
+      const {outputEvents, ...rest} = handleInputEvent(when, timerElapseEvent, ast, newC);
       return [outputEvents, {outputEvents, ...rest}];
     },
     extTransition: (simtime: number, c: RT_Statechart, e: InputEvent) => {

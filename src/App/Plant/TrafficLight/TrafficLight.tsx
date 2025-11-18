@@ -7,7 +7,7 @@ import sndAtmosphere from "./atmosphere.opus";
 import sndBuzz from "./buzz.wav";
 import { preload } from "react-dom";
 
-import trafficLightConcreteSyntax from "./model.json";
+import trafficLightJSON from "./model.json";
 import { parseStatechart } from "@/statecharts/parser";
 import { ConcreteSyntax } from "@/statecharts/concrete_syntax";
 import { detectConnections } from "@/statecharts/detect_connections";
@@ -17,7 +17,9 @@ import { useAudioContext } from "@/hooks/useAudioContext";
 import { memo, useEffect, useMemo } from "react";
 import { objectsEqual } from "@/util/util";
 
-const [trafficLightAbstractSyntax, trafficLightErrors] = parseStatechart(trafficLightConcreteSyntax as ConcreteSyntax, detectConnections(trafficLightConcreteSyntax as ConcreteSyntax));
+export const trafficLightConcreteSyntax = trafficLightJSON as ConcreteSyntax;
+
+export const [trafficLightAbstractSyntax, trafficLightErrors] = parseStatechart(trafficLightConcreteSyntax, detectConnections(trafficLightConcreteSyntax));
 
 if (trafficLightErrors.length > 0) {
   console.log({trafficLightErrors});

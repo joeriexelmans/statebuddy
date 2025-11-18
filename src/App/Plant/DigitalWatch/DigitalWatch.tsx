@@ -6,7 +6,7 @@ import { RT_Statechart } from "@/statecharts/runtime_types";
 import { memo, useEffect } from "react";
 import { makeStatechartPlant, PlantRenderProps } from "../Plant";
 
-import dwatchConcreteSyntax from "./model.json";
+import dwatchJSON from "./model.json";
 import sndBeep from "./beep.wav";
 import digitalFont from "./digital-font.ttf";
 import "./DigitalWatch.css";
@@ -14,7 +14,10 @@ import imgNote from "./noteSmall.png";
 import imgWatch from "./watch.png";
 import { jsonDeepEqual } from "@/util/util";
 
-export const [dwatchAbstractSyntax, dwatchErrors] = parseStatechart(dwatchConcreteSyntax as ConcreteSyntax, detectConnections(dwatchConcreteSyntax as ConcreteSyntax));
+export const dwatchConcreteSyntax = dwatchJSON as ConcreteSyntax;
+
+export const [dwatchAbstractSyntax, dwatchErrors] = parseStatechart(dwatchConcreteSyntax, detectConnections(dwatchConcreteSyntax));
+
 
 if (dwatchErrors.length > 0) {
   console.log({dwatchErrors});
