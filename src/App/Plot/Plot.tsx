@@ -1,6 +1,7 @@
 import "./Plot.css";
-import { SVGAttributes, useLayoutEffect, useRef, useState } from "react";
+import { SVGAttributes, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Setters } from "../makePartialSetter";
+import { PreparedTraces } from "../SideBar/check_property";
 
 export type PlotState = {
   visiblePlots: {[name: string]: boolean},
@@ -11,7 +12,7 @@ export const defaultPlotState = {
 }
 
 type PlotProperties = PlotState & Setters<PlotState> & SVGAttributes<SVGElement> & {
-  traces: {[name: string]: [number, boolean][]},
+  traces: PreparedTraces,
   displayTime: number,
   nextWakeup: number, // nextEventTime is the furthest we can confidently extend the signal plots into the future.
 }
@@ -21,6 +22,8 @@ const numColors = 6; // corresponds to CSS variables --plot-color-N in index.css
 export function Plot({traces, displayTime, nextWakeup, visiblePlots, setVisiblePlots, ...rest}: PlotProperties) {
   const refSVG = useRef(null);
   const [width, setWidth] = useState<number>(window.innerWidth);
+
+  const traceNames = useMemo(() => Object.keys(traces).filter(name => !["true", "false"].includes(name)), [traces]);
 
   useLayoutEffect(() => {
     if (refSVG.current) {
@@ -47,31 +50,24 @@ export function Plot({traces, displayTime, nextWakeup, visiblePlots, setVisibleP
     return simtime / maxTime * width;
   }
 
-  // todo: render incrementally?
-  const paths: {[name: string]: string} = {};
-  let i=0;
-  for (const [name, trace] of Object.entries(traces)) {
-    if (visiblePlots[name]) {
-      const y = ((yDiff-margin)) + yDiff*(i);
-      let path = "";
-      let prevY;
-      for (const [time, value] of trace) {
-        const x = toSVGcoords(time);
-        const y = (value ? margin : (yDiff-margin)) + yDiff*(i);
-        if (prevY) {
-          path += ` L${x},${prevY}`;
-        }
-        else {
-          path += `M${x},${y}`
-        }
-        path += ` L${x},${y}`;
-        prevY = y;
+  function renderSignal(name: string, i: number) {
+    let path = "";
+    let prevY;
+    for (const [time, value] of traces[name]) {
+      const x = toSVGcoords(time);
+      const y = (value ? margin : (yDiff-margin)) + yDiff*(i);
+      if (prevY) {
+        path += ` L${x},${prevY}`;
       }
-      // extend signal to furthest point in simulated time
-      path += ` L${toSVGcoords(nextWakeup)},${prevY}`;
-      paths[name] = path;
-      i++;
+      else {
+        path += `M${x},${y}`
+      }
+      path += ` L${x},${y}`;
+      prevY = y;
     }
+    // extend signal to furthest point in simulated time
+    path += ` L${toSVGcoords(nextWakeup)},${prevY}`;
+    return path;
   }
 
   const markerEveryXMs = Math.max(250*2**Math.ceil(Math.log2(displayTime/1000/30/width*2000)), 250);
@@ -82,40 +78,49 @@ export function Plot({traces, displayTime, nextWakeup, visiblePlots, setVisibleP
     marks.push(i);
   }
 
+  const xAxis = marks.map((m,i) => {
+    const x = i*(markerEveryXMs)/maxTime*width;
+    return <>
+      <line x1={x} x2={x} y1={0} y2={height+2} stroke="var(--separator-color)"/>
+      {i%labelEveryXMarkers===0 &&
+        <text x={x} y={height+16} textAnchor="middle" style={{fill: 'var(--text-color)'}}>{m/1000}</text>
+      }
+      </>;
+  });
+
+  const paths = (() => {
+    let i=0;
+    return traceNames.map(name => {
+      if (visiblePlots[name]) {
+        const color = `var(--plot-color-${i%numColors})`;
+        return <path d={renderSignal(name, i++)} className="plotLine" style={{stroke: color}} />;
+      }
+      else {
+        return <></>;
+      }
+    });
+  })();
+
+  const checkboxes = (() => {
+    let i=0;
+    return traceNames.map(name => {
+      const color = visiblePlots[name]
+        ? `var(--plot-color-${i++%numColors})`
+        : 'var(--text-color)';
+      return <label key={name} htmlFor={`checkbox-trace-${name}`}>
+        <input type="checkbox" id={`checkbox-trace-${name}`} checked={visiblePlots[name]} onChange={e => setVisiblePlots(visible => ({...visible, [name]: e.target.checked}))} style={{accentColor: color}}/>
+        <span style={{color}}>{name}</span>
+      </label>;
+    });
+  })();
+
   return <>
     <svg style={{height: height+18}} ref={refSVG} viewBox={`0 0 ${width} ${height+18}`} {...rest}>
-      {marks.map((m,i) => {
-        const x = i*(markerEveryXMs)/maxTime*width;
-        return <>
-          <line x1={x} x2={x} y1={0} y2={height+2} stroke="var(--separator-color)"/>
-          {i%labelEveryXMarkers===0 &&
-            <text x={x} y={height+16} textAnchor="middle" style={{fill: 'var(--text-color)'}}>{m/1000}</text>
-          }
-          </>;
-      })}
-      {Object.entries(paths).map(([name], i) => {
-        if (visiblePlots[name]) {
-          const color = `var(--plot-color-${i%numColors})`;
-          return <path d={paths[name]} className="plotLine" style={{stroke: color}} />;
-        }
-        else {
-          return <></>;
-        }
-      })}
+      {xAxis}
+      {paths}
     </svg>
     <div>
-      {(() => {
-        let i=0;
-        return Object.entries(traces).map(([name]) => {
-          const color = visiblePlots[name]
-            ? `var(--plot-color-${i%numColors})`
-            : 'var(--text-color)';
-          i++;
-          return <label key={name} htmlFor={`checkbox-trace-${name}`}>
-            <input type="checkbox" id={`checkbox-trace-${name}`} checked={visiblePlots[name]} onChange={e => setVisiblePlots(visible => ({...visible, [name]: e.target.checked}))} style={{accentColor: color}}/>
-            <span style={{color}}>{name}</span>
-          </label>;
-      })})()}
+      {checkboxes}
     </div>
   </>;
 }
