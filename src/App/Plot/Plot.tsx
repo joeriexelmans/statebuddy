@@ -29,7 +29,6 @@ export function Plot({traces, displayTime, nextWakeup, visiblePlots, setVisibleP
     if (refSVG.current) {
       const observer = new ResizeObserver(entries => {
         for (const entry of entries) {
-          console.log(entry);
           setWidth(entry.contentRect.width);
         }
       });
