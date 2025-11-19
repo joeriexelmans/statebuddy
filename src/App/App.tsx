@@ -171,10 +171,10 @@ export function App() {
   const currentBigStep = currentTraceItem && currentTraceItem.kind === "bigstep" && currentTraceItem;
   const allErrors = [
     ...syntaxErrors,
-    ...(currentTraceItem && currentTraceItem.kind === "error") ? [{
+    ...(currentTraceItem && currentTraceItem.kind === "error") ? currentTraceItem.error.highlight.map(uid => ({
       message: currentTraceItem.error.message,
-      shapeUid: currentTraceItem.error.highlight[0],
-    }] : [],
+      shapeUid: uid,
+    })) : [],
   ];
   const highlightActive = (currentBigStep && currentBigStep.state.sc.mode) || new Set();
   const highlightTransitions = currentBigStep && currentBigStep.state.sc.firedTransitions || [];
