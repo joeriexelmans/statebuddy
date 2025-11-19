@@ -10,7 +10,7 @@ html, body {
 
   --background-color: light-dark(white, rgb(31, 33, 36));
   --text-color: light-dark(black, white);
-  --error-color: light-dark(rgb(163, 0, 0), rgb(255, 82, 82));
+  --error-color: light-dark(rgb(204, 0, 0), rgb(255, 82, 82));
   --error-bg-color: light-dark(lightpink, rgb(75, 0, 0));
   --error-hover-bg-color: light-dark(rgb(102, 0, 0), rgb(238, 153, 153));
   --light-accent-color: light-dark(rgba(0,0,255,0.2), rgba(78, 186, 248, 0.377));

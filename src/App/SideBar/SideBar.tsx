@@ -225,7 +225,7 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
             propertyError = result[1];
           }
           const status = (violated === null) ? "pending" : (violated ? "property violated" : "property satisfied");
-          return <div style={{display: 'flex'}} key={i+'-'+property} className="toolbar">
+          return <div style={{display: 'flex'}} key={i} className="toolbar">
             <div>
               <Tooltip tooltip={status} align="left">
                 <div className={"status" + (violated === null ? "" : (violated ? " violated" : " satisfied"))}/>
@@ -273,7 +273,7 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
       <details open={showExecutionTrace} onToggle={e => setShowExecutionTrace(e.newState === "open")}><summary>execution trace</summary>
         <div>
           {savedTraces.map((savedTrace, i) =>
-            <div key={i+'-'+savedTrace[0]} className="toolbar stackHorizontal">
+            <div key={i} className="toolbar stackHorizontal">
               <Tooltip tooltip="replay trace" align="left">
                 <button
                   onClick={() => onReplayTrace(savedTrace[1])}>
