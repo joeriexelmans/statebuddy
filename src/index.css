@@ -48,7 +48,8 @@ html, body {
   --input-event-hover-bg-color: light-dark(rgb(195, 224, 176), rgb(59, 88, 40));
   --input-event-active-bg-color: light-dark(rgb(176, 204, 158), rgb(77, 117, 53));
   --output-event-bg-color: light-dark(rgb(230, 249, 255), rgb(28, 83, 104));
-  --foundtext-color: light-dark(rgb(0, 189, 164), rgb(202, 149, 218));
+  
+  --foundtext-color: rgb(255, 0, 255);
 
   --plot-color-0: light-dark(darkblue, lightblue);
   --plot-color-1: light-dark(darkgreen, lightgreen);
@@ -81,14 +82,8 @@ button:disabled, input[type="submit"]:disabled {
   color: var(--inactive-fg-color);
 }
 
-button:active {
+button:active:not(:disabled) {
   box-shadow: inset 0 0 4 2 rgba(0, 0, 0, 0.5);
-
-  /* padding-left: 6px;
-  padding-top: 4px; */
-  /* padding-right: 2px; */
-  /* padding-bottom: 2px; */
-  /* background-color: color-mix(in srgb, var(--text-color) 30%, var(--light-accent-color)) !important; */
 }
 
 button.active {
