@@ -292,7 +292,7 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
               <Tooltip tooltip='number of events' align='left'>
                 <div style={{display:'inline-block', width: 22, fontSize: 9, textAlign: 'center'}}>({savedTrace[1].length})</div>
               </Tooltip>
-              <Tooltip tooltip='does not have to be unique, can be empty...' align='left' fullWidth={true}>
+              <Tooltip tooltip='does not have to be unique, can be empty...' align='left' fullWidth={true} showWhen='focus'>
                 <input
                   placeholder="description"
                   type="text"
