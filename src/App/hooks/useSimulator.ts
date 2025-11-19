@@ -94,21 +94,21 @@ export function useSimulator(ast: Statechart|null, plant: Plant<any, UniversalPl
     setTime({kind: "paused", simtime: 0});
   }, [setTrace, setTime]);
 
-  const catchRuntimeError = (simtime: number, cause: BigStepCause, computeNewState: () => [RaisedEvent[], CoupledState]) => {
+  const catchRuntimeError = useCallback((simtime: number, cause: BigStepCause, computeNewState: () => [RaisedEvent[], CoupledState]) => {
     const metadata = {simtime, cause}
     try {
       const [outputEvents, state] = computeNewState(); // may throw RuntimeError
-      return {kind: "bigstep", ...metadata, state, outputEvents};
+      return {kind: "bigstep" as const, ...metadata, state, outputEvents};
     }
     catch (error) {
       if (error instanceof RuntimeError) {
-        return {kind: "error", ...metadata, error};
+        return {kind: "error" as const, ...metadata, error};
       }
       else {
         throw error;
       }
     }
-  }
+  }, []);
 
   const appendNewConfig = useCallback((simtime: number, cause: BigStepCause, computeNewState: () => [RaisedEvent[], CoupledState]) => {
     const newItem = catchRuntimeError(simtime, cause, computeNewState);
@@ -116,24 +116,6 @@ export function useSimulator(ast: Statechart|null, plant: Plant<any, UniversalPl
       // also pause the simulation, for dramatic effect:
       setTime({kind: "paused", simtime});
     }
-
-    // let newItem: TraceItem;
-    // const metadata = {simtime, cause}
-    // try {
-    //   const [outputEvents, state] = computeNewState(); // may throw RuntimeError
-    //   newItem = {kind: "bigstep", ...metadata, state, outputEvents};
-    // }
-    // catch (error) {
-    //   if (error instanceof RuntimeError) {
-    //     newItem = {kind: "error", ...metadata, error};
-    //     // also pause the simulation, for dramatic effect:
-    //     setTime({kind: "paused", simtime});
-    //   }
-    //   else {
-    //     throw error;
-    //   }
-    // }
-
     // @ts-ignore
     setTrace(trace => ({
       trace: [
@@ -219,10 +201,15 @@ export function useSimulator(ast: Statechart|null, plant: Plant<any, UniversalPl
           if (nextTimeout > simtime) {
             break;
           }
-          const [outputEvents, coupledState] = cE!.intTransition(lastState);
-          lastState = coupledState;
-          lastSimtime = nextTimeout;
-          newTrace.push({kind: "bigstep", simtime: nextTimeout, state: coupledState, outputEvents, cause: {kind: "timer", simtime: nextTimeout}});
+          const item = catchRuntimeError(nextTimeout, {kind: "timer", simtime: nextTimeout}, () => cE!.intTransition(lastState));
+          newTrace.push(item);
+          if (item.kind === "error") {
+            return;
+          }
+          else {
+            lastState = item.state;
+            lastSimtime = item.simtime;
+          }
         }
       }
       const [outputEvents, coupledState] = cE.initial();
@@ -232,11 +219,19 @@ export function useSimulator(ast: Statechart|null, plant: Plant<any, UniversalPl
       for (const cause of causes) {
         if (cause.kind === "input") {
           run_until(cause.simtime); // <-- just make sure we haven't missed any timers elapsing
-          // @ts-ignore
-          const [outputEvents, coupledState] = cE.extTransition(cause.simtime, newTrace.at(-1)!.state, {kind: "input", name: cause.eventName, param: cause.param});
-          lastState = coupledState;
-          lastSimtime = cause.simtime;
-          newTrace.push({kind: "bigstep", simtime: cause.simtime, state: coupledState, outputEvents, cause});
+          const item = catchRuntimeError(cause.simtime, cause,
+            () => cE.extTransition(cause.simtime,
+              // @ts-ignore
+              newTrace.at(-1)!.state,
+              {kind: "input", name: cause.eventName, param: cause.param}));
+          newTrace.push(item);
+          if (item.kind === "error") {
+            break;
+          }
+          else {
+            lastState = item.state;
+            lastSimtime = item.simtime;
+          }
         }
         else if (cause.kind === "timer") {
           run_until(cause.simtime);
