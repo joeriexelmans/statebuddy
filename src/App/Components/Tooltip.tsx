@@ -15,15 +15,13 @@ export function Tooltip({tooltip, children, align, fullWidth, error, above, show
   return <span className={"tooltipOuter" + (fullWidth ? " fullWidth" : "")}>
     {children}
     {tooltip && <>
-      <div className="wrapper">
-        <div className={"tooltipInner "
-            + align
-            + (error ? " error" : "")
-            + (above ? " above" : "")
-            + (showWhen === "focus" ? " whenFocus" : "")}>
-          {tooltip}
-          <div className={"tooltipArrow"}/>
-        </div>
+      <div className={"tooltipInner "
+          + align
+          + (error ? " error" : "")
+          + (above ? " above" : "")
+          + (showWhen === "focus" ? " whenFocus" : "")}>
+        {tooltip}
+        <div className={"tooltipArrow"}/>
       </div>
     </>}
   </span>;
