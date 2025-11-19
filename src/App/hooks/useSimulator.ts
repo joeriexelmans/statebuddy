@@ -194,7 +194,7 @@ export function useSimulator(ast: Statechart|null, plant: Plant<any, UniversalPl
   }, [time, currentTraceItem]); // <-- todo: is this really efficient?
 
   const onBack = useCallback(() => {
-    if (trace !== null) {
+    if (trace !== null && trace.idx > 0) {
       setTime(() => {
         if (trace !== null) {
           return {
@@ -209,7 +209,7 @@ export function useSimulator(ast: Statechart|null, plant: Plant<any, UniversalPl
         idx: trace.idx-1,
       });
     }
-  }, [trace, setTime, setTrace]);
+  }, [trace, trace?.idx, setTime, setTrace]);
 
   const onReplayTrace = useCallback((causes: BigStepCause[]) => {
     if (cE) {

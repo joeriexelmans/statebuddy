@@ -7,8 +7,17 @@ export function useShortcuts(spec: {keys: string[], action: () => void}[], ignor
     useEffect(() => {
       const handler = (e: KeyboardEvent) => {
         if (ignoreInputs) {
-          // @ts-ignore: don't steal keyboard events while the user is typing in a text box, etc.
-          if (["INPUT", "TEXTAREA", "SELECT"].includes(e.target?.tagName)) return;
+          // @ts-ignore
+          if (e.target?.tagName === "INPUT") {
+            // @ts-ignore
+            if (e.target?.type === "text") {
+              return;
+            }
+          }
+          // @ts-ignore
+          if (e.target.tagName === "TEXTAREA") {
+            return;
+          }
         }
 
         if (e.ctrlKey !== keys.includes("Ctrl")) return;

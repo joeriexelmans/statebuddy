@@ -102,11 +102,14 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
     {keys: ["Ctrl", "Shift", "F"], action: toggle(setShowFindReplace)},
     {keys: ["i"], action: onInit},
     {keys: ["c"], action: onClear},
-    {keys: ["Tab"], action: config && onSkip || onInit},
     {keys: ["Backspace"], action: onBack},
-    {keys: ["Shift", "Tab"], action: onBack},
     {keys: [" "], action: togglePaused},
   ]);
+
+  useShortcuts([
+    {keys: ["Tab"], action: config && onSkip || onInit},
+    {keys: ["Shift", "Tab"], action: onBack},
+  ], false); // <-- these shortcuts even steal keyboard events when focused on textboxes (because there is no need to Tab between inputs)
 
   const KeyInfo = showKeys ? KeyInfoVisible : KeyInfoHidden;
 
