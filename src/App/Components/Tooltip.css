@@ -89,11 +89,15 @@
   padding-right: 4px;
   padding-top: 2px;
   padding-bottom: 2px;
+  cursor: normal;
+  user-select: none;;
 }
 .blurOnHover:hover *
 {
+  background-color: color-mix(in srgb, grey 30%, var(--tooltip-bg-color));
+  color: color-mix(in srgb, grey 30%, var(--background-color));
   /* tooltips should never obstruct the view */
-  opacity: 0.15;
+  opacity: 0.25;
   filter: blur(0.75px);
 }
 .tooltipArrow {
