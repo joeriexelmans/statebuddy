@@ -4,8 +4,6 @@
 }
 
 .tooltipOuter.fullWidth {
-  /* display: block; */
-  /* width: 100%; */
   display: flex;
   flex-grow: 1;
 }
@@ -27,21 +25,30 @@
   width: max-content;
   white-space: preserve;
   max-width: 180px;
-  /* text-wrap: nowrap; */
   border-radius: 3px;
 }
 
-body:not(:has(:focus)) .tooltipOuter:hover > .tooltipInner:not(:hover),
-body:not(:has(:focus)) .tooltipOuter:hover > .tooltipArrow:not(:hover)
- {
+.tooltipArrow {
+  content: '';
+  position: absolute;
+  z-index: 2;
+
+  width: 8px;
+  height: var(--tooltip-arrow-size);
+  left: 8px;
+
+  bottom: 100%;
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+  background-color: var(--tooltip-bg-color);
+}
+
+.tooltipOuter:hover .tooltipInner:not(.whenFocus) {
   visibility: visible;
   transition: visibility 0s linear 0.5s;
 }
 
-.tooltipOuter:focus-within > .tooltipInner,
-.tooltipOuter:focus-within > .tooltipArrow {
-  visibility: visible !important;
-  transition: none !important;
+.tooltipOuter:focus-within .tooltipInner.whenFocus {
+  visibility: visible;
 }
 
 .tooltipInner.left {
@@ -50,24 +57,17 @@ body:not(:has(:focus)) .tooltipOuter:hover > .tooltipArrow:not(:hover)
 .tooltipInner.right {
   right: 0;
 }
+.tooltipInner.right > .tooltipArrow {
+  right: 8px;
+  left: revert;
+}
+
 
 .tooltipInner.error {
   background-color: var(--error-color);
 }
-
-.tooltipArrow {
-  content: '';
-  position: absolute;
-  visibility: hidden;
-  z-index: 2;
-
-  top: 100%;
-  margin-top: 1px;
-  width: 8px;
-  height: var(--tooltip-arrow-size);
-  margin-left: 4px;
-  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
-  background-color: var(--tooltip-bg-color);
+.tooltipInner.error > .tooltipArrow {
+  background-color: var(--error-color);
 }
 
 .tooltipInner.above {
@@ -76,14 +76,15 @@ body:not(:has(:focus)) .tooltipOuter:hover > .tooltipArrow:not(:hover)
   margin-top: 0;
   margin-bottom: var(--tooltip-arrow-size);
 }
-
-.tooltipArrow.above {
+.tooltipInner.above > .tooltipArrow {
   clip-path: polygon(50% 100%, 0% 0%, 100% 0%);
-  top: revert;
-  bottom: 100%;
+  bottom: revert;
+  top: 100%;
   margin-top: - var(--tooltip-arrow-size);
 }
 
-.tooltipArrow.error {
-  background-color: var(--error-color);
+/* tooltips should never obstruct the view */
+.tooltipInner:hover {
+  opacity: 0.2;
+  filter: blur(1px);
 }

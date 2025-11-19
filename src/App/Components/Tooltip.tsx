@@ -7,28 +7,24 @@ type TooltipProps = {
   align: 'left' | 'right';
   fullWidth?: boolean,
   error?: boolean,
+  above?: boolean,
+  showWhen?: 'hover' | 'focus';
 }
 
-export function Tooltip({tooltip, children, align, fullWidth, error}: PropsWithChildren<TooltipProps>) {
+export function Tooltip({tooltip, children, align, fullWidth, error, above, showWhen}: PropsWithChildren<TooltipProps>) {
   return <span className={"tooltipOuter" + (fullWidth ? " fullWidth" : "")}>
     {children}
     {tooltip && <>
-      <div className={"tooltipArrow" + (error ? " error" : "")}/>
-      <div className={"tooltipInner " + align + (error ? " error" : "")}>
-        {tooltip}
+      <div className="wrapper">
+        <div className={"tooltipInner "
+            + align
+            + (error ? " error" : "")
+            + (above ? " above" : "")
+            + (showWhen === "focus" ? " whenFocus" : "")}>
+          {tooltip}
+          <div className={"tooltipArrow"}/>
+        </div>
       </div>
     </>}
-  </span>;
-}
-
-export function TooltipAbove({tooltip, children, align, fullWidth, error}: PropsWithChildren<TooltipProps>) {
-  return <span className={"tooltipOuter" + (fullWidth ? " fullWidth" : "")}>
-    {tooltip && <>
-      <div className={"tooltipInner above " + align + (error ? " error" : "")}>
-        {tooltip}
-      </div>
-      <div className={"tooltipArrow above" + (error ? " error" : "")}/>
-    </>}
-    {children}
   </span>;
 }

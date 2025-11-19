@@ -238,7 +238,13 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
                 </button>
               </Tooltip>
             </div>
-            <Tooltip tooltip={propertyError || plant && "available signals:\n"+plant.signals.map(s => "• "+s).join('\n')} align='left' fullWidth={true} error={propertyError !== null}>
+            <Tooltip
+              tooltip={propertyError || plant && "available signals:\n"+plant.signals.map(s => "• "+s).join('\n')}
+              align='left'
+              fullWidth={true}
+              error={propertyError !== null}
+              showWhen='focus'
+              >
               <input
                 className={propertyError && "error" || ""}
                 type="text"

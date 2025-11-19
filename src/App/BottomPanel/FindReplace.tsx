@@ -3,7 +3,7 @@ import { VisualEditorState } from "../VisualEditor/VisualEditor";
 
 import CloseIcon from '@mui/icons-material/Close';
 import SwapVertIcon from '@mui/icons-material/SwapVert';
-import { Tooltip, TooltipAbove } from "../Components/Tooltip";
+import { Tooltip } from "../Components/Tooltip";
 
 type FindReplaceProps = {
   findText: string,
@@ -54,15 +54,15 @@ export function FindReplace({findText, replaceText, setFindReplaceText, cs, setC
       </div>
       <div style={{flex: '0 0 content'}}>
         <div>
-          <TooltipAbove tooltip="swap fields" align="right">
+          <Tooltip tooltip="swap fields" align="right" above={true}>
             <button
                 type="button" // <-- prevent form submission on click
                 onClick={onSwap}
                 style={{width: 40}}>
               <SwapVertIcon fontSize="small"/>
             </button>
-          </TooltipAbove>
-          <TooltipAbove tooltip="hide" align="left">
+          </Tooltip>
+          <Tooltip tooltip="hide" align="left" above={true}>
             <button
                 type="button" // <-- prevent form submission on click
                 onClick={hide}
@@ -70,14 +70,14 @@ export function FindReplace({findText, replaceText, setFindReplaceText, cs, setC
                 >
               <CloseIcon fontSize="small"/>
             </button>
-          </TooltipAbove>
+          </Tooltip>
         </div>
-        <TooltipAbove tooltip="replace all occurrences in model" align="right">
+        <Tooltip tooltip="replace all occurrences in model" align="right" above={true}>
         <input type="submit"
             disabled={n===0}
             value={`replace all (${n})`}
             style={{height: 26, width: 100}}/>
-        </TooltipAbove>
+        </Tooltip>
       </div>
     </div>
   </form>;
