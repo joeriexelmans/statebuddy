@@ -52,8 +52,7 @@ TODO
 
     - ability to hide statechart and only show the plant?
     - hovering over event in side panel should highlight all occurrences of the event in the SC
-    - rename events / variables
-        find/replace?
+    - rename events / variables?
 
     - hovering over error in bottom panel should highlight that error in the SC
     - highlight selected shapes while making a selection
@@ -63,7 +62,6 @@ TODO
 
     - ability to 'freeze' editor (e.g., to show plant SC)
     - show insert mode also next to cursor
-    - plot plant signals
 
     - show error when states partially overlap?
         useful when accidentally pasting the same data multiple times
@@ -82,6 +80,7 @@ TODO
 Breaking changes (after mosis25 is finished):
     - state names start with # (not with //)
 
+    semantic versioning?
+
 Publish StateBuddy paper(s):
     compare CS approach to other tools, not only YAKINDU
-z
