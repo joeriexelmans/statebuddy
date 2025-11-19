@@ -6,13 +6,13 @@ import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 
 export function MoveUpDown<T>({i, ls, setter}: {i: number, ls: T[], setter: Dispatch<SetStateAction<T[]>>}) {
   return <>
-    <Tooltip tooltip='move down' align='right'>
+    <Tooltip tooltip='move down'>
       <button disabled={i === ls.length-1}
         onClick={() => setter(ls => [...ls.slice(0, i), ls[i+1], ls[i], ...ls.slice(i+2)])}>
         <ArrowDownwardIcon fontSize='small'/>
       </button>
     </Tooltip>
-    <Tooltip tooltip='move up' align='right'>
+    <Tooltip tooltip='move up'>
       <button disabled={i === 0}
         onClick={() => setter(ls => [...ls.slice(0, i-1), ls[i], ls[i-1], ...ls.slice(i+1)])}>
         <ArrowUpwardIcon fontSize='small'/>

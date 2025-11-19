@@ -156,7 +156,7 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
     {/* find, replace */}
     <div className="toolbarGroup">
       <KeyInfo keyInfo={<><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd></>}>
-        <Tooltip tooltip="find & replace ..." align="right">
+        <Tooltip tooltip="find & replace ...">
           <TwoStateButton
             active={showFindReplace}
             onClick={() => setShowFindReplace(x => !x)}
@@ -174,14 +174,14 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
       <div className="toolbarGroup">
         {/* init / clear */}
         <KeyInfo keyInfo={<kbd>I</kbd>}>
-          <Tooltip tooltip="(re)initialize simulation" align="left">
+          <Tooltip tooltip="(re)initialize simulation">
             <button onClick={onInit} ><PlayArrowIcon fontSize="small"/>
               <CachedIcon fontSize="small"/>
             </button>
           </Tooltip>
         </KeyInfo>
         <KeyInfo keyInfo={<kbd>C</kbd>}>
-          <Tooltip tooltip="clear the simulation" align="left">
+          <Tooltip tooltip="clear the simulation">
             <button onClick={onClear} disabled={!config}>
               <StopIcon fontSize="small"/>
             </button>
@@ -190,7 +190,7 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
         &emsp;
         {/* pause / real time */}
         <KeyInfo keyInfo={<><kbd>Space</kbd> toggles</>}>
-          <Tooltip tooltip="pause simulation" align="left">
+          <Tooltip tooltip="pause simulation">
             <TwoStateButton
               active={config !== null && time.kind==="paused"}
               disabled={config === null}
@@ -199,7 +199,7 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
               <PauseIcon fontSize="small"/>
             </TwoStateButton>
           </Tooltip>
-          <Tooltip tooltip="run simulation in real time" align="left">
+          <Tooltip tooltip="run simulation in real time">
             <TwoStateButton
               active={config !== null && time.kind==="realtime"}
               disabled={config === null}
@@ -221,7 +221,7 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
       {/* time, next */}
       <div className="toolbarGroup">
         <div className="toolbarGroup">
-          <Tooltip tooltip="current simulated time" align="right">
+          <Tooltip tooltip="current simulated time">
             <label htmlFor="time"><AccessTimeIcon fontSize="small"/></label>&nbsp;
             <div style={{
               position: 'absolute',
@@ -249,7 +249,7 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
 
         &emsp;
         <div className="toolbarGroup">
-          <Tooltip tooltip="next timed transition occurs at ..." align="right">
+          <Tooltip tooltip="next timed transition occurs at ...">
             <label htmlFor="next-timeout"><AccessAlarmIcon fontSize="small"/></label>&nbsp;
             <input
               id="next-timeout"

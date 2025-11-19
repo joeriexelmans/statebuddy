@@ -16,14 +16,14 @@ export const UndoRedoButtons = memo(function UndoRedoButtons({showKeys, onUndo, 
   const KeyInfo = showKeys ? KeyInfoVisible : KeyInfoHidden;
   return <>
     <KeyInfo keyInfo={<><kbd>Ctrl</kbd>+<kbd>Z</kbd></>}>
-      <Tooltip tooltip="undo" align="left">
+      <Tooltip tooltip="undo">
         <button onClick={onUndo} disabled={historyLength === 0}>
           <UndoIcon fontSize="small"/>&nbsp;({historyLength})
         </button>
       </Tooltip>
     </KeyInfo>
     <KeyInfo keyInfo={<><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd></>}>
-      <Tooltip tooltip="redo" align="left">
+      <Tooltip tooltip="redo">
         <button onClick={onRedo} disabled={futureLength === 0}>
           <RedoIcon fontSize="small"/>&nbsp;({futureLength})
         </button>

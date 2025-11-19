@@ -8,14 +8,14 @@ import { Tooltip } from "../Components/Tooltip";
 export const RotateButtons = memo(function RotateButtons({selection, onRotate}: {selection: Selection, onRotate: (dir: "ccw"|"cw") => void}) {
   const disabled = selection.length === 0;
   return <>
-    <Tooltip tooltip="rotate selection 90 degrees counter-clockwise" align="right">
+    <Tooltip tooltip="rotate selection 90 degrees counter-clockwise">
       <button
         onClick={() => onRotate("ccw")}
         disabled={disabled}>
           {<Rotate90DegreesCcwTwoToneIcon fontSize="small"/>}
       </button>
     </Tooltip>
-    <Tooltip tooltip="rotate selection 90 degrees clockwise" align="right">
+    <Tooltip tooltip="rotate selection 90 degrees clockwise">
       <button
         disabled={disabled}
         onClick={() => onRotate("cw")}>

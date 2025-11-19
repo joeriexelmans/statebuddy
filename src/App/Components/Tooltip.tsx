@@ -4,7 +4,7 @@ import "./Tooltip.css";
 
 type TooltipProps = {
   tooltip: string | undefined,
-  align: 'left' | 'right';
+  align?: 'center' | 'left' | 'right';
   fullWidth?: boolean,
   error?: boolean,
   above?: boolean,
@@ -12,17 +12,18 @@ type TooltipProps = {
 }
 
 export function Tooltip({tooltip, children, align, fullWidth, error, above, showWhen}: PropsWithChildren<TooltipProps>) {
-  return <span className={"tooltipOuter" + (fullWidth ? " fullWidth" : "")}>
+  return <span className={"tooltipOuter "
+                            + (align !== null ? align : "")
+                            + (fullWidth ? " fullWidth" : "")
+                            + (error ? " error" : "")
+                            + (above ? " above" : "")
+                            + (showWhen === "focus" ? " whenFocus" : "")}>
     {children}
-    {tooltip && <>
-      <div className={"tooltipInner "
-          + align
-          + (error ? " error" : "")
-          + (above ? " above" : "")
-          + (showWhen === "focus" ? " whenFocus" : "")}>
+    {tooltip && <div className="blurOnHover">
+      <div className={"tooltipArrow"}/>
+      <div className={"tooltipInner"}>
         {tooltip}
-        <div className={"tooltipArrow"}/>
       </div>
-    </>}
+    </div>}
   </span>;
 }

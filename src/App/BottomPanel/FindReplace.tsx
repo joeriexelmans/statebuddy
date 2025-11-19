@@ -54,7 +54,7 @@ export function FindReplace({findText, replaceText, setFindReplaceText, cs, setC
       </div>
       <div style={{flex: '0 0 content'}}>
         <div>
-          <Tooltip tooltip="swap fields" align="right" above={true}>
+          <Tooltip tooltip="swap fields" above={true}>
             <button
                 type="button" // <-- prevent form submission on click
                 onClick={onSwap}
@@ -62,7 +62,7 @@ export function FindReplace({findText, replaceText, setFindReplaceText, cs, setC
               <SwapVertIcon fontSize="small"/>
             </button>
           </Tooltip>
-          <Tooltip tooltip="hide" align="left" above={true}>
+          <Tooltip tooltip="hide" above={true}>
             <button
                 type="button" // <-- prevent form submission on click
                 onClick={hide}
@@ -72,7 +72,9 @@ export function FindReplace({findText, replaceText, setFindReplaceText, cs, setC
             </button>
           </Tooltip>
         </div>
-        <Tooltip tooltip="replace all occurrences in model" align="right" above={true}>
+        <Tooltip tooltip="replace all occurrences in model" 
+          align="right"
+          above={true}>
         <input type="submit"
             disabled={n===0}
             value={`replace all (${n})`}

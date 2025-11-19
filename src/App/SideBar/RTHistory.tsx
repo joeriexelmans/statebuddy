@@ -7,10 +7,6 @@ import { Environment } from "@/statecharts/environment";
 import { BigStepCause, TraceItem, TraceState } from "../hooks/useSimulator";
 
 import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import CachedIcon from '@mui/icons-material/Cached';
-
-
 
 type PropertyTrace = [number, boolean][];
 
@@ -142,16 +138,15 @@ export const RTHistoryItem = memo(function RTHistoryItem({ast, idx, item, prevIt
 
 function ShowCause(props: {cause: BigStepCause}) {
   if (props.cause.kind === "init") {
-    return <span>{"<init>"}</span>;
+    return <></>;
   }
   else if (props.cause.kind === "timer") {
-    return <span>{"<timer>"}</span>;
+    return <AccessAlarmIcon fontSize="small"/>;
   }
   else {
     return <span>{props.cause.eventName}<RTEventParam param={props.cause.param}/></span>;
   }
 }
-
 
 function ShowEnvironment(props: {environment: Environment}) {
   return <div>{

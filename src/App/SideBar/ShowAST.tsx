@@ -93,7 +93,7 @@ export const ShowInputEvents = memo(function ShowInputEvents({inputEvents, onRai
     const KI = (i < 10) ? KeyInfo : KeyInfoHidden;
     return <div key={key} className="toolbarGroup">
       <KI keyInfo={<kbd>{shortcut}</kbd>} horizontal={true}>
-        <Tooltip tooltip='click to raise' align='left'>
+        <Tooltip tooltip='click to raise'>
           <button
             className="inputEvent"
             disabled={disabled}

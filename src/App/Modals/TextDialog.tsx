@@ -29,7 +29,7 @@ export function TextDialog(props: {setModal: Dispatch<SetStateAction<ReactElemen
     Tip: <kbd>Shift</kbd>+<kbd>Enter</kbd> to insert new line.
     <br/>
     <br/>
-    <Tooltip tooltip={parseError} error={true} align="left" showWhen="focus">
+    <Tooltip tooltip={parseError} error={true} showWhen="focus">
     <textarea
       className={parseError ? "error" : ""}
       autoFocus

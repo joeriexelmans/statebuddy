@@ -180,7 +180,7 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
             )}
           </select>
           &nbsp;
-          <Tooltip tooltip='the behavior of each plant is also modeled by a statechart' align={'left'}>
+          <Tooltip tooltip='the behavior of each plant is also modeled by a statechart'>
             <button
               disabled={plantCS === null}
               onClick={() => {

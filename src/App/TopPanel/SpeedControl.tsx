@@ -47,7 +47,7 @@ export const SpeedControl = memo(function SpeedControl({showKeys, timescale, set
     {/* <label htmlFor="number-timescale"> */}
       {/* <SpeedIcon fontSize="small"/> */}
       <KeyInfo keyInfo={<kbd>S</kbd>}>
-        <Tooltip tooltip="real time: slow down" align="left">
+        <Tooltip tooltip="real time: slow down">
           <button onClick={onSlower}>
             {/* ÷2 */}
             <AssistWalkerIcon fontSize="small"/>
@@ -57,7 +57,7 @@ export const SpeedControl = memo(function SpeedControl({showKeys, timescale, set
       </KeyInfo>
       <Tooltip tooltip={`current time scale
 (e.g., a value of '2' means:
-twice as fast as wall clock time)`} align="left">
+twice as fast as wall clock time)`}>
         
         <input id="number-timescale"
           value={timescale.toFixed(3)}
@@ -67,7 +67,7 @@ twice as fast as wall clock time)`} align="left">
         />
       </Tooltip>
       <KeyInfo keyInfo={<kbd>F</kbd>}>
-        <Tooltip tooltip="real time: speed up" align="left">
+        <Tooltip tooltip="real time: speed up">
           <button onClick={onFaster}>
             {/* ×2 */}
             <DirectionsRunIcon fontSize="small"/>

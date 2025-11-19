@@ -94,23 +94,46 @@ export function useSimulator(ast: Statechart|null, plant: Plant<any, UniversalPl
     setTime({kind: "paused", simtime: 0});
   }, [setTrace, setTime]);
 
-  const appendNewConfig = useCallback((simtime: number, cause: BigStepCause, computeNewState: () => [RaisedEvent[], CoupledState]) => {
-    let newItem: TraceItem;
+  const catchRuntimeError = (simtime: number, cause: BigStepCause, computeNewState: () => [RaisedEvent[], CoupledState]) => {
     const metadata = {simtime, cause}
     try {
       const [outputEvents, state] = computeNewState(); // may throw RuntimeError
-      newItem = {kind: "bigstep", ...metadata, state, outputEvents};
+      return {kind: "bigstep", ...metadata, state, outputEvents};
     }
     catch (error) {
       if (error instanceof RuntimeError) {
-        newItem = {kind: "error", ...metadata, error};
-        // also pause the simulation, for dramatic effect:
-        setTime({kind: "paused", simtime});
+        return {kind: "error", ...metadata, error};
       }
       else {
         throw error;
       }
     }
+  }
+
+  const appendNewConfig = useCallback((simtime: number, cause: BigStepCause, computeNewState: () => [RaisedEvent[], CoupledState]) => {
+    const newItem = catchRuntimeError(simtime, cause, computeNewState);
+    if (newItem.kind === "error") {
+      // also pause the simulation, for dramatic effect:
+      setTime({kind: "paused", simtime});
+    }
+
+    // let newItem: TraceItem;
+    // const metadata = {simtime, cause}
+    // try {
+    //   const [outputEvents, state] = computeNewState(); // may throw RuntimeError
+    //   newItem = {kind: "bigstep", ...metadata, state, outputEvents};
+    // }
+    // catch (error) {
+    //   if (error instanceof RuntimeError) {
+    //     newItem = {kind: "error", ...metadata, error};
+    //     // also pause the simulation, for dramatic effect:
+    //     setTime({kind: "paused", simtime});
+    //   }
+    //   else {
+    //     throw error;
+    //   }
+    // }
+
     // @ts-ignore
     setTrace(trace => ({
       trace: [

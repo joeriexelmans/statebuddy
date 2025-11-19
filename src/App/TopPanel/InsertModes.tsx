@@ -31,7 +31,7 @@ export const InsertModes = memo(function InsertModes({showKeys, insertMode, setI
 
   const KeyInfo = showKeys ? KeyInfoVisible : KeyInfoHidden;
   return <>{insertModes.map(([m, hint, buttonTxt, keyInfo]) => <KeyInfo key={m} keyInfo={keyInfo}>
-    <Tooltip tooltip={"draw "+hint} align="left">
+    <Tooltip tooltip={"draw "+hint}>
     <button
       disabled={insertMode===m}
       className={insertMode===m ? "active":""}

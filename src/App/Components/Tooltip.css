@@ -3,88 +3,108 @@
   display: inline-block;
 }
 
+
+/* Visibility, etc. */
 .tooltipOuter.fullWidth {
   display: flex;
   flex-grow: 1;
 }
-
-.tooltipInner {
-  display: inline-block;
-  visibility: hidden; /* hidden until hover */
+.tooltipInner, .tooltipArrow {
   position: absolute;
   z-index: 2;
-
-  top: 100%;
-  margin-top: var(--tooltip-arrow-size);
-  background-color: var(--tooltip-bg-color);
-  color: var(--background-color);
-  padding-left: 4px;
-  padding-right: 4px;
-  padding-top: 2px;
-  padding-bottom: 2px;
-  width: max-content;
-  white-space: preserve;
-  max-width: 180px;
-  border-radius: 3px;
+  visibility: hidden;
 }
-
-.tooltipArrow {
-  content: '';
-  position: absolute;
-  z-index: 2;
-
-  width: 8px;
-  height: var(--tooltip-arrow-size);
-  left: 8px;
-
-  bottom: 100%;
-  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
-  background-color: var(--tooltip-bg-color);
+.tooltipOuter.whenFocus:focus-within .tooltipInner,
+.tooltipOuter.whenFocus:focus-within .tooltipArrow
+{
+  visibility: visible;
 }
-
-.tooltipOuter:hover .tooltipInner:not(.whenFocus) {
+.tooltipOuter:not(.whenFocus):hover .tooltipInner,
+.tooltipOuter:not(.whenFocus):hover .tooltipArrow
+{
   visibility: visible;
   transition: visibility 0s linear 0.5s;
 }
 
-.tooltipOuter:focus-within .tooltipInner.whenFocus {
-  visibility: visible;
+/* Horizontal position */
+.tooltipInner {
+  left: 50%;
+  transform: translateX(-50%);
 }
-
-.tooltipInner.left {
+.tooltipOuter.left .tooltipInner {
+  transform: revert;
   left: 0;
 }
-.tooltipInner.right {
+.tooltipOuter.right .tooltipInner {
+  transform: revert;
+  left: revert;
   right: 0;
 }
-.tooltipInner.right > .tooltipArrow {
-  right: 8px;
+.tooltipArrow {
+  /* center the arrow on the element: */
+  left: calc(50% - 4px);
+}
+.tooltipOuter.left .tooltipArrow {
+  left: 8px;
+}
+.tooltipOuter.right .tooltipArrow {
   left: revert;
+  right: 8px;
 }
 
-
-.tooltipInner.error {
-  background-color: var(--error-color);
+/* Vertical position */
+.tooltipInner {
+  top: 100%;
+  margin-top: var(--tooltip-arrow-size);
 }
-.tooltipInner.error > .tooltipArrow {
-  background-color: var(--error-color);
+.tooltipArrow {
+  top: 100%;
 }
 
-.tooltipInner.above {
+/* Overrides for 'above' variant */
+.tooltipOuter.above .tooltipInner {
   top: revert;
+  margin-top: revert;
   bottom: 100%;
-  margin-top: 0;
   margin-bottom: var(--tooltip-arrow-size);
 }
-.tooltipInner.above > .tooltipArrow {
-  clip-path: polygon(50% 100%, 0% 0%, 100% 0%);
-  bottom: revert;
-  top: 100%;
-  margin-top: - var(--tooltip-arrow-size);
+.tooltipOuter.above .tooltipArrow {
+  top: revert;
+  bottom: 100%;
+  clip-path: polygon(50% 100%, 0% 0%, 100% 0%); /* upside down */
 }
 
-/* tooltips should never obstruct the view */
-.tooltipInner:hover {
-  opacity: 0.2;
-  filter: blur(1px);
+
+
+
+/* Looks */
+.tooltipInner {
+  background-color: var(--tooltip-bg-color);
+  color: var(--background-color);
+  border-radius: 3px;
+  width: max-content;
+  white-space: preserve;
+  max-width: 200px;
+  padding-left: 4px;
+  padding-right: 4px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+.blurOnHover:hover *
+{
+  /* tooltips should never obstruct the view */
+  opacity: 0.15;
+  filter: blur(0.75px);
+}
+.tooltipArrow {
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+  background-color: var(--tooltip-bg-color);
+  width: 8px;
+  height: var(--tooltip-arrow-size);
+}
+.tooltipOuter.error .tooltipInner {
+  background-color: var(--error-color);
+}
+.tooltipOuter.error .tooltipArrow {
+  background-color: var(--error-color);
 }

@@ -36,7 +36,7 @@ export function BottomPanel(props: {errors: TraceableError[], setEditorState: Di
       </div>
       <div style={{display: 'flex', alignItems: 'center'}}>
         switch to&nbsp;
-        <Tooltip tooltip="only works if you are running a development server locally" align="right" above={true}>
+        <Tooltip tooltip="only works if you are running a development server locally" above={true}>
           {location.host === "localhost:3000" ?
             <a href={`https://deemz.org/public/statebuddy/${location.hash}`}>production</a>
             : <a href={`http://localhost:3000/${location.hash}`}>development</a>
