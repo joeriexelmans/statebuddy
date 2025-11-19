@@ -32,7 +32,7 @@ TODO
 
 - bugs
     (*) editing SC <-> Plant connections at runtime doesn't seem to work
-    (*) non-determinism error highlights only one of enabled transitions
+    (*) replaying trace with runtime error gives uncaught exception
 
 - maybe support:
     - explicit order of:

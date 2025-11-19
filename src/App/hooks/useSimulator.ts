@@ -1,6 +1,6 @@
 import { Statechart } from "@/statecharts/abstract_syntax";
 import { RuntimeError } from "@/statecharts/interpreter";
-import { BigStep, RaisedEvent, TimerElapseEvent, Timers } from "@/statecharts/runtime_types";
+import { BigStep, RaisedEvent, Timers } from "@/statecharts/runtime_types";
 import { Conns, coupledExecution, statechartExecution } from "@/statecharts/timed_reactive";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Plant } from "../Plant/Plant";

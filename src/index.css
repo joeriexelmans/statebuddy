@@ -60,6 +60,8 @@ html, body {
 
   background-color: var(--background-color);
   color: var(--text-color);
+
+  --tooltip-arrow-size: 6px;
 }
 
 input {
@@ -132,4 +134,8 @@ input[type=text].error {
 }
 textarea.error {
   background-color: var(--error-bg-color);
+}
+
+*:focus-visible {
+  z-index: 1;
 }

@@ -273,14 +273,14 @@ function attemptSrcState(simtime: number, sourceState: AbstractState, event: RT_
     t.label
       .filter(l => l.kind === "transitionLabel")
       .map(l => [t,l] as [Transition, TransitionLabel]));
-  let triggered;
+  let triggered: [Transition, TransitionLabel][];
   if (event !== undefined) {
     if (event.kind === "input") {
       // get transitions triggered by event
       triggered = labels.filter(([_t,l]) =>
         l.trigger.kind === "event" && l.trigger.event === event.name);
     }
-    else if (event.kind === "timer") {
+    else /*if (event.kind === "timer")*/ {
       // get transitions triggered by timeout
       triggered = labels.filter(([_t,l]) =>
         l.trigger.kind === "after" && sourceState.uid === event.state && l.trigger.durationMs === event.timeDurMs);
