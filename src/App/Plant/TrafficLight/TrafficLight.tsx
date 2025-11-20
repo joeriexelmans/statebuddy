@@ -46,17 +46,19 @@ export const TrafficLight = memo(function TrafficLight({state: {redOn, yellowOn,
 
   // play wind
   useEffect(() => {
-    const stopPlaying = playURL(sndAtmosphere, true);
-    return () => stopPlaying();
+    const snd = playURL(sndAtmosphere, true);
+    return () => {
+      snd.then(snd => snd.stop());
+    };
   }, []);
 
   // for added realism, every light color has its own buzzing noise volume
   for (const [color, gain] of [[redOn, 0.5], [yellowOn, 1], [greenOn, 0.3]] as [boolean, number][]) {
     useEffect(() => {
       if (color) {
-        const stopPlaying = playURL(sndBuzz, true, gain);
+        const snd = playURL(sndBuzz, true, gain);
         return () => {
-          stopPlaying();
+          snd.then(snd => snd.stop());
         };
       }
     }, [color]);

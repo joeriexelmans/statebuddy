@@ -1,29 +1,29 @@
-import { Logo, statebossLocalStorageKey } from "@/App/Logo/Logo";
 import { useAudioContext } from "@/hooks/useAudioContext";
-import { Dispatch, ReactElement, SetStateAction, useEffect, useRef, useState } from "react";
-
+import { Dispatch, ReactElement, SetStateAction, useEffect, useState } from "react";
+import { preload } from "react-dom";
+import cinematicBoom from "../../../artwork/corporate-logo/cinematic-boom.opus";
+import explosion from "../../../artwork/corporate-logo/explosion.opus";
 import corporateLogo from "../../../artwork/corporate-logo/StateBOSS-logo-alt.webp";
 import jingle from "../../../artwork/corporate-logo/stateboss.opus";
-import explosion from "../../../artwork/corporate-logo/explosion.opus";
-import cinematicBoom from "../../../artwork/corporate-logo/cinematic-boom.opus";
-import { preload } from "react-dom";
+import { CorporateLogo } from "../Logo/CorporateLogo";
+import { Logo } from "../Logo/Logo";
+import { usePersistentState } from "@/hooks/usePersistentState";
 
-const boomAt = 410; // ms into 'cinematic boom' where the boom actually happens
+const boomAt = 500; // ms into 'cinematic boom' where the boom actually happens
 
 
 export function About(props: {setModal: Dispatch<SetStateAction<ReactElement|null>>}) {
-  const [_, poke] = useState(false);
+  const [trialStarted, setTrialStarted] = usePersistentState<string|null>("stateboss-trial-started", null);
 
-  const trialStarted = localStorage.getItem(statebossLocalStorageKey);
   if (trialStarted) {
     return <AboutStateBoss {...props} trialStarted={trialStarted}/>
   }
   else {
-    return <AboutStateBuddy {...props} poke={poke}/>
+    return <AboutStateBuddy {...props} setTrialStarted={setTrialStarted}/>
   }
 }
 
-export function AboutStateBuddy({poke, ...props}: {poke: ()=>void, setModal: Dispatch<SetStateAction<ReactElement|null>>}) {
+export function AboutStateBuddy({setTrialStarted, ...props}: {setTrialStarted: Dispatch<SetStateAction<string|null>>, setModal: Dispatch<SetStateAction<ReactElement|null>>}) {
   const [_, setCount] = useState(0);
 
   preload(corporateLogo, {as: "fetch"});
@@ -32,8 +32,7 @@ export function AboutStateBuddy({poke, ...props}: {poke: ()=>void, setModal: Dis
     <Logo onClick={() => {
       setCount(i => {
         if (i+1 === 7) {
-          localStorage.setItem(statebossLocalStorageKey, new Date().toISOString())
-          poke(); // just trigger a re-render of our parent (to switch to StateBoss)
+          setTimeout(() => setTrialStarted(new Date().toISOString()), 0); // just trigger a re-render of our parent (to switch to StateBoss)
         }
         return i+1;
       });
@@ -87,7 +86,7 @@ export function AboutStateBoss(props: {trialStarted: string, setModal: Dispatch<
 
   useEffect(() => {
     if (fullyLoaded) {
-      play(explosion, false);
+      play(explosion, false, 0.8);
     }
   }, [acceptTerms, acceptPrivacy, acceptEmail, acceptPhysicalMail]);
 
@@ -101,58 +100,51 @@ export function AboutStateBoss(props: {trialStarted: string, setModal: Dispatch<
   }
 
   const onAccept = () => {
-    // make sure the user gets what he wants
-    let delay = 0;
-    const randomize = (delay:number) => delay * (1+Math.random()*0.7); // extra realism
-    const getInterval = () => randomize(350);
-    if (!acceptTerms) {
-      setAccepting(true);
-      setTimeout(() => setAcceptTerms(true), delay);
-      delay += getInterval();
-    }
-    if (!acceptPrivacy) {
-      setAccepting(true);
-      setTimeout(() => setAcceptPrivacy(true), delay);
-      delay += getInterval();
-    }
-    if (!acceptEmail) {
-      setAccepting(true);
-      setTimeout(() => setAcceptEmail(true), delay);
-      delay += getInterval();
-    }
-    if (!acceptPhysicalMail) {
-      setAccepting(true);
-      setTimeout(() => setAcceptPhysicalMail(true), delay);
-      delay += getInterval();
-    }
-    setTimeout(() => setAccepted(true), delay);
+    if (!accepting && !accepted) {
+      // make sure the user gets what he wants
+      let delay = 0;
+      const randomize = (delay:number) => delay * (1.2+Math.random()*0.7); // extra realism
+      const getInterval = () => randomize(350);
+      if (!acceptTerms) {
+        setAccepting(true);
+        setTimeout(() => setAcceptTerms(true), delay);
+        delay += getInterval();
+      }
+      if (!acceptPrivacy) {
+        setAccepting(true);
+        setTimeout(() => setAcceptPrivacy(true), delay);
+        delay += getInterval();
+      }
+      if (!acceptEmail) {
+        setAccepting(true);
+        setTimeout(() => setAcceptEmail(true), delay);
+        delay += getInterval();
+      }
+      if (!acceptPhysicalMail) {
+        setAccepting(true);
+        setTimeout(() => setAcceptPhysicalMail(true), delay);
+        delay += getInterval();
+      }
+      setTimeout(() => setAccepted(true), delay);
 
-    setTimeout(() => {
-      play(cinematicBoom, false).then(() => {
-        setTimeout(() => props.setModal(null), boomAt);
-      })
-    }, delay+1600-boomAt)
+      setTimeout(() => {
+        play(cinematicBoom, false).then(() => {
+          setTimeout(() => props.setModal(null), boomAt);
+        })
+      }, delay+1300-boomAt);
+    }
   };
 
   return <div style={{maxWidth: '500px', padding: 8, backgroundColor: "#fc3b00"}}>
-    
-    <Logo/>
-
+    <CorporateLogo width="100%"/>
     <div style={{fontSize: 20}}>
-
-    <p>Unleash the POWER of State Machines with <b><em>StateBoss®™</em></b>, a LOW-CODE solution for the development of DIGITAL TWINS.</p>
-
-    <p><b><em>StateBoss®™</em></b> uses proprietary Blockchain technology to ensure the smoothest of all <a href="https://dl.acm.org/doi/abs/10.1007/s10270-024-01194-w">modeling experiences</a>.</p>
-
-    <p ></p>
-
-    <p>This is your FREE TRIAL.<br/>
-    You have <span style={{fontWeight: 600, color: "yellow", fontSize: 30}}>{remainingDays} days</span> remaining before you must BUY a license!!</p>
-
+      <p>Unleash the POWER of State Machines with <b><em>StateBoss®™</em></b>, a LOW-CODE solution for the development of DIGITAL TWINS.</p>
+      <p><b><em>StateBoss®™</em></b> uses proprietary Blockchain technology to ensure the smoothest of all <a href="https://dl.acm.org/doi/abs/10.1007/s10270-024-01194-w">modeling experiences</a>.</p>
+      <p>This is your FREE TRIAL.<br/>
+      You have <span style={{fontWeight: 600, color: "yellow", fontSize: 30}}>{remainingDays} days</span> remaining before you must BUY a license!!</p>
     </div>
 
     <p style={{color: '', fontSize: 16}}>Coming soon: <b><em>StateBoss®™ Extreme</em></b> with <b>AI Assisted Modeling</b>.</p>
-
 
     <div style={{textAlign: 'left', fontSize: 10}}>
       <style>{`
@@ -197,6 +189,7 @@ export function AboutStateBoss(props: {trialStarted: string, setModal: Dispatch<
     .notAccepted {
       background-color: black;
       color: #fc3b00;
+      cursor: pointer;
     }
     .notAccepted:active {
       padding-left: 6px;
@@ -205,10 +198,12 @@ export function AboutStateBoss(props: {trialStarted: string, setModal: Dispatch<
     .optimizing {
       background-color: #444;
       color: white;
+      cursor: default;
     }
     .accepted {
       background-color: green;
       color: white;
+      cursor: default;
     }`}</style>
     <div
       onClick={onAccept}
@@ -220,7 +215,7 @@ export function AboutStateBoss(props: {trialStarted: string, setModal: Dispatch<
         border: 0,
         boxSizing: 'border-box',
         height: 36,
-        cursor: 'pointer',
+        userSelect: 'none',
       }}>{accepted ? "ANOTHER SATISFIED CUSTOMER" : (accepting ? "OPTIMIZING YOUR EXPERIENCE..." : "I ACCEPT")}</div>
   </div>
 }

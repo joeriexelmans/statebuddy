@@ -81,8 +81,8 @@ export const Microwave = memo(function Microwave({state: {bellRinging, magnetron
 
   useEffect(() => {
     if (magnetronRunning) {
-      const stopSoundRunning = playSound(sndRunning, true);
-      return () => stopSoundRunning();
+      const snd = playSound(sndRunning, true);
+      return () => snd.then(snd => snd.stop());
     }
     return () => {};
   }, [magnetronRunning])
