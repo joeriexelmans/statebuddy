@@ -11,7 +11,7 @@ import sndBeep from "./beep.wav";
 import digitalFont from "./digital-font.ttf";
 import "./DigitalWatch.css";
 import imgNote from "./noteSmall.png";
-import imgWatch from "./watch.png";
+import imgWatch from "./watch.webp";
 import { jsonDeepEqual } from "@/util/util";
 
 export const dwatchConcreteSyntax = dwatchJSON as ConcreteSyntax;
