@@ -9,7 +9,7 @@ import { CorporateLogo } from "../Logo/CorporateLogo";
 import { Logo } from "../Logo/Logo";
 import { usePersistentState } from "@/hooks/usePersistentState";
 
-const boomAt = 500; // ms into 'cinematic boom' where the boom actually happens
+const boomAt = 495; // ms into 'cinematic boom' where the boom actually happens
 
 
 export function About(props: {setModal: Dispatch<SetStateAction<ReactElement|null>>}) {
@@ -142,15 +142,23 @@ export function AboutStateBoss(props: {trialStarted: string, setModal: Dispatch<
       @keyframes blink{50%{visibility:hidden}}
     `}</style>
     <div style={{fontSize: 20}}>
-      <p>Unleash the POWER of State Machines with <b><em>StateBoss®™</em></b>, a LOW-CODE solution for the development of DIGITAL TWINS.</p>
-      <p><b><em>StateBoss®™</em></b> uses proprietary Blockchain technology to ensure the smoothest of all <a href="https://dl.acm.org/doi/abs/10.1007/s10270-024-01194-w">modeling experiences</a>.</p>
-      <p>This is your FREE TRIAL.<br/>
-      You have <span className={!accepting && !accepted && "blink" || ""} style={{fontWeight: 600, color: "yellow", fontSize: 30}}>{remainingDays} days</span> remaining before you must BUY a license!!</p>
+      <p>Unleash the POWER of State Machines with <b><em>StateBoss®™</em></b> LOW-CODE development
+      <br/>of DIGITAL TWINS.</p>
+
+      <div style={{fontSize: 16}}>
+        <p>
+          <b><em>StateBoss®™</em></b> uses proprietary Blockchain technology <br/> to ensure a <em>silky smooth</em> experience.
+        </p>
+        <p>
+          Coming soon: <b><em>StateBoss®™ IntelliBOOST®™ AI-Assisted Modeling</em></b>.<br/>It can make your homework for you! With passing-grade guarantee!
+        </p>
+      </div>
+
+      <p>This is your <b>FREE TRIAL</b>.<br/>
+      You have <span className={!accepting && !accepted && "blink" || ""} style={{fontWeight: 600, color: "yellow", fontSize: 30}}>{Math.max(remainingDays,0)} days</span> remaining to BUY a license!</p>
     </div>
 
-    <p style={{color: '', fontSize: 16}}>Coming soon: <b><em>StateBoss®™ Extreme</em></b> with <b>AI Assisted Modeling</b>.</p>
-
-    <div style={{textAlign: 'left', fontSize: 10}}>
+    <div style={{textAlign: 'left', fontSize: 12}}>
       <style>{`
         input[type=checkbox] {
           accent-color: black;
@@ -159,7 +167,7 @@ export function AboutStateBoss(props: {trialStarted: string, setModal: Dispatch<
       <div>
         <label>
           <input type="checkbox" checked={acceptTerms} onChange={e => setAcceptTerms(forceAccept(e.target.checked))}/>
-          I accept the <b><em>StateBoss®™</em></b> terms and conditions, and its hard stance against pirated copies as well as attempt or ideation of circumvention of the <b><em>StateBoss®™</em></b> Digital Rights Management (<b><em>StateBoss®™</em></b> DRM) patented technology.
+          I accept the <b><em>StateBoss®™</em></b> terms and conditions
         </label>
       </div>
       <div>
@@ -170,7 +178,7 @@ export function AboutStateBoss(props: {trialStarted: string, setModal: Dispatch<
       </div>
       <br/>
       <div>
-        I wish to receive <b><em>BossExpress®™</em></b>, the <b><em>StateBoss®™</em></b> weekly magazine via:
+        I wish to receive <b><em>BossExpress®™</em></b>, the <b><em>StateBoss®™</em></b> weekly magazine(*) via:
         <div>
           <label>
             <input type="checkbox" checked={acceptEmail} onChange={e => setAcceptEmail(forceAccept(e.target.checked))}/>
@@ -180,12 +188,15 @@ export function AboutStateBoss(props: {trialStarted: string, setModal: Dispatch<
         <div>
           <label>
             <input type="checkbox" checked={acceptPhysicalMail} onChange={e => setAcceptPhysicalMail(forceAccept(e.target.checked))}/>
-            Physical mail
+            Physical mail (**)
           </label>
         </div>
       </div>
-      5 USD will be charged for every delivered, undelivered or returned copy of physical mail.
-      To cancel your subscription(s), call <a href="tel:1-800-BOSS">1-800-BOSS</a> - Mon-Fri 8:00 AM - 6:00 PM (0.50 USD per minute) Sat-Sun 10:00 AM - 6:00 PM (2 USD per minute). Extra charges may apply.
+      <span style={{fontSize:9}}>
+      (*) To cancel your subscription(s), call <a href="tel:1-800-BOSS">1-800-BOSS</a> - Mon-Fri 8:00 AM - 6:00 PM (0.50 USD per minute) Sat-Sun 10:00 AM - 6:00 PM (2 USD per minute). Extra charges may apply.<br/>
+      (**) 5 USD will be charged for every delivered, undelivered or returned copy of physical mail.<br/><br/>
+      StateBoss Corp always has the right to legal action against any person suspected of circumventing or tampering with the SoftSpy (SS) Secure Patented Technology, as well as encouraging or assisting others to perform such actions, in any active or passive manner.
+      </span>
     </div>
 
     <br/>
