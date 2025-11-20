@@ -27,6 +27,7 @@ import { Tooltip } from '../Components/Tooltip';
 import { ConcreteSyntax } from '@/statecharts/concrete_syntax';
 import { toURL } from '@/hooks/useUrlHashState';
 import { MoveUpDown } from '../Components/MoveUpDown';
+import { AppState, UrlState } from '../App';
 
 type SavedTraces = [string, BigStepCause[]][];
 
@@ -184,14 +185,19 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
             <button
               disabled={plantCS === null}
               onClick={() => {
-                toURL({...plantCS, nextID: 9999, selection: []})
-                .then(urlHash => {
-                  window.open("#"+urlHash, '_blank');
-                })
+                if (plantCS) {
+                  toURL<UrlState>({
+                    editorState: {...plantCS, nextID: 9999, selection: []},
+                    modelName: "[plant] "+plantName,
+                  })
+                  .then(urlHash => {
+                    window.open("#"+urlHash, '_blank');
+                  })
+                }
               }}
             >
               <OpenInNewIcon fontSize='small'/>
-              &nbsp;open statechart
+              &nbsp;plant statechart
             </button>
           </Tooltip>
         </div>
@@ -261,14 +267,12 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
               align="right">
               <DeleteOutlineIcon fontSize="small"/>
             </DoubleClickButton>
-            {/* {propertyError && <div style={{color: 'var(--error-color)'}}>{propertyError}</div>} */}
           </div>;
         })}
         <div className="toolbar stackHorizontal">
           <button onClick={() => setProperties(properties => [...properties, ""])} style={{flexGrow:1}}>
             <AddIcon fontSize="small"/> add property
           </button>
-          {/* <div style={{flexGrow:1}}/> */}
           <Tooltip tooltip='see MTL examples' align='right'>
             <button onClick={() => window.open("https://github.com/mvcisback/py-metric-temporal-logic/blob/ceb2567ef90f3bd5d7a8d607806a9d2e7021639e/README.md#string-based-api", "_blank")?.focus()}><HelpOutlineIcon fontSize='small'/> help</button>
           </Tooltip>

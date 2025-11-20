@@ -42,6 +42,11 @@ export type AppState = {
   showPlot: boolean,
 } & PlotState & SideBarState & BottomPanelState;
 
+// valid URL hashes contain:
+export type UrlState = {
+  editorState: VisualEditorState,
+} & Partial<AppState>;
+
 export const defaultAppState: AppState = {
   modelName: "untitled",
   showKeys: true,
@@ -102,7 +107,7 @@ export function App() {
     document.title = `${location.hostname==="localhost"?"[dev] ":""}${appState.modelName} [StateBuddy] ${timeFormatted}`;
   }, [appState])
 
-  const persist = useUrlHashState<VisualEditorState | AppState & {editorState: VisualEditorState}>(
+  const persist = useUrlHashState<VisualEditorState | UrlState>(
     recoveredState => {
       if (recoveredState === null) {
         setEditHistory(() => ({current: initialEditorState, history: [], future: []}));
@@ -120,7 +125,7 @@ export function App() {
           const {editorState, ...appState} = recoveredState as AppState & {editorState: VisualEditorState};
           setEditHistory(() => ({current: editorState, history: [], future: []}));
           setAppState(defaultAppState => Object.assign({}, defaultAppState, appState));
-        }          
+        }
       }
     },
   );
