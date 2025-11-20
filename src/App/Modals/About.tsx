@@ -135,13 +135,17 @@ export function AboutStateBoss(props: {trialStarted: string, setModal: Dispatch<
     }
   };
 
-  return <div style={{maxWidth: '500px', padding: 8, backgroundColor: "#fc3b00"}}>
+  return <div style={{maxWidth: '500px', padding: 8, backgroundColor: "#fc3b00", color: 'black'}}>
     <CorporateLogo width="100%"/>
+    <style>{`
+      .blink{animation:blink 1s steps(1,end) infinite}
+      @keyframes blink{50%{visibility:hidden}}
+    `}</style>
     <div style={{fontSize: 20}}>
       <p>Unleash the POWER of State Machines with <b><em>StateBoss®™</em></b>, a LOW-CODE solution for the development of DIGITAL TWINS.</p>
       <p><b><em>StateBoss®™</em></b> uses proprietary Blockchain technology to ensure the smoothest of all <a href="https://dl.acm.org/doi/abs/10.1007/s10270-024-01194-w">modeling experiences</a>.</p>
       <p>This is your FREE TRIAL.<br/>
-      You have <span style={{fontWeight: 600, color: "yellow", fontSize: 30}}>{remainingDays} days</span> remaining before you must BUY a license!!</p>
+      You have <span className={!accepting && !accepted && "blink" || ""} style={{fontWeight: 600, color: "yellow", fontSize: 30}}>{remainingDays} days</span> remaining before you must BUY a license!!</p>
     </div>
 
     <p style={{color: '', fontSize: 16}}>Coming soon: <b><em>StateBoss®™ Extreme</em></b> with <b>AI Assisted Modeling</b>.</p>
