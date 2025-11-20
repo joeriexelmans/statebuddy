@@ -95,6 +95,22 @@ export function AboutStateBoss(props: {trialStarted: string, setModal: Dispatch<
 
   const forceAccept = (x: boolean) => x || accepting;
 
+  useEffect(() => {
+    let snd = Promise.resolve<AudioBufferSourceNode|null>(null);
+    if (accepted) {
+      setTimeout(() => {
+        snd = play(cinematicBoom, false);
+        snd.then(() => {
+          setTimeout(() => {
+            snd = Promise.resolve(null); // this prevents the sound from being stopped when the modal closes because of timeout (we only want to stop the sound upon user cancelation)
+            props.setModal(null);
+          }, boomAt);
+        });
+      }, 1300-boomAt);
+    }
+    return () => {snd.then(snd => snd && snd.stop())};
+  }, [accepted]);
+
   if (!show) {
     return <></>;
   }
@@ -126,12 +142,6 @@ export function AboutStateBoss(props: {trialStarted: string, setModal: Dispatch<
         delay += getInterval();
       }
       setTimeout(() => setAccepted(true), delay);
-
-      setTimeout(() => {
-        play(cinematicBoom, false).then(() => {
-          setTimeout(() => props.setModal(null), boomAt);
-        })
-      }, delay+1300-boomAt);
     }
   };
 
