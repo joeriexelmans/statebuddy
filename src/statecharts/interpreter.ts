@@ -196,7 +196,8 @@ export function enterStates(simtime: number, state: ConcreteState, toEnter: Set<
     else if (childToEnter.length === 0) {
       // also good, enter default child
       console.log('enter default...', state.initial[0][1]);
-      return enterDefault(simtime, state.initial[0][1], {environment, ...actionScope});
+      return enterDefault(simtime, state, {environment, ...actionScope});
+      // return enterDefault(simtime, state.initial[0][1], {environment, ...actionScope});
     }
     else {
       throw new Error("can only enter one child of an OR-state, stupid!");
