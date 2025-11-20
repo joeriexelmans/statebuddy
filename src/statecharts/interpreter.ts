@@ -72,7 +72,7 @@ export function execAction(action: Action, rt: ActionScope, uids: string[]): Act
 }
 
 export function entryActions(simtime: number, state: TransitionSrcTgt, actionScope: ActionScope): ActionScope {
-  // console.log('enter', stateDescription(state), '...');
+  console.log('enter', state, '...');
 
   let {environment, ...rest} = actionScope;
 
@@ -165,9 +165,12 @@ export function enterDefault(simtime: number, state: ConcreteState, rt: ActionSc
 // recursively enter the given state and, if children need to be entered, preferrably those occurring in 'toEnter' will be entered. If no child occurs in 'toEnter', the default child will be entered.
 export function enterStates(simtime: number, state: ConcreteState, toEnter: Set<string>, {environment, ...actionScope}: ActionScope): EnteredScope {
 
+  console.log('enterStates', state);
+
   environment = environment.enterScope(state.uid);
 
   // execute entry actions
+  console.log('entry actions...');
   actionScope = entryActions(simtime, state, {environment, ...actionScope});
 
   // enter children...
@@ -192,7 +195,8 @@ export function enterStates(simtime: number, state: ConcreteState, toEnter: Set<
     }
     else if (childToEnter.length === 0) {
       // also good, enter default child
-      return enterDefault(simtime, state, {environment, ...actionScope});
+      console.log('enter default...', state.initial[0][1]);
+      return enterDefault(simtime, state.initial[0][1], {environment, ...actionScope});
     }
     else {
       throw new Error("can only enter one child of an OR-state, stupid!");
@@ -381,7 +385,7 @@ function resolveHistory(tgt: AbstractState, history: RT_History): Set<string> {
 
 export function fire(simtime: number, t: Transition, ts: Map<string, Transition[]>, label: TransitionLabel, arena: OrState, {mode, environment, history, ...rest}: RT_Statechart & RaisedEvents, addEventParam: (env: Environment, label: TransitionLabel) => Environment): RT_Statechart & RaisedEvents {
 
-  // console.log('will now fire', transitionDescription(t), 'arena', arena);
+  console.log('will now fire', transitionDescription(t), 'arena', arena);
 
   const srcPath = computePath({ancestor: arena, descendant: t.src as ConcreteState}) as ConcreteState[];
 
@@ -408,6 +412,8 @@ export function fire(simtime: number, t: Transition, ts: Map<string, Transition[
   const state = tgtPath[0] as ConcreteState; // first state to enter
   const toEnter = resolveHistory(t.tgt, history)
     .union(new Set(tgtPath.map(s=>s.uid)));
+
+  console.log({arena, state, toEnter});
 
   let enteredStates;
   ({enteredStates, environment, history, ...rest} = enterStates(simtime, state, toEnter, {environment, history, ...rest}));

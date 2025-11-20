@@ -1,8 +1,14 @@
 import { Logo, statebossLocalStorageKey } from "@/App/Logo/Logo";
 import { useAudioContext } from "@/hooks/useAudioContext";
-import { Dispatch, ReactElement, SetStateAction, useEffect, useState } from "react";
+import { Dispatch, ReactElement, SetStateAction, useEffect, useRef, useState } from "react";
 
+import corporateLogo from "../../../artwork/corporate-logo/StateBOSS-logo-alt.webp";
 import jingle from "../../../artwork/corporate-logo/stateboss.opus";
+import explosion from "../../../artwork/corporate-logo/explosion.opus";
+import cinematicBoom from "../../../artwork/corporate-logo/cinematic-boom.opus";
+import { preload } from "react-dom";
+
+const boomAt = 410; // ms into 'cinematic boom' where the boom actually happens
 
 
 export function About(props: {setModal: Dispatch<SetStateAction<ReactElement|null>>}) {
@@ -19,6 +25,8 @@ export function About(props: {setModal: Dispatch<SetStateAction<ReactElement|nul
 
 export function AboutStateBuddy({poke, ...props}: {poke: ()=>void, setModal: Dispatch<SetStateAction<ReactElement|null>>}) {
   const [_, setCount] = useState(0);
+
+  preload(corporateLogo, {as: "fetch"});
   
   return <div style={{maxWidth: '500px', padding: 4}}>
     <Logo onClick={() => {
@@ -50,13 +58,83 @@ export function AboutStateBuddy({poke, ...props}: {poke: ()=>void, setModal: Dis
 export function AboutStateBoss(props: {trialStarted: string, setModal: Dispatch<SetStateAction<ReactElement|null>>}) {
   const remainingDays = 30 + Math.floor((Date.now() - Date.parse(props.trialStarted)) / (1000 * 60 * 60 * 24));
 
-  const [play] = useAudioContext(1);
+  const [show, setShow] = useState(false);
+  const [play, preloadAudio] = useAudioContext(1);
+
+  preloadAudio(jingle);
+  preloadAudio(explosion);
+  preloadAudio(cinematicBoom);
+  setTimeout(() => setFullyLoaded(true), 100);
 
   useEffect(() => {
-    play(jingle, false, 1);
-  }, [])
+    let timeout: NodeJS.Timeout;
+    const playing = play(jingle, false);
+    playing.then(() => {
+      timeout = setTimeout(() => setShow(true), 410);
+    });
+    return () => {
+      playing.then(src => src.stop());
+      clearTimeout(timeout);
+    };
+  }, []);
 
-  return <div style={{maxWidth: '500px', padding: 4, backgroundColor: "#fc3b00"}}>
+  const [acceptTerms, setAcceptTerms] = useState(false);
+  const [acceptPrivacy, setAcceptPrivacy] = useState(false);
+  const [acceptEmail, setAcceptEmail] = useState(false);
+  const [acceptPhysicalMail, setAcceptPhysicalMail] = useState(false);
+
+  const [fullyLoaded, setFullyLoaded] = useState(false);
+
+  useEffect(() => {
+    if (fullyLoaded) {
+      play(explosion, false);
+    }
+  }, [acceptTerms, acceptPrivacy, acceptEmail, acceptPhysicalMail]);
+
+  const [accepting, setAccepting] = useState(false);
+  const [accepted, setAccepted] = useState(false);
+
+  const forceAccept = (x: boolean) => x || accepting;
+
+  if (!show) {
+    return <></>;
+  }
+
+  const onAccept = () => {
+    // make sure the user gets what he wants
+    let delay = 0;
+    const randomize = (delay:number) => delay * (1+Math.random()*0.7); // extra realism
+    const getInterval = () => randomize(350);
+    if (!acceptTerms) {
+      setAccepting(true);
+      setTimeout(() => setAcceptTerms(true), delay);
+      delay += getInterval();
+    }
+    if (!acceptPrivacy) {
+      setAccepting(true);
+      setTimeout(() => setAcceptPrivacy(true), delay);
+      delay += getInterval();
+    }
+    if (!acceptEmail) {
+      setAccepting(true);
+      setTimeout(() => setAcceptEmail(true), delay);
+      delay += getInterval();
+    }
+    if (!acceptPhysicalMail) {
+      setAccepting(true);
+      setTimeout(() => setAcceptPhysicalMail(true), delay);
+      delay += getInterval();
+    }
+    setTimeout(() => setAccepted(true), delay);
+
+    setTimeout(() => {
+      play(cinematicBoom, false).then(() => {
+        setTimeout(() => props.setModal(null), boomAt);
+      })
+    }, delay+1600-boomAt)
+  };
+
+  return <div style={{maxWidth: '500px', padding: 8, backgroundColor: "#fc3b00"}}>
     
     <Logo/>
 
@@ -77,15 +155,20 @@ export function AboutStateBoss(props: {trialStarted: string, setModal: Dispatch<
 
 
     <div style={{textAlign: 'left', fontSize: 10}}>
+      <style>{`
+        input[type=checkbox] {
+          accent-color: black;
+        }
+      `}</style>
       <div>
         <label>
-          <input type="checkbox" checked/>
+          <input type="checkbox" checked={acceptTerms} onChange={e => setAcceptTerms(forceAccept(e.target.checked))}/>
           I accept the <b><em>StateBoss®™</em></b> terms and conditions, and its hard stance against pirated copies as well as attempt or ideation of circumvention of the <b><em>StateBoss®™</em></b> Digital Rights Management (<b><em>StateBoss®™</em></b> DRM) patented technology.
         </label>
       </div>
       <div>
         <label>
-          <input type="checkbox" checked/>
+          <input type="checkbox" checked={acceptPrivacy} onChange={e => setAcceptPrivacy(forceAccept(e.target.checked))}/>
           I accept the <b><em>StateBoss®™</em></b> privacy policy.
         </label>
       </div>
@@ -94,21 +177,50 @@ export function AboutStateBoss(props: {trialStarted: string, setModal: Dispatch<
         I wish to receive <b><em>BossExpress®™</em></b>, the <b><em>StateBoss®™</em></b> weekly magazine via:
         <div>
           <label>
-            <input type="checkbox" checked/>
+            <input type="checkbox" checked={acceptEmail} onChange={e => setAcceptEmail(forceAccept(e.target.checked))}/>
             E-mail
           </label>
         </div>
         <div>
           <label>
-            <input type="checkbox" checked/>
-            Physical mail (5 USD will be charged for every delivered, undelivered or returned copy)
+            <input type="checkbox" checked={acceptPhysicalMail} onChange={e => setAcceptPhysicalMail(forceAccept(e.target.checked))}/>
+            Physical mail
           </label>
         </div>
       </div>
-      To cancel your subscription(s), call <a href="tel:1-800-BOSS">1-800-BOSS</a> - Mon-Fri 8:00 AM - 6:00 PM (0.50 USD per minute) Sat-Sun 10:00 AM - 6:00 PM (2 USD per minute).
+      5 USD will be charged for every delivered, undelivered or returned copy of physical mail.
+      To cancel your subscription(s), call <a href="tel:1-800-BOSS">1-800-BOSS</a> - Mon-Fri 8:00 AM - 6:00 PM (0.50 USD per minute) Sat-Sun 10:00 AM - 6:00 PM (2 USD per minute). Extra charges may apply.
     </div>
 
     <br/>
-    <button onClick={() => props.setModal(null)} style={{fontStyle: 'italic', fontWeight: 600, fontSize:30, backgroundColor: 'black', color: "#fc3b00", border: 0}}>I ACCEPT</button>
+    <style>{`
+    .notAccepted {
+      background-color: black;
+      color: #fc3b00;
+    }
+    .notAccepted:active {
+      padding-left: 6px;
+      padding-top: 6px;
+    }
+    .optimizing {
+      background-color: #444;
+      color: white;
+    }
+    .accepted {
+      background-color: green;
+      color: white;
+    }`}</style>
+    <div
+      onClick={onAccept}
+      className={accepted ? "accepted" : (accepting ? "optimizing" : "notAccepted")}
+      style={{
+        fontStyle: 'italic',
+        fontWeight: 600,
+        fontSize:30,
+        border: 0,
+        boxSizing: 'border-box',
+        height: 36,
+        cursor: 'pointer',
+      }}>{accepted ? "ANOTHER SATISFIED CUSTOMER" : (accepting ? "OPTIMIZING YOUR EXPERIENCE..." : "I ACCEPT")}</div>
   </div>
 }

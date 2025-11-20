@@ -47,7 +47,7 @@ export function useAudioContext(speed: number) {
         return src;
       });
     // return callback to stop playing
-    return () => srcPromise.then(src => src.stop());
+    return srcPromise;
   }
 
   useEffect(() => {
@@ -62,5 +62,5 @@ export function useAudioContext(speed: number) {
     }
   }, [speed]);
 
-  return [play, url2AudioBuf] as [(url: string, loop: boolean, gain?: number) => ()=>void, (url:string)=>void];
+  return [play, url2AudioBuf] as const;
 }

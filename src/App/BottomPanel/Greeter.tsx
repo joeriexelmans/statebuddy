@@ -11,6 +11,7 @@ export function Greeter(props: {}) {
     <div className="greeter" style={{textAlign:'center'}} onClick={() => setShowGreeting(false)}>
       <span style={{fontSize: 18, fontStyle: 'italic'}}>
         Welcome to
+        &nbsp;
         <Logo width={250} height="auto" style={{verticalAlign: 'middle'}}/>
       </span>
     </div>
