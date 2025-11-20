@@ -32,7 +32,6 @@ TODO
 
 - bugs
     (*) editing SC <-> Plant connections at runtime doesn't seem to work
-    (*) replaying trace with runtime error gives uncaught exception
 
 - maybe support:
     - explicit order of:
