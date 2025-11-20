@@ -32,6 +32,7 @@ export type EditHistory = {
 }
 
 export type AppState = {
+  modelName: string,
   showKeys: boolean,
   zoom: number,
   insertMode: InsertMode,
@@ -42,6 +43,7 @@ export type AppState = {
 } & PlotState & SideBarState & BottomPanelState;
 
 export const defaultAppState: AppState = {
+  modelName: "untitled",
   showKeys: true,
   zoom: 1,
   insertMode: 'and',
@@ -91,6 +93,14 @@ export function App() {
   const ast = parsed && parsed[0];
 
   const [appState, setAppState] = useState<AppState>(defaultAppState);
+
+  useEffect(() => {
+    // useful when bookmarking the page: model name is in the title (that's basically the only reason we have a model name)
+    const leadingZeros = (n: number) => ('0'+n).slice(-2);
+    const now = new Date();
+    const timeFormatted = `${now.getFullYear()}/${leadingZeros(now.getMonth()+1)}/${leadingZeros(now.getDay()+1)} ${leadingZeros(now.getHours())}:${leadingZeros(now.getMinutes())}`;
+    document.title = `${location.hostname==="localhost"?"[dev] ":""}${appState.modelName} [StateBuddy] ${timeFormatted}`;
+  }, [appState])
 
   const persist = useUrlHashState<VisualEditorState | AppState & {editorState: VisualEditorState}>(
     recoveredState => {

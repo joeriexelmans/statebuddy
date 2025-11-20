@@ -22,7 +22,8 @@ html, body {
   --statusbar-error-bg-color: light-dark(rgb(163, 0, 0), rgb(255, 82, 82));
   --statusbar-error-fg-color: light-dark(white, black);
 
-  --tooltip-bg-color: light-dark(rgba(28, 72, 129), rgb(209, 209, 158));
+  --tooltip-bg-color: light-dark(rgb(107, 107, 167), #305b73);
+  --tooltip-fg-color: light-dark(white, white);
 
   --separator-color: light-dark(lightgrey, rgb(58, 58, 58));
   --inactive-bg-color: light-dark(#f7f7f7, rgb(29, 29, 29));

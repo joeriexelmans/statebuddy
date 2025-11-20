@@ -9,21 +9,32 @@
   display: flex;
   flex-grow: 1;
 }
-.tooltipInner, .tooltipArrow {
+.tooltipInner,
+.tooltipArrow {
   position: absolute;
-  z-index: 2;
+  z-index: 3;
+}
+.blurOnHover {
   visibility: hidden;
 }
-.tooltipOuter.whenFocus:focus-within .tooltipInner,
-.tooltipOuter.whenFocus:focus-within .tooltipArrow
-{
-  visibility: visible;
+.tooltipOuter.onfocus .tooltipInner,
+.tooltipOuter.onalways .tooltipInner{
+  /* tooltips that are visible when focused on their parent are visible for longer, so they should stack a bit lower than other tooltips that are visible while hovering */
+  z-index: 2;
 }
-.tooltipOuter:not(.whenFocus):hover .tooltipInner,
-.tooltipOuter:not(.whenFocus):hover .tooltipArrow
+.tooltipOuter.onfocus:focus-within .blurOnHover
 {
   visibility: visible;
-  transition: visibility 0s linear 0.5s;
+  transition: none; /* <-- necessary, otherwise when the class changes from 'onhover' to something else, the animation will remain */
+}
+.tooltipOuter.onalways .blurOnHover {
+  visibility: visible;
+  transition: none; /* <-- necessary, otherwise when the class changes from 'onhover' to something else, the animation will remain */
+}
+.tooltipOuter.onhover:hover .blurOnHover:not(:hover) /* <-- hovering the tooltip itself does not count as hovering */
+{
+  visibility: visible;
+  transition: visibility 0s linear 0.5s; /* delay */
 }
 
 /* Horizontal position */
@@ -55,7 +66,7 @@
 /* Vertical position */
 .tooltipInner {
   top: 100%;
-  margin-top: var(--tooltip-arrow-size);
+  margin-top: calc(var(--tooltip-arrow-size) - 1px);
 }
 .tooltipArrow {
   top: 100%;
@@ -66,7 +77,7 @@
   top: revert;
   margin-top: revert;
   bottom: 100%;
-  margin-bottom: var(--tooltip-arrow-size);
+  margin-bottom: calc(var(--tooltip-arrow-size) - 1px);
 }
 .tooltipOuter.above .tooltipArrow {
   top: revert;
@@ -80,7 +91,7 @@
 /* Looks */
 .tooltipInner {
   background-color: var(--tooltip-bg-color);
-  color: var(--background-color);
+  color: var(--tooltip-fg-color);
   border-radius: 3px;
   width: max-content;
   white-space: preserve;
@@ -95,8 +106,10 @@
 .blurOnHover:hover *
 {
   background-color: color-mix(in srgb, grey 30%, var(--tooltip-bg-color));
-  color: color-mix(in srgb, grey 30%, var(--background-color));
+  color: color-mix(in srgb, grey 30%, var(--tooltip-fg-color));
+
   /* tooltips should never obstruct the view */
+  /* this really only applies to tooltips that remain visible for as long as an input element is focused */
   opacity: 0.25;
   filter: blur(0.75px);
 }
@@ -108,6 +121,7 @@
 }
 .tooltipOuter.error .tooltipInner {
   background-color: var(--error-color);
+  /* color: */
 }
 .tooltipOuter.error .tooltipArrow {
   background-color: var(--error-color);

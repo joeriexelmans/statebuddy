@@ -1,22 +1,8 @@
-import { Dispatch, memo, ReactElement, SetStateAction, useCallback, useEffect, useMemo, useState } from "react";
-import { TimerElapseEvent, Timers } from "../../statecharts/runtime_types";
-import { getSimTime, setPaused, setRealtime, TimeMode } from "../../statecharts/time";
-import { About } from "../Modals/About";
-import { AppState, EditHistory, LightMode } from "../App";
-import { KeyInfoHidden, KeyInfoVisible } from "./KeyInfo";
-import { UndoRedoButtons } from "./UndoRedoButtons";
-import { ZoomButtons } from "./ZoomButtons";
-import { formatTime } from "../../util/util";
-
-import DarkModeIcon from '@mui/icons-material/DarkMode';
-import LightModeIcon from '@mui/icons-material/LightMode';
-import BrightnessAutoIcon from '@mui/icons-material/BrightnessAuto';
-
-import SpeedIcon from '@mui/icons-material/Speed';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
-import FindInPageIcon from '@mui/icons-material/FindInPage';
 import FindInPageOutlinedIcon from '@mui/icons-material/FindInPageOutlined';
 
+import { usePersistentState } from "@/hooks/usePersistentState";
+import { useShortcuts } from "@/hooks/useShortcuts";
 import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
 import CachedIcon from '@mui/icons-material/Cached';
 import InfoOutlineIcon from '@mui/icons-material/InfoOutline';
@@ -25,17 +11,24 @@ import PauseIcon from '@mui/icons-material/Pause';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import SkipNextIcon from '@mui/icons-material/SkipNext';
 import StopIcon from '@mui/icons-material/Stop';
+import { Dispatch, memo, ReactElement, SetStateAction, useCallback, useMemo } from "react";
+import { setPaused, setRealtime, TimeMode } from "../../statecharts/time";
+import { formatTime } from "../../util/util";
+import { AppState, EditHistory } from "../App";
+import { Tooltip } from "../Components/Tooltip";
+import { TwoStateButton } from "../Components/TwoStateButton";
+import { About } from "../Modals/About";
+import { VisualEditorState } from "../VisualEditor/VisualEditor";
+import { TraceState } from "../hooks/useSimulator";
+import { Setters } from "../makePartialSetter";
 import { InsertModes } from "./InsertModes";
-import { usePersistentState } from "@/hooks/usePersistentState";
+import { KeyInfoHidden, KeyInfoVisible } from "./KeyInfo";
 import { RotateButtons } from "./RotateButtons";
 import { SpeedControl } from "./SpeedControl";
-import { TraceState } from "../hooks/useSimulator";
-import { FindReplace } from "../BottomPanel/FindReplace";
-import { VisualEditorState } from "../VisualEditor/VisualEditor";
-import { Setters } from "../makePartialSetter";
-import { TwoStateButton } from "../Components/TwoStateButton";
-import { useShortcuts } from "@/hooks/useShortcuts";
-import { Tooltip } from "../Components/Tooltip";
+import { UndoRedoButtons } from "./UndoRedoButtons";
+import { ZoomButtons } from "./ZoomButtons";
+
+import favicon from "../../../artwork/new-logo/favicon-minified.webp";
 
 export type TopPanelProps = {
   trace: TraceState | null,
@@ -63,7 +56,7 @@ function toggle(booleanSetter: Dispatch<(state: boolean) => boolean>) {
   return () => booleanSetter(x => !x);
 }
 
-export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, onRedo, onRotate, onInit, onClear, onBack, insertMode, setInsertMode, setModal, zoom, setZoom, showKeys, setShowKeys, editHistory, showFindReplace, setShowFindReplace, displayTime, refreshDisplayTime, nextWakeup}: TopPanelProps) {
+export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, onRedo, onRotate, onInit, onClear, onBack, insertMode, setInsertMode, setModal, zoom, setZoom, showKeys, setShowKeys, editHistory, showFindReplace, setShowFindReplace, displayTime, refreshDisplayTime, nextWakeup, modelName, setModelName}: TopPanelProps) {
   const [timescale, setTimescale] = usePersistentState("timescale", 1);
   const config = trace && trace.trace[trace.idx];
   const formattedDisplayTime = useMemo(() => formatTime(displayTime), [displayTime]);
@@ -117,6 +110,7 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
   const catchingUp = progress > 1;
 
   return <div className="toolbar">
+
     {/* shortcuts / about */}
     <div className="toolbarGroup">
       <KeyInfo keyInfo={ShortCutShowKeys}>
@@ -126,9 +120,16 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
       </KeyInfo>
       <Tooltip tooltip="about StateBuddy" align="left">
         <button onClick={() => setModal(<About setModal={setModal}/>)}>
-          <InfoOutlineIcon fontSize="small"/>
+          <InfoOutlineIcon fontSize='small'/>
         </button>
       </Tooltip>
+      <input
+        type="text"
+        placeholder='model name'
+        value={modelName}
+        style={{width:Math.max(modelName.length*6.5, 100)}}
+        onChange={e => setModelName(e.target.value)}
+        />
       &emsp;
     </div>
 
