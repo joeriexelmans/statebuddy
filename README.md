@@ -1,4 +1,4 @@
-![logo](./artwork/logo-playful.svg)
+![logo](./artwork/new-logo/new-logo-playful-minified.svg)
 
 ![screenshot](./docs/screenshot.png)
 
