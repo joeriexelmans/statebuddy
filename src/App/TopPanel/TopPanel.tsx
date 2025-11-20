@@ -123,6 +123,8 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
           <InfoOutlineIcon fontSize='small'/>
         </button>
       </Tooltip>
+      <Tooltip tooltip="becomes part of page title
+(useful when bookmarking)" align='left'>
       <input
         type="text"
         placeholder='model name'
@@ -130,6 +132,7 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
         style={{width:Math.max(modelName.length*6.5, 100)}}
         onChange={e => setModelName(e.target.value)}
         />
+      </Tooltip>
       &emsp;
     </div>
 
