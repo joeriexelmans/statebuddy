@@ -1,6 +1,6 @@
 import { AbstractState, computeArena, computePath, ConcreteState, getDescendants, HistoryState, isOverlapping, OrState, StableState, Statechart, stateDescription, Transition, transitionDescription, TransitionSrcTgt } from "./abstract_syntax";
 import { evalExpr } from "./actionlang_interpreter";
-import { Environment, FlatEnvironment } from "./environment";
+import { Environment, FlatEnvironment, Scope } from "./environment";
 import { Action, EventTrigger, TransitionLabel } from "./label_ast";
 import { BigStep, RT_Event, RT_History, RT_Microstep, TimerElapseEvent, Timers } from "./runtime_types";
 
@@ -19,8 +19,7 @@ const initialEnv = new Map<string, any>([
   ["_log", (str: string) => console.log(str)],
 ]);
 
-// const initialScopedEnvironment = new ScopedEnvironment({env: initialEnv, children: {}});
-const intiialFlatEnvironment = new FlatEnvironment(initialEnv);
+const initialFlatEnvironment = new FlatEnvironment(initialEnv);
 
 const emptyMicrostep = {
   internalEvents: [],
@@ -32,7 +31,7 @@ const emptyMicrostep = {
 export function initialize(ast: Statechart): BigStep {
   const rt = enterState({
     simtime: 0,
-    environment: intiialFlatEnvironment,
+    environment: initialFlatEnvironment,
     mode: new Set(),
     history: new Map(),
     timers: [],
@@ -41,10 +40,10 @@ export function initialize(ast: Statechart): BigStep {
   return handleInternalEvents(rt, ast);
 }
 
-function execAction(rt: RT_Microstep, action: Action, uids: string[]): RT_Microstep {
+function execAction(rt: RT_Microstep, action: Action, scope: Scope, uids: string[]): RT_Microstep {
   if (action.kind === "assignment") {
     const rhs = evalExpr(action.rhs, rt.environment, uids);
-    const environment = rt.environment.set(action.lhs, rhs);
+    const environment = rt.environment.set(action.lhs, rhs, scope);
     return {
       ...rt,
       environment,
@@ -79,7 +78,7 @@ function enterState(rt: RT_Microstep, state: TransitionSrcTgt, toEnter: Set<stri
 
   // entry actions
   for (const action of state.entryActions) {
-    rt = execAction(rt, action, [state.uid]);
+    rt = execAction(rt, action, {kind: "state", thing: state}, [state.uid]);
   }
 
   if (state.kind !== "pseudo") {
@@ -113,7 +112,7 @@ function exitState(rt: RT_Microstep, state: TransitionSrcTgt): RT_Microstep {
 
   // exit actions
   for (const action of state.exitActions) {
-    (rt = execAction(rt, action, [state.uid]));
+    (rt = execAction(rt, action, {kind: "state", thing: state}, [state.uid]));
   }
 
   // remove from mode
@@ -181,9 +180,11 @@ export function exitChildren(rt: RT_Microstep, parent: ConcreteState): RT_Micros
         history.set(h.uid, new Set([
           ...parent.children.map(child => child.uid),
           ...parent.children.flatMap(child =>
-            child.children
-              .filter(child => rt.mode.has(child.uid))
-              .map(child => child.uid))]));
+            child.kind !== "pseudo" &&
+              child.children
+                .filter(child => rt.mode.has(child.uid))
+                .map(child => child.uid)
+              || [])]));
         rt = {...rt, history};
       }
       else { // deep history
@@ -228,10 +229,10 @@ function allowedToFire(arena: OrState, firedArenas: OrState[]) {
   return true;
 }
 
-function addEventParam(environment: Environment, event: RT_Event | undefined, label: TransitionLabel) {
+function addEventParam(environment: Environment, event: RT_Event | undefined, transition: Transition, label: TransitionLabel) {
   if (event && event.kind === "event" && event.param !== undefined) {
     const varName = (label.trigger as EventTrigger).paramName as string;
-    return environment.newVar(varName, event.param);
+    return environment.newVar(varName, event.param, {kind: "transition", thing: transition});
   }
   else {
     return environment;
@@ -270,8 +271,10 @@ function getEnabledTransitions(rt: RT_Microstep, sourceState: AbstractState, eve
       }
     }
   };
-  const guardEnvironment = rt.environment.set("inState", inState);
-  const enabled = triggered.filter(([t,l]) => evalExpr(l.guard, addEventParam(guardEnvironment, event, l), [t.uid]));
+  const guardEnvironment = rt.environment.set("inState", inState,
+    // we throw away the guard-environment after evaluating the guard so we don't actually pollute our environment.
+    {kind: "state", thing: statechart.root});
+  const enabled = triggered.filter(([t,l]) => evalExpr(l.guard, addEventParam(guardEnvironment, event, t, l), [t.uid]));
   return enabled;
 }
 
@@ -283,14 +286,13 @@ function attemptSrcState(rt: RT_Microstep, sourceState: AbstractState, event: RT
         [...enabled.map(([t]) => t.uid), sourceState.uid]);
     }
     const [[transition, label]] = enabled; // transition to fire
-    const arena = computeArena(transition.src, transition.tgt);
     // fairness: every arena can only fire once per 'fair step'
-    if (sourceState.kind === "pseudo" || allowedToFire(arena, rt.firedArenas)) {
+    if (sourceState.kind === "pseudo" || allowedToFire(transition.arena, rt.firedArenas)) {
       // fire transition!
-      rt = fire(rt, transition, event, statechart.transitions, label, arena);
+      rt = fire(rt, transition, event, statechart.transitions, label);
       rt = {...rt,
         firedTransitions: [...rt.firedTransitions, transition.uid],
-        firedArenas: [...rt.firedArenas, arena],
+        firedArenas: [...rt.firedArenas, transition.arena],
       };
 
       // if there is any pseudo-state in the modal configuration, immediately fire any enabled outgoing transitions of that state:
@@ -322,7 +324,9 @@ function fairStep(rt: RT_Microstep, event: RT_Event, statechart: Statechart, act
       }
       else {
         // no enabled outgoing transitions, try the children:
-        rt = fairStep(rt, event, statechart, state);
+        if (state.kind !== "pseudo") {
+          rt = fairStep(rt, event, statechart, state);
+        }
       }
     }
   }
@@ -373,23 +377,23 @@ function resolveHistory(tgt: AbstractState, history: RT_History): Set<string> {
   }
 }
 
-function fire(rt: RT_Microstep, t: Transition, event: RT_Event | undefined, ts: Map<string, Transition[]>, label: TransitionLabel, arena: OrState): RT_Microstep {
+function fire(rt: RT_Microstep, transition: Transition, event: RT_Event | undefined, ts: Map<string, Transition[]>, label: TransitionLabel): RT_Microstep {
 
-  console.log('firing:', transitionDescription(t));
+  console.log('firing:', transitionDescription(transition));
 
-  rt = exitChildren(rt, arena);
+  rt = exitChildren(rt, transition.arena);
 
   // transition actions
-  rt = {...rt, environment: addEventParam(rt.environment, event, label)};
+  rt = {...rt, environment: addEventParam(rt.environment, event, transition, label)};
   for (const action of label.actions) {
-    rt = execAction(rt, action, [t.uid]);
+    rt = execAction(rt, action, {kind: "transition", thing: transition}, [transition.uid]);
   }
 
-  const tgtPath = computePath({ancestor: arena, descendant: t.tgt});
-  const toEnter = resolveHistory(t.tgt, rt.history)
+  const tgtPath = computePath({ancestor: transition.arena, descendant: transition.tgt});
+  const toEnter = resolveHistory(transition.tgt, rt.history)
     .union(new Set(tgtPath.map(s=>s.uid)));
 
-  rt = enterChildren(rt, arena, toEnter);
+  rt = enterChildren(rt, transition.arena, toEnter);
 
   return rt;
 }

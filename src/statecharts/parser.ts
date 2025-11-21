@@ -1,4 +1,4 @@
-import {  ConcreteState, HistoryState, OrState, UnstableState, Statechart, stateDescription, Transition } from "./abstract_syntax";
+import {  ConcreteState, HistoryState, OrState, UnstableState, Statechart, stateDescription, Transition, computeArena } from "./abstract_syntax";
 import { Action, EventTrigger, Expression, ParsedText } from "./label_ast";
 import { parse as parseLabel, SyntaxError } from "./label_parser";
 import { Connections, ReducedConcreteSyntax } from "./detect_connections";
@@ -92,7 +92,7 @@ export function parseStatechart(concreteSyntax: ReducedConcreteSyntax, conns: Co
   for (const d of concreteSyntax.diamonds) {
     const parent = uid2State.get(conns.insidenessMap.get(d.uid)!)! as ConcreteState;
     const pseudoState = {
-      kind: "pseudo",
+      kind: "pseudo" as const,
       uid: d.uid,
       comments: [],
       depth: parent.depth+1,
@@ -110,6 +110,7 @@ export function parseStatechart(concreteSyntax: ReducedConcreteSyntax, conns: Co
       uid: h.uid,
       parent,
       depth: parent.depth+1,
+      comments: [],
     };
     parent.history.push(historyState);
     historyStates.push(historyState);
@@ -172,10 +173,12 @@ export function parseStatechart(concreteSyntax: ReducedConcreteSyntax, conns: Co
         else {
           tgt = uid2State.get(tgtUID!)!;
         }
+        const src = uid2State.get(srcUID)!;
         const transition: Transition = {
           uid: arr.uid,
-          src: uid2State.get(srcUID)!,
+          src,
           tgt,
+          arena: computeArena(src, tgt),
           label: [],
         }
         const existingTransitions = transitions.get(srcUID) || [];

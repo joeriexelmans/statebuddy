@@ -1,22 +1,25 @@
-import { getST, iterST, ScopeTree, updateST, writeST } from "./scope_tree";
+import { AbstractState, Transition } from "./abstract_syntax";
+
+export type Scope = {
+  kind: "transition",
+  thing: Transition,
+} | {
+  kind: "state",
+  thing: AbstractState,
+};
 
 export type Environment = {
-  enterScope(scopeId: string): Environment;
-  exitScope(): Environment;
-  dropScope(): Environment;
-
   // force creation of a new variable in the current scope, even if a variable with the same name already exists in a surrounding scope
-  newVar(key: string, value: any): Environment;
+  newVar(key: string, value: any, scope: Scope): Environment;
 
   // (over)write variable
-  set(key: string, value: any): Environment;
+  set(key: string, value: any, scope: Scope): Environment;
 
   // read variable
-  get(key: string): any;
+  get(key: string, scope: Scope): any;
 
   entries(): IterableIterator<[string, any]>;
 }
-
 
 // non-hierarchical environment with only global variables
 // consistent with the UA MoSIS course on Statecharts
@@ -27,23 +30,13 @@ export class FlatEnvironment {
     this.env = env;
   }
 
-  enterScope(scopeId: string): FlatEnvironment {
-    return this;
+  newVar(key: string, value: any, scope: Scope) {
+    return this.set(key, value, scope);
   }
-  exitScope(): FlatEnvironment {
-    return this;
-  }
-  dropScope(): FlatEnvironment {
-    return this;
-  }
-
-  newVar(key: string, value: any) {
-    return this.set(key, value);
-  }
-  set(key: string, value: any) {
+  set(key: string, value: any, scope: Scope) {
     return new FlatEnvironment(new Map([...this.env, [key, value]]));
   }
-  get(key: string): any {
+  get(key: string, scope: Scope): any {
     return this.env.get(key);
   }
 
@@ -52,89 +45,61 @@ export class FlatEnvironment {
   }
 }
 
-// A scoped environment
-// IMO better, but harder to explain
-export class ScopedEnvironment {
-  scopeTree: ScopeTree;
-  current: string[];
-
-  constructor(scopeTree: ScopeTree = { env: new Map(), children: {} }, current: string[] = []) {
-    this.scopeTree = scopeTree;
-    this.current = current;
-  }
-
-  enterScope(scopeId: string): ScopedEnvironment {
-    // console.log('enter scope', scopeId, new ScopedEnvironment(
-    //   this.scopeTree,
-    //   [...this.current, scopeId],
-    // ));
-    return new ScopedEnvironment(
-      this.scopeTree,
-      [...this.current, scopeId],
-    );
-  }
-  exitScope() {
-    // console.log('exit scope', this.current.at(-1), new ScopedEnvironment(
-    //   this.scopeTree,
-    //   this.current.slice(0, -1),
-    // ));
-    return new ScopedEnvironment(
-      this.scopeTree,
-      this.current.slice(0, -1),
-    );
-  }
-
-  // like exitScope, but also gets rid of everything that was in the scope
-  dropScope() {
-    function dropPath({children, env}: ScopeTree, [first, ...restOfPath]: string[]): ScopeTree {
-      const { [first]: toDrop, ...rest} = children;
-      if (restOfPath.length === 0) {
-        return {
-          children: rest,
-          env,
-        };
-      }
-      return {
-        children: {
-          [first]: dropPath(toDrop, restOfPath),
-          ...rest,
-        },
-        env,
-      }
-    }
-    const after = dropPath(this.scopeTree, this.current);
-    return new ScopedEnvironment(
-      after,
-      this.current.slice(0, -1),
-    )
-  }
-
-  newVar(key: string, value: any): ScopedEnvironment {
-    return new ScopedEnvironment(
-      writeST(key, value, this.current, this.scopeTree),
-      this.current,
-    );
-  }
-
-  // update variable in the innermost scope where it exists, or create it in the current scope if it doesn't exist yet
-  set(key: string, value: any): ScopedEnvironment {
-    let updated = updateST(this.current, key, value, this.scopeTree);
-    if (updated === undefined) {
-      updated = writeST(key, value, this.current, this.scopeTree);
-    }
-    return new ScopedEnvironment(
-      updated,
-      this.current,
-    )
-  }
-
-  // lookup variable, starting in the currrent (= innermost) scope, then looking into surrounding scopes until found.
-  get(key: string): ScopedEnvironment {
-    return getST(this.current, key, this.scopeTree);
-  }
-
-  *entries(): IterableIterator<[string, any]> {
-    yield* iterST(this.scopeTree);
-  }
+function pureUpdate<K,V>(m: ReadonlyMap<K,V>, key: K, val: V) {
+  return new Map([
+    ...m,
+    [key, val]
+  ]);
 }
 
+export class ScopedEnvironment {
+  env: ReadonlyMap<string, ReadonlyMap<string, any>>; // (state|transition)-uid -> name -> value
+
+  constructor(env: ReadonlyMap<string, any> = new Map()) {
+    this.env = env;
+  }
+
+  newVar(key: string, value: any, scope: Scope) {
+    return new ScopedEnvironment(
+      pureUpdate(this.env, scope.thing.uid,
+        pureUpdate(this.env.get(scope.thing.uid) || new Map(), key, value)
+      ));
+  }
+
+  #findScope(key: string, scope: Scope): [Scope, any] | undefined {
+    const m = this.env.get(scope.thing.uid);
+    if (m !== undefined) {
+      return [scope, m];
+    }
+    if (scope.kind === "state") {
+      const parentState = scope.thing.parent;
+      if (parentState) {
+        return this.#findScope(key, {kind: "state", thing: parentState});
+      }
+    }
+    else { // transition
+      return this.#findScope(key, {kind: "state", thing: scope.thing.arena});
+    }
+  }
+
+  set(key: string, value: any, scope: Scope) {
+    const found = this.#findScope(key, scope);
+    if (!found) {
+      return this.newVar(key, value, scope);
+    }
+    else {
+      const [foundScope] = found;
+      return new ScopedEnvironment(pureUpdate(this.env, foundScope.thing.uid,
+        pureUpdate(this.env.get(foundScope.thing.uid) || new Map(), key, value)
+      ));
+    }
+  }
+
+  get(key: string, scope: Scope) {
+    const found = this.#findScope(key, scope);
+    if (found) {
+      const [_, val] = found;
+      return val;
+    }
+  }
+}

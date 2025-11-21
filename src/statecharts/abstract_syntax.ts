@@ -15,7 +15,7 @@ export type EntryExitState = AbstractState & {
 
 export type StableState = EntryExitState & {
   kind: "and" | "or";
-  children: ConcreteState[];
+  children: TransitionSrcTgt[];
   history: HistoryState[];
   timers: number[]; // list of timeouts (e.g., the state having an outgoing transition with trigger "after 4s" would appear as the number 4000 in this list)
 };
@@ -50,6 +50,7 @@ export type Transition = {
   src: ConcreteState | UnstableState;
   tgt: ConcreteState | UnstableState | HistoryState;
   label: ParsedText[];
+  arena: OrState;
 }
 
 export type Statechart = {
@@ -149,9 +150,10 @@ export function computePath({ancestor, descendant}: {ancestor: AbstractState, de
 }
 
 // transitive, reflexive
-export function getDescendants(state: ConcreteState): Set<string> {
+export function getDescendants(state: AbstractState): Set<string> {
   const result = new Set([state.uid]);
-  if (state.children) {
+  if (state.kind !== "pseudo") {
+    // @ts-ignore
     for (const child of state.children) {
       for (const descendant of getDescendants(child)) {
         // will include child itself:
