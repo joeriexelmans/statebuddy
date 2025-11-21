@@ -172,19 +172,6 @@ function ShowEnvironment(props: {environment: Environment}) {
   return <div>{
     [...props.environment.entries()]
       .filter(([variable]) => !variable.startsWith('_'))
-      .map(([variable,value]) => `${variable.split('.').at(-1)}: ${JSON.stringify(value)}`).join(', ')
+      .map(([variable,value]) => `${variable.split('.').at(-1)}=${JSON.stringify(value)}`).join(', ')
   }</div>;
-}
-
-function ShowMode(props: {mode: Mode, statechart: Statechart}) {
-  const activeLeafs = getActiveLeafs(props.mode, props.statechart);
-  return <div>{[...activeLeafs].map(uid =>
-    <span className="activeState">{stateDescription(props.statechart.uid2State.get(uid)!)}</span>)}</div>;
-}
-
-function getActiveLeafs(mode: Mode, sc: Statechart) {
-  return new Set([...mode].filter(uid =>
-    // @ts-ignore
-    sc.uid2State.get(uid)?.children?.length === 0
-  ));
 }
