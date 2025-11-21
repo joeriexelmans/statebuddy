@@ -7,23 +7,20 @@ import corporateLogo from "../../../artwork/corporate-logo/StateBOSS-logo-alt.we
 import jingle from "../../../artwork/corporate-logo/stateboss.opus";
 import { CorporateLogo } from "../Logo/CorporateLogo";
 import { Logo } from "../Logo/Logo";
-import { usePersistentState } from "@/hooks/usePersistentState";
-
-const boomAt = 495; // ms into 'cinematic boom' where the boom actually happens
-
+import { useTrial } from "../hooks/useTrial";
 
 export function About(props: {setModal: Dispatch<SetStateAction<ReactElement|null>>}) {
-  const [trialStarted, setTrialStarted] = usePersistentState<string|null>("stateboss-trial-started", null);
+  const {trialStarted, startTrial, remainingDays} = useTrial();
 
   if (trialStarted) {
-    return <AboutStateBoss {...props} trialStarted={trialStarted}/>
+    return <AboutStateBoss {...props} trialStarted={trialStarted} remainingDays={remainingDays}/>
   }
   else {
-    return <AboutStateBuddy {...props} setTrialStarted={setTrialStarted}/>
+    return <AboutStateBuddy {...props} startTrial={startTrial}/>
   }
 }
 
-export function AboutStateBuddy({setTrialStarted, ...props}: {setTrialStarted: Dispatch<SetStateAction<string|null>>, setModal: Dispatch<SetStateAction<ReactElement|null>>}) {
+export function AboutStateBuddy({startTrial, ...props}: {startTrial: () => void, setModal: Dispatch<SetStateAction<ReactElement|null>>}) {
   const [_, setCount] = useState(0);
 
   preload(corporateLogo, {as: "fetch"});
@@ -32,7 +29,7 @@ export function AboutStateBuddy({setTrialStarted, ...props}: {setTrialStarted: D
     <Logo onClick={() => {
       setCount(i => {
         if (i+1 === 7) {
-          setTimeout(() => setTrialStarted(new Date().toISOString()), 0); // just trigger a re-render of our parent (to switch to StateBoss)
+          startTrial();
         }
         return i+1;
       });
@@ -54,8 +51,9 @@ export function AboutStateBuddy({setTrialStarted, ...props}: {setTrialStarted: D
     </div>;
 }
 
-export function AboutStateBoss(props: {trialStarted: string, setModal: Dispatch<SetStateAction<ReactElement|null>>}) {
-  const remainingDays = 30 + Math.floor((Date.now() - Date.parse(props.trialStarted)) / (1000 * 60 * 60 * 24));
+const boomAt = 490; // ms into 'cinematic boom' where the boom actually happens. Note that we schedule the visual effect to be a bit too early. This is (1) to compensate for possible slow rendering, and (2) because it is perceived to be more realistic for the visual effect to be a bit too early rather than too late, because our brains are used to the fact that light travels faster than sound.
+
+export function AboutStateBoss(props: {trialStarted: string, remainingDays: number, setModal: Dispatch<SetStateAction<ReactElement|null>>}) {
 
   const [show, setShow] = useState(false);
   const [play, preloadAudio] = useAudioContext(1);
@@ -165,7 +163,7 @@ export function AboutStateBoss(props: {trialStarted: string, setModal: Dispatch<
       </div>
 
       <p>This is your <b>FREE TRIAL</b>.<br/>
-      You have <span className={!accepting && !accepted && "blink" || ""} style={{fontWeight: 600, color: "yellow", fontSize: 30}}>{Math.max(remainingDays,0)} days</span> remaining to BUY a license!</p>
+      You have <span className={!accepting && !accepted && "blink" || ""} style={{fontWeight: 600, color: "yellow", fontSize: 30}}>{props.remainingDays} days</span> remaining to BUY a license!</p>
     </div>
 
     <div style={{textAlign: 'left', fontSize: 12}}>

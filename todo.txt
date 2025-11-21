@@ -32,6 +32,8 @@ TODO
 
 - bugs
     (*) editing SC <-> Plant connections at runtime doesn't seem to work
+    (*) runtime errors coming from plant are mistakenly shown as runtime errors on statechart
+    (*) 
 
 - maybe support:
     - explicit order of:

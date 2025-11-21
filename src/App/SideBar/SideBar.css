@@ -65,7 +65,8 @@ button.inputEvent:active:not(:disabled) {
   border: var(--active-state-border-color) 1px solid;
   background-color: var(--active-state-bg-color);
   border-radius: 6px;
-  margin-left: 4px;
+  margin-left: 2px;
+  margin-right: 2px;
   padding-left: 2px;
   padding-right: 2px;
   display: inline-block;

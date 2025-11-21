@@ -4,10 +4,12 @@ import { Dispatch, SetStateAction, useCallback, useEffect } from "react";
 import { EditHistory } from "../App";
 import { jsonDeepEqual } from "@/util/util";
 import { VisualEditorState } from "../VisualEditor/VisualEditor";
+import { useTrial } from "./useTrial";
 
 export function useEditor(setEditHistory: Dispatch<SetStateAction<EditHistory|null>>) {
+  const {appName} = useTrial();
   useEffect(() => {
-    console.info("Welcome to StateBuddy!");
+    console.info(`Welcome to ${appName}!`);
     () => {
       console.info("Goodbye!");
     }

@@ -136,34 +136,6 @@ export function computeArena(a: AbstractState, b: AbstractState): OrState {
   return arena as OrState;
 }
 
-// export function computeLCA2(states: (ConcreteState|HistoryState)[]): (ConcreteState|HistoryState) {
-//   if (states.length === 0) {
-//     throw new Error("cannot compute LCA of empty set of states");
-//   }
-//   if (states.length === 1) {
-//     return states[0];
-//   }
-//   // 2 states or more
-//   return states.reduce((acc, cur) => computeLCA(acc, cur));
-// }
-
-// export function getPossibleTargets(t: Transition, ts: Map<string, Transition[]>): (ConcreteState|HistoryState)[] {
-//   if (t.tgt.kind !== "pseudo") {
-//     return [t.tgt];
-//   }
-//   const pseudoOutgoing = ts.get(t.tgt.uid) || [];
-//   return pseudoOutgoing.flatMap(t => getPossibleTargets(t, ts));
-// }
-
-// export function computeArena2(t: Transition, ts: Map<string, Transition[]>): OrState {
-//   const tgts = getPossibleTargets(t, ts);
-//   let lca = computeLCA2([t.src as ConcreteState, ...tgts]);
-//   while (lca.kind !== "or" || lca === t.src || lca === t.tgt) {
-//     lca = lca.parent!;
-//   }
-//   return lca as OrState;
-// }
-
 // Assuming ancestor is already entered, what states to enter in order to enter descendants?
 // E.g.
 //    root > A > B > C > D
@@ -175,31 +147,6 @@ export function computePath({ancestor, descendant}: {ancestor: AbstractState, de
   }
   return [...computePath({ancestor, descendant: descendant.parent!}), descendant];
 }
-
-// // the arena of a transition is the lowest common ancestor state that is an OR-state
-// // see "Deconstructing the Semantics of Big-Step Modelling Languages" by Shahram Esmaeilsabzali, 2009
-// export function computeArena({src, tgt}: {src: ConcreteState, tgt: ConcreteState}): {
-//   arena: OrState,
-//   srcPath: ConcreteState[],
-//   tgtPath: ConcreteState[],
-// } {
-//   if (src.depth >= tgt.depth) {
-//     const path = isAncestorOf({descendant: src, ancestor: tgt});
-//     if (path) {
-//       if (tgt.kind === "or") {
-//         return {arena: tgt as OrState, srcPath: path, tgtPath: [tgt]};
-//       }
-//     }
-//     // keep looking
-//     const {arena, srcPath, tgtPath} = computeArena({src, tgt: tgt.parent!});
-//     return {arena, srcPath, tgtPath: [...tgtPath, tgt]};
-//   }
-//   else {
-//     // same, but swap src and tgt
-//     const {arena, srcPath, tgtPath} = computeArena({src: tgt, tgt: src});
-//     return {arena, srcPath: tgtPath, tgtPath: srcPath};
-//   }
-// }
 
 // transitive, reflexive
 export function getDescendants(state: ConcreteState): Set<string> {

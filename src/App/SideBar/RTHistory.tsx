@@ -1,5 +1,5 @@
 import { Dispatch, memo, SetStateAction, useCallback } from "react";
-import { Statechart, stateDescription } from "../../statecharts/abstract_syntax";
+import { Statechart, stateDescription, Transition } from "../../statecharts/abstract_syntax";
 import { Mode, RaisedEvent, RT_Event } from "../../statecharts/runtime_types";
 import { formatTime } from "../../util/util";
 import { TimeMode, timeTravel } from "../../statecharts/time";
@@ -83,7 +83,7 @@ function RTCause(props: {cause?: RT_Event}) {
       <AccessAlarmIcon fontSize="small"/>
     </div>;
   }
-  else if (props.cause.kind === "input") {
+  else if (props.cause.kind === "event") {
     return <div className="inputEvent">
       {props.cause.name}
       <RTEventParam param={props.cause.param}/>
@@ -101,7 +101,7 @@ export const RTHistoryItem = memo(function RTHistoryItem({ast, idx, item, prevIt
   if (item.kind === "bigstep") {
     const outputEvents = isPlantStep ? item.state.plant.outputEvents : item.state.sc.outputEvents;
     // @ts-ignore
-    const newStates = item.state.sc.mode.difference(prevItem?.state.sc.mode || new Set());
+    // const newStates = item.state.sc.mode.difference(prevItem?.state.sc.mode || new Set());
     return <div
       className={"runtimeState" + (active ? " active" : "") + (isPlantStep ? " plantStep" : "")}
       onMouseDown={useCallback(() => onMouseDown(idx, item.simtime), [idx, item.simtime])}>
@@ -111,12 +111,17 @@ export const RTHistoryItem = memo(function RTHistoryItem({ast, idx, item, prevIt
         {formatTime(item.simtime)}
         &emsp;
         <RTCause cause={isPlantStep ? item.state.plant.inputEvent : item.state.sc.inputEvent}/>
+        {outputEvents.length>0 &&
+          <>&nbsp;&#x2192;&nbsp;
+          {outputEvents.map((e:RaisedEvent) => <span className="outputEvent">{e.name}<RTEventParam param={e.param}/></span>)}
+          </>}
       </div>
-      <ShowMode mode={newStates} statechart={ast}/>
+      {!isPlantStep &&
+        <ShowFiredTransitions firedTransitions={
+          [...ast.transitions.values().flatMap(t => t.filter(t => item.state.sc.firedTransitions.includes(t.uid)))]}/>
+      }
+      {/* <ShowMode mode={newStates} statechart={ast}/> */}
       <ShowEnvironment environment={item.state.sc.environment}/>
-      {outputEvents.length>0 && <>^
-        {outputEvents.map((e:RaisedEvent) => <span className="outputEvent">{e.name}<RTEventParam param={e.param}/></span>)}
-      </>}
     </div>;
   }
   else {
@@ -135,6 +140,21 @@ export const RTHistoryItem = memo(function RTHistoryItem({ast, idx, item, prevIt
     </div>;
   }
 });
+
+function ShowFiredTransitions({firedTransitions}: {firedTransitions: Transition[]}) {
+  return <>
+    {firedTransitions.map((t, i) => <ShowTransition key={i} transition={t}/>)}
+  </>
+}
+
+function ShowTransition({transition}: {transition: Transition}) {
+  return <>
+    <span className="activeState">{stateDescription(transition.src)}</span>
+    &#x2192;
+    <span className="activeState">{stateDescription(transition.tgt)}</span>
+    &emsp;
+  </>
+}
 
 function ShowCause(props: {cause: BigStepCause}) {
   if (props.cause.kind === "init") {

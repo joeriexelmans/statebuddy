@@ -137,7 +137,7 @@ export function useSimulator(ast: Statechart|null, plant: Plant<any, UniversalPl
       if (currentTraceItem.kind === "bigstep") {
         const simtime = getSimTime(time, Math.round(performance.now()));
         appendNewConfig(simtime, {kind: "input", simtime, eventName: inputEvent, param}, () => {
-          return cE.extTransition(simtime, currentTraceItem.state, {kind: "input", name: inputEvent, param});
+          return cE.extTransition(simtime, currentTraceItem.state, {kind: "event", name: inputEvent, param});
         });
       }
     };
@@ -223,7 +223,7 @@ export function useSimulator(ast: Statechart|null, plant: Plant<any, UniversalPl
             () => cE.extTransition(cause.simtime,
               // @ts-ignore
               newTrace.at(-1)!.state,
-              {kind: "input", name: cause.eventName, param: cause.param}));
+              {kind: "event", name: cause.eventName, param: cause.param}));
           newTrace.push(item);
           if (item.kind === "error") {
             break;
@@ -243,7 +243,7 @@ export function useSimulator(ast: Statechart|null, plant: Plant<any, UniversalPl
   }, [setTrace, setTime, cE]);
 
   // timestamp of next timed transition, in simulated time
-  const timers: Timers = currentTraceItem?.kind === "bigstep" && currentTraceItem.state.sc.environment.get("_timers") || [];
+  const timers: Timers = currentTraceItem?.kind === "bigstep" && currentTraceItem.state.sc.timers || [];
   const nextTimedTransition = timers[0];
   const nextWakeup = nextTimedTransition?.[0] || Infinity;
 

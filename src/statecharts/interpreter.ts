@@ -2,32 +2,7 @@ import { AbstractState, computeArena, computePath, ConcreteState, getDescendants
 import { evalExpr } from "./actionlang_interpreter";
 import { Environment, FlatEnvironment } from "./environment";
 import { Action, EventTrigger, TransitionLabel } from "./label_ast";
-import { BigStep, initialRaised, Mode, RaisedEvents, RT_Event, RT_History, RT_Statechart, TimerElapseEvent, Timers } from "./runtime_types";
-
-const initialEnv = new Map<string, any>([
-  ["_timers", []],
-  ["_log", (str: string) => console.log(str)],
-]);
-// const initialScopedEnvironment = new ScopedEnvironment({env: initialEnv, children: {}});
-const intiialFlatEnvironment = new FlatEnvironment(initialEnv);
-
-export function initialize(ast: Statechart): BigStep {
-  let history = new Map();
-  let enteredStates, environment, rest;
-  ({enteredStates, environment, history, ...rest} = enterDefault(0, ast.root, {
-    environment: intiialFlatEnvironment,
-    history,
-    ...initialRaised,
-  }));
-  return handleInternalEvents(0, ast, {mode: enteredStates, environment, history,  ...rest});
-}
-
-type ActionScope = {
-  environment: Environment,
-  history: RT_History,
-} & RaisedEvents;
-
-type EnteredScope = { enteredStates: Mode } & ActionScope;
+import { BigStep, RT_Event, RT_History, RT_Microstep, TimerElapseEvent, Timers } from "./runtime_types";
 
 export class RuntimeError extends Error {
   highlight: string[];
@@ -39,7 +14,34 @@ export class RuntimeError extends Error {
 
 export class NonDeterminismError extends RuntimeError {}
 
-export function execAction(action: Action, rt: ActionScope, uids: string[]): ActionScope {
+const initialEnv = new Map<string, any>([
+  ["_timers", []],
+  ["_log", (str: string) => console.log(str)],
+]);
+
+// const initialScopedEnvironment = new ScopedEnvironment({env: initialEnv, children: {}});
+const intiialFlatEnvironment = new FlatEnvironment(initialEnv);
+
+const emptyMicrostep = {
+  internalEvents: [],
+  outputEvents: [],
+  firedTransitions: [],
+  firedArenas: [],
+}
+
+export function initialize(ast: Statechart): BigStep {
+  const rt = enterState({
+    simtime: 0,
+    environment: intiialFlatEnvironment,
+    mode: new Set(),
+    history: new Map(),
+    timers: [],
+    ...emptyMicrostep,
+  }, ast.root);
+  return handleInternalEvents(rt, ast);
+}
+
+function execAction(rt: RT_Microstep, action: Action, uids: string[]): RT_Microstep {
   if (action.kind === "assignment") {
     const rhs = evalExpr(action.rhs, rt.environment, uids);
     const environment = rt.environment.set(action.lhs, rhs);
@@ -71,306 +73,293 @@ export function execAction(action: Action, rt: ActionScope, uids: string[]): Act
   throw new Error("should never reach here");
 }
 
-export function entryActions(simtime: number, state: TransitionSrcTgt, actionScope: ActionScope): ActionScope {
-  console.log('enter', state, '...');
+function enterState(rt: RT_Microstep, state: TransitionSrcTgt, toEnter: Set<string> = new Set()): RT_Microstep {
+  // add to mode
+  rt = {...rt, mode: new Set([...rt.mode, state.uid])};
 
-  let {environment, ...rest} = actionScope;
-
+  // entry actions
   for (const action of state.entryActions) {
-    ({environment, ...rest} = execAction(action, {environment, ...rest}, [state.uid]));
+    rt = execAction(rt, action, [state.uid]);
   }
 
-  // schedule timers
   if (state.kind !== "pseudo") {
-    // we store timers in the environment (dirty!)
-    const timers: Timers = environment.get("_timers") || [];
+    // schedule timers
     const newTimers = [
-      ...timers,
+      ...rt.timers,
       ...state.timers.map(timeOffset => {
-        const futureSimTime = simtime + timeOffset;
+        const futureSimTime = rt.simtime + timeOffset;
         return [futureSimTime, {kind: "timer", state: state.uid, timeDurMs: timeOffset}] as [number, TimerElapseEvent];
       }),
     ];
     newTimers.sort((a,b) => a[0] - b[0]); // earliest timers come first
-    environment = environment.set("_timers", newTimers);
-    // console.log('schedule timers of ', stateDescription(state));
-    // console.log('newTimers:', newTimers);
+    rt = {...rt, timers: newTimers};
+
+    // enter children
+    rt = enterChildren(rt, state, toEnter);
   }
-  return {environment, ...rest};
+
+  return rt;
 }
 
-export function exitActions(simtime: number, state: TransitionSrcTgt, {enteredStates, ...actionScope}: EnteredScope): ActionScope {
-  // console.log('exit', stateDescription(state), '...');
-
-  let environment = actionScope.environment;
-
-  for (const action of state.exitActions) {
-    (actionScope = execAction(action, actionScope, [state.uid]));
-  }
-
-  // cancel timers
+function exitState(rt: RT_Microstep, state: TransitionSrcTgt): RT_Microstep {
   if (state.kind !== "pseudo") {
-    const timers: Timers = environment.get("_timers") || [];
-    const newTimers = timers.filter(([_, {state: s}]) => s !== state.uid);
-    environment = environment.set("_timers", newTimers);
-    // console.log('cancel timers of ', stateDescription(state));
-    // console.log('newTimers:', newTimers);
+    // exit children first
+    rt = exitChildren(rt, state);
+
+    // cancel timers
+    const newTimers = rt.timers.filter(([_, {state: s}]) => s !== state.uid);
+    rt = {...rt, timers: newTimers};
   }
 
-  return {...actionScope, environment};
-}
-
-// recursively enter the given state's default state
-export function enterDefault(simtime: number, state: ConcreteState, rt: ActionScope): EnteredScope {
-  let {firedTransitions, environment, ...actionScope} = rt;
-
-  environment = environment.enterScope(state.uid);
-
-  let enteredStates = new Set([state.uid]);
-
-  // execute entry actions
-  ({firedTransitions, environment, ...actionScope} = entryActions(simtime, state, {firedTransitions, environment, ...actionScope}));
-
-  // enter children...
-  if (state.kind === "and") {
-    // enter every child
-    for (const child of state.children) {
-      let enteredChildren;
-      ({enteredStates: enteredChildren, firedTransitions, environment, ...actionScope} = enterDefault(simtime, child, {firedTransitions, environment, ...actionScope}));
-      enteredStates = enteredStates.union(enteredChildren);
-    }
+  // exit actions
+  for (const action of state.exitActions) {
+    (rt = execAction(rt, action, [state.uid]));
   }
-  else if (state.kind === "or") {
-    // same as AND-state, but we only enter the initial state(s)
-    if (state.initial.length > 0) {
-      if (state.initial.length > 1) {
-        throw new NonDeterminismError(`Non-determinism: state '${stateDescription(state)} has multiple (${state.initial.length}) initial states.`, [...state.initial.map(i => i[0]), state.uid]);
-      }
-      const [arrowUid, toEnter] = state.initial[0];
-      firedTransitions = [...firedTransitions, arrowUid];
-      let enteredChildren;
-      ({enteredStates: enteredChildren, firedTransitions, environment, ...actionScope} = enterDefault(simtime, toEnter, {firedTransitions, environment, ...actionScope}));
-      enteredStates = enteredStates.union(enteredChildren);
-    }
-    else {
-      throw new RuntimeError(state.uid + ': no initial state', [state.uid]);
-    }
-  }  
 
-  environment = environment.exitScope();
-
-  return {enteredStates, firedTransitions, environment, ...actionScope};
+  // remove from mode
+  rt = {...rt, mode: new Set([...rt.mode].filter(s => s !== state.uid))};
+  return rt;
 }
 
-// recursively enter the given state and, if children need to be entered, preferrably those occurring in 'toEnter' will be entered. If no child occurs in 'toEnter', the default child will be entered.
-export function enterStates(simtime: number, state: ConcreteState, toEnter: Set<string>, {environment, ...actionScope}: ActionScope): EnteredScope {
-
-  console.log('enterStates', state);
-
-  environment = environment.enterScope(state.uid);
-
-  // execute entry actions
-  console.log('entry actions...');
-  actionScope = entryActions(simtime, state, {environment, ...actionScope});
-
+// recursively enter the given state's children
+// AND-states: all children are entered.
+// OR-states: if one of the children occurs in 'toEnter', this child will be chosen. if not, then the default child is entered.
+function enterChildren(rt: RT_Microstep, parent: ConcreteState, toEnter: Set<string> = new Set()): RT_Microstep {
   // enter children...
-  let enteredStates = new Set([state.uid]);
-
-  if (state.kind === "and") {
+  if (parent.kind === "and") {
     // every child must be entered
-    for (const child of state.children) {
-      let enteredChildren;
-      ({enteredStates: enteredChildren, environment, ...actionScope} = enterStates(simtime, child, toEnter, {environment, ...actionScope}));
-      enteredStates = enteredStates.union(enteredChildren);
+    for (const child of parent.children) {
+      rt = enterState(rt, child, toEnter);
     }
   }
-  else if (state.kind === "or") {
+  else if (parent.kind === "or") {
     // only one child can be entered
-    const childToEnter = state.children.filter(child => toEnter.has(child.uid));
+    const childToEnter = parent.children.filter(child => toEnter.has(child.uid));
     if (childToEnter.length === 1) {
       // good
-      let enteredChildren;
-      ({enteredStates: enteredChildren, environment, ...actionScope} = enterStates(simtime, childToEnter[0], toEnter, {environment, ...actionScope}));
-      enteredStates = enteredStates.union(enteredChildren);
+      const child = childToEnter[0];
+      rt = enterState(rt, child, toEnter);
     }
     else if (childToEnter.length === 0) {
       // also good, enter default child
-      console.log('enter default...', state.initial[0][1]);
-      return enterDefault(simtime, state, {environment, ...actionScope});
-      // return enterDefault(simtime, state.initial[0][1], {environment, ...actionScope});
+      if (parent.initial.length === 0) {
+        throw new RuntimeError(`Missing initial state.`, [parent.uid]);
+      }
+      else if (parent.initial.length > 1) {
+        throw new NonDeterminismError(`Non-determinism: multiple initial states.`, [parent.uid, ...parent.initial.map(i => i[0]), parent.uid]);
+      }
+      const [[_, child]] = parent.initial;
+      rt = enterState(rt, child, toEnter);
     }
     else {
       throw new Error("can only enter one child of an OR-state, stupid!");
     }
   }
 
-  environment = environment.exitScope();
-
-  return { enteredStates, environment, ...actionScope };
+  return rt;
 }
 
-// exit the given state and all its active descendants
-export function exitCurrent(simtime: number, state: ConcreteState, rt: EnteredScope): ActionScope {
-  // console.log('exitCurrent', stateDescription(state));
-  let {enteredStates, history, environment, ...actionScope} = rt;
+function recordDeepHistory(rt: RT_Microstep, state: ConcreteState, h: HistoryState): RT_Microstep {
+  // horribly inefficient (i don't care)
+  const history = new Map(rt.history);
+  history.set(h.uid,
+    getDescendants(state)
+      .difference(new Set([state.uid]))
+      .intersection(rt.mode));
+  return {...rt, history};
+}
 
-  environment = environment.enterScope(state.uid);
-
-  if (enteredStates.has(state.uid)) {
-    // exit all active children...
-    if (state.children) {
-      for (const child of state.children) {
-        ({history, environment, ...actionScope} = exitCurrent(simtime, child,  {enteredStates, history, environment, ...actionScope}));
+// exit the given state's active descendants
+export function exitChildren(rt: RT_Microstep, parent: ConcreteState): RT_Microstep {
+  // exit all active children...
+  if (parent.kind === "and") {
+    // record history...
+    for (const h of parent.history) {
+      if (h.kind === "shallow") {
+        const history = new Map(rt.history);
+        // record the shallow history of every child (because recording the history of the AND-state itself would be redundant)
+        history.set(h.uid, new Set([
+          ...parent.children.map(child => child.uid),
+          ...parent.children.flatMap(child =>
+            child.children
+              .filter(child => rt.mode.has(child.uid))
+              .map(child => child.uid))]));
+        rt = {...rt, history};
+      }
+      else { // deep history
+        rt = recordDeepHistory(rt, parent, h);
       }
     }
-
-    // execute exit actions
-    ({history, environment, ...actionScope} = exitActions(simtime, state, {enteredStates, history, environment, ...actionScope}));
-
-    // record history
-    if (state.history) {
-      history = new Map(history); // defensive copy
-      for (const h of state.history) {
-        if (h.kind === "shallow") {
-          history.set(h.uid, new Set(state.children
-            .filter(child => enteredStates.has(child.uid))
-            .map(child => child.uid)));
-        }
-        else if (h.kind === "deep") {
-          // horribly inefficient (i don't care)
-          history.set(h.uid,
-            getDescendants(state)
-            .difference(new Set([state.uid]))
-            .intersection(enteredStates)
-          );
-        }
+    // every child is exited
+    for (const child of parent.children) {
+      rt = exitState(rt, child);
+    }
+  }
+  else if (parent.kind === "or") {
+    // record history...
+    for (const h of parent.history) {
+      if (h.kind === "shallow") {
+        const history = new Map(rt.history);
+        history.set(h.uid, new Set(parent.children
+          .filter(child => rt.mode.has(child.uid))
+          .map(child => child.uid)));
+        rt = {...rt, history};
+      }
+      else { // deep history
+        rt = recordDeepHistory(rt, parent, h);
+      }
+    }
+    // exit active child
+    for (const child of parent.children) {
+      if (rt.mode.has(child.uid)) {
+      rt = exitState(rt, child);
       }
     }
   }
 
-  environment = environment.exitScope();
-
-  return {history, environment, ...actionScope};
+  return rt;
 }
 
-function allowedToFire(arena: OrState, alreadyFiredArenas: OrState[]) {
-  for (const alreadyFired of alreadyFiredArenas) {
-    if (isOverlapping(arena, alreadyFired))
+function allowedToFire(arena: OrState, firedArenas: OrState[]) {
+  for (const firedArena of firedArenas) {
+    if (isOverlapping(arena, firedArena))
       return false;
   }
   return true;
 }
 
-function attemptSrcState(simtime: number, sourceState: AbstractState, event: RT_Event|undefined, statechart: Statechart, {environment, mode, arenasFired, ...rest}: RT_Statechart & RaisedEvents): (RT_Statechart & RaisedEvents) | undefined {
-  const addEventParam = (event && event.kind === "input" && event.param !== undefined) ?
-    (environment: Environment, label: TransitionLabel) => {
-      const varName = (label.trigger as EventTrigger).paramName as string;
-      if (varName) {
-        const result = environment.newVar(varName, event.param);
-        return result;
-      }
-      return environment;
-    }
-    : (environment: Environment) => environment;
-  // console.log('attemptSrcState', stateDescription(sourceState), arenasFired);
+function addEventParam(environment: Environment, event: RT_Event | undefined, label: TransitionLabel) {
+  if (event && event.kind === "event" && event.param !== undefined) {
+    const varName = (label.trigger as EventTrigger).paramName as string;
+    return environment.newVar(varName, event.param);
+  }
+  else {
+    return environment;
+  }
+}
+
+function getEnabledTransitions(rt: RT_Microstep, sourceState: AbstractState, event: RT_Event | undefined, statechart: Statechart): [Transition, TransitionLabel][] {
   const outgoing = statechart.transitions.get(sourceState.uid) || [];
   const labels = outgoing.flatMap(t =>
     t.label
       .filter(l => l.kind === "transitionLabel")
       .map(l => [t,l] as [Transition, TransitionLabel]));
+
   let triggered: [Transition, TransitionLabel][];
   if (event !== undefined) {
-    if (event.kind === "input") {
+    if (event.kind === "event") {
       // get transitions triggered by event
       triggered = labels.filter(([_t,l]) =>
         l.trigger.kind === "event" && l.trigger.event === event.name);
     }
-    else /*if (event.kind === "timer")*/ {
+    else {
       // get transitions triggered by timeout
       triggered = labels.filter(([_t,l]) =>
         l.trigger.kind === "after" && sourceState.uid === event.state && l.trigger.durationMs === event.timeDurMs);
     }
   }
   else {
-      triggered = labels.filter(([_t,l]) => l.trigger.kind === "triggerless");
+    // pseudo-state transition...
+    triggered = labels.filter(([_t,l]) => l.trigger.kind === "triggerless");
   }
-
-  // eval guard
+  // eval guard...
   const inState = (stateLabel: string) => {
     for (const [uid, state] of statechart.uid2State.entries()) {
       if (stateDescription(state) === stateLabel) {
-        return (mode.has(uid));
+        return (rt.mode.has(uid));
       }
     }
   };
-  const guardEnvironment = environment.set("inState", inState);
-  const enabled = triggered.filter(([t,l]) => evalExpr(l.guard, addEventParam(guardEnvironment, l), [t.uid]));
+  const guardEnvironment = rt.environment.set("inState", inState);
+  const enabled = triggered.filter(([t,l]) => evalExpr(l.guard, addEventParam(guardEnvironment, event, l), [t.uid]));
+  return enabled;
+}
+
+function attemptSrcState(rt: RT_Microstep, sourceState: AbstractState, event: RT_Event | undefined, statechart: Statechart): RT_Microstep | undefined {
+  const enabled = getEnabledTransitions(rt, sourceState, event, statechart);
   if (enabled.length > 0) {
     if (enabled.length > 1) {
-      throw new NonDeterminismError(`Non-determinism: state '${stateDescription(sourceState)}' has multiple (${enabled.length}) enabled outgoing transitions: ${enabled.map(([t]) => transitionDescription(t)).join(', ')}`, [...enabled.map(([t]) => t.uid), sourceState.uid]);
+      throw new NonDeterminismError(`Non-determinism: multiple enabled transitions.`,
+        [...enabled.map(([t]) => t.uid), sourceState.uid]);
     }
-    const [toFire, label] = enabled[0];
-    const arena = computeArena(toFire.src, toFire.tgt);
-    if (allowedToFire(arena, arenasFired)) {
-      ({mode, environment, ...rest} = fire(simtime, toFire, statechart.transitions, label, arena, {mode, environment, ...rest}, addEventParam));
-      rest = {...rest, firedTransitions: [...rest.firedTransitions, toFire.uid]}
-      arenasFired = [...arenasFired, arena];
+    const [[transition, label]] = enabled; // transition to fire
+    const arena = computeArena(transition.src, transition.tgt);
+    // fairness: every arena can only fire once per 'fair step'
+    if (sourceState.kind === "pseudo" || allowedToFire(arena, rt.firedArenas)) {
+      // fire transition!
+      rt = fire(rt, transition, event, statechart.transitions, label, arena);
+      rt = {...rt,
+        firedTransitions: [...rt.firedTransitions, transition.uid],
+        firedArenas: [...rt.firedArenas, arena],
+      };
 
       // if there is any pseudo-state in the modal configuration, immediately fire any enabled outgoing transitions of that state:
-      for (const activeState of mode) {
-        const s = statechart.uid2State.get(activeState);
-        if (s?.kind === "pseudo") {
-          // console.log('fire pseudo-state...');
-          const newConfig = attemptSrcState(simtime, s, undefined, statechart, {environment, mode, arenasFired: [], ...rest});
-          if (newConfig === undefined) {
-            throw new RuntimeError("Stuck in choice-state.", [activeState]);
-          }
-          arenasFired = [...arenasFired, ...newConfig.arenasFired];
-          return {...newConfig, arenasFired};
+      while (true) {
+        const activePseudo = [...rt.mode]
+          .map(s => statechart.uid2State.get(s))
+          .find(s => s?.kind === "pseudo");
+        if (!activePseudo) {
+          break;
         }
+        const newRt = attemptSrcState(rt, activePseudo, undefined, statechart);
+        if (newRt === undefined) {
+          throw new RuntimeError("Stuck in choice-state.", [activePseudo.uid]);
+        }
+        rt = newRt;
       }
-      return {mode, environment, arenasFired, ...rest};
+      return rt;
     }
   }
 }
 
 // A fair step is a response to one (input|internal) event, where possibly multiple transitions are made as long as their arenas do not overlap. A reasonably accurate and more intuitive explanation is that every orthogonal region is allowed to fire at most one transition.
-export function fairStep(simtime: number, event: RT_Event, statechart: Statechart, activeParent: StableState, {arenasFired, environment, ...config}: RT_Statechart & RaisedEvents): RT_Statechart & RaisedEvents {
-  environment = environment.enterScope(activeParent.uid);
-  // console.log('fairStep', arenasFired);
+function fairStep(rt: RT_Microstep, event: RT_Event, statechart: Statechart, activeParent: StableState): RT_Microstep {
   for (const state of activeParent.children) {
-    if (config.mode.has(state.uid)) {
-      const didFire = attemptSrcState(simtime, state, event, statechart, {...config, environment, arenasFired});
+    if (rt.mode.has(state.uid)) {
+      const didFire = attemptSrcState(rt, state, event, statechart);
       if (didFire) {
-        ({arenasFired, environment, ...config} = didFire);
+        rt = didFire;
       }
       else {
         // no enabled outgoing transitions, try the children:
-        // console.log('attempt children');
-        ({arenasFired, environment, ...config} = fairStep(simtime, event, statechart, state, {...config, environment, arenasFired}));
+        rt = fairStep(rt, event, statechart, state);
       }
     }
   }
-  environment = environment.exitScope();
-  return {arenasFired, environment, ...config};
+  return rt;
 }
 
-export function handleInputEvent(simtime: number, event: RT_Event, statechart: Statechart, {mode, environment, history}: {mode: Mode, environment: Environment, history: RT_History}): BigStep {
-  let raised = initialRaised;
-
-  ({mode, environment, ...raised} = fairStep(simtime, event, statechart, statechart.root, {mode, environment, history, arenasFired: [], ...raised}));
-
-  return {inputEvent: event, ...handleInternalEvents(simtime, statechart, {mode, environment, history, ...raised})};
+export function makeBigStep(rt: BigStep, event: RT_Event, statechart: Statechart): BigStep {
+  const microstep = fairStep({...rt,
+    firedArenas: [],
+    firedTransitions: [],
+    internalEvents: [],
+    outputEvents: [],
+  }, event, statechart, statechart.root);
+  return {
+    ...handleInternalEvents(microstep, statechart),
+    inputEvent: event,
+  };
 }
 
-export function handleInternalEvents(simtime: number, statechart: Statechart, {internalEvents, ...rest}: RT_Statechart & RaisedEvents) {
-  while (internalEvents.length > 0) {
-    const [nextEvent, ...remainingEvents] = internalEvents;
-    ({internalEvents, ...rest} = fairStep(simtime, 
-      {kind: "input", ...nextEvent}, // internal event becomes input event
-      statechart, statechart.root, { ...rest, arenasFired: [], internalEvents: remainingEvents, }));
+function handleInternalEvents(microstep: RT_Microstep, statechart: Statechart): BigStep {
+  while (microstep.internalEvents.length > 0) {
+    const [nextEvent, ...remainingEvents] = microstep.internalEvents;
+    microstep = fairStep(
+      {...microstep, internalEvents: remainingEvents},
+      {kind: "event", ...nextEvent},
+      statechart,
+      statechart.root);
   }
-  return rest;
+  return {
+    simtime: microstep.simtime,
+    mode: microstep.mode,
+    environment: microstep.environment,
+    history: microstep.history,
+    timers: microstep.timers,
+    outputEvents: microstep.outputEvents,
+    firedTransitions: microstep.firedTransitions,
+  };
 }
 
 function resolveHistory(tgt: AbstractState, history: RT_History): Set<string> {
@@ -384,114 +373,23 @@ function resolveHistory(tgt: AbstractState, history: RT_History): Set<string> {
   }
 }
 
-export function fire(simtime: number, t: Transition, ts: Map<string, Transition[]>, label: TransitionLabel, arena: OrState, {mode, environment, history, ...rest}: RT_Statechart & RaisedEvents, addEventParam: (env: Environment, label: TransitionLabel) => Environment): RT_Statechart & RaisedEvents {
+function fire(rt: RT_Microstep, t: Transition, event: RT_Event | undefined, ts: Map<string, Transition[]>, label: TransitionLabel, arena: OrState): RT_Microstep {
 
-  console.log('will now fire', transitionDescription(t), 'arena', arena);
+  console.log('firing:', transitionDescription(t));
 
-  const srcPath = computePath({ancestor: arena, descendant: t.src as ConcreteState}) as ConcreteState[];
-
-  // console.log(srcPath);
-  // console.log('arena:', arena, 'srcPath:', srcPath);
-
-  // exit src and other states up to arena
-  ({environment, history, ...rest} = exitCurrent(simtime, srcPath[0], {environment, enteredStates: mode, history, ...rest}));
-  const toExit = getDescendants(arena);
-  toExit.delete(arena.uid); // do not exit the arena itself
-  const exitedMode = mode.difference(toExit); // active states after exiting
-
-  // console.log('toExit', toExit);
-  // console.log('exitedMode', exitedMode);
+  rt = exitChildren(rt, arena);
 
   // transition actions
-  environment = addEventParam(environment.enterScope("<transition>"), label);
+  rt = {...rt, environment: addEventParam(rt.environment, event, label)};
   for (const action of label.actions) {
-    ({environment, history, ...rest} = execAction(action, {environment, history, ...rest}, [t.uid]));
+    rt = execAction(rt, action, [t.uid]);
   }
-  environment = environment.dropScope();
 
   const tgtPath = computePath({ancestor: arena, descendant: t.tgt});
-  const state = tgtPath[0] as ConcreteState; // first state to enter
-  const toEnter = resolveHistory(t.tgt, history)
+  const toEnter = resolveHistory(t.tgt, rt.history)
     .union(new Set(tgtPath.map(s=>s.uid)));
 
-  console.log({arena, state, toEnter});
+  rt = enterChildren(rt, arena, toEnter);
 
-  let enteredStates;
-  ({enteredStates, environment, history, ...rest} = enterStates(simtime, state, toEnter, {environment, history, ...rest}));
-  const enteredMode = exitedMode.union(enteredStates);
-
-  // console.log('new mode', enteredMode);
-
-  // console.log('done firing', transitionDescription(t));
-
-  return {mode: enteredMode, environment, history, ...rest};
+  return rt;
 }
-
-// export function fireTransition(simtime: number, t: Transition, ts: Map<string, Transition[]>, label: TransitionLabel, arena: OrState, {mode, environment, history, ...rest}: RT_Statechart & RaisedEvents): RT_Statechart & RaisedEvents {
-//   console.log('fire', transitionDescription(t));
-
-//   const srcPath = computePath({ancestor: arena, descendant: t.src as ConcreteState}).reverse() as ConcreteState[];
-
-//   // console.log('arena:', arena, 'srcPath:', srcPath);
-
-//   // exit src and other states up to arena
-//   ({environment, history, ...rest} = exitCurrent(simtime, srcPath[0], {environment, enteredStates: mode, history, ...rest}))
-//   const toExit = getDescendants(arena);
-//   toExit.delete(arena.uid); // do not exit the arena itself
-//   const exitedMode = mode.difference(toExit); // active states after exiting the states we need to exit
-
-//   // console.log({exitedMode});
-
-//   return fireSecondHalfOfTransition(simtime, t, ts, label, arena, {mode: exitedMode, history, environment, ...rest});
-// }
-
-// // assuming we've already exited the source state of the transition, now enter the target state
-// // IF however, the target is a pseudo-state, DON'T enter it (pseudo-states are NOT states), instead fire the first pseudo-outgoing transition.
-// export function fireSecondHalfOfTransition(simtime: number, t: Transition, ts: Map<string, Transition[]>, label: TransitionLabel, arena: OrState, {mode, environment, history, firedTransitions, ...raised}: RT_Statechart & RaisedEvents): RT_Statechart & RaisedEvents {
-//   console.log('fire (2nd half)', transitionDescription(t));
-//   // exec transition actions
-//   for (const action of label.actions) {
-//     ({environment, history, firedTransitions, ...raised} = execAction(action, {environment, history, firedTransitions, ...raised}));
-//   }
-
-//   firedTransitions = [...firedTransitions, t.uid];
-
-//   if (t.tgt.kind === "pseudo") {
-//     const outgoing = ts.get(t.tgt.uid) || [];
-//     for (const nextT of outgoing) {
-//       for (const nextLabel of nextT.label) {
-//         if (nextLabel.kind === "transitionLabel") {
-//           if (evalExpr(nextLabel.guard, environment)) {
-//             console.log('fire', transitionDescription(nextT));
-//             // found ourselves an enabled transition
-//             return fireSecondHalfOfTransition(simtime, nextT, ts, nextLabel, arena, {mode, environment, history, firedTransitions, ...raised});
-//           }
-//         }
-//       }
-//     }
-//     throw new Error("stuck in pseudo-state!!");
-//   }
-//   else {
-//     const tgtPath = computePath({ancestor: arena, descendant: t.tgt});
-//     const state = tgtPath[0] as ConcreteState;
-//     let toEnter;
-//     if (t.tgt.kind === "deep" || t.tgt.kind === "shallow") {
-//       toEnter = new Set([
-//         ...tgtPath.slice(0,-1).map(s => s.uid),
-//         ...history.get(t.tgt.uid)!
-//       ]) as Set<string>;
-//     }
-//     else {
-//       toEnter = new Set(tgtPath.map(s=>s.uid));
-//     }
-    
-//     // enter tgt
-//     let enteredStates;
-//     ({enteredStates, environment, history, firedTransitions, ...raised} = enterStates(simtime, state, toEnter, {environment, history, firedTransitions, ...raised}));
-//     const enteredMode = mode.union(enteredStates);
-
-//     // console.log({enteredMode});
-
-//     return {mode: enteredMode, environment, history, firedTransitions, ...raised};
-//   }
-// }

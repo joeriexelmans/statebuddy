@@ -27,8 +27,7 @@ import { RotateButtons } from "./RotateButtons";
 import { SpeedControl } from "./SpeedControl";
 import { UndoRedoButtons } from "./UndoRedoButtons";
 import { ZoomButtons } from "./ZoomButtons";
-
-import favicon from "../../../artwork/new-logo/favicon-minified.webp";
+import { useTrial } from '../hooks/useTrial';
 
 export type TopPanelProps = {
   trace: TraceState | null,
@@ -57,6 +56,7 @@ function toggle(booleanSetter: Dispatch<(state: boolean) => boolean>) {
 }
 
 export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, onRedo, onRotate, onInit, onClear, onBack, insertMode, setInsertMode, setModal, zoom, setZoom, showKeys, setShowKeys, editHistory, showFindReplace, setShowFindReplace, displayTime, refreshDisplayTime, nextWakeup, modelName, setModelName}: TopPanelProps) {
+  const {appName} = useTrial();
   const [timescale, setTimescale] = usePersistentState("timescale", 1);
   const config = trace && trace.trace[trace.idx];
   const formattedDisplayTime = useMemo(() => formatTime(displayTime), [displayTime]);
@@ -118,7 +118,7 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
         <button className={showKeys?"active":""} onClick={useCallback(() => setShowKeys(s => !s), [setShowKeys])}><KeyboardIcon fontSize="small"/></button>
         </Tooltip>
       </KeyInfo>
-      <Tooltip tooltip="about StateBuddy" align="left">
+      <Tooltip tooltip={`about ${appName}`} align="left">
         <button onClick={() => setModal(<About setModal={setModal}/>)}>
           <InfoOutlineIcon fontSize='small'/>
         </button>
