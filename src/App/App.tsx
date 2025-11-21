@@ -24,6 +24,7 @@ import { prepareTrace } from "./SideBar/check_property";
 import { useDisplayTime } from "@/hooks/useDisplayTime";
 import { Greeter } from "./BottomPanel/Greeter";
 import { PersistentDetails } from "./Components/PersistentDetails";
+import { useTrial } from "./hooks/useTrial";
 
 export type EditHistory = {
   current: VisualEditorState,
@@ -66,6 +67,7 @@ export type LightMode = "light" | "auto" | "dark";
 export function App() {
   const [editHistory, setEditHistory] = useState<EditHistory|null>(null);
   const [modal, setModal] = useState<ReactElement|null>(null);
+  const trial = useTrial();
 
   const {commitState, replaceState, onRedo, onUndo, onRotate} = useEditor(setEditHistory);
 
@@ -218,7 +220,7 @@ export function App() {
               style={{flex: '0 0 content'}}
             >
               {editHistory && <TopPanel
-                {...{onUndo, onRedo, onRotate, setModal, editHistory, ...simulator, ...setters, ...appState, setEditorState, displayTime, refreshDisplayTime}}
+                {...{onUndo, onRedo, onRotate, setModal, editHistory, ...simulator, ...setters, ...appState, setEditorState, displayTime, refreshDisplayTime, trial}}
               />}
             </div>
             {/* Editor */}
@@ -256,7 +258,7 @@ export function App() {
 
         {/* Bottom panel */}
         <div style={{flex: '0 0 content', borderTop: '1px solid var(--separator-color'}}>
-          <Greeter/>
+          <Greeter trial={trial}/>
           <div className="statusBar">
             <PersistentDetails state={appState.showPlot} setState={setters.setShowPlot}>
               <summary>plot</summary>

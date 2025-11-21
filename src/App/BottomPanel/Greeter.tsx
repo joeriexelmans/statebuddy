@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
 import { Logo } from "../Logo/Logo";
 import { CorporateLogo } from "../Logo/CorporateLogo";
-import { usePersistentState } from "@/hooks/usePersistentState";
+import { Trial } from "../hooks/useTrial";
 
-export function Greeter() {
-  const [trialStarted] = usePersistentState<string|null>("stateboss-trial-started", null);
+export function Greeter(props: {trial: Trial}) {
   const [showGreeting, setShowGreeting] = useState(true);
   useEffect(() => {
     setTimeout(() => setShowGreeting(false), 2000);
@@ -15,7 +14,7 @@ export function Greeter() {
         <span style={{fontSize: 18, fontStyle: 'italic'}}>
           Welcome to
           &nbsp;
-          {trialStarted
+          {props.trial.trialStarted
             ? <CorporateLogo width="auto" height={100} style={{verticalAlign: 'middle'}}/>
             : <Logo width="auto" height={100} style={{verticalAlign: 'middle'}}/>
           }

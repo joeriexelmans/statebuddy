@@ -1,4 +1,4 @@
-import { AbstractState, computeArena, computePath, ConcreteState, getDescendants, HistoryState, isOverlapping, OrState, StableState, Statechart, stateDescription, Transition, transitionDescription, TransitionSrcTgt } from "./abstract_syntax";
+import { AbstractState, computePath, ConcreteState, getDescendants, HistoryState, isOverlapping, OrState, StableState, Statechart, stateDescription, Transition, transitionDescription, TransitionSrcTgt } from "./abstract_syntax";
 import { evalExpr } from "./actionlang_interpreter";
 import { Environment, FlatEnvironment, Scope } from "./environment";
 import { Action, EventTrigger, TransitionLabel } from "./label_ast";

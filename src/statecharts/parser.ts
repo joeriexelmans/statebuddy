@@ -54,8 +54,6 @@ export function parseStatechart(concreteSyntax: ReducedConcreteSyntax, conns: Co
 
   // step 1: figure out state hierarchy
 
-  const startTime = performance.now();
-
   for (const rt of concreteSyntax.rountangles) {
     const parent = uid2State.get(conns.insidenessMap.get(rt.uid)!)! as ConcreteState;
     const common = {
@@ -115,11 +113,6 @@ export function parseStatechart(concreteSyntax: ReducedConcreteSyntax, conns: Co
     parent.history.push(historyState);
     historyStates.push(historyState);
   }
-
-  const endTime = performance.now();
-
-  // currently seems to be quite fast:
-  // console.log('built state tree', endTime-startTime);
 
   // step 2: figure out transitions
 

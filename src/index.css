@@ -36,8 +36,8 @@ html, body {
   --or-state-bg-color: light-dark(#eee, #000000);
   --and-state-bg-color: light-dark(white, rgb(46, 46, 46));
   --rountangle-stroke-color: light-dark(black, #d4d4d4);
-  --active-state-bg-color: light-dark(rgb(255, 240, 214), rgb(53, 37, 18));
-  --active-state-border-color: light-dark(rgb(205, 133, 0), rgb(235, 124, 21));
+  --active-state-bg-color: light-dark(rgb(255, 240, 214), rgb(112, 65, 47));
+  --active-state-border-color: light-dark(rgb(205, 133, 0), rgb(255, 165, 105));
   --fired-transition-color: light-dark(rgb(160, 0, 168), rgb(160, 0, 168));
   --firing-transition-color: light-dark(rgba(255, 128, 9, 1), rgba(255, 128, 9, 1));
   --associated-color: light-dark(green, rgb(186, 245, 119));

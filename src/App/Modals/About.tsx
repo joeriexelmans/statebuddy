@@ -7,29 +7,36 @@ import corporateLogo from "../../../artwork/corporate-logo/StateBOSS-logo-alt.we
 import jingle from "../../../artwork/corporate-logo/stateboss.opus";
 import { CorporateLogo } from "../Logo/CorporateLogo";
 import { Logo } from "../Logo/Logo";
-import { useTrial } from "../hooks/useTrial";
+import { Trial } from "../hooks/useTrial";
 
-export function About(props: {setModal: Dispatch<SetStateAction<ReactElement|null>>}) {
-  const {trialStarted, startTrial, remainingDays} = useTrial();
-
+export function About({setModal, trialStarted, remainingDays, startTrial}: {setModal: Dispatch<SetStateAction<ReactElement|null>>} & Trial) {
   if (trialStarted) {
-    return <AboutStateBoss {...props} trialStarted={trialStarted} remainingDays={remainingDays}/>
+    return <AboutStateBoss
+      remainingDays={remainingDays}
+      setModal={setModal}
+      />;
   }
   else {
-    return <AboutStateBuddy {...props} startTrial={startTrial}/>
+    return <AboutStateBuddy
+      startTrial={startTrial}
+      setModal={setModal}
+      />;
   }
 }
 
-export function AboutStateBuddy({startTrial, ...props}: {startTrial: () => void, setModal: Dispatch<SetStateAction<ReactElement|null>>}) {
+export function AboutStateBuddy({startTrial, setModal}: {startTrial: () => void, setModal: Dispatch<SetStateAction<ReactElement|null>>}) {
   const [_, setCount] = useState(0);
 
-  preload(corporateLogo, {as: "fetch"});
+  preload(corporateLogo, {as: "image"});
   
   return <div style={{maxWidth: '500px', padding: 4}}>
     <Logo onClick={() => {
       setCount(i => {
         if (i+1 === 7) {
-          startTrial();
+          setTimeout(() => {
+            startTrial();
+            setModal(<AboutStateBoss remainingDays={30} setModal={setModal}/>);
+          }, 0);
         }
         return i+1;
       });
@@ -47,13 +54,13 @@ export function AboutStateBuddy({startTrial, ...props}: {startTrial: () => void,
 
     <p>Contact: <a href="mailto:joeri.exelmans@gmail.com">joeri.exelmans@gmail.com</a></p>
 
-    <button onClick={() => props.setModal(null)}>OK</button>
+    <button onClick={() => setModal(null)}>OK</button>
     </div>;
 }
 
 const boomAt = 490; // ms into 'cinematic boom' where the boom actually happens. Note that we schedule the visual effect to be a bit too early. This is (1) to compensate for possible slow rendering, and (2) because it is perceived to be more realistic for the visual effect to be a bit too early rather than too late, because our brains are used to the fact that light travels faster than sound.
 
-export function AboutStateBoss(props: {trialStarted: string, remainingDays: number, setModal: Dispatch<SetStateAction<ReactElement|null>>}) {
+export function AboutStateBoss(props: {remainingDays: number, setModal: Dispatch<SetStateAction<ReactElement|null>>}) {
 
   const [show, setShow] = useState(false);
   const [play, preloadAudio] = useAudioContext(1);

@@ -27,9 +27,10 @@ import { RotateButtons } from "./RotateButtons";
 import { SpeedControl } from "./SpeedControl";
 import { UndoRedoButtons } from "./UndoRedoButtons";
 import { ZoomButtons } from "./ZoomButtons";
-import { useTrial } from '../hooks/useTrial';
+import { Trial } from '../hooks/useTrial';
 
 export type TopPanelProps = {
+  trial: Trial,
   trace: TraceState | null,
   time: TimeMode,
 
@@ -55,8 +56,7 @@ function toggle(booleanSetter: Dispatch<(state: boolean) => boolean>) {
   return () => booleanSetter(x => !x);
 }
 
-export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, onRedo, onRotate, onInit, onClear, onBack, insertMode, setInsertMode, setModal, zoom, setZoom, showKeys, setShowKeys, editHistory, showFindReplace, setShowFindReplace, displayTime, refreshDisplayTime, nextWakeup, modelName, setModelName}: TopPanelProps) {
-  const {appName} = useTrial();
+export const TopPanel = memo(function TopPanel({trial, trace, time, setTime, onUndo, onRedo, onRotate, onInit, onClear, onBack, insertMode, setInsertMode, setModal, zoom, setZoom, showKeys, setShowKeys, editHistory, showFindReplace, setShowFindReplace, displayTime, refreshDisplayTime, nextWakeup, modelName, setModelName}: TopPanelProps) {
   const [timescale, setTimescale] = usePersistentState("timescale", 1);
   const config = trace && trace.trace[trace.idx];
   const formattedDisplayTime = useMemo(() => formatTime(displayTime), [displayTime]);
@@ -118,8 +118,8 @@ export const TopPanel = memo(function TopPanel({trace, time, setTime, onUndo, on
         <button className={showKeys?"active":""} onClick={useCallback(() => setShowKeys(s => !s), [setShowKeys])}><KeyboardIcon fontSize="small"/></button>
         </Tooltip>
       </KeyInfo>
-      <Tooltip tooltip={`about ${appName}`} align="left">
-        <button onClick={() => setModal(<About setModal={setModal}/>)}>
+      <Tooltip tooltip={`about ${trial.appName}`} align="left">
+        <button onClick={() => setModal(<About setModal={setModal} {...trial}/>)}>
           <InfoOutlineIcon fontSize='small'/>
         </button>
       </Tooltip>
