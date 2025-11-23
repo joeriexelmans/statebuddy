@@ -26,8 +26,6 @@ export function About({setModal, trialStarted, remainingDays, startTrial}: {setM
 
 export function AboutStateBuddy({startTrial, setModal}: {startTrial: () => void, setModal: Dispatch<SetStateAction<ReactElement|null>>}) {
   const [_, setCount] = useState(0);
-
-  preload(corporateLogo, {as: "image"});
   
   return <div style={{maxWidth: '500px', padding: 4}}>
     <Logo onClick={() => {
@@ -65,6 +63,7 @@ export function AboutStateBoss(props: {remainingDays: number, setModal: Dispatch
   const [show, setShow] = useState(false);
   const [play, preloadAudio] = useAudioContext(1);
 
+  preload(corporateLogo, {as: "image"});
   preloadAudio(jingle);
   preloadAudio(explosion);
   preloadAudio(cinematicBoom);

@@ -1,5 +1,5 @@
 import { rountangleMinSize } from "@/statecharts/concrete_syntax";
-import { addV2D, area, isEntirelyWithin, normalizeRect, scaleV2D, subtractV2D, transformLine, transformRect } from "@/util/geometry";
+import { addV2D, area, isEntirelyWithin, normalizeRect, Rect2D, roundLine2D, roundRect2D, roundVec2D, scaleV2D, subtractV2D, transformLine, transformRect, Vec2D } from "@/util/geometry";
 import { getBBoxInSvgCoords } from "@/util/svg_helper";
 import { Dispatch, useCallback, useEffect, useState } from "react";
 import { MIN_ROUNTANGLE_SIZE } from "../../parameters";
@@ -183,6 +183,7 @@ export function useMouse(
     const currentPointer = getCurrentPointer(e);
     if (dragging) {
       // we're moving / resizing
+      // ALL possible manipulation (besides rotation) happens here
       const pointerDelta = {x: e.movementX/zoom, y: e.movementY/zoom};
       const getParts = (uid: string) => {
         return selection.filter(s => s.uid === uid).map(s => s.part);
@@ -196,7 +197,7 @@ export function useMouse(
           }
           return {
             ...r,
-            ...transformRect(r, selectedParts, pointerDelta),
+            ...roundRect2D(transformRect(r, selectedParts, pointerDelta)),
           };
         })
         .toSorted((a,b) => area(b) - area(a)), // sort: smaller rountangles are drawn on top
@@ -207,8 +208,8 @@ export function useMouse(
           }
           return {
             ...d,
-            ...transformRect(d, selectedParts, pointerDelta),
-          }
+            ...roundRect2D(transformRect(d, selectedParts, pointerDelta)),
+          };
         }),
         history: state.history.map(h => {
           const selectedParts = getParts(h.uid);
@@ -217,7 +218,7 @@ export function useMouse(
           }
           return {
             ...h,
-            topLeft: addV2D(h.topLeft, pointerDelta),
+            topLeft: roundVec2D(addV2D(h.topLeft, pointerDelta)),
           }
         }),
         arrows: state.arrows.map(a => {
@@ -227,7 +228,7 @@ export function useMouse(
           }
           return {
             ...a,
-            ...transformLine(a, selectedParts, pointerDelta),
+            ...roundLine2D(transformLine(a, selectedParts, pointerDelta)),
           }
         }),
         texts: state.texts.map(t => {
@@ -237,7 +238,7 @@ export function useMouse(
           }
           return {
             ...t,
-            topLeft: addV2D(t.topLeft, pointerDelta),
+            topLeft: roundVec2D(addV2D(t.topLeft, pointerDelta)),
           }
         }).toSorted((a,b) => a.topLeft.y - b.topLeft.y),
       }));

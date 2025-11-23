@@ -22,7 +22,7 @@ export function useTrial() {
     if (whenStarted) {
       return Math.max(
         30 + Math.floor(
-          (Date.now() - Date.parse(whenStarted)) /
+          (Date.parse(whenStarted) - Date.now()) /
             (1000 * 60 * 60 * 24)),
         0);
     }

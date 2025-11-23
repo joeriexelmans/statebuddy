@@ -265,3 +265,23 @@ export function rotateLine90CW(l: Line2D, around: Vec2D): Line2D {
     end: rotatePoint90CW(l.end, around),
   };
 }
+
+// Rounding coordinates saves a lot of data when serializing
+export function roundVec2D(v: Vec2D): Vec2D {
+  return {
+    x: Math.round(v.x),
+    y: Math.round(v.y),
+  }
+}
+export function roundRect2D(r: Rect2D): Rect2D {
+  return {
+    topLeft: roundVec2D(r.topLeft),
+    size: roundVec2D(r.size),
+  }
+}
+export function roundLine2D(l: Line2D) : Line2D {
+  return {
+    start: roundVec2D(l.start),
+    end: roundVec2D(l.end),
+  }
+}

@@ -14,7 +14,7 @@ export type Diamond = {
 
 export type Text = {
   uid: string;
-  topLeft: Vec2D;
+  topLeft: Vec2D; // <-- actually not the topleft, but the middle of the text. I cannot change this right now because it would break all my existing models :(
   text: string;
 };
 

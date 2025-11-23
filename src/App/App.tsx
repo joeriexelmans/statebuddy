@@ -135,10 +135,11 @@ export function App() {
   useEffect(() => {
     const timeout = setTimeout(() => {
       if (editorState !== null) {
-        console.log('persisting state to url');
-        persist({editorState, ...appState});
+        const urlState = {editorState, ...appState}
+        console.log('persisting state to url', urlState);
+        persist(urlState);
       }
-    }, 1);
+    }, 100);
     return () => clearTimeout(timeout);
   }, [editorState, appState]);
 

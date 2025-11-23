@@ -74,10 +74,10 @@ export const ShowInputEvents = memo(function ShowInputEvents({inputEvents, onRai
   // less painful and more readable than figuring out the equivalent of range(n) in JS:
   // (btw, useShortcuts must always be called with an array of the same size)
   useShortcuts([0,1,2,3,4,5,6,7,8,9].map(i => {
-    const n = (i+1) % 10;
+    const n = (i+1) % 10; // key '1' should be mapped to first event (index 0)
     return {
       keys: [n.toString()],
-      action: raiseHandlers[n] || (() => {}),
+      action: raiseHandlers[i] || (() => {}),
     };
   }));
 
