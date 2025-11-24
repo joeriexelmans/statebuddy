@@ -34,6 +34,9 @@ export type TopPanelProps = {
   trace: TraceState | null,
   time: TimeMode,
 
+  originalSize: number,
+  compressedSize: number,
+
   displayTime: number,
   refreshDisplayTime: () => void,
   nextWakeup: number,
@@ -56,7 +59,7 @@ function toggle(booleanSetter: Dispatch<(state: boolean) => boolean>) {
   return () => booleanSetter(x => !x);
 }
 
-export const TopPanel = memo(function TopPanel({trial, trace, time, setTime, onUndo, onRedo, onRotate, onInit, onClear, onBack, insertMode, setInsertMode, setModal, zoom, setZoom, showKeys, setShowKeys, editHistory, showFindReplace, setShowFindReplace, displayTime, refreshDisplayTime, nextWakeup, modelName, setModelName}: TopPanelProps) {
+export const TopPanel = memo(function TopPanel({trial, trace, time, setTime, onUndo, onRedo, onRotate, onInit, onClear, onBack, insertMode, setInsertMode, setModal, zoom, setZoom, showKeys, setShowKeys, editHistory, showFindReplace, setShowFindReplace, displayTime, refreshDisplayTime, nextWakeup, modelName, setModelName, originalSize, compressedSize}: TopPanelProps) {
   const [timescale, setTimescale] = usePersistentState("timescale", 1);
   const config = trace && trace.trace[trace.idx];
   const formattedDisplayTime = useMemo(() => formatTime(displayTime), [displayTime]);
@@ -123,8 +126,8 @@ export const TopPanel = memo(function TopPanel({trial, trace, time, setTime, onU
           <InfoOutlineIcon fontSize='small'/>
         </button>
       </Tooltip>
-      <Tooltip tooltip="becomes part of page title
-(useful when bookmarking)" align='left'>
+      <Tooltip tooltip={`model size (JSON): ${originalSize} bytes
+compressed: ${compressedSize} bytes (${Math.round(compressedSize/originalSize*100)}%)`} align='left'>
       <input
         type="text"
         placeholder='model name'

@@ -25,9 +25,9 @@ import { RaisedEvent } from '@/statecharts/runtime_types';
 import { DoubleClickButton } from '../Components/DoubleClickButton';
 import { Tooltip } from '../Components/Tooltip';
 import { ConcreteSyntax } from '@/statecharts/concrete_syntax';
-import { toURL } from '@/hooks/useUrlHashState';
 import { MoveUpDown } from '../Components/MoveUpDown';
 import { AppState, UrlState } from '../App';
+import { buf2base64, deflateBuffer, deflateString, str2buf } from '@/compression/deflate';
 
 type SavedTraces = [string, BigStepCause[]][];
 
@@ -186,12 +186,12 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
               disabled={plantCS === null}
               onClick={() => {
                 if (plantCS) {
-                  toURL<UrlState>({
+                  deflateBuffer(str2buf(JSON.stringify({
                     editorState: {...plantCS, nextID: 9999, selection: []},
                     modelName: "[plant] "+plantName,
-                  })
-                  .then(urlHash => {
-                    window.open("#"+urlHash, '_blank');
+                  })))
+                  .then(buf => {
+                    window.open("#"+buf2base64(buf), '_blank');
                   })
                 }
               }}

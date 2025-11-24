@@ -1,7 +1,7 @@
 import { isEntirelyWithin, Rect2D } from "@/util/geometry";
 import { ConcreteSyntax, Rountangle } from "./concrete_syntax";
 import { findNearestArrow, findNearestHistory, findNearestSide, findRountangle, RectSide } from "./concrete_syntax";
-import { arraysEqual, jsonDeepEqual, mapsEqual, setsEqual } from "@/util/util";
+import { arraysEqual, jsonDeepEqual, mapsEqual, memoizeOne } from "@/util/util";
 import { HISTORY_RADIUS } from "@/App/parameters";
 
 export type Connections = {
@@ -27,34 +27,38 @@ export function connectionsEqual(a: Connections, b: Connections) {
     && mapsEqual(a.insidenessMap, b.insidenessMap)
 }
 
-// This function does the heavy lifting of parsing the concrete syntax:
-// It detects insideness and connectedness relations based on the geometries of the shapes.
-export function detectConnections(concreteSyntax: ConcreteSyntax): Connections {
-  const startTime = performance.now();
-  // detect what is 'connected'
-  const arrow2SideMap = new Map<string,[{ uid: string; part: RectSide; } | undefined, { uid: string; part: RectSide; } | undefined]>();
-  const side2ArrowMap = new Map<string, ["start"|"end", string][]>();
-  const text2ArrowMap = new Map<string,string>();
-  const arrow2TextMap = new Map<string,string[]>();
+const detectArrow2History = memoizeOne(function detectArrow2History(concreteSyntax: ConcreteSyntax) {
   const arrow2HistoryMap = new Map<string,string>();
-  const text2RountangleMap = new Map<string, string>();
-  const rountangle2TextMap = new Map<string, string[]>();
   const history2ArrowMap = new Map<string, string[]>();
-  const insidenessMap = new Map<string, string>();
-
-  // arrow <-> (rountangle | diamond)
+  console.time("arrow <-> history")
   for (const arrow of concreteSyntax.arrows) {
-    // snap to history:
     const historyTarget = findNearestHistory(arrow.end, concreteSyntax.history);
     if (historyTarget) {
       arrow2HistoryMap.set(arrow.uid, historyTarget.uid);
       history2ArrowMap.set(historyTarget.uid, [...(history2ArrowMap.get(historyTarget.uid) || []), arrow.uid]);
     }
+  }
+  console.timeEnd("arrow <-> history");
+  return {arrow2HistoryMap, history2ArrowMap};
+}, (a,b) => {
+  let equal = true;
+  equal &&= jsonDeepEqual(a.arrows, b.arrows);
+  equal &&= jsonDeepEqual(a.diamonds, b.diamonds);
+  equal &&= jsonDeepEqual(a.history, b.history);
+  return equal;
+})
 
+const detectArrow2Side = memoizeOne(function detectArrow2Side(concreteSyntax: ConcreteSyntax) {
+  const arrow2SideMap = new Map<string,[{ uid: string; part: RectSide; } | undefined, { uid: string; part: RectSide; } | undefined]>();
+  const side2ArrowMap = new Map<string, ["start"|"end", string][]>();
+  const {history2ArrowMap, arrow2HistoryMap} = detectArrow2History(concreteSyntax);
+  console.time("arrow <-> side");
+  
+  const sides = [...concreteSyntax.rountangles, ...concreteSyntax.diamonds];
+  for (const arrow of concreteSyntax.arrows) {
     // snap to rountangle/diamon side:
-    const sides = [...concreteSyntax.rountangles, ...concreteSyntax.diamonds];
     const startSide = findNearestSide(arrow, "start", sides);
-    const endSide = historyTarget ? undefined : findNearestSide(arrow, "end", sides);
+    const endSide = arrow2HistoryMap.get(arrow.uid) ? undefined : findNearestSide(arrow, "end", sides);
     if (startSide || endSide) {
       arrow2SideMap.set(arrow.uid, [startSide, endSide]);
     }
@@ -69,6 +73,24 @@ export function detectConnections(concreteSyntax: ConcreteSyntax): Connections {
       side2ArrowMap.set(endSide.uid + '/' + endSide.part, arrowConns);
     }
   }
+  console.timeEnd("arrow <-> side");
+  return {history2ArrowMap, arrow2HistoryMap, arrow2SideMap, side2ArrowMap};
+
+}, (a: ConcreteSyntax, b: ConcreteSyntax) => {
+  let equal = true;
+  equal &&= jsonDeepEqual(a.arrows, b.arrows);
+  equal &&= jsonDeepEqual(a.diamonds, b.diamonds);
+  equal &&= jsonDeepEqual(a.history, b.history);
+  equal &&= jsonDeepEqual(a.rountangles, b.rountangles);
+  return equal
+});
+
+export const detectTextConnections = memoizeOne(function detectTextConnections(concreteSyntax: ConcreteSyntax) {
+  const text2ArrowMap = new Map<string,string>();
+  const arrow2TextMap = new Map<string,string[]>();
+  const text2RountangleMap = new Map<string, string>();
+  const rountangle2TextMap = new Map<string, string[]>();
+  console.time("text <-> arrow");
   // text <-> arrow
   for (const text of concreteSyntax.texts) {
     const nearestArrow = findNearestArrow(text.topLeft, concreteSyntax.arrows);
@@ -90,16 +112,25 @@ export function detectConnections(concreteSyntax: ConcreteSyntax): Connections {
       }
     }
   }
+  console.timeEnd("text <-> arrow");
+  return {text2ArrowMap, arrow2TextMap, text2RountangleMap, rountangle2TextMap};
+}, (a,b) => {
+  let equal = true;
+  equal &&= jsonDeepEqual(a.arrows, b.arrows);
+  equal &&= jsonDeepEqual(a.texts, b.texts);
+  equal &&= jsonDeepEqual(a.rountangles, b.rountangles);
+  return equal;
+});
 
-  // figure out insideness...
-
+export const detectRountangleInsideness = memoizeOne(function detectRountangleInsideness(concreteSyntax: ConcreteSyntax) {
+  const insidenessMap = new Map<string, string>();
+  console.time("rectangle <-> rectangle")
   const parentCandidates: Rountangle[] = [{
     kind: "or",
     uid: "root",
     topLeft: {x: -Infinity, y: -Infinity},
     size: {x: Infinity, y: Infinity},
   }];
-
   function findParent(geom: Rect2D): string {
     // iterate in reverse:
     for (let i = parentCandidates.length-1; i >= 0; i--) {
@@ -111,7 +142,6 @@ export function detectConnections(concreteSyntax: ConcreteSyntax): Connections {
     }
     throw new Error("impossible: should always find a parent state");
   }
-
   // IMPORTANT ASSUMPTION: state.rountangles is sorted from big to small surface area:
   for (const rt of concreteSyntax.rountangles) {
     const parent = findParent(rt);
@@ -126,11 +156,23 @@ export function detectConnections(concreteSyntax: ConcreteSyntax): Connections {
     const parent = findParent({topLeft: h.topLeft, size: {x: HISTORY_RADIUS*2, y: HISTORY_RADIUS*2}});
     insidenessMap.set(h.uid, parent);
   }
+  console.timeEnd("rectangle <-> rectangle");
+  return insidenessMap;
+}, (a,b) => {
+  let equal = true;
+  equal &&= jsonDeepEqual(a.rountangles, b.rountangles);
+  equal &&= jsonDeepEqual(a.diamonds, b.diamonds);
+  equal &&= jsonDeepEqual(a.history, b.history);
+  return equal;
+})
 
-  const endTime = performance.now();
-
-  // rather slow, about 10ms for a large model:
-  // console.debug("connection detection took", endTime-startTime);
+// This function does the heavy lifting of parsing the concrete syntax:
+// It detects insideness and connectedness relations based on the geometries of the shapes.
+export function detectConnections(concreteSyntax: ConcreteSyntax): Connections {
+  // detect what is 'connected'
+  const {arrow2SideMap, side2ArrowMap, history2ArrowMap, arrow2HistoryMap} = detectArrow2Side(concreteSyntax);
+  const {text2ArrowMap, arrow2TextMap, text2RountangleMap, rountangle2TextMap} = detectTextConnections(concreteSyntax);
+  const insidenessMap = detectRountangleInsideness(concreteSyntax);
 
   return {
     arrow2SideMap,

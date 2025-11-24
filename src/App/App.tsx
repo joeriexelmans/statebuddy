@@ -3,7 +3,7 @@ import "./App.css";
 
 import { ReactElement, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { connectionsEqual, detectConnections, reducedConcreteSyntaxEqual } from "@/statecharts/detect_connections";
+import { Connections, connectionsEqual, detectConnections, reducedConcreteSyntaxEqual } from "@/statecharts/detect_connections";
 import { parseStatechart } from "../statecharts/parser";
 import { BottomPanel, BottomPanelState, defaultBottomPanelState } from "./BottomPanel/BottomPanel";
 import { defaultSideBarState, SideBar, SideBarState } from "./SideBar/SideBar";
@@ -25,6 +25,7 @@ import { useDisplayTime } from "@/hooks/useDisplayTime";
 import { Greeter } from "./BottomPanel/Greeter";
 import { PersistentDetails } from "./Components/PersistentDetails";
 import { useTrial } from "./hooks/useTrial";
+import { jsonDeepEqual } from "@/util/util";
 
 export type EditHistory = {
   current: VisualEditorState,
@@ -49,7 +50,7 @@ export type UrlState = {
 } & Partial<AppState>;
 
 export const defaultAppState: AppState = {
-  modelName: "untitled",
+  modelName: "",
   showKeys: true,
   zoom: 1,
   insertMode: 'and',
@@ -109,7 +110,7 @@ export function App() {
     document.title = `${location.hostname==="localhost"?"[dev] ":""}${appState.modelName} [StateBuddy] ${timeFormatted}`;
   }, [appState])
 
-  const persist = useUrlHashState<VisualEditorState | UrlState>(
+  const [persist, originalSize, compressedSize] = useUrlHashState<VisualEditorState | UrlState>(
     recoveredState => {
       if (recoveredState === null) {
         setEditHistory(() => ({current: initialEditorState, history: [], future: []}));
@@ -133,14 +134,20 @@ export function App() {
   );
 
   useEffect(() => {
+    let cancel = () => {};
     const timeout = setTimeout(() => {
       if (editorState !== null) {
         const urlState = {editorState, ...appState}
-        console.log('persisting state to url', urlState);
-        persist(urlState);
+        const cancelPromise = new Promise<void>((resolve) => {
+          cancel = resolve;
+        });
+        persist(urlState, cancelPromise);
       }
     }, 100);
-    return () => clearTimeout(timeout);
+    return () => {
+      clearTimeout(timeout);
+      cancel();
+    };
   }, [editorState, appState]);
 
   const {
@@ -221,7 +228,7 @@ export function App() {
               style={{flex: '0 0 content'}}
             >
               {editHistory && <TopPanel
-                {...{onUndo, onRedo, onRotate, setModal, editHistory, ...simulator, ...setters, ...appState, setEditorState, displayTime, refreshDisplayTime, trial}}
+                {...{onUndo, onRedo, onRotate, setModal, editHistory, ...simulator, ...setters, ...appState, setEditorState, displayTime, refreshDisplayTime, trial, originalSize, compressedSize}}
               />}
             </div>
             {/* Editor */}

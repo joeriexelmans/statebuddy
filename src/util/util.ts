@@ -7,6 +7,16 @@ export function formatTime(timeMs: number) {
   return formatted;
 }
 
+export function count<T>(arr: Array<T>, predicate: (x: T) => boolean) {
+  let count=0;
+  for (let i=0; i<arr.length; i++) {
+    if (predicate(arr[i])) {
+      count++;
+    }
+  }
+  return count;
+}
+
 export function compactTime(timeMs: number) {
   if (timeMs % 1000 === 0) {
     return `${timeMs / 1000}s`;
@@ -23,6 +33,21 @@ export function memoize<InType,OutType>(fn: (i: InType) => OutType) {
     }
     const result = fn(i);
     cache.set(i, result);
+    return result;
+  }
+}
+
+// React-like memoization that is not a React hook and therefore can be used anywhere
+export function memoizeOne<InType,OutType>(fn: (i: InType) => OutType, cmp: (a: InType, b: InType) => boolean) {
+  let lastIn: InType;
+  let lastOut: OutType;
+  return (i: InType) => {
+    if (lastIn && cmp(lastIn,i)) {
+      return lastOut;
+    }
+    const result = fn(i);
+    lastIn = i;
+    lastOut = result;
     return result;
   }
 }

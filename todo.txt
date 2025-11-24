@@ -70,6 +70,8 @@ TODO
             (otherwise, you can't see that you have multiple states)
 
 - performance:
+    binary space partitioning to detect connectedness?
+
     maybe try this for rendering the execution trace:
         https://legacy.reactjs.org/docs/optimizing-performance.html#virtualize-long-lists
 

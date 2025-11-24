@@ -1,0 +1,16 @@
+I've tried
+
+  1) JSON -> DEFLATE -> base64
+  2) CBOR -> DEFLATE -> base64
+
+and they were roughly equal in size. CBOR beats JSON, but after DEFLATE, CBOR is actually slightly worse!
+
+Switching base64 to base85 is an obvious win, but comes at the risk of breaking browser compatibility.
+
+Swapping out DEFLATE for Brotli brings another 20% advantage, but Brotli's WASM implementation is about ~1MB in size, which is not acceptable.
+
+Hence, I conclude that JSON + DEFLATE + base64 is the "sweet spot":
+  - maximally uses browser builtin functions
+    -> small bundle size
+    -> efficient implementation
+  - decent compression sizes

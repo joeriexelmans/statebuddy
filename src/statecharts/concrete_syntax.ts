@@ -1,4 +1,4 @@
-import { Rect2D, Vec2D, Line2D, euclideanDistance, intersectLines, isWithin, lineBBox, subtractV2D } from "../util/geometry";
+import { Rect2D, Vec2D, Line2D, euclideanDistance, intersectLines, isWithin, lineBBox, subtractV2D, roundRect2D, roundVec2D, roundLine2D } from "../util/geometry";
 import { ARROW_SNAP_THRESHOLD, HISTORY_RADIUS, ROUNTANGLE_RADIUS, TEXT_SNAP_THRESHOLD } from "../App/parameters";
 import {  VisualEditorState } from "../App/VisualEditor/VisualEditor";
 import { sides } from "@/util/geometry";
@@ -35,6 +35,16 @@ export type ConcreteSyntax = {
   diamonds: Diamond[];
   history: History[];
 };
+
+export function roundCS(cs: ConcreteSyntax): ConcreteSyntax {
+  return {
+    rountangles: cs.rountangles.map(r => ({...r, ...roundRect2D(r)})),
+    texts: cs.texts.map(t => ({...t, topLeft: roundVec2D(t.topLeft)})),
+    arrows: cs.arrows.map(a => ({...a, ...roundLine2D(a)})),
+    diamonds: cs.diamonds.map(d => ({...d, ...roundRect2D(d)})),
+    history: cs.history.map(h => ({...h, topLeft: roundVec2D(h.topLeft)})),
+  };
+}
 
 // independently moveable parts of our shapes:
 export type RectSide = "left" | "top" | "right" | "bottom";

@@ -7,6 +7,14 @@ import { useShortcuts } from "@/hooks/useShortcuts";
 // const offset = {x: 40, y: 40};
 const offset = {x: 0, y: 0};
 
+function uidsToParts(selection: Selection) {
+  const partCount = new Map<string, Set<string>>();
+  for (const {uid, part} of selection) {
+    partCount.set(uid, (partCount.get(uid) || new Set()).add(part));
+  }
+  return partCount;
+}
+
 export function useCopyPaste(state: VisualEditorState, commitState: Dispatch<(v:VisualEditorState) => VisualEditorState>, selection: Selection) {
   const onPaste = useCallback((e: ClipboardEvent) => {
     const data = e.clipboardData?.getData("text/plain");
@@ -44,11 +52,11 @@ export function useCopyPaste(state: VisualEditorState, commitState: Dispatch<(v:
             }))
             // @ts-ignore
             const newSelection: Selection = [
-              ...copiedRountangles.map(r => ({uid: r.uid, parts: ["left", "top", "right", "bottom"]})),
-              ...copiedDiamonds.map(d => ({uid: d.uid, parts: ["left", "top", "right", "bottom"]})),
-              ...copiedArrows.map(a => ({uid: a.uid, parts: ["start", "end"]})),
-              ...copiedTexts.map(t => ({uid: t.uid, parts: ["text"]})),
-              ...copiedHistories.map(h => ({uid: h.uid, parts: ["history"]})),
+              ...copiedRountangles.flatMap(r => ["left", "top", "right", "bottom"].map(part => ({uid: r.uid, part}))),
+              ...copiedDiamonds.flatMap(d => ["left", "top", "right", "bottom"].map(part => ({uid: d.uid, part}))),
+              ...copiedArrows.flatMap(a => ["start", "end"].map(part => ({uid: a.uid, part}))),
+              ...copiedTexts.map(t => ({uid: t.uid, part: "text"})),
+              ...copiedHistories.map(h => ({uid: h.uid, part: ["history"]})),
             ];
             return {
               ...state,
@@ -76,11 +84,15 @@ export function useCopyPaste(state: VisualEditorState, commitState: Dispatch<(v:
 
   const copyInternal = useCallback((state: VisualEditorState, selection: Selection, e: ClipboardEvent) => {
     const uidsToCopy = new Set(selection.map(shape => shape.uid));
-    const rountanglesToCopy = state.rountangles.filter(r => uidsToCopy.has(r.uid));
-    const diamondsToCopy = state.diamonds.filter(d => uidsToCopy.has(d.uid));
-    const historiesToCopy = state.history.filter(h => uidsToCopy.has(h.uid));
-    const arrowsToCopy = state.arrows.filter(a => uidsToCopy.has(a.uid));
-    const textsToCopy = state.texts.filter(t => uidsToCopy.has(t.uid));
+    const m = uidsToParts(selection);
+    
+    // only copy shapes that are wholy selected:
+    const rountanglesToCopy = state.rountangles.filter(r => m.get(r.uid)?.size === 4);
+    const diamondsToCopy = state.diamonds.filter(d => m.get(d.uid)?.size === 4);
+    const historiesToCopy = state.history.filter(h => m.get(h.uid)?.size === 1);
+    const arrowsToCopy = state.arrows.filter(a => m.get(a.uid)?.size === 2);
+    const textsToCopy = state.texts.filter(t => m.get(t.uid)?.size === 1);
+
     e.clipboardData?.setData("text/plain", JSON.stringify({
       rountangles: rountanglesToCopy,
       diamonds: diamondsToCopy,
