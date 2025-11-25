@@ -1,8 +1,9 @@
 import { memo } from "react";
-import { Arrow, ArrowPart } from "../../statecharts/concrete_syntax";
+import { Arrow, ArrowPart, getArrowFatBBox } from "../../statecharts/concrete_syntax";
 import { ArcDirection, euclideanDistance } from "../../util/geometry";
 import { CORNER_HELPER_RADIUS } from "../parameters";
 import { arraysEqual, jsonDeepEqual } from "@/util/util";
+import { BoundingBox } from "./BoundingBox";
 
 
 export const ArrowSVG = memo(function(props: { arrow: Arrow; selected: ArrowPart[]; error: string; highlight: boolean; fired: boolean; arc: ArcDirection; initialMarker: boolean }) {
@@ -16,6 +17,7 @@ export const ArrowSVG = memo(function(props: { arrow: Arrow; selected: ArrowPart
     arcOrLine = `A ${radius*2} ${radius*2} 0 0 1`
   }
   return <g>
+    <BoundingBox {...getArrowFatBBox(props.arrow)} />
     <path
       className={"arrow"
         + (props.selected.length === 2 ? " selected" : "")

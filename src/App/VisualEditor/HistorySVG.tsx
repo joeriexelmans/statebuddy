@@ -1,10 +1,13 @@
 import { memo } from "react";
 import { Vec2D } from "../../util/geometry";
 import { HISTORY_RADIUS } from "../parameters";
+import { BoundingBox } from "./BoundingBox";
+import { getHistoryFatBBox } from "@/statecharts/concrete_syntax";
 
 export const HistorySVG = memo(function HistorySVG(props: {uid: string, topLeft: Vec2D, kind: "shallow"|"deep", selected: boolean, highlight: boolean}) {
   const text = props.kind === "shallow" ? "H" : "H*";
   return <>
+    <BoundingBox {...getHistoryFatBBox(props)}/>
     <circle
       cx={props.topLeft.x+HISTORY_RADIUS}
       cy={props.topLeft.y+HISTORY_RADIUS}

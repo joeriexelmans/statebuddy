@@ -20,8 +20,8 @@ export const [dwatchAbstractSyntax, dwatchErrors] = parseStatechart(dwatchConcre
 
 
 if (dwatchErrors.length > 0) {
-  console.log({dwatchErrors});
-  throw new Error("there were errors parsing dwatch plant model. see console.")
+  console.error({dwatchErrors});
+  // throw new Error("there were errors parsing dwatch plant model. see console.")
 }
 
 export type DigitalWatchPlantState = {

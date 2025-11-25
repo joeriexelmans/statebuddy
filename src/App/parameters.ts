@@ -15,3 +15,6 @@ export const HISTORY_RADIUS = 20;
 export const ZOOM_STEP = 1.25;
 export const ZOOM_MIN = (1/ZOOM_STEP)**6;
 export const ZOOM_MAX = ZOOM_STEP**6;
+
+// this parameter only impacts performance, not any observable behavior:
+export const GRID_CELL_SIZE = 200;

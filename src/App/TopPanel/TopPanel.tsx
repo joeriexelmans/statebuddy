@@ -11,6 +11,7 @@ import PauseIcon from '@mui/icons-material/Pause';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import SkipNextIcon from '@mui/icons-material/SkipNext';
 import StopIcon from '@mui/icons-material/Stop';
+import BugReportIcon from '@mui/icons-material/BugReport';
 import { Dispatch, memo, ReactElement, SetStateAction, useCallback, useMemo } from "react";
 import { setPaused, setRealtime, TimeMode } from "../../statecharts/time";
 import { formatTime } from "../../util/util";
@@ -59,7 +60,7 @@ function toggle(booleanSetter: Dispatch<(state: boolean) => boolean>) {
   return () => booleanSetter(x => !x);
 }
 
-export const TopPanel = memo(function TopPanel({trial, trace, time, setTime, onUndo, onRedo, onRotate, onInit, onClear, onBack, insertMode, setInsertMode, setModal, zoom, setZoom, showKeys, setShowKeys, editHistory, showFindReplace, setShowFindReplace, displayTime, refreshDisplayTime, nextWakeup, modelName, setModelName, originalSize, compressedSize}: TopPanelProps) {
+export const TopPanel = memo(function TopPanel({trial, trace, time, setTime, onUndo, onRedo, onRotate, onInit, onClear, onBack, insertMode, setInsertMode, setModal, zoom, setZoom, showKeys, setShowKeys, editHistory, showFindReplace, setShowFindReplace, displayTime, refreshDisplayTime, nextWakeup, modelName, setModelName, originalSize, compressedSize, showDebug, setShowDebug}: TopPanelProps) {
   const [timescale, setTimescale] = usePersistentState("timescale", 1);
   const config = trace && trace.trace[trace.idx];
   const formattedDisplayTime = useMemo(() => formatTime(displayTime), [displayTime]);
@@ -172,6 +173,14 @@ compressed: ${compressedSize} bytes (${Math.round(compressedSize/originalSize*10
             onClick={() => setShowFindReplace(x => !x)}
           >
             <FindInPageOutlinedIcon fontSize="small"/>
+          </TwoStateButton>
+        </Tooltip>
+        <Tooltip tooltip="show debug panel">
+          <TwoStateButton
+            active={showDebug}
+            onClick={() => setShowDebug(x => !x)}
+          >
+            <BugReportIcon fontSize="small"/>
           </TwoStateButton>
         </Tooltip>
       </KeyInfo>

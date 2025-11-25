@@ -22,8 +22,8 @@ export const trafficLightConcreteSyntax = trafficLightJSON as ConcreteSyntax;
 export const [trafficLightAbstractSyntax, trafficLightErrors] = parseStatechart(trafficLightConcreteSyntax, detectConnections(trafficLightConcreteSyntax));
 
 if (trafficLightErrors.length > 0) {
-  console.log({trafficLightErrors});
-  throw new Error("there were errors parsing traffic light plant model. see console.")
+  console.error({trafficLightErrors});
+  // throw new Error("there were errors parsing traffic light plant model. see console.")
 }
 
 type TrafficLightState = {

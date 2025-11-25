@@ -26,8 +26,8 @@ export const microwaveConcreteSyntax = microwaveJSON as ConcreteSyntax;
 export const [microwaveAbstractSyntax, microwaveErrors] = parseStatechart(microwaveConcreteSyntax, detectConnections(microwaveConcreteSyntax));
 
 if (microwaveErrors.length > 0) {
-  console.log({microwaveErrors});
-  throw new Error("there were errors parsing microwave plant model. see console.")
+  console.error({microwaveErrors});
+  // throw new Error("there were errors parsing microwave plant model. see console.")
 }
 
 const imgs = {

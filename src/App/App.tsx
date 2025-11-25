@@ -25,7 +25,8 @@ import { useDisplayTime } from "@/hooks/useDisplayTime";
 import { Greeter } from "./BottomPanel/Greeter";
 import { PersistentDetails } from "./Components/PersistentDetails";
 import { useTrial } from "./hooks/useTrial";
-import { jsonDeepEqual } from "@/util/util";
+import { DebugPanel, DebugState, defaultDebugState } from "./BottomPanel/Debug";
+import { DebugContext } from "./VisualEditor/context/DebugContext";
 
 export type EditHistory = {
   current: VisualEditorState,
@@ -42,7 +43,8 @@ export type AppState = {
   findText: string,
   replaceText: string,
   showPlot: boolean,
-} & PlotState & SideBarState & BottomPanelState;
+  showDebug: boolean,
+} & PlotState & SideBarState & BottomPanelState & DebugState;
 
 // valid URL hashes contain:
 export type UrlState = {
@@ -58,9 +60,11 @@ export const defaultAppState: AppState = {
   findText: "",
   replaceText: "",
   showPlot: false,
+  showDebug: false,
   ...defaultSideBarState,
   ...defaultPlotState,
   ...defaultBottomPanelState,
+  ...defaultDebugState,
 }
 
 export type LightMode = "light" | "auto" | "dark";
@@ -234,11 +238,13 @@ export function App() {
             {/* Editor */}
             <div style={{flexGrow: 1, overflow: "auto"}}>
               {editorState && conns && syntaxErrors &&
-                <VisualEditor {...{state: editorState, commitState, replaceState, conns, syntaxErrors: allErrors, highlightActive, highlightTransitions, setModal, ...appState, findText: appState.showFindReplace ? appState.findText : ""}}/>}
+                <DebugContext value={{...appState}}>
+                <VisualEditor {...{state: editorState, commitState, replaceState, conns, syntaxErrors: allErrors, highlightActive, highlightTransitions, setModal, ...appState, findText: appState.showFindReplace ? appState.findText : ""}}/>
+                </DebugContext>}
             </div>
             
             {editorState && appState.showFindReplace &&
-              <div style={{}}>
+              <div>
                 <FindReplace
                   {...appState}
                   setFindReplaceText={setFindReplaceText}
@@ -247,6 +253,9 @@ export function App() {
                   hide={() => setters.setShowFindReplace(false)}/>
               </div>
             }
+
+            {appState.showDebug &&
+              <DebugPanel {...{...appState, ...setters}} hide={() => setters.setShowDebug(false)} />}
 
           </div>
 

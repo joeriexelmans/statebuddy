@@ -1,10 +1,10 @@
 import { memo } from "react";
-import { Rountangle, RectSide } from "../../statecharts/concrete_syntax";
+import { Rountangle, RectSide, getRectFatBBox } from "../../statecharts/concrete_syntax";
 import { ROUNTANGLE_RADIUS } from "../parameters";
 import { RectHelper } from "./RectHelpers";
 import { rountangleMinSize } from "@/statecharts/concrete_syntax";
 import { arraysEqual, jsonDeepEqual } from "@/util/util";
-
+import { BoundingBox } from "./BoundingBox";
 
 export const RountangleSVG = memo(function RountangleSVG(props: {rountangle: Rountangle; selected: RectSide[]; highlight: RectSide[]; error?: string; active: boolean; }) {
   const { topLeft, size, uid } = props.rountangle;
@@ -20,7 +20,9 @@ export const RountangleSVG = memo(function RountangleSVG(props: {rountangle: Rou
     "data-uid": uid,
     "data-parts": "left top right bottom",
   };
-  return <g transform={`translate(${topLeft.x} ${topLeft.y})`}>
+  return <>
+  <BoundingBox {...getRectFatBBox(props.rountangle)} />
+  <g transform={`translate(${topLeft.x} ${topLeft.y})`}>
     <rect
       rx={ROUNTANGLE_RADIUS} ry={ROUNTANGLE_RADIUS}
       x={0}
@@ -38,7 +40,7 @@ export const RountangleSVG = memo(function RountangleSVG(props: {rountangle: Rou
     <RectHelper uid={uid} size={minSize}
       selected={props.selected}
       highlight={props.highlight} />
-  </g>;
+  </g></>;
 }, (prevProps, nextProps) => {
   return jsonDeepEqual(prevProps.rountangle, nextProps.rountangle)
     && arraysEqual(prevProps.selected, nextProps.selected)

@@ -1,4 +1,4 @@
-import { Dispatch, memo, ReactElement, SetStateAction, useCallback, useEffect, useRef, useState } from "react";
+import { Dispatch, memo, ReactElement, SetStateAction, useCallback, useContext, useEffect, useRef, useState } from "react";
 
 import { Mode } from "@/statecharts/runtime_types";
 import { arraysEqual, objectsEqual, setsEqual } from "@/util/util";
@@ -15,6 +15,8 @@ import { TextSVG } from "./TextSVG";
 import "./VisualEditor.css";
 import { useCopyPaste } from "./hooks/useCopyPaste";
 import { useMouse } from "./hooks/useMouse";
+import { Grid } from "./Grid";
+import { DebugContext } from "./context/DebugContext";
 
 export type VisualEditorState = ConcreteSyntax & {
   nextID: number;
@@ -164,6 +166,8 @@ export const VisualEditor = memo(function VisualEditor({state, commitState, repl
 
   const size = 4000*zoom;
 
+  const debugContext = useContext(DebugContext);
+
   return <svg width={size} height={size}
       className={"svgCanvas"+(highlightActive.has("root")?" active":"")}
       onMouseDown={onMouseDown}
@@ -176,6 +180,8 @@ export const VisualEditor = memo(function VisualEditor({state, commitState, repl
       onPaste={onPaste}
       onCut={onCut}
     >
+      {debugContext.showGrid && <Grid width={size} height={size} />}
+
       <defs>
         <marker
           id="initialMarker"

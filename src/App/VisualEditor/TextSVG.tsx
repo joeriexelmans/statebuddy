@@ -1,8 +1,9 @@
 import { TextDialog } from "@/App/Modals/TextDialog";
 import { TraceableError } from "../../statecharts/parser";
-import {Text} from "../../statecharts/concrete_syntax";
+import {getTextFatBBox, Text} from "../../statecharts/concrete_syntax";
 import { Dispatch, memo, ReactElement, SetStateAction, SVGTextElementAttributes } from "react";
 import { jsonDeepEqual } from "@/util/util";
+import { BoundingBox } from "./BoundingBox";
 
 export const FragmentedText = function FragmentedText({start, end, text, highlightClassName, uid, parts, ...rest}: {start: number, end: number, text: string, highlightClassName: string, uid: string, parts: string} & SVGTextElementAttributes<SVGTextElement>) {
   if (start !== -1 && start !== end) {
@@ -42,7 +43,9 @@ export const TextSVG = memo(function TextSVG(props: {text: Text, error: Traceabl
     parts="text"
     />;
 
-  return <g
+  return <>
+    <BoundingBox {...getTextFatBBox(props.text)}/>
+    <g
     key={props.text.uid}
     transform={`translate(${props.text.topLeft.x} ${props.text.topLeft.y})`}
     onDoubleClick={() => {
@@ -57,7 +60,7 @@ export const TextSVG = memo(function TextSVG(props: {text: Text, error: Traceabl
       {props.error &&
         <text className="errorHover" y={-20} textAnchor="middle">{props.error.message}</text>
       }
-    </g>;
+    </g></>;
 }, (prevProps, newProps) => {
   return jsonDeepEqual(prevProps.text, newProps)
     && prevProps.highlight === newProps.highlight

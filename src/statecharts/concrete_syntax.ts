@@ -1,4 +1,4 @@
-import { Rect2D, Vec2D, Line2D, euclideanDistance, intersectLines, isWithin, lineBBox, subtractV2D, roundRect2D, roundVec2D, roundLine2D } from "../util/geometry";
+import { Rect2D, Vec2D, Line2D, euclideanDistance, intersectLines, isWithin, lineBBox, subtractV2D, roundRect2D, roundVec2D, roundLine2D, addV2D, scaleV2D } from "../util/geometry";
 import { ARROW_SNAP_THRESHOLD, HISTORY_RADIUS, ROUNTANGLE_RADIUS, TEXT_SNAP_THRESHOLD } from "../App/parameters";
 import {  VisualEditorState } from "../App/VisualEditor/VisualEditor";
 import { sides } from "@/util/geometry";
@@ -70,7 +70,7 @@ export const initialEditorState: VisualEditorState = {
 };
 
 // used to find which rountangle an arrow connects to (src/tgt)
-export function findNearestSide(arrow: Line2D, arrowPart: "start" | "end", candidates: (Rountangle|Diamond)[]): {uid: string, part: RectSide} | undefined {
+export function findNearestSide(arrow: Line2D, arrowPart: "start" | "end", candidates: Iterable<(Rountangle|Diamond)>): {uid: string, part: RectSide} | undefined {
   let best = Infinity;
   let bestSide: undefined | {uid: string, part: RectSide};
   for (const rountangle of candidates) {
@@ -116,7 +116,7 @@ export function point2LineDistance(point: Vec2D, {start, end}: Line2D): number {
 
 // used to find which arrow a text label belongs to (if any)
 //  author: ChatGPT
-export function findNearestArrow(point: Vec2D, candidates: Arrow[]): Arrow | undefined {
+export function findNearestArrow(point: Vec2D, candidates: Iterable<Arrow>): Arrow | undefined {
   let best;
   let bestDistance = Infinity
 
@@ -166,4 +166,42 @@ export function rountangleMinSize(size: Vec2D): Vec2D {
     x: Math.max(minSize, size.x),
     y: Math.max(minSize, size.y),
   };
+};
+
+const maxSnapDistance = Math.ceil(Math.max(ARROW_SNAP_THRESHOLD, TEXT_SNAP_THRESHOLD)/2);
+const snap = {x: -maxSnapDistance, y: -maxSnapDistance};
+const snapTwice = scaleV2D(snap, -2);
+
+// for rountangles and diamonds
+export function getRectFatBBox(r: Rect2D): Rect2D {
+  return r;
 }
+
+export function getArrowFatBBox(a: Arrow): Rect2D {
+  return {
+    topLeft: {
+      x: Math.min(a.start.x, a.end.x) - maxSnapDistance,
+      y: Math.min(a.start.y, a.end.y) - maxSnapDistance,
+    },
+    size: {
+      x: Math.abs(a.start.x - a.end.x) + maxSnapDistance*2,
+      y: Math.abs(a.start.y - a.end.y) + maxSnapDistance*2,
+    },
+  };
+}
+
+export function getTextFatBBox(t: Text): Rect2D {
+  return {
+    topLeft: addV2D(t.topLeft, snap),
+    size: snapTwice,
+  };
+}
+
+export function getHistoryFatBBox(h: History): Rect2D {
+  return {
+    topLeft: addV2D(h.topLeft, snap),
+    size: historyBBoxSize,
+  };
+}
+
+const historyBBoxSize = addV2D({x: HISTORY_RADIUS*2, y: HISTORY_RADIUS*2}, snapTwice);

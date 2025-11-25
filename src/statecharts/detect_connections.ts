@@ -1,8 +1,8 @@
-import { isEntirelyWithin, Rect2D } from "@/util/geometry";
-import { ConcreteSyntax, Rountangle } from "./concrete_syntax";
+import { area, isEntirelyWithin, Rect2D, Vec2D } from "@/util/geometry";
+import { Arrow, ConcreteSyntax, Diamond, getArrowFatBBox, getHistoryFatBBox, getRectFatBBox, getTextFatBBox, Rountangle } from "./concrete_syntax";
 import { findNearestArrow, findNearestHistory, findNearestSide, findRountangle, RectSide } from "./concrete_syntax";
 import { arraysEqual, jsonDeepEqual, mapsEqual, memoizeOne } from "@/util/util";
-import { HISTORY_RADIUS } from "@/App/parameters";
+import { GRID_CELL_SIZE, HISTORY_RADIUS } from "@/App/parameters";
 
 export type Connections = {
   arrow2SideMap: Map<string,[{ uid: string; part: RectSide; } | undefined, { uid: string; part: RectSide; } | undefined]>,
@@ -30,7 +30,7 @@ export function connectionsEqual(a: Connections, b: Connections) {
 const detectArrow2History = memoizeOne(function detectArrow2History(concreteSyntax: ConcreteSyntax) {
   const arrow2HistoryMap = new Map<string,string>();
   const history2ArrowMap = new Map<string, string[]>();
-  console.time("arrow <-> history")
+  // console.time("arrow <-> history")
   for (const arrow of concreteSyntax.arrows) {
     const historyTarget = findNearestHistory(arrow.end, concreteSyntax.history);
     if (historyTarget) {
@@ -38,7 +38,7 @@ const detectArrow2History = memoizeOne(function detectArrow2History(concreteSynt
       history2ArrowMap.set(historyTarget.uid, [...(history2ArrowMap.get(historyTarget.uid) || []), arrow.uid]);
     }
   }
-  console.timeEnd("arrow <-> history");
+  // console.timeEnd("arrow <-> history");
   return {arrow2HistoryMap, history2ArrowMap};
 }, (a,b) => {
   let equal = true;
@@ -48,15 +48,26 @@ const detectArrow2History = memoizeOne(function detectArrow2History(concreteSynt
   return equal;
 })
 
-const detectArrow2Side = memoizeOne(function detectArrow2Side(concreteSyntax: ConcreteSyntax) {
+function* collect<T>(mappings: Map<number, T[]>[], cells: Iterable<number>) {
+  const seen = new Set();
+  for (const cell of cells) {
+    for (const m of mappings) {
+      for (const t of (m.get(cell) || [])) {
+        if (!seen.has(t)) {
+          yield t;
+        }
+      }
+    }
+  }
+}
+
+const detectArrow2Side = memoizeOne(function detectArrow2Side([concreteSyntax, uniformGrid]: [ConcreteSyntax, any]) {
   const arrow2SideMap = new Map<string,[{ uid: string; part: RectSide; } | undefined, { uid: string; part: RectSide; } | undefined]>();
   const side2ArrowMap = new Map<string, ["start"|"end", string][]>();
   const {history2ArrowMap, arrow2HistoryMap} = detectArrow2History(concreteSyntax);
-  console.time("arrow <-> side");
-  
-  const sides = [...concreteSyntax.rountangles, ...concreteSyntax.diamonds];
+  // console.time("arrow <-> side");
   for (const arrow of concreteSyntax.arrows) {
-    // snap to rountangle/diamon side:
+    const sides = [...collect<Rountangle|Diamond>([uniformGrid.cell2Rountangles, uniformGrid.cell2Diamonds], getCells(getArrowFatBBox(arrow)))];
     const startSide = findNearestSide(arrow, "start", sides);
     const endSide = arrow2HistoryMap.get(arrow.uid) ? undefined : findNearestSide(arrow, "end", sides);
     if (startSide || endSide) {
@@ -73,10 +84,9 @@ const detectArrow2Side = memoizeOne(function detectArrow2Side(concreteSyntax: Co
       side2ArrowMap.set(endSide.uid + '/' + endSide.part, arrowConns);
     }
   }
-  console.timeEnd("arrow <-> side");
+  // console.timeEnd("arrow <-> side");
   return {history2ArrowMap, arrow2HistoryMap, arrow2SideMap, side2ArrowMap};
-
-}, (a: ConcreteSyntax, b: ConcreteSyntax) => {
+}, ([a], [b]) => {
   let equal = true;
   equal &&= jsonDeepEqual(a.arrows, b.arrows);
   equal &&= jsonDeepEqual(a.diamonds, b.diamonds);
@@ -85,15 +95,17 @@ const detectArrow2Side = memoizeOne(function detectArrow2Side(concreteSyntax: Co
   return equal
 });
 
-export const detectTextConnections = memoizeOne(function detectTextConnections(concreteSyntax: ConcreteSyntax) {
+export const detectTextConnections = memoizeOne(function detectTextConnections([concreteSyntax, uniformGrid]: [ConcreteSyntax, any]) {
   const text2ArrowMap = new Map<string,string>();
   const arrow2TextMap = new Map<string,string[]>();
   const text2RountangleMap = new Map<string, string>();
   const rountangle2TextMap = new Map<string, string[]>();
-  console.time("text <-> arrow");
+  // console.time("text <-> arrow");
   // text <-> arrow
   for (const text of concreteSyntax.texts) {
-    const nearestArrow = findNearestArrow(text.topLeft, concreteSyntax.arrows);
+    const textCells = [...getCells(getTextFatBBox(text))];
+    const arrows = collect<Arrow>([uniformGrid.cell2Arrows], textCells);
+    const nearestArrow = findNearestArrow(text.topLeft, arrows);
     if (nearestArrow) {
       // prioritize text belonging to arrows:
       text2ArrowMap.set(text.uid, nearestArrow.uid);
@@ -103,7 +115,8 @@ export const detectTextConnections = memoizeOne(function detectTextConnections(c
     }
     else {
       // text <-> rountangle
-      const rountangle = findRountangle(text.topLeft, concreteSyntax.rountangles);
+      const rountangles = [...collect<Rountangle>([uniformGrid.cell2Rountangles], textCells)].sort((a,b) => area(b)-area(a));
+      const rountangle = findRountangle(text.topLeft, rountangles);
       if (rountangle) {
         text2RountangleMap.set(text.uid, rountangle.uid);
         const texts = rountangle2TextMap.get(rountangle.uid) || [];
@@ -112,9 +125,9 @@ export const detectTextConnections = memoizeOne(function detectTextConnections(c
       }
     }
   }
-  console.timeEnd("text <-> arrow");
+  // console.timeEnd("text <-> arrow");
   return {text2ArrowMap, arrow2TextMap, text2RountangleMap, rountangle2TextMap};
-}, (a,b) => {
+}, ([a],[b]) => {
   let equal = true;
   equal &&= jsonDeepEqual(a.arrows, b.arrows);
   equal &&= jsonDeepEqual(a.texts, b.texts);
@@ -124,7 +137,7 @@ export const detectTextConnections = memoizeOne(function detectTextConnections(c
 
 export const detectRountangleInsideness = memoizeOne(function detectRountangleInsideness(concreteSyntax: ConcreteSyntax) {
   const insidenessMap = new Map<string, string>();
-  console.time("rectangle <-> rectangle")
+  // console.time("rectangle <-> rectangle")
   const parentCandidates: Rountangle[] = [{
     kind: "or",
     uid: "root",
@@ -156,7 +169,7 @@ export const detectRountangleInsideness = memoizeOne(function detectRountangleIn
     const parent = findParent({topLeft: h.topLeft, size: {x: HISTORY_RADIUS*2, y: HISTORY_RADIUS*2}});
     insidenessMap.set(h.uid, parent);
   }
-  console.timeEnd("rectangle <-> rectangle");
+  // console.timeEnd("rectangle <-> rectangle");
   return insidenessMap;
 }, (a,b) => {
   let equal = true;
@@ -169,9 +182,21 @@ export const detectRountangleInsideness = memoizeOne(function detectRountangleIn
 // This function does the heavy lifting of parsing the concrete syntax:
 // It detects insideness and connectedness relations based on the geometries of the shapes.
 export function detectConnections(concreteSyntax: ConcreteSyntax): Connections {
+  // we use 'Uniform Grid' (spatial hashing) approach for efficient collision detection
+  // we build a map of grid cell -> shapes overlapping with that cell to find possible shapes that a shape is colliding with
+  // console.time('build mapping')
+  const cell2Rountangles = buildCell2ShapeMap(concreteSyntax.rountangles, getRectFatBBox);
+  const cell2Arrows = buildCell2ShapeMap(concreteSyntax.arrows, getArrowFatBBox);
+  const cell2Diamonds = buildCell2ShapeMap(concreteSyntax.diamonds, getRectFatBBox);
+  const cell2Histories = buildCell2ShapeMap(concreteSyntax.history, getHistoryFatBBox);
+  const cell2Texts = buildCell2ShapeMap(concreteSyntax.texts, getTextFatBBox);
+  // console.timeEnd('build mapping')
+  const uniformGrid = {cell2Rountangles, cell2Arrows, cell2Diamonds, cell2Histories, cell2Texts};
+
+
   // detect what is 'connected'
-  const {arrow2SideMap, side2ArrowMap, history2ArrowMap, arrow2HistoryMap} = detectArrow2Side(concreteSyntax);
-  const {text2ArrowMap, arrow2TextMap, text2RountangleMap, rountangle2TextMap} = detectTextConnections(concreteSyntax);
+  const {arrow2SideMap, side2ArrowMap, history2ArrowMap, arrow2HistoryMap} = detectArrow2Side([concreteSyntax, uniformGrid]);
+  const {text2ArrowMap, arrow2TextMap, text2RountangleMap, rountangle2TextMap} = detectTextConnections([concreteSyntax, uniformGrid]);
   const insidenessMap = detectRountangleInsideness(concreteSyntax);
 
   return {
@@ -214,4 +239,40 @@ export function reducedConcreteSyntaxEqual(a: ReducedConcreteSyntax, b: ReducedC
     && arraysEqual(a.arrows, b.arrows, (a,b)=>a.uid===b.uid)
     && arraysEqual(a.diamonds, b.diamonds, (a,b)=>a.uid===b.uid)
     && arraysEqual(a.history, b.history, (a,b)=>a.kind===b.kind&&a.uid===b.uid);
+}
+
+
+function gridCellIdx(x: number) {
+  return Math.floor(x/GRID_CELL_SIZE);
+}
+
+const shiftBits = 26;
+
+export function* getCells(bbox: Rect2D) {
+  const maxI = gridCellIdx(bbox.topLeft.x + bbox.size.x);
+  const maxJ = gridCellIdx(bbox.topLeft.y + bbox.size.y);
+  for (let i=gridCellIdx(bbox.topLeft.x); i<=maxI; i++) {
+    for (let j=gridCellIdx(bbox.topLeft.y); j<=maxJ; j++) {
+      yield i+(j<<shiftBits); // works as long as we dont have 2^26 horizontal columns
+    }
+  }
+}
+
+export function decodeCell(cell: number): Vec2D {
+  return {
+    x: (cell & ~(0xffffff<<shiftBits))*GRID_CELL_SIZE,
+    y: (cell >> shiftBits)*GRID_CELL_SIZE,
+  }
+}
+
+export function buildCell2ShapeMap<T>(shapes: T[], getFatBBox: (shape: T) => Rect2D) {
+  const cell2Shapes = new Map<number, T[]>();
+  for (const shape of shapes) {
+    for (const cell of getCells(getFatBBox(shape))) {
+      const cellShapes = cell2Shapes.get(cell) || [];
+      cellShapes.push(shape);
+      cell2Shapes.set(cell, cellShapes);
+    }
+  }
+  return cell2Shapes;
 }
