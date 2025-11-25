@@ -241,7 +241,7 @@ compressed: ${compressedSize} bytes (${Math.round(compressedSize/originalSize*10
       <div className="toolbarGroup">
         <div className="toolbarGroup">
           <Tooltip tooltip="current simulated time">
-            <label htmlFor="time"><AccessTimeIcon fontSize="small"/></label>&nbsp;
+            <label htmlFor="input-time"><AccessTimeIcon fontSize="small"/></label>&nbsp;
             <div style={{
               position: 'absolute',
               marginTop: -4,
@@ -257,7 +257,7 @@ compressed: ${compressedSize} bytes (${Math.round(compressedSize/originalSize*10
                 ? "running behind schedule! (maybe slow down a bit so i can catch up?)"
                 : "are we there yet?"}
               />
-            <input id="time"
+            <input id="input-time"
               disabled={!config}
               value={formattedDisplayTime}
               readOnly={true}

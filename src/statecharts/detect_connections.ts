@@ -261,9 +261,9 @@ export function* getCells(bbox: Rect2D) {
   const maxJ = gridCellIdx(bbox.topLeft.y + bbox.size.y);
   for (let i=minI; i<=maxI; i++) {
     for (let j=minJ; j<=maxJ; j++) {
-      if (i===minI || i===maxI || j===minJ || j===maxJ) {
+      // if (i===minI || i===maxI || j===minJ || j===maxJ) {
         yield i+(j<<shiftBits); // pack two numbers into one - works as long as we dont have 2^26 horizontal columns
-      }
+      // }
     }
   }
 }
