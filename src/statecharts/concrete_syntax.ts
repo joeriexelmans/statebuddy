@@ -182,6 +182,20 @@ const arrowBBoxSize = {
   y: maxSnapDistance*2,
 };
 
+export function getArrowFatBBox(a: Arrow): Rect2D {
+  return {
+    topLeft: {
+      x: Math.min(a.start.x, a.end.x) - maxSnapDistance,
+      y: Math.min(a.start.y, a.end.y) - maxSnapDistance,
+    },
+    size: {
+      x: Math.abs(a.start.x - a.end.x) + maxSnapDistance*2,
+      y: Math.abs(a.start.y - a.end.y) + maxSnapDistance*2,
+    },
+  };
+}
+
+// bboxes of start and end position
 export function getArrowFatBBoxes(a: Arrow): [Rect2D, Rect2D] {
   return [{
     topLeft: {

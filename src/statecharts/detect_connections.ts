@@ -1,5 +1,5 @@
 import { area, isEntirelyWithin, Rect2D, Vec2D } from "@/util/geometry";
-import { Arrow, ConcreteSyntax, Diamond, getArrowFatBBoxes, getHistoryFatBBox, getRectFatBBox, getTextFatBBox, Rountangle } from "./concrete_syntax";
+import { Arrow, ConcreteSyntax, Diamond, getArrowFatBBox, getArrowFatBBoxes, getHistoryFatBBox, getRectFatBBox, getTextFatBBox, Rountangle } from "./concrete_syntax";
 import { findNearestArrow, findNearestHistory, findNearestSide, findRountangle, RectSide } from "./concrete_syntax";
 import { arraysEqual, jsonDeepEqual, mapsEqual, memoizeOne } from "@/util/util";
 import { GRID_CELL_SIZE, HISTORY_RADIUS } from "@/App/parameters";
@@ -189,11 +189,11 @@ export function detectConnections(concreteSyntax: ConcreteSyntax): Connections {
   // we use 'Uniform Grid' (spatial hashing) approach for efficient collision detection
   // we build a map of grid cell -> shapes overlapping with that cell to find possible shapes that a shape is colliding with
   // console.time('build mapping')
-  const cell2Rountangles = buildCell2ShapeMap(concreteSyntax.rountangles, x=>[getRectFatBBox(x)]);
-  const cell2Arrows = buildCell2ShapeMap(concreteSyntax.arrows, getArrowFatBBoxes);
-  const cell2Diamonds = buildCell2ShapeMap(concreteSyntax.diamonds, x=>[getRectFatBBox(x)]);
-  const cell2Histories = buildCell2ShapeMap(concreteSyntax.history, x=>[getHistoryFatBBox(x)]);
-  const cell2Texts = buildCell2ShapeMap(concreteSyntax.texts, x=>[getTextFatBBox(x)]);
+  const cell2Rountangles = buildCell2ShapeMap(concreteSyntax.rountangles, getRectFatBBox);
+  const cell2Arrows = buildCell2ShapeMap(concreteSyntax.arrows, getArrowFatBBox);
+  const cell2Diamonds = buildCell2ShapeMap(concreteSyntax.diamonds, getRectFatBBox);
+  const cell2Histories = buildCell2ShapeMap(concreteSyntax.history, getHistoryFatBBox);
+  const cell2Texts = buildCell2ShapeMap(concreteSyntax.texts, getTextFatBBox);
   // console.timeEnd('build mapping')
   const uniformGrid = {cell2Rountangles, cell2Arrows, cell2Diamonds, cell2Histories, cell2Texts};
 
@@ -275,15 +275,13 @@ export function decodeCell(cell: number): Vec2D {
   }
 }
 
-export function buildCell2ShapeMap<T>(shapes: T[], getFatBBox: (shape: T) => Rect2D[]) {
+export function buildCell2ShapeMap<T>(shapes: T[], getFatBBox: (shape: T) => Rect2D) {
   const cell2Shapes = new Map<number, T[]>();
   for (const shape of shapes) {
-    for (const bbox of getFatBBox(shape)) {
-      for (const cell of getCells(bbox)) {
-        const cellShapes = cell2Shapes.get(cell) || [];
-        cellShapes.push(shape);
-        cell2Shapes.set(cell, cellShapes);
-      }
+    for (const cell of getCells(getFatBBox(shape))) {
+      const cellShapes = cell2Shapes.get(cell) || [];
+      cellShapes.push(shape);
+      cell2Shapes.set(cell, cellShapes);
     }
   }
   return cell2Shapes;
