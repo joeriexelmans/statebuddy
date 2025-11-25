@@ -180,7 +180,7 @@ export const VisualEditor = memo(function VisualEditor({state, commitState, repl
       onPaste={onPaste}
       onCut={onCut}
     >
-      {debugContext.showGrid && <Grid width={size} height={size} />}
+      {debugContext.showGrid && <Grid width={4000} height={4000} />}
 
       <defs>
         <marker
