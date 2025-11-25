@@ -180,8 +180,6 @@ export const VisualEditor = memo(function VisualEditor({state, commitState, repl
       onPaste={onPaste}
       onCut={onCut}
     >
-      {debugContext.showGrid && <Grid width={4000} height={4000} />}
-
       <defs>
         <marker
           id="initialMarker"
@@ -243,6 +241,8 @@ export const VisualEditor = memo(function VisualEditor({state, commitState, repl
     <Texts texts={state.texts} {...{selection, textsToHighlight, errors, onEditText, setModal, findText}}/>
 
     {(rootErrors.length>0) && <text className="errorHover" x={5} y={20} style={{display:'inline'}}>{rootErrors.join('\n')}</text>}
+
+    {debugContext.showGrid && <Grid width={4000} height={4000} />}
 
     {selectionRect}
   </svg>;

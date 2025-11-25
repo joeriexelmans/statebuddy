@@ -21,7 +21,6 @@ export const RountangleSVG = memo(function RountangleSVG(props: {rountangle: Rou
     "data-parts": "left top right bottom",
   };
   return <>
-  <BoundingBox {...getRectFatBBox(props.rountangle)} />
   <g transform={`translate(${topLeft.x} ${topLeft.y})`}>
     <rect
       rx={ROUNTANGLE_RADIUS} ry={ROUNTANGLE_RADIUS}
@@ -40,7 +39,9 @@ export const RountangleSVG = memo(function RountangleSVG(props: {rountangle: Rou
     <RectHelper uid={uid} size={minSize}
       selected={props.selected}
       highlight={props.highlight} />
-  </g></>;
+  </g>
+  <BoundingBox {...getRectFatBBox(props.rountangle)} />
+  </>;
 }, (prevProps, nextProps) => {
   return jsonDeepEqual(prevProps.rountangle, nextProps.rountangle)
     && arraysEqual(prevProps.selected, nextProps.selected)

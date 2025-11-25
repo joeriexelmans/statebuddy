@@ -1,5 +1,5 @@
 import { area, isEntirelyWithin, Rect2D, Vec2D } from "@/util/geometry";
-import { Arrow, ConcreteSyntax, Diamond, getArrowFatBBox, getHistoryFatBBox, getRectFatBBox, getTextFatBBox, Rountangle } from "./concrete_syntax";
+import { Arrow, ConcreteSyntax, Diamond, getArrowFatBBoxes, getHistoryFatBBox, getRectFatBBox, getTextFatBBox, Rountangle } from "./concrete_syntax";
 import { findNearestArrow, findNearestHistory, findNearestSide, findRountangle, RectSide } from "./concrete_syntax";
 import { arraysEqual, jsonDeepEqual, mapsEqual, memoizeOne } from "@/util/util";
 import { GRID_CELL_SIZE, HISTORY_RADIUS } from "@/App/parameters";
@@ -67,9 +67,11 @@ const detectArrow2Side = memoizeOne(function detectArrow2Side([concreteSyntax, u
   const {history2ArrowMap, arrow2HistoryMap} = detectArrow2History(concreteSyntax);
   // console.time("arrow <-> side");
   for (const arrow of concreteSyntax.arrows) {
-    const sides = [...collect<Rountangle|Diamond>([uniformGrid.cell2Rountangles, uniformGrid.cell2Diamonds], getCells(getArrowFatBBox(arrow)))];
-    const startSide = findNearestSide(arrow, "start", sides);
-    const endSide = arrow2HistoryMap.get(arrow.uid) ? undefined : findNearestSide(arrow, "end", sides);
+    const [startBBox, endBBox] = getArrowFatBBoxes(arrow);
+    const startSides = collect<Rountangle|Diamond>([uniformGrid.cell2Rountangles, uniformGrid.cell2Diamonds], getCells(startBBox));
+    const endSides = collect<Rountangle|Diamond>([uniformGrid.cell2Rountangles, uniformGrid.cell2Diamonds], getCells(endBBox));
+    const startSide = findNearestSide(arrow, "start", startSides);
+    const endSide = arrow2HistoryMap.get(arrow.uid) ? undefined : findNearestSide(arrow, "end", endSides);
     if (startSide || endSide) {
       arrow2SideMap.set(arrow.uid, [startSide, endSide]);
     }
@@ -182,14 +184,16 @@ export const detectRountangleInsideness = memoizeOne(function detectRountangleIn
 // This function does the heavy lifting of parsing the concrete syntax:
 // It detects insideness and connectedness relations based on the geometries of the shapes.
 export function detectConnections(concreteSyntax: ConcreteSyntax): Connections {
+  console.time('detect connections');
+
   // we use 'Uniform Grid' (spatial hashing) approach for efficient collision detection
   // we build a map of grid cell -> shapes overlapping with that cell to find possible shapes that a shape is colliding with
   // console.time('build mapping')
-  const cell2Rountangles = buildCell2ShapeMap(concreteSyntax.rountangles, getRectFatBBox);
-  const cell2Arrows = buildCell2ShapeMap(concreteSyntax.arrows, getArrowFatBBox);
-  const cell2Diamonds = buildCell2ShapeMap(concreteSyntax.diamonds, getRectFatBBox);
-  const cell2Histories = buildCell2ShapeMap(concreteSyntax.history, getHistoryFatBBox);
-  const cell2Texts = buildCell2ShapeMap(concreteSyntax.texts, getTextFatBBox);
+  const cell2Rountangles = buildCell2ShapeMap(concreteSyntax.rountangles, x=>[getRectFatBBox(x)]);
+  const cell2Arrows = buildCell2ShapeMap(concreteSyntax.arrows, getArrowFatBBoxes);
+  const cell2Diamonds = buildCell2ShapeMap(concreteSyntax.diamonds, x=>[getRectFatBBox(x)]);
+  const cell2Histories = buildCell2ShapeMap(concreteSyntax.history, x=>[getHistoryFatBBox(x)]);
+  const cell2Texts = buildCell2ShapeMap(concreteSyntax.texts, x=>[getTextFatBBox(x)]);
   // console.timeEnd('build mapping')
   const uniformGrid = {cell2Rountangles, cell2Arrows, cell2Diamonds, cell2Histories, cell2Texts};
 
@@ -198,6 +202,8 @@ export function detectConnections(concreteSyntax: ConcreteSyntax): Connections {
   const {arrow2SideMap, side2ArrowMap, history2ArrowMap, arrow2HistoryMap} = detectArrow2Side([concreteSyntax, uniformGrid]);
   const {text2ArrowMap, arrow2TextMap, text2RountangleMap, rountangle2TextMap} = detectTextConnections([concreteSyntax, uniformGrid]);
   const insidenessMap = detectRountangleInsideness(concreteSyntax);
+
+  console.timeEnd('detect connections');
 
   return {
     arrow2SideMap,
@@ -249,11 +255,15 @@ function gridCellIdx(x: number) {
 const shiftBits = 26;
 
 export function* getCells(bbox: Rect2D) {
+  const minI = gridCellIdx(bbox.topLeft.x);
+  const minJ = gridCellIdx(bbox.topLeft.y);
   const maxI = gridCellIdx(bbox.topLeft.x + bbox.size.x);
   const maxJ = gridCellIdx(bbox.topLeft.y + bbox.size.y);
-  for (let i=gridCellIdx(bbox.topLeft.x); i<=maxI; i++) {
-    for (let j=gridCellIdx(bbox.topLeft.y); j<=maxJ; j++) {
-      yield i+(j<<shiftBits); // works as long as we dont have 2^26 horizontal columns
+  for (let i=minI; i<=maxI; i++) {
+    for (let j=minJ; j<=maxJ; j++) {
+      if (i===minI || i===maxI || j===minJ || j===maxJ) {
+        yield i+(j<<shiftBits); // pack two numbers into one - works as long as we dont have 2^26 horizontal columns
+      }
     }
   }
 }
@@ -265,13 +275,15 @@ export function decodeCell(cell: number): Vec2D {
   }
 }
 
-export function buildCell2ShapeMap<T>(shapes: T[], getFatBBox: (shape: T) => Rect2D) {
+export function buildCell2ShapeMap<T>(shapes: T[], getFatBBox: (shape: T) => Rect2D[]) {
   const cell2Shapes = new Map<number, T[]>();
   for (const shape of shapes) {
-    for (const cell of getCells(getFatBBox(shape))) {
-      const cellShapes = cell2Shapes.get(cell) || [];
-      cellShapes.push(shape);
-      cell2Shapes.set(cell, cellShapes);
+    for (const bbox of getFatBBox(shape)) {
+      for (const cell of getCells(bbox)) {
+        const cellShapes = cell2Shapes.get(cell) || [];
+        cellShapes.push(shape);
+        cell2Shapes.set(cell, cellShapes);
+      }
     }
   }
   return cell2Shapes;

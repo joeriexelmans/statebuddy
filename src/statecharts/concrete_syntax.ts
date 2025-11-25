@@ -177,17 +177,25 @@ export function getRectFatBBox(r: Rect2D): Rect2D {
   return r;
 }
 
-export function getArrowFatBBox(a: Arrow): Rect2D {
-  return {
+const arrowBBoxSize = {
+  x: maxSnapDistance*2,
+  y: maxSnapDistance*2,
+};
+
+export function getArrowFatBBoxes(a: Arrow): [Rect2D, Rect2D] {
+  return [{
     topLeft: {
-      x: Math.min(a.start.x, a.end.x) - maxSnapDistance,
-      y: Math.min(a.start.y, a.end.y) - maxSnapDistance,
+      x: a.start.x - maxSnapDistance,
+      y: a.start.y - maxSnapDistance,
     },
-    size: {
-      x: Math.abs(a.start.x - a.end.x) + maxSnapDistance*2,
-      y: Math.abs(a.start.y - a.end.y) + maxSnapDistance*2,
+    size: arrowBBoxSize,
+  }, {
+    topLeft: {
+      x: a.end.x - maxSnapDistance,
+      y: a.end.y - maxSnapDistance,
     },
-  };
+    size: arrowBBoxSize,
+  }];
 }
 
 export function getTextFatBBox(t: Text): Rect2D {
