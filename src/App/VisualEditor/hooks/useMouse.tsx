@@ -292,7 +292,7 @@ export function useMouse(
         };
       });
     }
-  }, [replaceState, getCurrentPointer, selectingState, setSelectingState, selection, dragging]);
+  }, [replaceState, getCurrentPointer, selectingState, setSelectingState, selection, dragging, setDragging]);
 
   const onMouseUp = useCallback((e: {target: any, pageX: number, pageY: number}) => {
     if (dragging) {
