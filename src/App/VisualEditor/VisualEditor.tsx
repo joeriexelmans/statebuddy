@@ -89,7 +89,7 @@ export const VisualEditor = memo(function VisualEditor({state, commitState, repl
     commitState,
     replaceState);
 
-  const startDragging = useCallback(() => setDragging(true), [setDragging]);
+  const startDragging = useCallback(() => setDragging(cursorPos), [setDragging]);
     
   const {onCopy, onPaste, onCut} = useCopyPaste(state, commitState, selection, startDragging, cursorPos);
 

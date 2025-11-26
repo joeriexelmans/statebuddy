@@ -39,6 +39,66 @@ function computeSelection(ss: SelectingState, refSVG: {current: SVGSVGElement | 
   return new Selection();
 }
 
+function drag(state: VisualEditorState, pointerDelta: Vec2D) {
+  const getParts = (uid: string) => {
+      return state.selection.get(uid) || new Parts();
+  }
+  return {
+    ...state,
+    rountangles: state.rountangles.map(r => {
+      const selectedParts = getParts(r.uid);
+      if (selectedParts.size === 0) {
+        return r;
+      }
+      return {
+        ...r,
+        ...roundRect2D(transformRect(r, selectedParts, pointerDelta)),
+      };
+    })
+    .toSorted((a,b) => area(b) - area(a)), // sort: smaller rountangles are drawn on top
+    diamonds: state.diamonds.map(d => {
+      const selectedParts = getParts(d.uid);
+      if (selectedParts.size === 0) {
+        return d;
+      }
+      return {
+        ...d,
+        ...roundRect2D(transformRect(d, selectedParts, pointerDelta)),
+      };
+    }),
+    history: state.history.map(h => {
+      const selectedParts = getParts(h.uid);
+      if (selectedParts.size === 0) {
+        return h;
+      }
+      return {
+        ...h,
+        topLeft: roundVec2D(addV2D(h.topLeft, pointerDelta)),
+      }
+    }),
+    arrows: state.arrows.map(a => {
+      const selectedParts = getParts(a.uid);
+      if (selectedParts.size === 0) {
+        return a;
+      }
+      return {
+        ...a,
+        ...roundLine2D(transformLine(a, selectedParts, pointerDelta)),
+      }
+    }),
+    texts: state.texts.map(t => {
+      const selectedParts = getParts(t.uid);
+      if (selectedParts.size === 0) {
+        return t;
+      }
+      return {
+        ...t,
+        topLeft: roundVec2D(addV2D(t.topLeft, pointerDelta)),
+      }
+    }).toSorted((a,b) => a.topLeft.y - b.topLeft.y),
+  };
+}
+
 export function useMouse(
   insertMode: InsertMode,
   zoom: number,
@@ -47,7 +107,10 @@ export function useMouse(
   commitState: Dispatch<(v: VisualEditorState) => VisualEditorState>,
   replaceState: Dispatch<(v: VisualEditorState) => VisualEditorState>)
 {
-  const [dragging, setDragging] = useState(false);
+  // if not dragging: null
+  // if dragging: position of cursor at last mouse event
+  const [dragging, setDragging] = useState<Vec2D|null>(null);
+
   const [shiftOrCtrlPressed, setShiftOrCtrlPressed] = useState(false);
 
   // not null while the user is making a selection
@@ -145,7 +208,7 @@ export function useMouse(
         }
         throw new Error("unreachable, mode=" + insertMode); // shut up typescript
       });
-      setDragging(true);
+      setDragging(currentPointer);
       return;
     }
 
@@ -158,7 +221,7 @@ export function useMouse(
     }
 
     const startMakingSelection = () => {
-      setDragging(false);
+      setDragging(null);
       setSelectingState({
         topLeft: currentPointer,
         size: {x: 0, y: 0},
@@ -182,7 +245,7 @@ export function useMouse(
               ...appendTo,
               [uid, parts],
             ]));
-            setDragging(true);
+            setDragging(currentPointer);
           }
           else {
             // it's an actual shape
@@ -194,7 +257,7 @@ export function useMouse(
           // the part is in existing selection
           // -> just start dragging
           commitSelection(s => s); // <-- but also create an undo-checkpoint!
-          setDragging(true);
+          setDragging(currentPointer);
         }
       }
       else {
@@ -211,71 +274,13 @@ export function useMouse(
 
   const [cursorPos, setCursorPos] = useState<Vec2D>({x:0,y:0});
 
-  const onMouseMove = useCallback((e: {pageX: number, pageY: number, movementX: number, movementY: number}) => {
+  const onMouseMove = useCallback((e: {pageX: number, pageY: number}) => {
     const currentPointer = getCurrentPointer(e);
     setCursorPos(currentPointer);
     if (dragging) {
-      // we're moving / resizing
-      // ALL possible manipulation (besides rotation) happens here
-      const pointerDelta = {x: e.movementX/zoom, y: e.movementY/zoom};
-      const getParts = (uid: string) => {
-          return selection.get(uid) || new Parts();
-      }
-      replaceState(state => ({
-        ...state,
-        rountangles: state.rountangles.map(r => {
-          const selectedParts = getParts(r.uid);
-          if (selectedParts.size === 0) {
-            return r;
-          }
-          return {
-            ...r,
-            ...roundRect2D(transformRect(r, selectedParts, pointerDelta)),
-          };
-        })
-        .toSorted((a,b) => area(b) - area(a)), // sort: smaller rountangles are drawn on top
-        diamonds: state.diamonds.map(d => {
-          const selectedParts = getParts(d.uid);
-          if (selectedParts.size === 0) {
-            return d;
-          }
-          return {
-            ...d,
-            ...roundRect2D(transformRect(d, selectedParts, pointerDelta)),
-          };
-        }),
-        history: state.history.map(h => {
-          const selectedParts = getParts(h.uid);
-          if (selectedParts.size === 0) {
-            return h;
-          }
-          return {
-            ...h,
-            topLeft: roundVec2D(addV2D(h.topLeft, pointerDelta)),
-          }
-        }),
-        arrows: state.arrows.map(a => {
-          const selectedParts = getParts(a.uid);
-          if (selectedParts.size === 0) {
-            return a;
-          }
-          return {
-            ...a,
-            ...roundLine2D(transformLine(a, selectedParts, pointerDelta)),
-          }
-        }),
-        texts: state.texts.map(t => {
-          const selectedParts = getParts(t.uid);
-          if (selectedParts.size === 0) {
-            return t;
-          }
-          return {
-            ...t,
-            topLeft: roundVec2D(addV2D(t.topLeft, pointerDelta)),
-          }
-        }).toSorted((a,b) => a.topLeft.y - b.topLeft.y),
-      }));
-      setDragging(true);
+      const pointerDelta = subtractV2D(currentPointer, dragging);
+      replaceState(state => drag(state, pointerDelta));
+      setDragging(currentPointer);
     }
     else if (selectingState) {
       // we're making a selection
@@ -292,7 +297,7 @@ export function useMouse(
   const onMouseUp = useCallback((e: {target: any, pageX: number, pageY: number}) => {
     if (dragging) {
       // we were moving / resizing
-      setDragging(false);
+      setDragging(null);
 
       // do not persist sizes smaller than 40x40
       replaceState(state => {
@@ -352,7 +357,7 @@ export function useMouse(
   }, []);
 
   const onSelectAll = useCallback(() => {
-    setDragging(false);
+    setDragging(null);
     commitState(state => ({
       ...state,
       selection: new Selection([

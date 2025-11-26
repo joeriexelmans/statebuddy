@@ -10,10 +10,10 @@ export function useCopyPaste(state: VisualEditorState, commitState: Dispatch<(v:
     if (data) {
       try {
         const parsed: ConcreteSyntax = JSON.parse(data);
+        // move the pasted shapes such that the center of their bounding box is at the cursor's position
         const bbox = shapesBBox(parsed);
         const center = centerOf(bbox!);
         const offset = subtractV2D(cursorPos, center);
-        console.log({bbox, center, cursorPos, offset});
         commitState(state => {
           try {
             let nextID = state.nextID;

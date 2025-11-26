@@ -4,7 +4,7 @@ import { Dispatch, SetStateAction, useCallback, useEffect } from "react";
 import { EditHistory } from "../App";
 import { VisualEditorState } from "../VisualEditor/VisualEditor";
 import { useTrial } from "./useTrial";
-import { ConcreteSyntax, entirelySelectedShapes, shapesBBox } from "@/statecharts/concrete_syntax";
+import { entirelySelectedShapes, shapesBBox } from "@/statecharts/concrete_syntax";
 
 export function useEditor(setEditHistory: Dispatch<SetStateAction<EditHistory|null>>) {
   const {appName} = useTrial();
