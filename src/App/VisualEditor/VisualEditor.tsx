@@ -1,7 +1,7 @@
 import { Dispatch, memo, ReactElement, SetStateAction, useCallback, useContext, useEffect, useRef, useState } from "react";
 
 import { Mode } from "@/statecharts/runtime_types";
-import { arraysEqual, objectsEqual, setsEqual } from "@/util/util";
+import { arraysEqual, mapsEqual, objectsEqual, setsEqual } from "@/util/util";
 import { ArrowPart, ConcreteSyntax, Diamond, RectSide, Rountangle, Text } from "../../statecharts/concrete_syntax";
 import { Connections } from "../../statecharts/detect_connections";
 import { TraceableError } from "../../statecharts/parser";
@@ -23,25 +23,25 @@ export type VisualEditorState = ConcreteSyntax & {
   selection: Selection;
 };
 
-export type RountangleSelectable = {
-  part: RectSide;
-  uid: string;
+export function json2EditorState(json: {selection: [string, string][]}) {
+  const selection = new Selection();
+  for (const [uid, part] of json.selection) {
+    selection.set(uid, (selection.get(uid) || new Parts()).add(part));
+  }
+  return {
+    ...json,
+    selection,
+  }
 }
-type ArrowSelectable = {
-  part: ArrowPart;
-  uid: string;
-}
-type TextSelectable = {
-  part: "text";
-  uid: string;
-}
-type HistorySelectable = {
-  part: "history";
-  uid: string;
-}
-type Selectable = RountangleSelectable | ArrowSelectable | TextSelectable | HistorySelectable;
 
-export type Selection = Selectable[];
+export class Selection extends Map<string, Parts> {
+  toJSON() {
+    // we still serialize to our old format, to remain compatible
+    return [...this.entries()].flatMap(([uid, parts]) => [...parts].map(part => [uid, part]));
+  }
+}
+
+export class Parts extends Set<string> {}
 
 type VisualEditorProps = {
   state: VisualEditorState,
@@ -84,12 +84,15 @@ export const VisualEditor = memo(function VisualEditor({state, commitState, repl
   }, [highlightTransitions]);
 
 
-  const {onCopy, onPaste, onCut} = useCopyPaste(state, commitState, selection);
-
-  const {onMouseDown, selectionRect} = useMouse(insertMode, zoom, refSVG,
+  const {onMouseDown, selectionRect, newSelection, dragging, setDragging, cursorPos} = useMouse(insertMode, zoom, refSVG,
     state,
     commitState,
     replaceState);
+
+  const startDragging = useCallback(() => setDragging(true), [setDragging]);
+    
+  const {onCopy, onPaste, onCut} = useCopyPaste(state, commitState, selection, startDragging, cursorPos);
+
 
 
   // for visual feedback, when selecting/moving one thing, we also highlight (in green) all the things that belong to the thing we selected.
@@ -98,39 +101,41 @@ export const VisualEditor = memo(function VisualEditor({state, commitState, repl
   const textsToHighlight: {[key: string]: boolean} = {};
   const rountanglesToHighlight: {[key: string]: boolean} = {};
   const historyToHighlight: {[key: string]: boolean} = {};
-  for (const selected of selection) {
-    const sides = conns.arrow2SideMap.get(selected.uid);
+  for (const [selectedUid, parts] of selection.entries()) {
+    const sides = conns.arrow2SideMap.get(selectedUid);
     if (sides) {
       const [startSide, endSide] = sides;
       if (startSide) sidesToHighlight[startSide.uid] = [...sidesToHighlight[startSide.uid]||[], startSide.part];
       if (endSide) sidesToHighlight[endSide.uid] = [...sidesToHighlight[endSide.uid]||[], endSide.part];
     }
     const texts = [
-      ...(conns.arrow2TextMap.get(selected.uid) || []),
-      ...(conns.rountangle2TextMap.get(selected.uid) || []),
+      ...(conns.arrow2TextMap.get(selectedUid) || []),
+      ...(conns.rountangle2TextMap.get(selectedUid) || []),
     ];
     for (const textUid of texts) {
       textsToHighlight[textUid] = true;
     }
-    const arrows = conns.side2ArrowMap.get(selected.uid + '/' + selected.part) || [];
-    if (arrows) {
-      for (const [arrowPart, arrowUid] of arrows) {
-        arrowsToHighlight[arrowUid] = true;
+    for (const part of parts) {
+      const arrows = conns.side2ArrowMap.get(selectedUid + '/' + part) || [];
+      if (arrows) {
+        for (const [arrowPart, arrowUid] of arrows) {
+          arrowsToHighlight[arrowUid] = true;
+        }
       }
     }
-    const arrow2 = conns.text2ArrowMap.get(selected.uid);
+    const arrow2 = conns.text2ArrowMap.get(selectedUid);
     if (arrow2) {
       arrowsToHighlight[arrow2] = true;
     }
-    const rountangleUid = conns.text2RountangleMap.get(selected.uid)
+    const rountangleUid = conns.text2RountangleMap.get(selectedUid)
     if (rountangleUid) {
       rountanglesToHighlight[rountangleUid] = true;
     }
-    const history = conns.arrow2HistoryMap.get(selected.uid);
+    const history = conns.arrow2HistoryMap.get(selectedUid);
     if (history) {
       historyToHighlight[history] = true;
     }
-    const arrow3 = conns.history2ArrowMap.get(selected.uid) || [];
+    const arrow3 = conns.history2ArrowMap.get(selectedUid) || [];
     for (const arrow of arrow3) {
       arrowsToHighlight[arrow] = true;
     }
@@ -168,8 +173,10 @@ export const VisualEditor = memo(function VisualEditor({state, commitState, repl
 
   const debugContext = useContext(DebugContext);
 
+  const renderSelection = new Selection([...selection, ...newSelection]);
+
   return <svg width={size} height={size}
-      className={"svgCanvas"+(highlightActive.has("root")?" active":"")}
+      className={"svgCanvas"+(highlightActive.has("root")?" active":"")+(dragging?" dragging":"")}
       onMouseDown={onMouseDown}
       onContextMenu={e => e.preventDefault()}
       ref={refSVG}
@@ -204,13 +211,13 @@ export const VisualEditor = memo(function VisualEditor({state, commitState, repl
         </marker>
       </defs>
 
-    <Rountangles rountangles={state.rountangles} {...{selection, sidesToHighlight, rountanglesToHighlight, errors, highlightActive}}/>
-    <Diamonds diamonds={state.diamonds} {...{selection, sidesToHighlight, rountanglesToHighlight, errors}}/>
+    <Rountangles rountangles={state.rountangles} {...{selection: renderSelection, sidesToHighlight, rountanglesToHighlight, errors, highlightActive}}/>
+    <Diamonds diamonds={state.diamonds} {...{selection: renderSelection, sidesToHighlight, rountanglesToHighlight, errors}}/>
 
     {state.history.map(history => <>
       <HistorySVG
         key={history.uid}
-        selected={Boolean(selection.find(h => h.uid === history.uid))}
+        selected={renderSelection.has(history.uid)}
         highlight={Boolean(historyToHighlight[history.uid])}
         {...history}
         />
@@ -226,7 +233,7 @@ export const VisualEditor = memo(function VisualEditor({state, commitState, repl
       return <ArrowSVG
         key={arrow.uid}
         arrow={arrow}
-        selected={selection.filter(a => a.uid === arrow.uid).map(({part})=> part as ArrowPart)}
+        selected={renderSelection.get(arrow.uid) as Set<ArrowPart> || new Set()}
         error={errors
           .filter(({shapeUid}) => shapeUid === arrow.uid)
           .map(({message}) => message).join(', ')}
@@ -238,7 +245,7 @@ export const VisualEditor = memo(function VisualEditor({state, commitState, repl
       }
     )}
 
-    <Texts texts={state.texts} {...{selection, textsToHighlight, errors, onEditText, setModal, findText}}/>
+    <Texts texts={state.texts} {...{selection: renderSelection, textsToHighlight, errors, onEditText, setModal, findText}}/>
 
     {(rootErrors.length>0) && <text className="errorHover" x={5} y={20} style={{display:'inline'}}>{rootErrors.join('\n')}</text>}
 
@@ -253,7 +260,7 @@ const Rountangles = memo(function Rountangles({rountangles, selection, sidesToHi
     return <RountangleSVG
       key={rountangle.uid}
       rountangle={rountangle}
-      selected={selection.filter(r => r.uid === rountangle.uid).map(({part}) => part as RectSide)}
+      selected={selection.get(rountangle.uid) as Set<RectSide> || new Set()}
       highlight={[...(sidesToHighlight[rountangle.uid] || []), ...(rountanglesToHighlight[rountangle.uid]?["left","right","top","bottom"]:[]) as RectSide[]]}
       error={errors
         .filter(({shapeUid}) => shapeUid === rountangle.uid)
@@ -262,7 +269,7 @@ const Rountangles = memo(function Rountangles({rountangles, selection, sidesToHi
     />})}</>;
 }, (p, n) => {
   return arraysEqual(p.rountangles, n.rountangles)
-    && arraysEqual(p.selection, n.selection)
+    && mapsEqual(p.selection, n.selection)
     && objectsEqual(p.sidesToHighlight, n.sidesToHighlight)
     && objectsEqual(p.rountanglesToHighlight, n.rountanglesToHighlight)
     && arraysEqual(p.errors, n.errors)
@@ -274,7 +281,7 @@ const Diamonds = memo(function Diamonds({diamonds, selection, sidesToHighlight, 
     <DiamondSVG
       key={diamond.uid}
       diamond={diamond}
-      selected={selection.filter(r => r.uid === diamond.uid).map(({part})=>part as RectSide)}
+      selected={selection.get(diamond.uid) as Set<RectSide> || new Set()}
       highlight={[...(sidesToHighlight[diamond.uid] || []), ...(rountanglesToHighlight[diamond.uid]?["left","right","top","bottom"]:[]) as RectSide[]]}
       error={errors
         .filter(({shapeUid}) => shapeUid === diamond.uid)
@@ -283,7 +290,7 @@ const Diamonds = memo(function Diamonds({diamonds, selection, sidesToHighlight, 
   </>)}</>;
 }, (p, n) => {
   return arraysEqual(p.diamonds, n.diamonds)
-    && arraysEqual(p.selection, n.selection)
+    && mapsEqual(p.selection, n.selection)
     && objectsEqual(p.sidesToHighlight, n.sidesToHighlight)
     && objectsEqual(p.rountanglesToHighlight, n.rountanglesToHighlight)
     && arraysEqual(p.errors, n.errors);
@@ -295,7 +302,7 @@ const Texts = memo(function Texts({texts, selection, textsToHighlight, errors, o
       key={txt.uid}
       error={errors.find(({shapeUid}) => txt.uid === shapeUid)}
       text={txt}
-      selected={Boolean(selection.filter(s => s.uid === txt.uid).length)}
+      selected={selection.has(txt.uid)}
       highlight={textsToHighlight.hasOwnProperty(txt.uid)}
       onEdit={onEditText}
       setModal={setModal}
@@ -304,7 +311,7 @@ const Texts = memo(function Texts({texts, selection, textsToHighlight, errors, o
   })}</>;
 }, (p, n) => {
   return arraysEqual(p.texts, n.texts)
-    && arraysEqual(p.selection, n.selection)
+    && mapsEqual(p.selection, n.selection)
     && objectsEqual(p.textsToHighlight, n.textsToHighlight)
     && arraysEqual(p.errors, n.errors)
     && p.onEditText === n.onEditText

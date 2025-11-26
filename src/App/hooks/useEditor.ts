@@ -1,10 +1,10 @@
-import { addV2D, rotateLine90CCW, rotateLine90CW, rotatePoint90CCW, rotatePoint90CW, rotateRect90CCW, rotateRect90CW, scaleV2D, subtractV2D, Vec2D } from "@/util/geometry";
+import { addV2D, centerOf, rotateLine90CCW, rotateLine90CW, rotatePoint90CCW, rotatePoint90CW, rotateRect90CCW, rotateRect90CW, subtractV2D } from "@/util/geometry";
 import { HISTORY_RADIUS } from "../parameters";
 import { Dispatch, SetStateAction, useCallback, useEffect } from "react";
 import { EditHistory } from "../App";
-import { jsonDeepEqual } from "@/util/util";
 import { VisualEditorState } from "../VisualEditor/VisualEditor";
 import { useTrial } from "./useTrial";
+import { ConcreteSyntax, entirelySelectedShapes, shapesBBox } from "@/statecharts/concrete_syntax";
 
 export function useEditor(setEditHistory: Dispatch<SetStateAction<EditHistory|null>>) {
   const {appName} = useTrial();
@@ -66,60 +66,21 @@ export function useEditor(setEditHistory: Dispatch<SetStateAction<EditHistory|nu
   const onRotate = useCallback((direction: "ccw" | "cw") => {
     commitState(editorState => {
       const selection = editorState.selection;
-      if (selection.length === 0) {
-        return editorState;
+      const selectedShapes = entirelySelectedShapes(editorState, selection);
+      const bbox = shapesBBox(selectedShapes);
+      if (!bbox) {
+        return editorState; // no change
       }
-
-      // determine bounding box... in a convoluted manner
-      let minX = -Infinity, minY = -Infinity, maxX = Infinity, maxY = Infinity;
-      function addPointToBBox({x,y}: Vec2D) {
-        minX = Math.max(minX, x);
-        minY = Math.max(minY, y);
-        maxX = Math.min(maxX, x);
-        maxY = Math.min(maxY, y);
-      }
-      for (const rt of editorState.rountangles) {
-        if (selection.some(s => s.uid === rt.uid)) {
-          addPointToBBox(rt.topLeft);
-          addPointToBBox(addV2D(rt.topLeft, rt.size));
-        }
-      }
-      for (const d of editorState.diamonds) {
-        if (selection.some(s => s.uid === d.uid)) {
-          addPointToBBox(d.topLeft);
-          addPointToBBox(addV2D(d.topLeft, d.size));
-        }
-      }
-      for (const arr of editorState.arrows) {
-        if (selection.some(s => s.uid === arr.uid)) {
-          addPointToBBox(arr.start);
-          addPointToBBox(arr.end);
-        }
-      }
-      for (const txt of editorState.texts) {
-        if (selection.some(s => s.uid === txt.uid)) {
-          addPointToBBox(txt.topLeft);
-        }
-      }
-      const historySize = {x: HISTORY_RADIUS, y: HISTORY_RADIUS};
-      for (const h of editorState.history) {
-        if (selection.some(s => s.uid === h.uid)) {
-          addPointToBBox(h.topLeft);
-          addPointToBBox(addV2D(h.topLeft, scaleV2D(historySize, 2)));
-        }
-      }
-      const center: Vec2D = {
-        x: (minX + maxX) / 2,
-        y: (minY + maxY) / 2,
-      };
+      const center = centerOf(bbox);
       const mapIfSelected = (shape: {uid: string}, cb: (shape:any)=>any) => {
-        if (selection.some(s => s.uid === shape.uid)) {
+        if (selection.has(shape.uid)) {
           return cb(shape);
         }
         else {
           return shape;
         }
       }
+      const historySize = {x: HISTORY_RADIUS, y: HISTORY_RADIUS};
       return {
         ...editorState,
         rountangles: editorState.rountangles.map(rt => mapIfSelected(rt, rt => {

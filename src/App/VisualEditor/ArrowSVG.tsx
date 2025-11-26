@@ -2,11 +2,11 @@ import { memo } from "react";
 import { Arrow, ArrowPart, getArrowFatBBox, getArrowFatBBoxes } from "../../statecharts/concrete_syntax";
 import { ArcDirection, euclideanDistance } from "../../util/geometry";
 import { CORNER_HELPER_RADIUS } from "../parameters";
-import { arraysEqual, jsonDeepEqual } from "@/util/util";
+import { arraysEqual, jsonDeepEqual, setsEqual } from "@/util/util";
 import { BoundingBox } from "./BoundingBox";
 
 
-export const ArrowSVG = memo(function(props: { arrow: Arrow; selected: ArrowPart[]; error: string; highlight: boolean; fired: boolean; arc: ArcDirection; initialMarker: boolean }) {
+export const ArrowSVG = memo(function(props: { arrow: Arrow; selected: Set<ArrowPart>; error: string; highlight: boolean; fired: boolean; arc: ArcDirection; initialMarker: boolean }) {
   const { start, end, uid } = props.arrow;
   const radius = euclideanDistance(start, end) / 1.6;
   let largeArc = "1";
@@ -24,7 +24,7 @@ export const ArrowSVG = memo(function(props: { arrow: Arrow; selected: ArrowPart
     <BoundingBox {...bbox} />
     <path
       className={"arrow"
-        + (props.selected.length === 2 ? " selected" : "")
+        + (props.selected.size === 2 ? " selected" : "")
         + (props.error ? " error" : "")
         + (props.highlight ? " highlight" : "")
         + (props.fired ? " fired" : "")
@@ -70,14 +70,14 @@ export const ArrowSVG = memo(function(props: { arrow: Arrow; selected: ArrowPart
       data-parts="end" />
 
     {/* selection indicator circles */}
-    {props.selected.includes("start") && <circle
+    {props.selected.has("start") && <circle
       className="selected"
       cx={start.x}
       cy={start.y}
       r={CORNER_HELPER_RADIUS}
       data-uid={uid}
       data-parts="start" />}
-    {props.selected.includes("end") && <circle
+    {props.selected.has("end") && <circle
       className="selected"
       cx={end.x}
       cy={end.y}
@@ -88,7 +88,7 @@ export const ArrowSVG = memo(function(props: { arrow: Arrow; selected: ArrowPart
   </g>;
 }, (prevProps, nextProps) => {
   return jsonDeepEqual(prevProps.arrow, nextProps.arrow)
-    && arraysEqual(prevProps.selected, nextProps.selected)
+    && setsEqual(prevProps.selected, nextProps.selected)
     && prevProps.highlight === nextProps.highlight
     && prevProps.error === nextProps.error
     && prevProps.fired === nextProps.fired

@@ -1,6 +1,6 @@
 import { Rect2D, Vec2D, Line2D, euclideanDistance, intersectLines, isWithin, lineBBox, subtractV2D, roundRect2D, roundVec2D, roundLine2D, addV2D, scaleV2D } from "../util/geometry";
 import { ARROW_SNAP_THRESHOLD, HISTORY_RADIUS, ROUNTANGLE_RADIUS, TEXT_SNAP_THRESHOLD } from "../App/parameters";
-import {  VisualEditorState } from "../App/VisualEditor/VisualEditor";
+import {  Parts, Selection, VisualEditorState } from "../App/VisualEditor/VisualEditor";
 import { sides } from "@/util/geometry";
 
 export type Rountangle = {
@@ -50,6 +50,11 @@ export function roundCS(cs: ConcreteSyntax): ConcreteSyntax {
 export type RectSide = "left" | "top" | "right" | "bottom";
 export type ArrowPart = "start" | "end";
 
+export const allRectParts: Parts = new Parts(["left", "top", "bottom", "right"]);
+export const allArrowParts: Parts = new Parts(["start", "end"]);
+export const allTextParts: Parts = new Parts(["text"]);
+export const allHistoryParts: Parts = new Parts(["history"]);
+
 export const initialEditorState: VisualEditorState = {
   rountangles: [{
     uid:"0",
@@ -66,7 +71,7 @@ export const initialEditorState: VisualEditorState = {
   }],
   texts:[],
   nextID: 1,
-  selection: [],
+  selection: new Selection(),
 };
 
 // used to find which rountangle an arrow connects to (src/tgt)
@@ -227,3 +232,52 @@ export function getHistoryFatBBox(h: History): Rect2D {
 }
 
 const historyBBoxSize = addV2D({x: HISTORY_RADIUS*2, y: HISTORY_RADIUS*2}, snapTwice);
+
+export function entirelySelectedShapes(cs: ConcreteSyntax, selection: Selection) {
+  const rountangles = cs.rountangles.filter(r => selection.get(r.uid)?.size === 4);
+  const diamonds = cs.diamonds.filter(d => selection.get(d.uid)?.size === 4);
+  const history = cs.history.filter(h => selection.get(h.uid)?.size === 1);
+  const arrows = cs.arrows.filter(a => selection.get(a.uid)?.size === 2);
+  const texts = cs.texts.filter(t => selection.get(t.uid)?.size === 1);
+  return {
+    rountangles,
+    diamonds,
+    history,
+    arrows,
+    texts,
+  };
+}
+
+export function shapesBBox(shapes: ConcreteSyntax): Rect2D | undefined {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  function addPointToBBox({x,y}: Vec2D) {
+    minX = Math.min(minX, x);
+    minY = Math.min(minY, y);
+    maxX = Math.max(maxX, x);
+    maxY = Math.max(maxY, y);
+  }
+  for (const rt of shapes.rountangles) {
+    addPointToBBox(rt.topLeft);
+    addPointToBBox(addV2D(rt.topLeft, rt.size));
+  }
+  for (const d of shapes.diamonds) {
+    addPointToBBox(d.topLeft);
+    addPointToBBox(addV2D(d.topLeft, d.size));
+  }
+  for (const arr of shapes.arrows) {
+    addPointToBBox(arr.start);
+    addPointToBBox(arr.end);
+  }
+  for (const txt of shapes.texts) {
+    addPointToBBox(txt.topLeft);
+  }
+  const historySize = {x: HISTORY_RADIUS, y: HISTORY_RADIUS};
+  for (const h of shapes.history) {
+    addPointToBBox(h.topLeft);
+    addPointToBBox(addV2D(h.topLeft, scaleV2D(historySize, 2)));
+  }
+  return {
+    topLeft: { x: minX, y: minY },
+    size: { x: maxX - minX, y: maxY - minY },
+  }
+}

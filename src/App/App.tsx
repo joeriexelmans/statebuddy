@@ -9,7 +9,7 @@ import { BottomPanel, BottomPanelState, defaultBottomPanelState } from "./Bottom
 import { defaultSideBarState, SideBar, SideBarState } from "./SideBar/SideBar";
 import { InsertMode } from "./TopPanel/InsertModes";
 import { TopPanel } from "./TopPanel/TopPanel";
-import { VisualEditor, VisualEditorState } from "./VisualEditor/VisualEditor";
+import { json2EditorState, VisualEditor, VisualEditorState } from "./VisualEditor/VisualEditor";
 import { makeAllSetters } from "./makePartialSetter";
 import { useEditor } from "./hooks/useEditor";
 import { useSimulator } from "./hooks/useSimulator";
@@ -129,7 +129,11 @@ export function App() {
         // new format
         // @ts-ignore
         if (recoveredState.editorState !== undefined) {
-          const {editorState, ...appState} = recoveredState as AppState & {editorState: VisualEditorState};
+          const {editorState, ...appState} = {
+            ...recoveredState,
+            // @ts-ignore
+            editorState: json2EditorState(recoveredState.editorState),
+          } as AppState & {editorState: VisualEditorState};
           setEditHistory(() => ({current: editorState, history: [], future: []}));
           setAppState(defaultAppState => Object.assign({}, defaultAppState, appState));
         }

@@ -12,12 +12,12 @@ function lineGeometryProps(size: Vec2D): [RectSide, object][] {
 }
 
 // no need to memo() this component, the parent component is already memoized
-export const RectHelper = function RectHelper(props: { uid: string, size: Vec2D, selected: RectSide[], highlight: string[] }) {
+export const RectHelper = function RectHelper(props: { uid: string, size: Vec2D, selected: Set<RectSide>, highlight: string[] }) {
   const geomProps = lineGeometryProps(props.size);
   return <>
     {geomProps.map(([side, ps]) => <g key={side}>
-      {(props.selected.includes(side) || props.highlight.includes(side)) && <line className={""
-            + (props.selected.includes(side) ? " selected" : "")
+      {(props.selected.has(side) || props.highlight.includes(side)) && <line className={""
+            + (props.selected.has(side) ? " selected" : "")
             + (props.highlight.includes(side) ? " highlight" : "")}
             {...ps} data-uid={props.uid} data-parts={side}/>
       }

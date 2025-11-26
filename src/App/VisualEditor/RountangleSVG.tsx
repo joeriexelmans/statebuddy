@@ -1,19 +1,18 @@
 import { memo } from "react";
-import { Rountangle, RectSide, getRectFatBBox } from "../../statecharts/concrete_syntax";
+import { Rountangle, RectSide, getRectFatBBox, rountangleMinSize } from "../../statecharts/concrete_syntax";
 import { ROUNTANGLE_RADIUS } from "../parameters";
 import { RectHelper } from "./RectHelpers";
-import { rountangleMinSize } from "@/statecharts/concrete_syntax";
-import { arraysEqual, jsonDeepEqual } from "@/util/util";
+import { arraysEqual, jsonDeepEqual, setsEqual } from "@/util/util";
 import { BoundingBox } from "./BoundingBox";
 
-export const RountangleSVG = memo(function RountangleSVG(props: {rountangle: Rountangle; selected: RectSide[]; highlight: RectSide[]; error?: string; active: boolean; }) {
+export const RountangleSVG = memo(function RountangleSVG(props: {rountangle: Rountangle; selected: Set<RectSide>; highlight: RectSide[]; error?: string; active: boolean; }) {
   const { topLeft, size, uid } = props.rountangle;
   // always draw a rountangle with a minimum size
   // during resizing, rountangle can be smaller than this size and even have a negative size, but we don't show it
   const minSize = rountangleMinSize(size);
   const extraAttrs = {
     className: 'rountangle'
-      + (props.selected.length === 4 ? " selected" : "")
+      + (props.selected.size === 4 ? " selected" : "")
       + (' ' + props.rountangle.kind)
       + (props.error ? " error" : "")
       + (props.active ? " active" : ""),
@@ -44,7 +43,7 @@ export const RountangleSVG = memo(function RountangleSVG(props: {rountangle: Rou
   </>;
 }, (prevProps, nextProps) => {
   return jsonDeepEqual(prevProps.rountangle, nextProps.rountangle)
-    && arraysEqual(prevProps.selected, nextProps.selected)
+    && setsEqual(prevProps.selected, nextProps.selected)
     && arraysEqual(prevProps.highlight, nextProps.highlight)
     && prevProps.error === nextProps.error
     && prevProps.active === nextProps.active

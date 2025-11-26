@@ -85,7 +85,7 @@ export function arraysEqual<T>(a: T[], b: T[], cmp: (a: T, b: T) => boolean = (a
   return true;
 }
 
-export function setsEqual<T>(a: Set<T>, b: Set<T>): boolean {
+export function setsEqual<T>(a: ReadonlySet<T>, b: ReadonlySet<T>): boolean {
   if (a === b)
     return true;
 
@@ -113,7 +113,7 @@ export function objectsEqual<T>(a: {[key: string]: T}, b: {[key: string]: T}, cm
   return true;
 }
 
-export function mapsEqual<K,V>(a: Map<K,V>, b: Map<K,V>, cmp: (a: V, b: V) => boolean = (a,b)=>a===b) {
+export function mapsEqual<K,V>(a: ReadonlyMap<K,V>, b: ReadonlyMap<K,V>, cmp: (a: V, b: V) => boolean = (a,b)=>a===b) {
   if (a===b)
     return true;
 

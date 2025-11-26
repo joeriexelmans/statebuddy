@@ -24,14 +24,15 @@ export function useUrlHashState<T>(recoverCallback: (recoveredState: (T|null)) =
   }, []);
 
   function persist(state: T, cancel: Promise<void>) {
-    const json = str2buf(JSON.stringify(state));
+    const str = JSON.stringify(state);
+    const buf = str2buf(str);
     Promise.race([
-      deflateBuffer(json),
+      deflateBuffer(buf),
       cancel,
     ]).then((deflatedJSON)=> {
       if (deflatedJSON !== undefined) { // not canceled
         window.location.hash = '#'+buf2base64(deflatedJSON);
-        setOriginalSize(json.byteLength);
+        setOriginalSize(buf.byteLength);
         setCompressedSize(deflatedJSON.byteLength);
       }
     }).catch(e => {

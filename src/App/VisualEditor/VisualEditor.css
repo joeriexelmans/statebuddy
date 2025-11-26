@@ -1,6 +1,7 @@
 .svgCanvas {
   cursor: crosshair;
   background-color: var(--or-state-bg-color);
+  --drag-opacity: 0.5;
 }
 
 .svgCanvas.dragging  {
@@ -31,9 +32,11 @@
   stroke-width: 2px;
 }
 
-.rountangle.selected {
-  /* fill: rgba(0, 0, 255, 0.2); */
+svg.dragging .rountangle.selected {
+  stroke-opacity: var(--drag-opacity);
+  fill-opacity: var(--drag-opacity);
 }
+
 .rountangle.error {
   stroke: var(--error-color);
 }
@@ -90,6 +93,9 @@ circle.helper:hover:not(:active) {
   stroke: var(--accent-border-color);
   stroke-width: 3px;
 }
+svg.dragging .arrow.selected {
+  stroke-opacity: var(--drag-opacity);
+}
 
 .arrow::marker {
   fill: content-stroke;
@@ -110,6 +116,10 @@ line.selected, circle.selected {
   fill: var(--light-accent-color);
   stroke: var(--accent-border-color);
   stroke-width: 4px;
+}
+svg.dragging line.selected,
+svg.dragging circle.selected {
+  stroke-opacity: var(--drag-opacity);
 }
 
 text.helper {
@@ -133,6 +143,9 @@ text.helper:hover {
 .draggableText.selected {
   fill: var(--accent-border-color);
   font-weight: 600;
+}
+svg.dragging .draggableText.selected {
+  fill-opacity: var(--drag-opacity);
 }
 .draggableText.highlight:not(.selected) {
   fill: var(--associated-color);

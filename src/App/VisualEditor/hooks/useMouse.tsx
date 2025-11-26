@@ -1,12 +1,43 @@
-import { rountangleMinSize } from "@/statecharts/concrete_syntax";
+import { allArrowParts, allHistoryParts, allRectParts, allTextParts, rountangleMinSize } from "@/statecharts/concrete_syntax";
 import { addV2D, area, isEntirelyWithin, normalizeRect, Rect2D, roundLine2D, roundRect2D, roundVec2D, scaleV2D, subtractV2D, transformLine, transformRect, Vec2D } from "@/util/geometry";
 import { getBBoxInSvgCoords } from "@/util/svg_helper";
-import { Dispatch, useCallback, useEffect, useState } from "react";
+import { Dispatch, useCallback, useEffect, useMemo, useState } from "react";
 import { MIN_ROUNTANGLE_SIZE } from "../../parameters";
 import { InsertMode } from "../../TopPanel/InsertModes";
 import { Selecting, SelectingState } from "../Selection";
-import { Selection, VisualEditorState } from "../VisualEditor";
+import { Parts, Selection, VisualEditorState } from "../VisualEditor";
 import { useShortcuts } from "@/hooks/useShortcuts";
+
+// get list of parts of shapes that are within the selecting-rectangle
+function computeSelection(ss: SelectingState, refSVG: {current: SVGSVGElement | null}, zoom: number): Selection {
+  if (ss) {
+    // complete selection
+    const normalizedSS = normalizeRect(ss);
+    const shapes = Array.from(refSVG.current?.querySelectorAll("rect, line, circle, text") || []) as SVGGraphicsElement[];
+    // Note: the same UID may be represented by multiple 'shapes'. Every 'shape' can represent any number of 'parts'.
+    const shapesInSelection = shapes.filter(el => {
+      const bbox = getBBoxInSvgCoords(el, refSVG.current!);
+      const scaledBBox = {
+        topLeft: scaleV2D(bbox.topLeft, 1/zoom),
+        size: scaleV2D(bbox.size, 1/zoom),
+      }
+      return isEntirelyWithin(scaledBBox, normalizedSS);
+    }).filter(el => !el.classList.contains("corner"));
+
+    const selection: Selection = new Selection();
+    for (const shape of shapesInSelection) {
+      const uid = shape.dataset.uid;
+      if (uid) {
+        const parts = new Parts(shape.dataset.parts?.split(' ') || []);
+        for (const part of parts) {
+          selection.set(uid, (selection.get(uid) as Parts || new Parts()).add(part));
+        }
+      }
+    }
+    return selection;
+  }
+  return new Selection();
+}
 
 export function useMouse(
   insertMode: InsertMode,
@@ -29,6 +60,11 @@ export function useMouse(
 
   const replaceSelection = useCallback((cb: (oldSelection: Selection) => Selection) =>
     replaceState(oldState => ({...oldState, selection: cb(oldState.selection)})),[replaceState]);
+
+  // selection being made
+  const newSelection: Selection = useMemo(() =>
+    computeSelection(selectingState, refSVG, zoom),
+    [selectingState, refSVG, zoom]);
 
 
   const getCurrentPointer = useCallback((e: {pageX: number, pageY: number}) => {
@@ -56,7 +92,7 @@ export function useMouse(
               kind: insertMode,
             }],
             nextID: state.nextID+1,
-            selection: [{uid: newID, part: "bottom"}, {uid: newID, part: "right"}],
+            selection: new Selection([[newID, new Parts(["bottom", "right"])]]),
           };
         }
         else if (insertMode === "pseudo") {
@@ -68,7 +104,7 @@ export function useMouse(
               size: MIN_ROUNTANGLE_SIZE,
             }],
             nextID: state.nextID+1,
-            selection: [{uid: newID, part: "bottom"}, {uid: newID, part: "right"}],
+            selection: new Selection([[newID, new Parts(["bottom", "right"])]]),
           };
         }
         else if (insertMode === "shallow" || insertMode === "deep") {
@@ -80,7 +116,7 @@ export function useMouse(
               topLeft: currentPointer,
             }],
             nextID: state.nextID+1,
-            selection: [{uid: newID, part: "history"}],
+            selection: new Selection([[newID, new Parts(["history"])]]),
           }
         }
         else if (insertMode === "transition") {
@@ -92,7 +128,7 @@ export function useMouse(
               end: currentPointer,
             }],
             nextID: state.nextID+1,
-            selection: [{uid: newID, part: "end"}],
+            selection: new Selection([[newID, new Parts(["end"])]]),
           }
         }
         else if (insertMode === "text") {
@@ -104,7 +140,7 @@ export function useMouse(
               topLeft: currentPointer,
             }],
             nextID: state.nextID+1,
-            selection: [{uid: newID, part: "text"}],
+            selection: new Selection([[newID, new Parts(["text"])]]),
           }
         }
         throw new Error("unreachable, mode=" + insertMode); // shut up typescript
@@ -118,7 +154,7 @@ export function useMouse(
       appendTo = selection;
     }
     else {
-      appendTo = [];
+      appendTo = new Selection();
     }
 
     const startMakingSelection = () => {
@@ -133,25 +169,19 @@ export function useMouse(
     if (e.button === 0) {
       // left mouse button
       const uid = e.target?.dataset.uid;
-      const parts: string[] = e.target?.dataset.parts?.split(' ').filter((p:string) => p!=="") || [];
-      if (uid && parts.length > 0) {
+      const parts = new Parts(e.target?.dataset.parts?.split(' ').filter((p:string) => p!=="") || []);
+      if (uid && parts.size > 0) {
         // mouse hovers over a shape or part of a shape
-        let allPartsInSelection = true;
-        for (const part of parts) {
-          if (!(selection.some(s => (s.uid === uid) && (s.part === part)))) {
-            allPartsInSelection = false;
-            break;
-          }
-        }
+        const allPartsInSelection = selection.get(uid)?.difference(parts).size === 0;
         if (!allPartsInSelection) {
-          // the part is not in existing selection
+          // existing selection does not (entirely) cover the part
           if (e.target.classList.contains("helper")) {
             // it's only a helper
             // -> update selection by the part and start dragging it
-            commitSelection(() => [
+            commitSelection(() => new Selection([
               ...appendTo,
-              ...parts.map(part => ({uid, part})) as Selection,
-            ]);
+              [uid, parts],
+            ]));
             setDragging(true);
           }
           else {
@@ -179,20 +209,23 @@ export function useMouse(
     }
   }, [commitState, commitSelection, getCurrentPointer, insertMode, selection, shiftOrCtrlPressed]);
 
+  const [cursorPos, setCursorPos] = useState<Vec2D>({x:0,y:0});
+
   const onMouseMove = useCallback((e: {pageX: number, pageY: number, movementX: number, movementY: number}) => {
     const currentPointer = getCurrentPointer(e);
+    setCursorPos(currentPointer);
     if (dragging) {
       // we're moving / resizing
       // ALL possible manipulation (besides rotation) happens here
       const pointerDelta = {x: e.movementX/zoom, y: e.movementY/zoom};
       const getParts = (uid: string) => {
-        return selection.filter(s => s.uid === uid).map(s => s.part);
+          return selection.get(uid) || new Parts();
       }
       replaceState(state => ({
         ...state,
         rountangles: state.rountangles.map(r => {
           const selectedParts = getParts(r.uid);
-          if (selectedParts.length === 0) {
+          if (selectedParts.size === 0) {
             return r;
           }
           return {
@@ -203,7 +236,7 @@ export function useMouse(
         .toSorted((a,b) => area(b) - area(a)), // sort: smaller rountangles are drawn on top
         diamonds: state.diamonds.map(d => {
           const selectedParts = getParts(d.uid);
-          if (selectedParts.length === 0) {
+          if (selectedParts.size === 0) {
             return d;
           }
           return {
@@ -213,7 +246,7 @@ export function useMouse(
         }),
         history: state.history.map(h => {
           const selectedParts = getParts(h.uid);
-          if (selectedParts.length === 0) {
+          if (selectedParts.size === 0) {
             return h;
           }
           return {
@@ -223,7 +256,7 @@ export function useMouse(
         }),
         arrows: state.arrows.map(a => {
           const selectedParts = getParts(a.uid);
-          if (selectedParts.length === 0) {
+          if (selectedParts.size === 0) {
             return a;
           }
           return {
@@ -233,7 +266,7 @@ export function useMouse(
         }),
         texts: state.texts.map(t => {
           const selectedParts = getParts(t.uid);
-          if (selectedParts.length === 0) {
+          if (selectedParts.size === 0) {
             return t;
           }
           return {
@@ -284,12 +317,12 @@ export function useMouse(
         // (btw, this is only here to allow selecting rountangles by clicking inside them, all other shapes can be selected entirely by their 'helpers')
         const uid = e.target?.dataset.uid;
         if (uid) {
-          const parts = e.target?.dataset.parts.split(' ').filter((p: string) => p!=="") || [];
+          const parts = new Parts(e.target?.dataset.parts.split(' ').filter((p: string) => p!=="") || []);
           if (uid) {
-            replaceSelection(oldSelection => [
+            replaceSelection(oldSelection => new Selection([
               ...oldSelection,
-              ...parts.map((part: string) => ({uid, part})),
-            ]);
+              [uid, parts],
+            ]));
           }
         }
       }
@@ -306,26 +339,9 @@ export function useMouse(
           return isEntirelyWithin(scaledBBox, normalizedSS);
         }).filter(el => !el.classList.contains("corner"));
         
-        // @ts-ignore
         replaceSelection(oldSelection => {
-          const newSelection = [...oldSelection];
-          for (const shape of shapesInSelection) {
-            const uid = shape.dataset.uid;
-            if (uid) {
-              const parts = shape.dataset.parts?.split(' ') || [];
-              for (const part of parts) {
-                if (newSelection.some(({uid: oldUid, part: oldPart}) =>
-                  uid === oldUid && part === oldPart)) {
-                }
-                else {
-                  // @ts-ignore
-                  newSelection.push({uid, part});
-                }
-              } 
-            }
-          }
-          return newSelection;
-        })
+          return new Selection([...oldSelection, ...newSelection]);
+        });
       }
     }
     setSelectingState(null); // no longer making a selection
@@ -339,21 +355,20 @@ export function useMouse(
     setDragging(false);
     commitState(state => ({
       ...state,
-      // @ts-ignore
-      selection: [
-        ...state.rountangles.flatMap(r => ["left", "top", "right", "bottom"].map(part => ({uid: r.uid, part}))),
-        ...state.diamonds.flatMap(d => ["left", "top", "right", "bottom"].map(part => ({uid: d.uid, part}))),
-        ...state.arrows.flatMap(a => ["start", "end"].map(part => ({uid: a.uid, part}))),
-        ...state.texts.map(t => ({uid: t.uid, part: "text"})),
-        ...state.history.map(h => ({uid: h.uid, part: "history"})),
-      ],
+      selection: new Selection([
+        ...state.rountangles.map(r => [r.uid, allRectParts] as const),
+        ...state.diamonds.map(d => [d.uid, allRectParts] as const),
+        ...state.arrows.map(a => [a.uid, allArrowParts] as const),
+        ...state.texts.map(t => [t.uid, allTextParts] as const),
+        ...state.history.map(h => [h.uid, allHistoryParts] as const),
+      ]),
     }));
   }, [commitState, setDragging]);
 
   const convertSelection = useCallback((kind: "or"|"and") => {
     commitState(state => ({
       ...state,
-      rountangles: state.rountangles.map(r => state.selection.some(rs => rs.uid === r.uid) ? ({...r, kind}) : r),
+      rountangles: state.rountangles.map(r => state.selection.has(r.uid) ? ({...r, kind}) : r),
     }));
   }, [commitState]);
 
@@ -377,5 +392,5 @@ export function useMouse(
     };
   }, [selectingState, dragging]);
 
-  return {onMouseDown, selectionRect: selectingState && <Selecting {...selectingState} />};
+  return {onMouseDown, selectionRect: selectingState && <Selecting {...selectingState} />, newSelection, dragging, setDragging, cursorPos};
 }

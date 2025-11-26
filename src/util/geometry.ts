@@ -83,27 +83,27 @@ export function lineBBox(line: Line2D, margin=0): Rect2D {
   }
 }
 
-export function transformRect(rect: Rect2D, parts: string[], delta: Vec2D): Rect2D {
+export function transformRect(rect: Rect2D, parts: ReadonlySet<string>, delta: Vec2D): Rect2D {
   return {
     topLeft: {
-      x: parts.includes("left") ? rect.topLeft.x + delta.x : rect.topLeft.x,
-      y: parts.includes("top") ? rect.topLeft.y + delta.y : rect.topLeft.y,
+      x: parts.has("left") ? rect.topLeft.x + delta.x : rect.topLeft.x,
+      y: parts.has("top") ? rect.topLeft.y + delta.y : rect.topLeft.y,
     },
     size: {
       x: /*Math.max(40,*/ rect.size.x
-        + (parts.includes("right") ? delta.x : 0)
-        - (parts.includes("left")  ? delta.x : 0),
+        + (parts.has("right") ? delta.x : 0)
+        - (parts.has("left")  ? delta.x : 0),
       y: /*Math.max(40,*/ rect.size.y
-        + (parts.includes("bottom") ? delta.y : 0)
-        - (parts.includes("top")    ? delta.y : 0),
+        + (parts.has("bottom") ? delta.y : 0)
+        - (parts.has("top")    ? delta.y : 0),
     },
   };
 }
 
-export function transformLine(line: Line2D, parts: string[], delta: Vec2D): Line2D {
+export function transformLine(line: Line2D, parts: ReadonlySet<string>, delta: Vec2D): Line2D {
   return {
-    start: parts.includes("start") ? addV2D(line.start, {x: delta.x, y: delta.y}) : line.start,
-    end: parts.includes("end") ? addV2D(line.end, {x: delta.x, y: delta.y}) : line.end,
+    start: parts.has("start") ? addV2D(line.start, {x: delta.x, y: delta.y}) : line.start,
+    end: parts.has("end") ? addV2D(line.end, {x: delta.x, y: delta.y}) : line.end,
   };
 }
 
@@ -284,4 +284,12 @@ export function roundLine2D(l: Line2D) : Line2D {
     start: roundVec2D(l.start),
     end: roundVec2D(l.end),
   }
+}
+
+export function centerOf(r: Rect2D): Vec2D {
+  const center: Vec2D = {
+    x: r.topLeft.x + r.size.x / 2,
+    y: r.topLeft.y + r.size.y / 2,
+  };
+  return center;
 }
