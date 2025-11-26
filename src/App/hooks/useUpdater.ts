@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
- 
+
 export function useUpdater() {
   const [[_, updateAvailable], set] = useState<[string, boolean]>(["", false]);
 
