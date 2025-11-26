@@ -29,7 +29,7 @@ export function useUpdater() {
     init().then(() => {
       interval = setInterval(() => {
         checkForUpdates();
-      }, 1000) // <-- every minute - it's like a 1 KB request so every user generates on average 25 bytes / second
+      }, 60000) // <-- every minute - it's like a 1 KB request so every user generates on average 25 bytes / second
     })
     return () => clearInterval(interval);
   }, []);

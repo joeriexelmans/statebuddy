@@ -124,7 +124,8 @@ export const TopPanel = memo(function TopPanel({trial, trace, time, setTime, onU
         <button className={showKeys?"active":""} onClick={useCallback(() => setShowKeys(s => !s), [setShowKeys])}><KeyboardIcon fontSize="small"/></button>
         </Tooltip>
       </KeyInfo>
-      <Tooltip tooltip={updateAvailable ? "update available! refresh the page to get the latest version" : `about ${trial.appName}`} align="left" showWhen={updateAvailable ? "always" : "hover"}>
+      <Tooltip tooltip={updateAvailable ? `${trial.appName} update available!
+Refresh the page to get the latest version.` : `about ${trial.appName}`} align="left" showWhen={updateAvailable ? "always" : "hover"}>
         <button onClick={() => setModal(<About setModal={setModal} {...trial}/>)}>
           <InfoOutlineIcon fontSize='small'/>
         </button>
