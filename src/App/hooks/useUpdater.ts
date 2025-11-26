@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 
 export function useUpdater() {
-  const [_, setText] = useState("");
-  const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [[_, updateAvailable], set] = useState<[string, boolean]>(["", false]);
 
   const init = useCallback(() => {
     return fetch(window.location.pathname)
     .then(res => res.text())
-    .then(text => setText(text))
+    .then(text => set([text, false]))
     .catch(() => {});
   }, []);
 
@@ -15,11 +14,11 @@ export function useUpdater() {
     fetch(window.location.pathname, {cache: "reload"})
     .then(res => res.text())
     .then(latestText => {
-      setText(text => {
-        if (text !== "" && latestText !== text) {
-          setUpdateAvailable(true);
+      set(([text, upd]) => {
+        if (latestText !== text) {
+          return [latestText, true]
         }
-        return latestText;
+        return [latestText, upd];
       })
     })
     .catch(() => {});
