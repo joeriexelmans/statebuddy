@@ -37,7 +37,7 @@ export function DebugPanel({showBBox, showGrid, showCells, hide, ...setters}: De
           checked={showBBox}
           onChange={e  => setters.setShowBBox(e.target.checked)} 
           />
-        bounding box
+        bounding boxes
       </label>
       </Tooltip>
       <Tooltip tooltip='Every shape occupies those cells of the grid that overlap with its fat bounding box. We maintain a (sparse) mapping from every cell to a list of shapes occupying that cell. Only when two shapes occupy the same cell, do we check for interactions (e.g., an arrow connecting to the side of a rountangle). This is much more scalable than naively checking every pair of shapes.' align='left' above>
