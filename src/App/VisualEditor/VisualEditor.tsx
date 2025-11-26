@@ -93,8 +93,6 @@ export const VisualEditor = memo(function VisualEditor({state, commitState, repl
     
   const {onCopy, onPaste, onCut} = useCopyPaste(state, commitState, selection, startDragging, cursorPos);
 
-
-
   // for visual feedback, when selecting/moving one thing, we also highlight (in green) all the things that belong to the thing we selected.
   const sidesToHighlight: {[key: string]: RectSide[]} = {};
   const arrowsToHighlight: {[key: string]: boolean} = {};
