@@ -1,4 +1,4 @@
-import { HTMLAttributes, PropsWithChildren } from "react";
+import { HTMLAttributes, PropsWithChildren, useState } from "react";
 
 import "./Tooltip.css";
 
@@ -12,6 +12,7 @@ type TooltipProps = {
 }
 
 export function Tooltip({tooltip, children, align, fullWidth, error, above, showWhen}: PropsWithChildren<TooltipProps>) {
+  const [hidden, setHidden] = useState(false);
   return <span className={"tooltipOuter "
                             + (align !== undefined ? align : "")
                             + (fullWidth ? " fullWidth" : "")
@@ -19,7 +20,7 @@ export function Tooltip({tooltip, children, align, fullWidth, error, above, show
                             + (above ? " above" : "")
                             + (showWhen === undefined ? " onhover" : " on"+showWhen)}>
     {children}
-    {tooltip && <div className="blurOnHover">
+    {!hidden && tooltip && <div className="blurOnHover" onClick={() => setHidden(true)}>
       <div className={"tooltipArrow"}/>
       <div className={"tooltipInner"}>
         {tooltip}
