@@ -1,21 +1,38 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export function useUpdater() {
-  const [text, setText] = useState("");
+  const [_, setText] = useState("");
   const [updateAvailable, setUpdateAvailable] = useState(false);
 
-  useEffect(() => {
-    setInterval(() => {
-      fetch(window.location.pathname, {cache: "reload"})
-      .then(res => res.text())
-      .then(latestText => {
+  const init = useCallback(() => {
+    return fetch(window.location.pathname)
+    .then(res => res.text())
+    .then(text => setText(text))
+    .catch(() => {});
+  }, []);
+
+  const checkForUpdates = useCallback(() => {
+    fetch(window.location.pathname, {cache: "reload"})
+    .then(res => res.text())
+    .then(latestText => {
+      setText(text => {
         if (text !== "" && latestText !== text) {
           setUpdateAvailable(true);
         }
-        setText(latestText);
+        return latestText;
       })
-      .catch(() => {});
-    }, 60000) // <-- every minute - it's like a 1 KB request so every user generates on average 25 bytes / second
+    })
+    .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    init().then(() => {
+      interval = setInterval(() => {
+        checkForUpdates();
+      }, 1000) // <-- every minute - it's like a 1 KB request so every user generates on average 25 bytes / second
+    })
+    return () => clearInterval(interval);
   }, []);
 
   return updateAvailable;
