@@ -192,10 +192,10 @@ export function detectConnections(concreteSyntax: ConcreteSyntax): Connections {
   const cell2Rountangles = buildCell2ShapeMap(concreteSyntax.rountangles, getRectFatBBox);
   const cell2Arrows = buildCell2ShapeMap(concreteSyntax.arrows, getArrowFatBBox);
   const cell2Diamonds = buildCell2ShapeMap(concreteSyntax.diamonds, getRectFatBBox);
-  const cell2Histories = buildCell2ShapeMap(concreteSyntax.history, getHistoryFatBBox);
-  const cell2Texts = buildCell2ShapeMap(concreteSyntax.texts, getTextFatBBox);
+  // const cell2Histories = buildCell2ShapeMap(concreteSyntax.history, getHistoryFatBBox);
+  // const cell2Texts = buildCell2ShapeMap(concreteSyntax.texts, getTextFatBBox);
   // console.timeEnd('build mapping')
-  const uniformGrid = {cell2Rountangles, cell2Arrows, cell2Diamonds, cell2Histories, cell2Texts};
+  const uniformGrid = {cell2Rountangles, cell2Arrows, cell2Diamonds};
 
 
   // detect what is 'connected'
