@@ -29,6 +29,7 @@ import { SpeedControl } from "./SpeedControl";
 import { UndoRedoButtons } from "./UndoRedoButtons";
 import { ZoomButtons } from "./ZoomButtons";
 import { Trial } from '../hooks/useTrial';
+import { useUpdater } from '../hooks/useUpdater';
 
 export type TopPanelProps = {
   trial: Trial,
@@ -65,6 +66,8 @@ export const TopPanel = memo(function TopPanel({trial, trace, time, setTime, onU
   const config = trace && trace.trace[trace.idx];
   const formattedDisplayTime = useMemo(() => formatTime(displayTime), [displayTime]);
   const lastSimTime = config?.simtime || 0;
+
+  const updateAvailable = useUpdater();
 
   const onChangePaused = useCallback((paused: boolean, wallclktime: number) => {
     setTime(time => {
@@ -114,7 +117,6 @@ export const TopPanel = memo(function TopPanel({trial, trace, time, setTime, onU
   const catchingUp = progress > 1;
 
   return <div className="toolbar">
-
     {/* shortcuts / about */}
     <div className="toolbarGroup">
       <KeyInfo keyInfo={ShortCutShowKeys}>
@@ -122,7 +124,7 @@ export const TopPanel = memo(function TopPanel({trial, trace, time, setTime, onU
         <button className={showKeys?"active":""} onClick={useCallback(() => setShowKeys(s => !s), [setShowKeys])}><KeyboardIcon fontSize="small"/></button>
         </Tooltip>
       </KeyInfo>
-      <Tooltip tooltip={`about ${trial.appName}`} align="left">
+      <Tooltip tooltip={updateAvailable ? "update available! refresh the page to get the latest version" : `about ${trial.appName}`} align="left" showWhen={updateAvailable ? "always" : "hover"}>
         <button onClick={() => setModal(<About setModal={setModal} {...trial}/>)}>
           <InfoOutlineIcon fontSize='small'/>
         </button>
