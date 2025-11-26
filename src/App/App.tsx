@@ -110,7 +110,7 @@ export function App() {
     // useful when bookmarking the page: model name is in the title (that's basically the only reason we have a model name)
     const leadingZeros = (n: number) => ('0'+n).slice(-2);
     const now = new Date();
-    const timeFormatted = `${now.getFullYear()}/${leadingZeros(now.getMonth()+1)}/${leadingZeros(now.getDay()+1)} ${leadingZeros(now.getHours())}:${leadingZeros(now.getMinutes())}`;
+    const timeFormatted = `${now.getFullYear()}/${leadingZeros(now.getMonth()+1)}/${leadingZeros(now.getDate())} ${leadingZeros(now.getHours())}:${leadingZeros(now.getMinutes())}`;
     document.title = `${location.hostname==="localhost"?"[dev] ":""}${appState.modelName} [StateBuddy] ${timeFormatted}`;
   }, [appState])
 
