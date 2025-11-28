@@ -1,6 +1,8 @@
+import { memo } from "react";
 import { RectSide } from "../../statecharts/concrete_syntax";
 import { Vec2D } from "../../util/geometry";
 import { CORNER_HELPER_OFFSET, CORNER_HELPER_RADIUS } from "../parameters";
+import { arraysEqual, objectsEqual, setsEqual } from "@/util/util";
 
 function lineGeometryProps(size: Vec2D): [RectSide, object][] {
   return [
@@ -12,7 +14,7 @@ function lineGeometryProps(size: Vec2D): [RectSide, object][] {
 }
 
 // no need to memo() this component, the parent component is already memoized
-export const RectHelper = function RectHelper(props: { uid: string, size: Vec2D, selected: Set<RectSide>, highlight: string[] }) {
+export const RectHelper = memo(function RectHelper(props: { uid: string, size: Vec2D, selected: Set<RectSide>, highlight: string[] }) {
   const geomProps = lineGeometryProps(props.size);
   return <>
     {geomProps.map(([side, ps]) => <g key={side}>
@@ -54,4 +56,9 @@ export const RectHelper = function RectHelper(props: { uid: string, size: Vec2D,
       data-uid={props.uid}
       data-parts="bottom left" />
   </>;
-};
+}, (prevProps, nextProps) => {
+  return prevProps.uid === nextProps.uid
+    && objectsEqual(prevProps.size, nextProps.size)
+    && setsEqual(prevProps.selected, nextProps.selected)
+    && arraysEqual(prevProps.highlight, nextProps.highlight)
+});

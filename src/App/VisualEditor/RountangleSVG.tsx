@@ -42,7 +42,8 @@ export const RountangleSVG = memo(function RountangleSVG(props: {rountangle: Rou
   <BoundingBox {...getRectFatBBox(props.rountangle)} />
   </>;
 }, (prevProps, nextProps) => {
-  return jsonDeepEqual(prevProps.rountangle, nextProps.rountangle)
+  return prevProps === nextProps ||
+       jsonDeepEqual(prevProps.rountangle, nextProps.rountangle)
     && setsEqual(prevProps.selected, nextProps.selected)
     && arraysEqual(prevProps.highlight, nextProps.highlight)
     && prevProps.error === nextProps.error

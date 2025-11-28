@@ -242,7 +242,7 @@ export function App() {
             {/* Editor */}
             <div style={{flexGrow: 1, overflow: "auto"}}>
               {editorState && conns && syntaxErrors &&
-                <DebugContext value={{...appState}}>
+                <DebugContext value={{showBBox: appState.showBBox, showCells: appState.showCells, showGrid: appState.showGrid}}>
                 <VisualEditor {...{state: editorState, commitState, replaceState, conns, syntaxErrors: allErrors, highlightActive, highlightTransitions, setModal, ...appState, findText: appState.showFindReplace ? appState.findText : ""}}/>
                 </DebugContext>}
             </div>

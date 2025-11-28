@@ -1,10 +1,14 @@
+import { objectsEqual } from "@/util/util";
 import { GRID_CELL_SIZE } from "../parameters";
+import { memo } from "react";
 
-export function Grid({width, height}: {width: number, height: number}) {
+export const Grid = memo(function Grid({width, height}: {width: number, height: number}) {
   return <>
     {Array.from({length: width/GRID_CELL_SIZE}).map((_,i) => 
       <line key={'v'+i*GRID_CELL_SIZE} x1={(i+1)*GRID_CELL_SIZE} x2={(i+1)*GRID_CELL_SIZE} y1={0} y2={height} strokeWidth={0.5} stroke="rgba(0, 206, 154)" style={{pointerEvents: 'none'}}/>)}
     {Array.from({length: height/GRID_CELL_SIZE}).map((_,i) => 
       <line key={'h'+i*GRID_CELL_SIZE} x1={0} x2={width} y1={(i+1)*GRID_CELL_SIZE} y2={(i+1)*GRID_CELL_SIZE} strokeWidth={0.5} stroke="rgb(0, 206, 154)" style={{pointerEvents: 'none'}}/>)}
   </>
-}
+}, (prevProps, nextProps) => {
+  return objectsEqual(prevProps, nextProps);
+});

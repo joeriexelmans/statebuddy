@@ -7,6 +7,10 @@ export function formatTime(timeMs: number) {
   return formatted;
 }
 
+export function* range(n: number) {
+  for (let i=0; i<n; i++) yield n;
+}
+
 export function count<T>(arr: Array<T>, predicate: (x: T) => boolean) {
   let count=0;
   for (let i=0; i<arr.length; i++) {
