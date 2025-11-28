@@ -18,3 +18,8 @@ export const ZOOM_MAX = ZOOM_STEP**6;
 
 // this parameter only impacts performance, not any observable behavior:
 export const GRID_CELL_SIZE = 200;
+
+
+// warning: making this smaller may brake compatibility with existing models!
+export const EDITOR_WIDTH = 8000;
+export const EDITOR_HEIGHT = 8000;

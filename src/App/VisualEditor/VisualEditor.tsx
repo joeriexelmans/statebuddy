@@ -17,6 +17,7 @@ import { useCopyPaste } from "./hooks/useCopyPaste";
 import { useMouse } from "./hooks/useMouse";
 import { Grid } from "./Grid";
 import { DebugContext } from "./context/DebugContext";
+import { EDITOR_HEIGHT, EDITOR_WIDTH } from "../parameters";
 
 export type VisualEditorState = ConcreteSyntax & {
   nextID: number;
@@ -56,6 +57,8 @@ type VisualEditorProps = {
   zoom: number;
   findText: string;
 };
+
+const viewBox = `0 0 ${EDITOR_WIDTH} ${EDITOR_HEIGHT}`;
 
 export const VisualEditor = memo(function VisualEditor({state, commitState, replaceState, conns, syntaxErrors: errors, insertMode, highlightActive, highlightTransitions, setModal, zoom, findText}: VisualEditorProps) {
 
@@ -167,7 +170,7 @@ export const VisualEditor = memo(function VisualEditor({state, commitState, repl
 
   const rootErrors = errors.filter(({shapeUid}) => shapeUid === "root").map(({message}) => message);
 
-  const size = 4000*zoom;
+  const size = EDITOR_WIDTH*zoom;
 
   const debugContext = useContext(DebugContext);
 
@@ -179,7 +182,7 @@ export const VisualEditor = memo(function VisualEditor({state, commitState, repl
       onContextMenu={e => e.preventDefault()}
       ref={refSVG}
 
-      viewBox={`0 0 4000 4000`}
+      viewBox={viewBox}
 
       onCopy={onCopy}
       onPaste={onPaste}
@@ -247,7 +250,7 @@ export const VisualEditor = memo(function VisualEditor({state, commitState, repl
 
     {(rootErrors.length>0) && <text className="errorHover" x={5} y={20} style={{display:'inline'}}>{rootErrors.join('\n')}</text>}
 
-    {debugContext.showGrid && <Grid width={4000} height={4000} />}
+    {debugContext.showGrid && <Grid width={EDITOR_WIDTH} height={EDITOR_HEIGHT} />}
 
     {selectionRect}
   </svg>;

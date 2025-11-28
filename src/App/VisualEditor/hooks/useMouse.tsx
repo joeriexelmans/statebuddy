@@ -235,7 +235,6 @@ export function useMouse(
       const parts = new Parts(e.target?.dataset.parts?.split(' ').filter((p:string) => p!=="") || []);
       if (uid && parts.size > 0) {
         // mouse hovers over a shape or part of a shape
-        console.log({alreadySelected: selection.get(uid), parts});
         const allPartsInSelection = parts.difference(selection.get(uid) || new Set()).size === 0;
         if (!allPartsInSelection) {
           // existing selection does not (entirely) cover the part

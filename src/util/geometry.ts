@@ -31,10 +31,19 @@ export function normalizeRect(rect: Rect2D) {
 
 export function isEntirelyWithin(child: Rect2D, parent: Rect2D) {
   return (
-    child.topLeft.x >= parent.topLeft.x
-    && child.topLeft.y >= parent.topLeft.y
-    && child.topLeft.x + child.size.x <= parent.topLeft.x + parent.size.x
-    && child.topLeft.y + child.size.y <= parent.topLeft.y + parent.size.y
+       child.topLeft.x > parent.topLeft.x
+    && child.topLeft.y > parent.topLeft.y
+    && child.topLeft.x + child.size.x < parent.topLeft.x + parent.size.x
+    && child.topLeft.y + child.size.y < parent.topLeft.y + parent.size.y
+  );
+}
+
+export function isNoOverlap(a: Rect2D, b: Rect2D) {
+  return (
+      a.topLeft.x + a.size.x < b.topLeft.x
+   || a.topLeft.y + a.size.y < b.topLeft.y
+   || b.topLeft.x + b.size.x < a.topLeft.x
+   || b.topLeft.y + b.size.y < a.topLeft.y
   );
 }
 

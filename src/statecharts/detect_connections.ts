@@ -52,7 +52,10 @@ function* collect<T>(mappings: Map<number, T[]>[], cells: Iterable<number>) {
   const seen = new Set();
   for (const cell of cells) {
     for (const m of mappings) {
-      for (const t of (m.get(cell) || [])) {
+      const shapes = m.get(cell) || [];
+      // iterate in reverse order
+      for (let i=shapes.length-1; i>=0; i--) {
+        const t = shapes[i];
         if (!seen.has(t)) {
           yield t;
         }
@@ -60,6 +63,7 @@ function* collect<T>(mappings: Map<number, T[]>[], cells: Iterable<number>) {
     }
   }
 }
+
 
 const detectArrow2Side = memoizeOne(function detectArrow2Side([concreteSyntax, uniformGrid]: [ConcreteSyntax, any]) {
   const arrow2SideMap = new Map<string,[{ uid: string; part: RectSide; } | undefined, { uid: string; part: RectSide; } | undefined]>();
@@ -137,31 +141,31 @@ export const detectTextConnections = memoizeOne(function detectTextConnections([
   return equal;
 });
 
-export const detectRountangleInsideness = memoizeOne(function detectRountangleInsideness(concreteSyntax: ConcreteSyntax) {
+const fakeRoot = {
+  uid: "root",
+  topLeft: {x: -Infinity, y: -Infinity},
+  size: {x: Infinity, y: Infinity},
+}
+
+export const detectRountangleInsideness = memoizeOne(function detectRountangleInsideness([concreteSyntax, uniformGrid]: [ConcreteSyntax, any]) {
   const insidenessMap = new Map<string, string>();
-  // console.time("rectangle <-> rectangle")
-  const parentCandidates: Rountangle[] = [{
-    kind: "or",
-    uid: "root",
-    topLeft: {x: -Infinity, y: -Infinity},
-    size: {x: Infinity, y: Infinity},
-  }];
+  console.time("rectangle <-> rectangle")
   function findParent(geom: Rect2D): string {
+    // seems faster if we build an array than if we work with the generator object:
+    const parentCandidates = collect<Rountangle>([uniformGrid.cell2Rountangles], getCells(geom));
     // iterate in reverse:
-    for (let i = parentCandidates.length-1; i >= 0; i--) {
-      const candidate = parentCandidates[i];
-      if (candidate.uid === "root" || isEntirelyWithin(geom, candidate)) {
+    for (const candidate of parentCandidates) {
+      if (isEntirelyWithin(geom, candidate)) {
         // found our parent
         return candidate.uid;
       }
     }
-    throw new Error("impossible: should always find a parent state");
+    return "root";
   }
   // IMPORTANT ASSUMPTION: state.rountangles is sorted from big to small surface area:
   for (const rt of concreteSyntax.rountangles) {
     const parent = findParent(rt);
     insidenessMap.set(rt.uid, parent);
-    parentCandidates.push(rt);
   }
   for (const d of concreteSyntax.diamonds) {
     const parent = findParent(d);
@@ -171,9 +175,9 @@ export const detectRountangleInsideness = memoizeOne(function detectRountangleIn
     const parent = findParent({topLeft: h.topLeft, size: {x: HISTORY_RADIUS*2, y: HISTORY_RADIUS*2}});
     insidenessMap.set(h.uid, parent);
   }
-  // console.timeEnd("rectangle <-> rectangle");
+  console.timeEnd("rectangle <-> rectangle");
   return insidenessMap;
-}, (a,b) => {
+}, ([a],[b]) => {
   let equal = true;
   equal &&= jsonDeepEqual(a.rountangles, b.rountangles);
   equal &&= jsonDeepEqual(a.diamonds, b.diamonds);
@@ -201,7 +205,7 @@ export function detectConnections(concreteSyntax: ConcreteSyntax): Connections {
   // detect what is 'connected'
   const {arrow2SideMap, side2ArrowMap, history2ArrowMap, arrow2HistoryMap} = detectArrow2Side([concreteSyntax, uniformGrid]);
   const {text2ArrowMap, arrow2TextMap, text2RountangleMap, rountangle2TextMap} = detectTextConnections([concreteSyntax, uniformGrid]);
-  const insidenessMap = detectRountangleInsideness(concreteSyntax);
+  const insidenessMap = detectRountangleInsideness([concreteSyntax, uniformGrid]);
 
   console.timeEnd('detect connections');
 
@@ -261,9 +265,7 @@ export function* getCells(bbox: Rect2D) {
   const maxJ = gridCellIdx(bbox.topLeft.y + bbox.size.y);
   for (let i=minI; i<=maxI; i++) {
     for (let j=minJ; j<=maxJ; j++) {
-      // if (i===minI || i===maxI || j===minJ || j===maxJ) {
-        yield i+(j<<shiftBits); // pack two numbers into one - works as long as we dont have 2^26 horizontal columns
-      // }
+      yield i+(j<<shiftBits); // pack two numbers into one - works as long as we dont have 2^26 horizontal columns
     }
   }
 }
