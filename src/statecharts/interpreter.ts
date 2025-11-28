@@ -15,7 +15,6 @@ export class RuntimeError extends Error {
 export class NonDeterminismError extends RuntimeError {}
 
 const initialEnv = new Map<string, any>([
-  ["_timers", []],
   ["_log", (str: string) => console.log(str)],
 ]);
 
@@ -232,11 +231,12 @@ function allowedToFire(arena: OrState, firedArenas: OrState[]) {
 function addEventParam(environment: Environment, event: RT_Event | undefined, transition: Transition, label: TransitionLabel) {
   if (event && event.kind === "event" && event.param !== undefined) {
     const varName = (label.trigger as EventTrigger).paramName as string;
-    return environment.newVar(varName, event.param, {kind: "transition", thing: transition});
+    if (varName) {
+      const result = environment.newVar(varName, event.param, {kind: "transition", thing: transition});
+      return result;
+    }
   }
-  else {
-    return environment;
-  }
+  return environment;
 }
 
 function getEnabledTransitions(rt: RT_Microstep, sourceState: AbstractState, event: RT_Event | undefined, statechart: Statechart): [Transition, TransitionLabel][] {
