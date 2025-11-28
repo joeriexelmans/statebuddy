@@ -1,31 +1,45 @@
-- implemented:
+Language features
     abstract syntax
-    - and/or states
-    - pseudo-states
-    - enter/exit trigger
-    - shallow/deep history
-    - transitions
-        - event/after trigger
-        - event parameters
-        - guard expressions
-    - action language
-        expressions:
-            - arithmetic, logic
-            - variable references
-            - function calls
-        actions:
-            - variable assignment
-            - raising output events
+        - and/or states
+        - pseudo-states
+        - enter/exit trigger
+        - shallow/deep history
+        - transitions
+            - event/after trigger
+            - event parameters
+            - guard expressions
+        - action language
+            expressions:
+                - arithmetic, logic
+                - variable references
+                - function calls
+            actions:
+                - variable assignment
+                - raising output events
     semantics
-    - initialization
-    - raising input events
-    - time:
-        - paused / step-wise
-        - (scaled) real time
-    - omniscient debugging
-    - coupled execution with "plant"
-    - MTL properties & checking of plant state
-    - recording and replaying traces
+        - omniscient debugging
+        - recording and replaying traces
+        - time:
+            - paused / step-wise
+            - (scaled) real time
+        - interactively raising input events
+        - coupled execution with "plant"
+            - 3 hardcoded plants
+        - MTL property checking
+
+Editor features
+    - select/move/resize
+        Shift key to grow selection
+    - copy/paste
+    - rotate
+    - find & replace
+
+App features
+    - light/dark mode
+
+Performance
+    - spatial hashing to speed up 'connectness' and 'insideness' detection
+    - very fast loading (especially compared to yakindu...)
 
 
 TODO
@@ -34,44 +48,43 @@ TODO
     (*) editing SC <-> Plant connections at runtime doesn't seem to work
     (*) runtime errors coming from plant are mistakenly shown as runtime errors on statechart
     (*) runtime errors during initialization do not appear in trace
-    (*) raise input event keyboard shortcuts broken
+    (*) when dragging shapes in 'huge' example while zoomed out, they move too much (but not in other examples??)
 
 - maybe support:
-    - explicit order of:
-        - outgoing transitions?
+    - explicit order of outgoing transitions?
+    - (Rust) code generator?
 
 - write documentation
     although ideally the tool should explain itself...
 
 - usability stuff:
+    - traffic light plant: turn state of 'police interrupt' button into a signal
+    - make side panel user-resizable
+    - use smaller margin for selecting endpoint of arrow?
+        (right now, often one will select the side of a rountangle but not the arrow connecting to it)
     - action language: add increment operations (++) and (--)
        and (+=) and (-=)
-
     - snap:
             comments only to states
             triggers only to transitions
             entry/exit only to states
-
-    - ability to hide statechart and only show the plant?
-    - hovering over event in side panel should highlight all occurrences of the event in the SC
+    - ability to hide statechart and only show the plant?    
     - rename events / variables?
-
     - hovering over error in bottom panel should highlight that error in the SC
-    - highlight selected shapes while making a selection
+    - hovering over event in side panel should highlight all occurrences of the event in the SC
     - highlight about-to-fire transitions
-    
     - integrate undo-history with browser history (back/forward buttons)
-
     - ability to 'freeze' editor (e.g., to show plant SC)
     - show insert mode also next to cursor
-
     - show error when states partially overlap?
         useful when accidentally pasting the same data multiple times
             (otherwise, you can't see that you have multiple states)
 
-- performance:
-    binary space partitioning to detect connectedness?
+- extensibility
+    - support 3rd party "plants"
+        how to implement this? dynamically load JS module?
 
+- performance:
     maybe try this for rendering the execution trace:
         https://legacy.reactjs.org/docs/optimizing-performance.html#virtualize-long-lists
 

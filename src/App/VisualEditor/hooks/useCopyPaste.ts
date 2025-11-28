@@ -6,6 +6,7 @@ import { useShortcuts } from "@/hooks/useShortcuts";
 
 export function useCopyPaste(state: VisualEditorState, commitState: Dispatch<(v:VisualEditorState) => VisualEditorState>, selection: Selection, startDragging: () => void, cursorPos: Vec2D) {
   const onPaste = useCallback((e: ClipboardEvent) => {
+    console.log('paste...');
     const data = e.clipboardData?.getData("text/plain");
     if (data) {
       try {
@@ -82,7 +83,9 @@ export function useCopyPaste(state: VisualEditorState, commitState: Dispatch<(v:
   }, []);
 
   const onCopy = useCallback((e: ClipboardEvent) => {
+    console.log('copy...');
     if (selection.size > 0) {
+      console.log('copy', selection.size, 'shapes...');
       e.preventDefault();
       copyInternal(state, selection, e);
     }

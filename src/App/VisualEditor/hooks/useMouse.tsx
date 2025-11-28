@@ -277,21 +277,27 @@ export function useMouse(
   const onMouseMove = useCallback((e: {pageX: number, pageY: number}) => {
     const currentPointer = getCurrentPointer(e);
     setCursorPos(currentPointer);
-    if (dragging) {
-      const pointerDelta = subtractV2D(currentPointer, dragging);
-      replaceState(state => drag(state, pointerDelta));
-      setDragging(currentPointer);
-    }
-    else if (selectingState) {
-      // we're making a selection
-      setSelectingState(ss => {
+    setDragging(prevPointer => {
+      if (prevPointer) {
+        const pointerDelta = subtractV2D(currentPointer, prevPointer);
+        // update state in next event cycle ()
+        setTimeout(() => { // <-- bit hacky, but React complains if we call replaceState directly.
+          replaceState(state => drag(state, pointerDelta));
+        });
+        return currentPointer;
+      }
+      return null;
+    })
+    setSelectingState(ss => {
+      if (ss) {
         const selectionSize = subtractV2D(currentPointer, ss!.topLeft);
         return {
           ...ss!,
           size: selectionSize,
         };
-      });
-    }
+      }
+      return ss;
+    });
   }, [replaceState, getCurrentPointer, selectingState, setSelectingState, selection, dragging, setDragging]);
 
   const onMouseUp = useCallback((e: {target: any, pageX: number, pageY: number}) => {

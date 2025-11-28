@@ -112,7 +112,7 @@ export function App() {
     const now = new Date();
     const timeFormatted = `${now.getFullYear()}/${leadingZeros(now.getMonth()+1)}/${leadingZeros(now.getDate())} ${leadingZeros(now.getHours())}:${leadingZeros(now.getMinutes())}`;
     document.title = `${location.hostname==="localhost"?"[dev] ":""}${appState.modelName} [StateBuddy] ${timeFormatted}`;
-  }, [appState])
+  }, [appState]);
 
   const [persist, originalSize, compressedSize] = useUrlHashState<VisualEditorState | UrlState>(
     recoveredState => {

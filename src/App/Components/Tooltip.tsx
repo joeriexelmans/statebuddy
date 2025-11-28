@@ -1,4 +1,4 @@
-import { HTMLAttributes, PropsWithChildren, useState } from "react";
+import { PropsWithChildren, useState } from "react";
 
 import "./Tooltip.css";
 
