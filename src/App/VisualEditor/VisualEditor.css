@@ -31,6 +31,9 @@
   stroke: var(--rountangle-stroke-color);
   stroke-width: 2px;
 }
+.rountangle.selected {
+  fill: var(--light-accent-color) !important;
+}
 
 svg.dragging .rountangle.selected {
   stroke-opacity: var(--drag-opacity);
