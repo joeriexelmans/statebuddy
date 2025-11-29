@@ -26,12 +26,12 @@
   stroke-dasharray: 7 6;
 }
 
-.rountangle {
+.rountangle, .diamond {
   fill: var(--and-state-bg-color);
   stroke: var(--rountangle-stroke-color);
   stroke-width: 2px;
 }
-.rountangle.selected {
+.rountangle.selected, .diamond.selected {
   fill: var(--light-accent-color) !important;
 }
 
@@ -49,10 +49,6 @@ svg.dragging .rountangle.selected {
   /* fill:rgb(255, 240, 214); */
   fill: var(--active-state-bg-color);
   /* filter: drop-shadow( 2px 2px 2px rgba(124, 37, 10, 0.729)); */
-}
-.diamond {
-  fill: var(--and-state-bg-color);
-  stroke: var(--rountangle-stroke-color);
 }
 
 .selected:hover:not(:active) {

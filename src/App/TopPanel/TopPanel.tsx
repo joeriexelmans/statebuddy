@@ -61,6 +61,12 @@ function toggle(booleanSetter: Dispatch<(state: boolean) => boolean>) {
   return () => booleanSetter(x => !x);
 }
 
+function prettyNumber(n: number) {
+  if (n >= 1000) {
+    return `${Math.floor(n/1000)},${n%1000}`;
+  }
+}
+
 export const TopPanel = memo(function TopPanel({trial, trace, time, setTime, onUndo, onRedo, onRotate, onInit, onClear, onBack, insertMode, setInsertMode, setModal, zoom, setZoom, showKeys, setShowKeys, editHistory, showFindReplace, setShowFindReplace, displayTime, refreshDisplayTime, nextWakeup, modelName, setModelName, originalSize, compressedSize, showDebug, setShowDebug}: TopPanelProps) {
   const [timescale, setTimescale] = usePersistentState("timescale", 1);
   const config = trace && trace.trace[trace.idx];
@@ -130,8 +136,8 @@ Refresh the page to get the latest version.` : `about ${trial.appName}`} align="
           <InfoOutlineIcon fontSize='small'/>
         </button>
       </Tooltip>
-      <Tooltip tooltip={`model size (JSON): ${originalSize} bytes
-compressed: ${compressedSize} bytes (${Math.round(compressedSize/originalSize*100)}%)`} align='left'>
+      <Tooltip tooltip={`model size (JSON): ${prettyNumber(originalSize)} bytes
+compressed: ${prettyNumber(compressedSize)} bytes (${Math.round(compressedSize/originalSize*100)}%)`} align='left'>
       <input
         type="text"
         placeholder='model name'
