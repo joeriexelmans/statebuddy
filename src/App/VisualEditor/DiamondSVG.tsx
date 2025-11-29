@@ -14,8 +14,7 @@ export const DiamondShape = memo(function DiamondShape(props: {size: Vec2D, extr
       ${minSize.x/2} ${minSize.y},
       ${0}           ${minSize.y/2}
     `}
-    style={{fill: 'var(--and-state-bg-color', stroke: 'var(--rountangle-stroke-color)'}}
-    // fill="white"
+    style={{}}
     stroke="black"
     strokeWidth={2}
     {...props.extraAttrs}
@@ -25,7 +24,7 @@ export const DiamondShape = memo(function DiamondShape(props: {size: Vec2D, extr
 export const DiamondSVG = memo(function DiamondSVG(props: { diamond: Diamond; selected: Set<RectSide>; highlight: RectSide[]; error?: string; active: boolean; }) {
   const minSize = rountangleMinSize(props.diamond.size);
   const extraAttrs = {
-    className: ''
+    className: 'diamond'
       + (props.selected.size === 4 ? " selected" : "")
       + (props.error ? " error" : "")
       + (props.active ? " active" : ""),
@@ -38,6 +37,8 @@ export const DiamondSVG = memo(function DiamondSVG(props: { diamond: Diamond; se
     <text x={minSize.x/2} y={minSize.y/2}
       className="uid"
       textAnchor="middle">{props.diamond.uid}</text>
+    
+    {props.error && <text className="errorHover" x={minSize.x/2} y={minSize.y/2 - 20} textAnchor="middle">{props.error}</text>}
 
     <RectHelper uid={props.diamond.uid} size={minSize} highlight={props.highlight} selected={props.selected} />
   </g>;

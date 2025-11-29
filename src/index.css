@@ -34,7 +34,7 @@ html, body {
   --status-inactive-color: light-dark(grey, grey);
   --status-ok-color: light-dark(forestgreen, forestgreen);
   --or-state-bg-color: light-dark(#eee, #000000);
-  --and-state-bg-color: light-dark(white, rgb(46, 46, 46));
+  --and-state-bg-color: light-dark(white, rgb(54, 54, 54));
   --rountangle-stroke-color: light-dark(black, #d4d4d4);
   --active-state-bg-color: light-dark(rgb(255, 240, 214), rgb(112, 65, 47));
   --active-state-border-color: light-dark(rgb(205, 133, 0), rgb(255, 165, 105));

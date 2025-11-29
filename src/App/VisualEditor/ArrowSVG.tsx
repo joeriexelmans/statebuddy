@@ -42,8 +42,7 @@ export const ArrowSVG = memo(function(props: { arrow: Arrow; selected: Set<Arrow
       x={(start.x + end.x) / 2 + 5}
       y={(start.y + end.y) / 2}
       textAnchor="middle"
-      data-uid={uid}
-      data-parts="start end">{props.error}</text>}
+      >{props.error}</text>}
 
     <path
       className="helper"
