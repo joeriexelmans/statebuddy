@@ -211,4 +211,5 @@ g:hover > .errorHover {
 
 text.uid {
   fill: var(--separator-color);
+  pointer-events: none;
 }
