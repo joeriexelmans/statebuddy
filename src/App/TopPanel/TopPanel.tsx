@@ -61,10 +61,11 @@ function toggle(booleanSetter: Dispatch<(state: boolean) => boolean>) {
   return () => booleanSetter(x => !x);
 }
 
-function prettyNumber(n: number) {
+function prettyNumber(n: number): string {
   if (n >= 1000) {
     return `${Math.floor(n/1000)},${n%1000}`;
   }
+  return n.toString();
 }
 
 export const TopPanel = memo(function TopPanel({trial, trace, time, setTime, onUndo, onRedo, onRotate, onInit, onClear, onBack, insertMode, setInsertMode, setModal, zoom, setZoom, showKeys, setShowKeys, editHistory, showFindReplace, setShowFindReplace, displayTime, refreshDisplayTime, nextWakeup, modelName, setModelName, originalSize, compressedSize, showDebug, setShowDebug}: TopPanelProps) {
