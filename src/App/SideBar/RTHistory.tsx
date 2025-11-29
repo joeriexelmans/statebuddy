@@ -100,8 +100,6 @@ function RTEventParam(props: {param?: any}) {
 export const RTHistoryItem = memo(function RTHistoryItem({ast, idx, item, prevItem, isPlantStep, active, onMouseDown, propertyStatus}: {idx: number, ast: Statechart, item: TraceItem, prevItem?: TraceItem, isPlantStep: boolean, active: boolean, onMouseDown: (idx: number, timestamp: number) => void, propertyStatus: PropertyStatus}) {
   if (item.kind === "bigstep") {
     const outputEvents = isPlantStep ? item.state.plant.outputEvents : item.state.sc.outputEvents;
-    // @ts-ignore
-    // const newStates = item.state.sc.mode.difference(prevItem?.state.sc.mode || new Set());
     return <div
       className={"runtimeState" + (active ? " active" : "") + (isPlantStep ? " plantStep" : "")}
       onMouseDown={useCallback(() => onMouseDown(idx, item.simtime), [idx, item.simtime])}>
@@ -112,9 +110,9 @@ export const RTHistoryItem = memo(function RTHistoryItem({ast, idx, item, prevIt
         &emsp;
         <RTCause cause={isPlantStep ? item.state.plant.inputEvent : item.state.sc.inputEvent}/>
         {outputEvents.length>0 &&
-          <>&nbsp;&#x2192;&nbsp;
+          <div style={{display: 'inline-block'}}>&nbsp;&#x2192;&nbsp;
           {outputEvents.map((e:RaisedEvent) => <span className="outputEvent">{e.name}<RTEventParam param={e.param}/></span>)}
-          </>}
+          </div>}
       </div>
       {!isPlantStep &&
         <ShowFiredTransitions firedTransitions={
