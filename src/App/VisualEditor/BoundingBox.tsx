@@ -20,11 +20,12 @@ export function BoundingBox(bbox: Rect2D) {
     />}
     {debugContext.showCells && cells.map(cell =>
       <rect
-        {...decodeCell(cell)}
+        key={cell}
         width={GRID_CELL_SIZE}
         height={GRID_CELL_SIZE}
         fill="rgba(0, 255, 191, 0.1)"
         style={{pointerEvents:'none'}}
+        {...decodeCell(cell)}
       />
     )}
   </>

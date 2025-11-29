@@ -256,7 +256,6 @@ function gridCellIdx(x: number) {
   return Math.floor(x/GRID_CELL_SIZE);
 }
 
-const shiftBits = 26;
 
 export function* getCells(bbox: Rect2D) {
   const minI = gridCellIdx(bbox.topLeft.x);
@@ -265,14 +264,20 @@ export function* getCells(bbox: Rect2D) {
   const maxJ = gridCellIdx(bbox.topLeft.y + bbox.size.y);
   for (let i=minI; i<=maxI; i++) {
     for (let j=minJ; j<=maxJ; j++) {
-      yield i+(j<<shiftBits); // pack two numbers into one - works as long as we dont have 2^26 horizontal columns
+      yield encodeCell(i,j); // pack two numbers into one - works as long as we dont have 2^16 = 65536 horizontal columns
     }
   }
 }
 
+const shiftBits = 16;
+
+export function encodeCell(x: number, y: number): number {
+  return x + (y << shiftBits);
+}
+
 export function decodeCell(cell: number): Vec2D {
   return {
-    x: (cell & ~(0xffffff<<shiftBits))*GRID_CELL_SIZE,
+    x: (cell & ~(~0x0 << shiftBits))*GRID_CELL_SIZE,
     y: (cell >> shiftBits)*GRID_CELL_SIZE,
   }
 }
