@@ -31,6 +31,7 @@ export function DebugPanel({showBBox, showGrid, showCells, hide, ...setters}: De
           grid
         </label>
       </Tooltip>
+      &emsp;
       <Tooltip tooltip='Every shape has a "fat" bounding box. Only if the "fat" bounding boxes of two shapes overlap, can there be an interaction between them.' align='left' above>
       <label>
         <input type="checkbox"
@@ -40,6 +41,7 @@ export function DebugPanel({showBBox, showGrid, showCells, hide, ...setters}: De
         bounding boxes
       </label>
       </Tooltip>
+      &emsp;
       <Tooltip tooltip='Every shape occupies those cells of the grid that overlap with its fat bounding box. We maintain a (sparse) mapping from every cell to a list of shapes occupying that cell. Only when two shapes occupy the same cell, do we check for interactions (e.g., an arrow connecting to the side of a rountangle). This is much more scalable than naively checking every pair of shapes.' align='left' above>
       <label>
         <input type="checkbox"
@@ -50,18 +52,19 @@ export function DebugPanel({showBBox, showGrid, showCells, hide, ...setters}: De
         </label>
       </Tooltip>
     </div>
-    &emsp;
+    &emsp;&emsp;
     <div className="toolbarGroup">
-      <label>
-        <Tooltip tooltip='This is a hardcoded parameter. Too small a value results in too many "buckets" (degrading performance). Too large a value and many shapes will occupy the same buckets (also degrading performance)' above>
+      <Tooltip tooltip='This is a hardcoded parameter. Too small a value results in too many "buckets" (degrading performance). Too large a value and many shapes will occupy the same buckets (also degrading performance)' above>
+        <label>
+          cell size
+          &nbsp;
           <input id="time"
             // disabled={true}
             value={GRID_CELL_SIZE}
             readOnly={true}
             className="readonlyTextBox" />
-        </Tooltip>
-        cell size
-      </label>
+        </label>
+      </Tooltip>
     </div>
     <div style={{flexGrow:1}}/>
     <div className="toolbarGroup" style={{flex: '0 0 content'}}>
