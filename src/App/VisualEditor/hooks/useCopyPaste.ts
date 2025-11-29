@@ -1,7 +1,7 @@
 import { Arrow, Diamond, Rountangle, Text, History, allRectParts, allArrowParts, allTextParts, allHistoryParts, ConcreteSyntax, shapesBBox, entirelySelectedShapes } from "@/statecharts/concrete_syntax";
 import { ClipboardEvent, Dispatch, useCallback } from "react";
 import { Selection, VisualEditorState } from "../VisualEditor";
-import { addV2D, centerOf, subtractV2D, Vec2D } from "@/util/geometry";
+import { addV2D, area, centerOf, subtractV2D, Vec2D } from "@/util/geometry";
 import { useShortcuts } from "@/hooks/useShortcuts";
 
 export function useCopyPaste(state: VisualEditorState, commitState: Dispatch<(v:VisualEditorState) => VisualEditorState>, selection: Selection, startDragging: () => void, cursorPos: Vec2D) {
@@ -53,7 +53,7 @@ export function useCopyPaste(state: VisualEditorState, commitState: Dispatch<(v:
             ]);
             return {
               ...state,
-              rountangles: [...state.rountangles, ...copiedRountangles],
+              rountangles: [...state.rountangles, ...copiedRountangles].sort((a,b) => area(b)-area(a)),
               diamonds: [...state.diamonds, ...copiedDiamonds],
               arrows: [...state.arrows, ...copiedArrows],
               texts: [...state.texts, ...copiedTexts],
