@@ -12,7 +12,7 @@ export function useUrlHashState<T>(recoverCallback: (recoveredState: (T|null)) =
       recoverCallback(recoveredState);
     }
     catch (e: any) {
-      console.warn(`failed to recover state! error was: ${e.message}`);
+      console.warn(`failed to recover state!`, e);
       recoverCallback(null);
     }
   }, [recoverCallback]);

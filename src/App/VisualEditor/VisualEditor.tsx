@@ -24,10 +24,21 @@ export type VisualEditorState = ConcreteSyntax & {
   selection: Selection;
 };
 
-export function json2EditorState(json: {selection: [string, string][]}) {
+export function json2EditorState(json: {selection: ([string, string]|{uid: string, part: string})[]}) {
   const selection = new Selection();
-  for (const [uid, part] of json.selection) {
-    selection.set(uid, (selection.get(uid) || new Parts()).add(part));
+  if (json.selection) {
+    console.log(json.selection);
+    for (const item of json.selection) {
+      // i kind of fucked things up by introducing over time 2 ways to serialize the selection, meaning that there are two formats that have to be supported (for backwards compatibility):
+      let uid, part;
+      if (Array.isArray(item)) {
+        [uid, part] = item;
+      }
+      else {
+        ({uid, part} = item);
+      }
+      selection.set(uid, (selection.get(uid) || new Parts()).add(part));
+    }
   }
   return {
     ...json,
