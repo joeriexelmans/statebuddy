@@ -5,6 +5,7 @@
 
  * left mouse button to *select, move, resize*
  * right mouse button to *insert* new states, transitions, etc.
+   Select the shape to insert in the top panel toolbar:
       ![screenshot](./insert.png)
  * middle mouse button only to *select*
 
