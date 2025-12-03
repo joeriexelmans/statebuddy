@@ -10,6 +10,19 @@
 
 ### Syntax
 
+#### States
+
+ * Hierarchical states
+    * AND-state: has 0..* children. If active, *all* of the children are active. Basic states are modeled as AND-states without children.
+    * OR-state: has 1..* children. If active, *one* of the children is active. An OR-state must have one initial states
+ * pseudo-state
+ * history-state
+    * shallow history
+    * deep history
+
+#### Text labels
+
+ * comments start with `//`
  * transition labels always have the form `trigger [guard] / action0; action1; action2`
     * examples
       * example: `buttonPressed [t == 0] / t=3; ^start`
