@@ -11,8 +11,15 @@
 ### Syntax
 
  * transition labels always have the form `trigger [guard] / action0; action1; action2`
-    * example: `buttonPressed [t == 0] / t=3; ^start`
-    * example: `after 2s / ^ringBell`
+    * examples
+      * example: `buttonPressed [t == 0] / t=3; ^start`
+      * example: `after 2s / ^ringBell`
+    * triggers
+      * on transitions:
+        * `e`, `_e` input / internal event
+        * `after 5s`, `after 500ms` timer
+      * on states:
+        * `entry`, `exit`
  * action language
     * expressions
        * literals
@@ -30,5 +37,5 @@
           * `+`, `-` sum, difference
     * actions
       * `x = 5` variable assignment
-      * `^o` raise output event
+      * `^o`, `^_o` raise output or internal event
  * internal event names start with `_` (underscore)
