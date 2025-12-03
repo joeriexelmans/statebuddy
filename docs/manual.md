@@ -4,9 +4,9 @@
 
 ### Mouse
 
- * right mouse button to draw new states, transitions, etc.
- * left mouse button to select, move, resize
- * middle mouse button only to select
+ * left mouse button to *select, move, resize*
+ * right mouse button to *insert* new states, transitions, etc.
+ * middle mouse button only to *select*
 
 ### Syntax
 
@@ -31,4 +31,4 @@
     * actions
       * `x = 5` variable assignment
       * `^o` raise output event
- * internal event names start with '_' (underscore)
+ * internal event names start with `_` (underscore)
