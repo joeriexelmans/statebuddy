@@ -41,14 +41,13 @@
           * `"hello world"` strings
        * `x` variable references
        * unary operators
-          * `!` logical not
-          * `-` numerical negate
+          * `!` not (booleans only)
+          * `-` negate (numbers only)
        * binary operators
-          * `==` equals
-          * `!=` not equals
-          * `>`, `<`, `<=`, `>=` comparison
-          * `+`, `-` sum, difference
+          * `a == b`, `a != b` (not) equals (booleans, numbers, strings)
+          * `a > b`, `a < b`, `a <= b`, `a >= b` comparison (numbers only)
+          * `+`, `-` sum, difference (numbers only)
     * actions
       * `x = 5` variable assignment
-      * `^o`, `^_o` raise output or internal event
+      * `^o`, `^_o` raise output event `o` or internal event `_o`
  * internal event names start with `_` (underscore)
