@@ -5,6 +5,7 @@
 
  * left mouse button to *select, move, resize*
  * right mouse button to *insert* new states, transitions, etc.
+      ![screenshot](./insert.png)
  * middle mouse button only to *select*
 
 ## Syntax
