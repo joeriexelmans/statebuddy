@@ -10,6 +10,8 @@ import { Setters } from "../makePartialSetter";
 
 import gitRev from "@/git-rev.txt";
 import { Tooltip } from "../Components/Tooltip";
+import { Stats } from "./Stats";
+import { Statechart } from "@/statecharts/abstract_syntax";
 
 export type BottomPanelState = {
   errorsExpanded: boolean,
@@ -19,7 +21,7 @@ export const defaultBottomPanelState = {
   errorsExpanded: false,
 }
 
-export function BottomPanel(props: {errors: TraceableError[], setEditorState: Dispatch<(state: VisualEditorState) => VisualEditorState>} & AppState & Setters<AppState>) {
+export function BottomPanel(props: {errors: TraceableError[], setEditorState: Dispatch<(state: VisualEditorState) => VisualEditorState>, ast: Statechart} & AppState & Setters<AppState>) {
 
   return <div className="bottom">
     <div className={"stackHorizontal statusBar" + (props.errors.length ? " error" : "")}>
@@ -35,6 +37,8 @@ export function BottomPanel(props: {errors: TraceableError[], setEditorState: Di
         </PersistentDetails>
       </div>
       <div style={{display: 'flex', alignItems: 'center'}}>
+        <Stats ast={props.ast}/>
+        &nbsp;|&nbsp;
         switch to&nbsp;
         <Tooltip tooltip="only works if you are running a development server locally" above={true}>
           {location.host === "localhost:3000" ?
@@ -43,7 +47,7 @@ export function BottomPanel(props: {errors: TraceableError[], setEditorState: Di
           }
         </Tooltip>
         &nbsp;mode
-      &nbsp;|&nbsp;
+        &nbsp;|&nbsp;
         Rev:&nbsp;
         <Tooltip tooltip="view source code" align="right" above={true}>
           <a href={`https://deemz.org/git/research/statebuddy/commit/${gitRev}`} target="_blank">

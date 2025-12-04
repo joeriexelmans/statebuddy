@@ -5,6 +5,7 @@ import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 export function useUrlHashState<T>(recoverCallback: (recoveredState: (T|null)) => void) {
   const [originalSize, setOriginalSize] = useState(0);
   const [compressedSize, setCompressedSize] = useState(0);
+  const [state, setState] = useState<T|null>(null);
 
   const recover = useCallback(async (compressedState: string) => {
     try {
@@ -43,6 +44,7 @@ export function useUrlHashState<T>(recoverCallback: (recoveredState: (T|null)) =
         //   window.history.pushState({}, "", hash);
         // }
         window.history.replaceState({}, "", hash);
+        setState(state);
         setOriginalSize(buf.byteLength);
         setCompressedSize(deflatedJSON.byteLength);
       }
@@ -51,5 +53,5 @@ export function useUrlHashState<T>(recoverCallback: (recoveredState: (T|null)) =
     });
   }
 
-  return [persist, originalSize, compressedSize] as const;
+  return [persist, originalSize, compressedSize, state] as const;
 }

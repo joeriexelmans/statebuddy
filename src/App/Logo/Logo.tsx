@@ -1,8 +1,13 @@
 import { AllHTMLAttributes } from "react";
 
+import christmasLogo from "../../../artwork/new-logo/christmas-logo.webp";
+
 // The logo shown in the App needs to be inline SVG, that's the only way to make the text adapt to dark mode!
 // comes from artwork/new-logo/new-logo-playful-minified.svg
 export function Logo(props: AllHTMLAttributes<Element>) {
+	if (new Date().getMonth() === 11) {
+		return <img src={christmasLogo} alt="logo" height="300"/>;
+	}
   return <svg style={{maxWidth: '100%'}} width="424.29" height="105.72" viewBox="0 0 424.29 105.72" {...props}>
   <style>{`
     .logoText {

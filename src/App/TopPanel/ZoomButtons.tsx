@@ -7,8 +7,8 @@ import ZoomOutIcon from '@mui/icons-material/ZoomOut';
 import { useShortcuts } from "@/hooks/useShortcuts";
 import { Tooltip } from "../Components/Tooltip";
 
-const shortcutZoomIn = <><kbd>Ctrl</kbd>+<kbd>-</kbd></>;
-const shortcutZoomOut = <><kbd>Ctrl</kbd>+<kbd>+</kbd></>;
+const shortcutZoomIn = <><kbd>Ctrl</kbd>+<kbd>+</kbd></>;
+const shortcutZoomOut = <><kbd>Ctrl</kbd>+<kbd>-</kbd></>;
 
 export const ZoomButtons = memo(function ZoomButtons({showKeys, zoom, setZoom}: {showKeys: boolean, zoom: number, setZoom: Dispatch<SetStateAction<number>>}) {
 

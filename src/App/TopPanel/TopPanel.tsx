@@ -12,6 +12,7 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import SkipNextIcon from '@mui/icons-material/SkipNext';
 import StopIcon from '@mui/icons-material/Stop';
 import BugReportIcon from '@mui/icons-material/BugReport';
+import SaveAltIcon from '@mui/icons-material/SaveAlt';
 import { Dispatch, memo, ReactElement, SetStateAction, useCallback, useMemo } from "react";
 import { setPaused, setRealtime, TimeMode } from "../../statecharts/time";
 import { formatTime } from "../../util/util";
@@ -30,6 +31,7 @@ import { UndoRedoButtons } from "./UndoRedoButtons";
 import { ZoomButtons } from "./ZoomButtons";
 import { Trial } from '../hooks/useTrial';
 import { useUpdater } from '../hooks/useUpdater';
+import { downloadObjectAsJson } from '@/util/download_json';
 
 export type TopPanelProps = {
   trial: Trial,
@@ -38,6 +40,7 @@ export type TopPanelProps = {
 
   originalSize: number,
   compressedSize: number,
+  state: any,
 
   displayTime: number,
   refreshDisplayTime: () => void,
@@ -68,7 +71,7 @@ function prettyNumber(n: number): string {
   return n.toString();
 }
 
-export const TopPanel = memo(function TopPanel({trial, trace, time, setTime, onUndo, onRedo, onRotate, onInit, onClear, onBack, insertMode, setInsertMode, setModal, zoom, setZoom, showKeys, setShowKeys, editHistory, showFindReplace, setShowFindReplace, displayTime, refreshDisplayTime, nextWakeup, modelName, setModelName, originalSize, compressedSize, showDebug, setShowDebug}: TopPanelProps) {
+export const TopPanel = memo(function TopPanel({trial, trace, time, setTime, onUndo, onRedo, onRotate, onInit, onClear, onBack, insertMode, setInsertMode, setModal, zoom, setZoom, showKeys, setShowKeys, editHistory, showFindReplace, setShowFindReplace, displayTime, refreshDisplayTime, nextWakeup, modelName, setModelName, originalSize, compressedSize, state, showDebug, setShowDebug}: TopPanelProps) {
   const [timescale, setTimescale] = usePersistentState("timescale", 1);
   const config = trace && trace.trace[trace.idx];
   const formattedDisplayTime = useMemo(() => formatTime(displayTime), [displayTime]);
@@ -146,6 +149,13 @@ compressed: ${prettyNumber(compressedSize)} bytes (${Math.round(compressedSize/o
         style={{width:Math.max(modelName.length*6.5, 100)}}
         onChange={e => setModelName(e.target.value)}
         />
+      </Tooltip>
+      <Tooltip tooltip='export as JSON'>
+        <button onClick={() => {
+          downloadObjectAsJson(state, trial.appName+"_"+modelName+".json");
+        }}>
+          <SaveAltIcon fontSize='small'/>
+        </button>
       </Tooltip>
       &emsp;
     </div>

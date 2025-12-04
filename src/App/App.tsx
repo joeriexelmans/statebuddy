@@ -114,7 +114,7 @@ export function App() {
     document.title = `${location.hostname==="localhost"?"[dev] ":""}${appState.modelName} [StateBuddy] ${timeFormatted}`;
   }, [appState]);
 
-  const [persist, originalSize, compressedSize] = useUrlHashState<VisualEditorState | UrlState>(
+  const [persist, originalSize, compressedSize, state] = useUrlHashState<VisualEditorState | UrlState>(
     recoveredState => {
       if (recoveredState === null) {
         setEditHistory(() => ({current: initialEditorState, history: [], future: []}));
@@ -236,7 +236,7 @@ export function App() {
               style={{flex: '0 0 content'}}
             >
               {editHistory && <TopPanel
-                {...{onUndo, onRedo, onRotate, setModal, editHistory, ...simulator, ...setters, ...appState, setEditorState, displayTime, refreshDisplayTime, trial, originalSize, compressedSize}}
+                {...{onUndo, onRedo, onRotate, setModal, editHistory, ...simulator, ...setters, ...appState, setEditorState, displayTime, refreshDisplayTime, trial, originalSize, compressedSize, state}}
               />}
             </div>
             {/* Editor */}
@@ -287,7 +287,7 @@ export function App() {
                 <Plot width="100%" traces={preparedTraces} displayTime={displayTime} nextWakeup={simulator.nextWakeup} {...appState} {...setters} />}
             </PersistentDetails>
           </div>
-          {syntaxErrors && <BottomPanel {...{errors: syntaxErrors, ...appState, setEditorState, ...setters}}/>}
+          {syntaxErrors && ast && <BottomPanel {...{errors: syntaxErrors, ...appState, setEditorState, ...setters, ast}}/>}
         </div>
       </div>
     </ModalOverlay>
