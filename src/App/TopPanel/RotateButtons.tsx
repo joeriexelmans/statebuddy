@@ -6,7 +6,7 @@ import { Selection } from "../VisualEditor/VisualEditor";
 import { Tooltip } from "../Components/Tooltip";
 
 export const RotateButtons = memo(function RotateButtons({selection, onRotate}: {selection: Selection, onRotate: (dir: "ccw"|"cw") => void}) {
-  const disabled = selection.length === 0;
+  const disabled = selection.size === 0;
   return <>
     <Tooltip tooltip="rotate selection 90 degrees counter-clockwise">
       <button
