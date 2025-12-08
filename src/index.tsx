@@ -9,10 +9,10 @@ const server = serve({
 
   development: process.env.NODE_ENV !== "production" && {
     // Enable browser hot reloading in development
-    hmr: true,
+    hmr: false,
 
     // Echo console logs from the browser to the server
-    console: true,
+    console: false,
   },
 });
 

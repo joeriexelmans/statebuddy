@@ -1,5 +1,7 @@
 import { Dispatch, ReactElement, SetStateAction, useState, useCallback } from "react";
 
+import styles from "../App.module.css";
+
 import { cachedParseLabel } from "@/statecharts/parser";
 import { useShortcuts } from "@/hooks/useShortcuts";
 import { Tooltip } from "../Components/Tooltip";
@@ -31,7 +33,7 @@ export function TextDialog(props: {setModal: Dispatch<SetStateAction<ReactElemen
     <br/>
     <Tooltip tooltip={parseError} error={true} showWhen="focus">
     <textarea
-      className={parseError ? "error" : ""}
+      className={parseError ? styles.error : ""}
       autoFocus
       style={{fontFamily: 'Roboto', width: 400, height: 60, boxSizing: 'border-box', border:'1px solid'}}
       onChange={e=>setText(e.target.value)}

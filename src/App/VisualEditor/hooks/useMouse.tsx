@@ -7,6 +7,7 @@ import { InsertMode } from "../../TopPanel/InsertModes";
 import { Selecting, SelectingState } from "../Selection";
 import { Parts, Selection, VisualEditorState } from "../VisualEditor";
 import { useShortcuts } from "@/hooks/useShortcuts";
+import styles from "../VisualEditor.module.css";
 
 // get list of parts of shapes that are within the selecting-rectangle
 function computeSelection(ss: SelectingState, refSVG: {current: SVGSVGElement | null}, zoom: number): Selection {
@@ -238,7 +239,7 @@ export function useMouse(
         const allPartsInSelection = parts.difference(selection.get(uid) || new Set()).size === 0;
         if (!allPartsInSelection) {
           // existing selection does not (entirely) cover the part
-          if (e.target.classList.contains("helper")) {
+          if (e.target.classList.contains(styles.helper)) {
             // it's only a helper
             // -> update selection by the part and start dragging it
             commitSelection(() => new Selection([

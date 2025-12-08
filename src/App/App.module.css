@@ -1,11 +1,6 @@
-html, body {
-  margin: 0;
+.App {
   height: 100%;
-  font-family: Roboto, sans-serif;
-  font-size: 10pt;
-}
 
-:root {
   color-scheme: light dark;
 
   --background-color: light-dark(white, rgb(31, 33, 36));
@@ -13,9 +8,9 @@ html, body {
   --error-color: light-dark(rgb(204, 0, 0), rgb(255, 82, 82));
   --error-bg-color: light-dark(lightpink, rgb(75, 0, 0));
   --error-hover-bg-color: light-dark(rgb(102, 0, 0), rgb(238, 153, 153));
-  --light-accent-color: light-dark(rgba(0,0,255,0.2), rgba(78, 186, 248, 0.377));
-  --accent-border-color: light-dark(blue, rgb(64, 185, 255));
-  --accent-opaque-color: light-dark(#ccccff, #305b73);
+  --light-accent-color: light-dark(#1b45ff62, rgba(28, 71, 100, 0.377));
+  --accent-border-color: light-dark(rgb(69, 48, 255), rgb(64, 185, 255));
+  --accent-opaque-color: light-dark(#a3aaff, #132731);
 
   --statusbar-bg-color: light-dark(rgb(225, 229, 235), rgb(48, 48, 68));
   --statusbar-fg-color: light-dark(rgb(0, 0, 0), white);
@@ -28,7 +23,7 @@ html, body {
   --separator-color: light-dark(lightgrey, rgb(58, 58, 58));
   --inactive-bg-color: light-dark(#f7f7f7, rgb(29, 29, 29));
   --inactive-fg-color: light-dark(grey, rgb(165, 165, 165));
-  --button-bg-color: light-dark(#fcfcfc, rgb(44, 50, 63));
+  --button-bg-color: light-dark(#e3e8f0, rgb(44, 50, 63));
   --textbox-bg-color: light-dark(white, rgb(36, 41, 40));
   --modal-backdrop-color: light-dark(rgba(200,200,200,0.7), rgba(23, 22, 32, 0.849));
   --status-inactive-color: light-dark(grey, grey);
@@ -41,7 +36,7 @@ html, body {
   --active-state-border-color: light-dark(rgb(205, 133, 0), rgb(255, 165, 105));
   --fired-transition-color: light-dark(rgb(160, 0, 168), rgb(160, 0, 168));
   --firing-transition-color: light-dark(rgba(255, 128, 9, 1), rgba(255, 128, 9, 1));
-  --associated-color: light-dark(green, rgb(186, 245, 119));
+  --associated-color: light-dark(rgb(72, 160, 0), rgb(186, 245, 119));
   --greeter-bg-color: light-dark(rgb(255, 249, 235), rgb(24, 40, 70));
   /* --bottom-panel-bg-color: light-dark(rgb(219, 219, 219), rgb(31, 33, 36)); */
   --summary-hover-bg-color: light-dark(#eee, #2e2f35);
@@ -57,7 +52,7 @@ html, body {
   --plot-color-1: light-dark(darkgreen, lightgreen);
   --plot-color-2: light-dark(darkred, red);
   --plot-color-3: light-dark(darkorange, orange);
-  --plot-color-4: light-dark(brown, yellow);
+  --plot-color-4: light-dark(rgb(222, 224, 74), yellow);
   --plot-color-5: light-dark(magenta, pink);
 
   background-color: var(--background-color);
@@ -66,41 +61,39 @@ html, body {
   --tooltip-arrow-size: 6px;
 }
 
-input {
+.App input {
   background-color: var(--textbox-bg-color);
   border: 1px solid var(--separator-color);
 }
 
-button, input[type="submit"] {
+.App button,
+.App input[type="submit"] {
   background-color: var(--button-bg-color);
   border: 1px var(--separator-color) solid;
   box-sizing: border-box;
 }
 
-button:not(:disabled):hover, input[type="submit"]:not(:disabled):hover {
+.App button:not(:disabled):hover, input[type="submit"]:not(:disabled):hover {
   background-color: var(--light-accent-color);
 }
 
-button:disabled, input[type="submit"]:disabled {
+.App button:disabled,
+.App input[type="submit"]:disabled {
   background-color: var(--inactive-bg-color);
   color: var(--inactive-fg-color);
 }
 
-button:active:not(:disabled) {
+.App button:active:not(:disabled) {
   box-shadow: inset 0 0 4 2 rgba(0, 0, 0, 0.5);
 }
 
-button.active {
+.App button.active {
   border: solid var(--accent-border-color) 1px;
-  background-color: var(--light-accent-color);
+  background-color: var(--accent-opaque-color);
   color: var(--text-color);
 }
 
-div#root {
-  height: 100%;
-}
-
-kbd {
+.App kbd {
   display: inline-block;
   padding: .12em .3em;
   padding-bottom: 3px;
@@ -115,33 +108,88 @@ kbd {
   user-select: none;
   color: black;
 }
-kbd:active { transform: translateY(1px); }
+.App kbd:active { transform: translateY(1px); }
 
-
-input {
+.App input {
   /* border: solid blue 2px; */
   accent-color: var(--accent-opaque-color);
 }
 
-input[type=checkbox] {
+.App input[type=checkbox] {
   margin: 0 3 0 3;
 }
 
-::selection {
+.App ::selection {
   background-color: var(--light-accent-color);
 }
 
-label {
+.App label {
   user-select: none;
 }
 
-input[type=text].error {
-  background-color: var(--error-bg-color);
-}
-textarea.error {
+.App input[type=text].error,
+.App textarea.error {
   background-color: var(--error-bg-color);
 }
 
-*:focus-visible {
+
+.App *:focus-visible {
   z-index: 1;
+}
+
+.App details:has(+ details) {
+  border-bottom: 1px var(--separator-color) solid;
+}
+
+.shadowBelow {
+  box-shadow: 0 -5px 5px 5px rgba(0, 0, 0, 0.4);
+  z-index: 1;
+}
+
+.stackVertical {
+  display: flex;
+  flex-direction: column;
+}
+
+.stackHorizontal {
+  display: flex;
+  flex-direction: row;
+}
+
+.toolbar {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+}
+.toolbar button {
+  height: 26px;
+  /* reduce padding (default is 6px on each side) */
+  padding-left: 4px;
+  padding-right: 4px;
+}
+.toolbar input:not([type=checkbox]) {
+  height: 26px;
+}
+
+
+
+.statusBar {
+  background-color: var(--statusbar-bg-color);
+  color: var(--statusbar-fg-color);
+}
+
+.statusBar.error {
+  background-color: var(--statusbar-error-bg-color);
+  color: var(--statusbar-error-fg-color);
+}
+
+.statusBar summary:hover {
+  background-color: color-mix(in srgb, var(--statusbar-bg-color) 60%, var(--background-color));
+}
+.statusBar.error summary:hover {
+  background-color: color-mix(in srgb, var(--statusbar-error-bg-color) 70%, var(--text-color));
+}
+
+.statusBar a {
+  color: inherit;
 }

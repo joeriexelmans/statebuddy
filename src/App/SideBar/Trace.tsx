@@ -1,10 +1,12 @@
 import { Dispatch, memo, SetStateAction, useCallback } from "react";
 import { Statechart, stateDescription, Transition } from "../../statecharts/abstract_syntax";
-import { Mode, RaisedEvent, RT_Event } from "../../statecharts/runtime_types";
+import { RaisedEvent, RT_Event } from "../../statecharts/runtime_types";
 import { formatTime } from "../../util/util";
 import { TimeMode, timeTravel } from "../../statecharts/time";
 import { Environment } from "@/statecharts/environment";
 import { BigStepCause, TraceItem, TraceState } from "../hooks/useSimulator";
+
+import styles from "./Trace.module.css";
 
 import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
 
@@ -41,7 +43,7 @@ function lookupPropertyStatus(simtime: number, propertyTrace: PropertyTrace, sta
   return [i, propertyTrace[i] && propertyTrace[i][1]];
 }
 
-export function RTHistory({trace, setTrace, ast, setTime, showPlantTrace, propertyTrace}: RTHistoryProps) {
+export function Trace({trace, setTrace, ast, setTime, showPlantTrace, propertyTrace}: RTHistoryProps) {
   const onMouseDown = useCallback((idx: number, timestamp: number) => {
     setTrace(trace => trace && {
       ...trace,
@@ -79,12 +81,12 @@ function RTCause(props: {cause?: RT_Event}) {
     return <></>;
   }
   if (props.cause.kind === "timer") {
-    return <div className="inputEvent">
+    return <div className={styles.inputEvent}>
       <AccessAlarmIcon fontSize="small"/>
     </div>;
   }
   else if (props.cause.kind === "event") {
-    return <div className="inputEvent">
+    return <div className={styles.inputEvent}>
       {props.cause.name}
       <RTEventParam param={props.cause.param}/>
     </div>;
@@ -101,17 +103,17 @@ export const RTHistoryItem = memo(function RTHistoryItem({ast, idx, item, prevIt
   if (item.kind === "bigstep") {
     const outputEvents = isPlantStep ? item.state.plant.outputEvents : item.state.sc.outputEvents;
     return <div
-      className={"runtimeState" + (active ? " active" : "") + (isPlantStep ? " plantStep" : "")}
+      className={styles.traceItem + ' ' + (active ? styles.active : "") + ' ' + (isPlantStep ? styles.plantStep : "")}
       onMouseDown={useCallback(() => onMouseDown(idx, item.simtime), [idx, item.simtime])}>
       <div>
-        <div className={"status " + propertyStatus}/>
+        <div className={styles.status + ' ' + styles[propertyStatus]}/>
         &emsp;
         {formatTime(item.simtime)}
         &emsp;
         <RTCause cause={isPlantStep ? item.state.plant.inputEvent : item.state.sc.inputEvent}/>
         {outputEvents.length>0 &&
           <div style={{display: 'inline-block'}}>&nbsp;&#x2192;&nbsp;
-          {outputEvents.map((e:RaisedEvent) => <span className="outputEvent">{e.name}<RTEventParam param={e.param}/></span>)}
+          {outputEvents.map((e:RaisedEvent) => <span className={styles.outputEvent}>{e.name}<RTEventParam param={e.param}/></span>)}
           </div>}
       </div>
       {!isPlantStep &&
@@ -125,12 +127,14 @@ export const RTHistoryItem = memo(function RTHistoryItem({ast, idx, item, prevIt
   else {
     // error item
     return <div
-      className={"runtimeState runtimeError" + (active ? " active" : "")}
+      className={styles.traceItem
+         + ' ' + styles.runtimeError
+         + ' ' + (active ? styles.active : "")}
       onMouseDown={useCallback(() => onMouseDown(idx, item.simtime), [idx, item.simtime])}>
       <div>
         {formatTime(item.simtime)}
         &emsp;
-        <div className="inputEvent"><ShowCause cause={item.cause}/></div>
+        <div className={styles.inputEvent}><ShowCause cause={item.cause}/></div>
       </div>
       <div>
         {item.error.message}

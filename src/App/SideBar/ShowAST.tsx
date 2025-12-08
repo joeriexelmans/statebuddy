@@ -8,6 +8,9 @@ import { useShortcuts } from '@/hooks/useShortcuts';
 import { arraysEqual, jsonDeepEqual } from '@/util/util';
 import { Tooltip } from '../Components/Tooltip';
 
+import styles from "./Trace.module.css";
+import appStyles from "../App.module.css";
+
 export function ShowTransition(props: {transition: Transition}) {
   return <>➝ {stateDescription(props.transition.tgt)}</>;
 }
@@ -91,11 +94,11 @@ export const ShowInputEvents = memo(function ShowInputEvents({inputEvents, onRai
     const width = Math.max(value.length, (paramName||"").length)*6;
     const shortcut = (i+1)%10;
     const KI = (i < 10) ? KeyInfo : KeyInfoHidden;
-    return <div key={key} className="toolbarGroup">
+    return <span key={key}>
       <KI keyInfo={<kbd>{shortcut}</kbd>} horizontal={true}>
         <Tooltip tooltip='click to raise'>
           <button
-            className="inputEvent"
+            className={styles.inputEvent}
             disabled={disabled}
             onClick={raiseHandlers[i]}>
             <BoltIcon fontSize="small"/>
@@ -107,7 +110,7 @@ export const ShowInputEvents = memo(function ShowInputEvents({inputEvents, onRai
         <><input id={`input-${event}-param`} style={{width, overflow: 'visible'}} placeholder={paramName} value={value} onChange={e => setInputParams(params => ({...params, [key]: e.target.value, }))}/></>
       }
       &nbsp;
-    </div>;
+    </span>;
   })
 }, (prevProps, nextProps) => {
   return prevProps.onRaise === nextProps.onRaise
@@ -117,13 +120,13 @@ export const ShowInputEvents = memo(function ShowInputEvents({inputEvents, onRai
 
 export function ShowInternalEvents(props: {internalEvents: EventTrigger[]}) {
   return [...props.internalEvents].map(({event, paramName}) => {
-      return <div className="internalEvent" key={event}>{event}{paramName===undefined?<></>:<>({paramName})</>}</div>;
+      return <div className={styles.internalEvent} key={event}>{event}{paramName===undefined?<></>:<>({paramName})</>}</div>;
     });
 }
 
 
 export function ShowOutputEvents(props: {outputEvents: Set<string>}) {
   return [...props.outputEvents].map(eventName => {
-      return <div className="outputEvent" key={eventName}>{eventName}</div>;
+      return <div className={styles.outputEvent} key={eventName}>{eventName}</div>;
     });
 }

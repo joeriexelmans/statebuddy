@@ -33,6 +33,8 @@ import { Trial } from '../hooks/useTrial';
 import { useUpdater } from '../hooks/useUpdater';
 import { downloadObjectAsJson } from '@/util/download_json';
 
+import styles from "../App.module.css";
+
 export type TopPanelProps = {
   trial: Trial,
   trace: TraceState | null,
@@ -126,12 +128,12 @@ export const TopPanel = memo(function TopPanel({trial, trace, time, setTime, onU
   const progress = (displayTime-lastSimTime)/(nextWakeup-lastSimTime);
   const catchingUp = progress > 1;
 
-  return <div className="toolbar">
+  return <div className={styles.toolbar} style={{columnGap: '1em'}}>
     {/* shortcuts / about */}
-    <div className="toolbarGroup">
+    <div className={styles.toolbar}>
       <KeyInfo keyInfo={ShortCutShowKeys}>
         <Tooltip tooltip="show/hide keyboard shortcuts" align="left">
-        <button className={showKeys?"active":""} onClick={useCallback(() => setShowKeys(s => !s), [setShowKeys])}><KeyboardIcon fontSize="small"/></button>
+        <TwoStateButton active={showKeys} onClick={useCallback(() => setShowKeys(s => !s), [setShowKeys])}><KeyboardIcon fontSize="small"/></TwoStateButton>
         </Tooltip>
       </KeyInfo>
       <Tooltip tooltip={updateAvailable ? `${trial.appName} update available!
@@ -152,40 +154,35 @@ compressed: ${prettyNumber(compressedSize)} bytes (${Math.round(compressedSize/o
       </Tooltip>
       <Tooltip tooltip='export as JSON'>
         <button onClick={() => {
-          downloadObjectAsJson(state, trial.appName+"_"+modelName+".json");
+          downloadObjectAsJson(state, trial.appName+"_"+modelName.replaceAll(' ','-')+".json");
         }}>
           <SaveAltIcon fontSize='small'/>
         </button>
       </Tooltip>
-      &emsp;
     </div>
 
     {/* zoom */}
-    <div className="toolbarGroup">
+    <div className={styles.toolbar}>
       <ZoomButtons showKeys={showKeys} zoom={zoom} setZoom={setZoom}/>
-      &emsp;
     </div>
 
     {/* undo / redo */}
-    <div className="toolbarGroup">
+    <div className={styles.toolbar}>
       <UndoRedoButtons showKeys={showKeys} onUndo={onUndo} onRedo={onRedo} historyLength={editHistory.history.length} futureLength={editHistory.future.length}/>
-      &emsp;
     </div>
 
     {/* insert rountangle / arrow / ... */}
-    <div className="toolbarGroup">
+    <div className={styles.toolbar}>
       <InsertModes insertMode={insertMode} setInsertMode={setInsertMode} showKeys={showKeys}/>
-      &emsp;
     </div>
 
     {/* rotate */}
-    <div className="toolbarGroup">
+    <div className={styles.toolbar}>
       <RotateButtons selection={editHistory.current.selection} onRotate={onRotate}/>
-      &emsp;
     </div>
 
     {/* find, replace */}
-    <div className="toolbarGroup">
+    <div className={styles.toolbar}>
       <KeyInfo keyInfo={<><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd></>}>
         <Tooltip tooltip="find & replace ...">
           <TwoStateButton
@@ -195,23 +192,22 @@ compressed: ${prettyNumber(compressedSize)} bytes (${Math.round(compressedSize/o
             <FindInPageOutlinedIcon fontSize="small"/>
           </TwoStateButton>
         </Tooltip>
-        <Tooltip tooltip="show debug panel">
-          <TwoStateButton
-            active={showDebug}
-            onClick={() => setShowDebug(x => !x)}
-          >
-            <BugReportIcon fontSize="small"/>
-          </TwoStateButton>
-        </Tooltip>
       </KeyInfo>
-      &emsp;
+      <Tooltip tooltip="show debug panel">
+        <TwoStateButton
+          active={showDebug}
+          onClick={() => setShowDebug(x => !x)}
+        >
+          <BugReportIcon fontSize="small"/>
+        </TwoStateButton>
+      </Tooltip>
     </div>
 
     {/* execution */}
-    <div className="toolbarGroup">
+    <div className={styles.toolbar} style={{columnGap: '1em'}}>
 
-      <div className="toolbarGroup">
-        {/* init / clear */}
+      {/* init / clear */}
+      <div className={styles.toolbar}>
         <KeyInfo keyInfo={<kbd>I</kbd>}>
           <Tooltip tooltip="(re)initialize simulation">
             <button onClick={onInit} ><PlayArrowIcon fontSize="small"/>
@@ -226,8 +222,10 @@ compressed: ${prettyNumber(compressedSize)} bytes (${Math.round(compressedSize/o
             </button>
           </Tooltip>
         </KeyInfo>
-        &emsp;
-        {/* pause / real time */}
+      </div>
+        
+      {/* pause / real time */}
+      <div className={styles.toolbar}>
         <KeyInfo keyInfo={<><kbd>Space</kbd> toggles</>}>
           <Tooltip tooltip="pause simulation">
             <TwoStateButton
@@ -248,54 +246,49 @@ compressed: ${prettyNumber(compressedSize)} bytes (${Math.round(compressedSize/o
             </TwoStateButton>
           </Tooltip>
         </KeyInfo>
-        &emsp;
       </div>
 
       {/* speed */}
-      <div className="toolbarGroup">
+      <div className={styles.toolbar}>
         <SpeedControl setTime={setTime} timescale={timescale} setTimescale={setTimescale} showKeys={showKeys} />
-        &emsp;
       </div>
 
       {/* time, next */}
-      <div className="toolbarGroup">
-        <div className="toolbarGroup">
-          <Tooltip tooltip="current simulated time">
-            <label htmlFor="input-time"><AccessTimeIcon fontSize="small"/></label>&nbsp;
-            <div style={{
-              position: 'absolute',
-              marginTop: -4,
-              marginLeft: 20,
-              height: 4,
-              borderWidth: 0,
-              backgroundColor: catchingUp
-                ? 'var(--firing-transition-color)'
-                : 'var(--accent-border-color)',
-              width: Math.min(progress, 1)*56,
-              }}
-              title={catchingUp
-                ? "running behind schedule! (maybe slow down a bit so i can catch up?)"
-                : "are we there yet?"}
-              />
-            <input id="input-time"
-              disabled={!config}
-              value={formattedDisplayTime}
-              readOnly={true}
-              className="readonlyTextBox" />
-          </Tooltip>
+      <div className={styles.toolbar} style={{columnGap:'1em'}}>
+        <Tooltip tooltip="current simulated time">
+          <label htmlFor="input-time"><AccessTimeIcon fontSize="small"/></label>
+          <div style={{
+            position: 'absolute',
+            marginTop: -4,
+            marginLeft: 20,
+            height: 4,
+            borderWidth: 0,
+            backgroundColor: catchingUp
+              ? 'var(--firing-transition-color)'
+              : 'var(--accent-border-color)',
+            width: Math.min(progress, 1)*56,
+            }}
+            title={catchingUp
+              ? "running behind schedule! (maybe slow down a bit so i can catch up?)"
+              : "are we there yet?"}
+            />
+          <input id="input-time"
+            disabled={!config}
+            value={formattedDisplayTime}
+            readOnly={true}
+            style={{width:56}}
+            />
+        </Tooltip>
 
-        </div>
-
-        &emsp;
-        <div className="toolbarGroup">
+        <div>
           <Tooltip tooltip="next timed transition occurs at ...">
-            <label htmlFor="next-timeout"><AccessAlarmIcon fontSize="small"/></label>&nbsp;
+            <label htmlFor="next-timeout"><AccessAlarmIcon fontSize="small"/></label>
             <input
               id="next-timeout"
               disabled={!config}
               value={formatTime(nextWakeup)}
               readOnly={true}
-              className="readonlyTextBox"
+              style={{width:56}}
             />
           </Tooltip>
           <KeyInfo keyInfo={<kbd>Tab</kbd>}>
@@ -307,7 +300,6 @@ compressed: ${prettyNumber(compressedSize)} bytes (${Math.round(compressedSize/o
               </button>
             </Tooltip>
           </KeyInfo>
-          &emsp;
         </div>
       </div>
     </div>

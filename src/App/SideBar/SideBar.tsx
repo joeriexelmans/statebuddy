@@ -14,7 +14,7 @@ import { ShowAST, ShowInputEvents, ShowInternalEvents, ShowOutputEvents } from '
 import { Plant } from '../Plant/Plant';
 import { checkProperty, PreparedTraces, PropertyCheckResult } from './check_property';
 import { Setters } from '../makePartialSetter';
-import { RTHistory } from './RTHistory';
+import { Trace } from './Trace';
 import { BigStepCause, TraceState } from '../hooks/useSimulator';
 import { plants, UniversalPlantState } from '../plants';
 import { TimeMode } from '@/statecharts/time';
@@ -28,6 +28,9 @@ import { ConcreteSyntax } from '@/statecharts/concrete_syntax';
 import { MoveUpDown } from '../Components/MoveUpDown';
 import { AppState, UrlState } from '../App';
 import { buf2base64, deflateBuffer, deflateString, str2buf } from '@/compression/deflate';
+
+import styles from "../App.module.css";
+import traceStyles from "./Trace.module.css";
 
 type SavedTraces = [string, BigStepCause[]][];
 
@@ -135,7 +138,7 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
 
   return <>
     <div
-      className={showExecutionTrace ? "shadowBelow" : ""}
+      className={showExecutionTrace ? styles.shadowBelow : ""}
       style={{flex: '0 0 content', backgroundColor: ''}}
     >
       {/* State tree */}
@@ -171,7 +174,7 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
       {/* Plant */}
       <PersistentDetails state={showPlant} setState={setShowPlant}>
         <summary>plant</summary>
-        <div className="toolbar">
+        <div className={styles.toolbar}>
           <select
             disabled={trace!==null}
             value={plantName}
@@ -231,7 +234,7 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
             propertyError = result[1];
           }
           const status = (violated === null) ? "pending" : (violated ? "property violated" : "property satisfied");
-          return <div style={{display: 'flex'}} key={i} className="toolbar">
+          return <div style={{display: 'flex'}} key={i} className={styles.toolbar}>
             <div>
               <Tooltip tooltip={status} align="left">
                 <div className={"status" + (violated === null ? "" : (violated ? " violated" : " satisfied"))}/>
@@ -269,7 +272,7 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
             </DoubleClickButton>
           </div>;
         })}
-        <div className="toolbar stackHorizontal">
+        <div className={styles.toolbar}>
           <button onClick={() => setProperties(properties => [...properties, ""])} style={{flexGrow:1}}>
             <AddIcon fontSize="small"/> add property
           </button>
@@ -283,7 +286,7 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
       <details open={showExecutionTrace} onToggle={e => setShowExecutionTrace(e.newState === "open")}><summary>execution trace</summary>
         <div>
           {savedTraces.map((savedTrace, i) =>
-            <div key={i} className="toolbar stackHorizontal">
+            <div key={i} className={styles.toolbar} style={{alignItems: 'center'}}>
               <Tooltip tooltip="replay trace" align="left">
                 <button
                   onClick={() => onReplayTrace(savedTrace[1])}>
@@ -314,22 +317,23 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
             </div>
           )}
         </div>
-        <div className="toolbar stackHorizontal">
+        <div className={styles.toolbar} style={{justifyContent: 'space-around', gap: '1em'}}>
           <Tooltip tooltip="plant steps are steps where only the state of the plant changed" align="left">
-          <input id="checkbox-show-plant-items" type="checkbox"
+          <label>
+            <input id="checkbox-show-plant-items" type="checkbox"
             checked={showPlantTrace}
             onChange={e => setShowPlantTrace(e.target.checked)}/>
-          <label htmlFor="checkbox-show-plant-items">show plant steps</label>
+            show plant steps</label>
           </Tooltip>
           <Tooltip tooltip="scroll down upon new events" align="left">
           <input id="checkbox-autoscroll" type="checkbox" checked={autoScroll} onChange={e => setAutoScroll(e.target.checked)}/>
           <label htmlFor="checkbox-autoscroll">auto-scroll</label>
           </Tooltip>
-          &emsp;
           <button
             disabled={trace === null}
             onClick={() => onSaveTrace()}
-            style={{flexGrow: 1}}>
+            style={{marginLeft: 'auto'}}
+            >
             <SaveOutlinedIcon fontSize="small"/> save trace
           </button>
         </div>
@@ -345,7 +349,7 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
         // minHeight: '75%', // <-- allows us to always scroll down the sidebar far enough such that the execution history is enough in view
         }}>
           <div ref={refRightSideBar}>
-            {ast && <RTHistory {...{ast, trace, setTrace, setTime, showPlantTrace,
+            {ast && <Trace {...{ast, trace, setTrace, setTime, showPlantTrace,
               propertyTrace: propertyResults && propertyResults[activeProperty] && propertyResults[activeProperty][0] || []}}/>}
           </div>
       </div>}

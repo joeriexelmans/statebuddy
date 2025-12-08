@@ -16,6 +16,7 @@ export const ZoomButtons = memo(function ZoomButtons({showKeys, zoom, setZoom}: 
     {keys: ["Ctrl", "+"], action: onZoomIn}, // plus on numerical keypad
     {keys: ["Ctrl", "Shift", "+"], action: onZoomIn}, // plus on normal keyboard requires Shift key
     {keys: ["Ctrl", "="], action: onZoomIn}, // most browsers also bind this shortcut so it would be confusing if we also did not override it
+    {keys: ["Ctrl", "Shift", "_"], action: onZoomOut},
     {keys: ["Ctrl", "-"], action: onZoomOut},
   ]);
 

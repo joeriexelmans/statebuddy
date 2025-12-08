@@ -1,6 +1,6 @@
 
 details > summary {
-  padding: 2px;
+  /* padding: 2px; */
 }
 
 details > summary:hover {
@@ -10,55 +10,6 @@ details > summary:hover {
 
 .errorStatus details > summary:hover {
   background-color: var(--error-hover-bg-color);
-}
-
-.stateTree > * { 
-  padding-left: 10px;
-  background-color: white;
-}
-
-.outputEvent {
-  cursor: default;
-  border: 1px var(--separator-color) solid;
-  border-radius: 6px;
-  padding-left: 2px;
-  padding-right: 2px;
-  background-color: var(--output-event-bg-color);
-  color: var(--text-color);
-  display: inline-block;
-}
-
-.internalEvent {
-  cursor: default;
-  border: 1px var(--separator-color) solid;
-  border-radius: 6px;
-  padding-left: 2px;
-  padding-right: 2px;
-  background-color: var(--internal-event-bg-color);
-  color: var(--text-color);
-  display: inline-block;
-}
-
-.inputEvent {
-  border: 1px var(--separator-color) solid;
-  border-radius: 6px;
-  padding-left: 2px;
-  padding-right: 2px;
-  background-color: var(--input-event-bg-color);
-  color: var(--text-color);
-  display: inline-block;
-}
-.inputEvent:disabled {
-  color: darkgrey;
-}
-.inputEvent * {
-  vertical-align: middle;
-}
-button.inputEvent:hover:not(:disabled) {
-  background-color: var(--input-event-hover-bg-color);
-}
-button.inputEvent:active:not(:disabled) {
-  background-color: var(--input-event-active-bg-color);
 }
 
 .activeState {
@@ -71,17 +22,4 @@ button.inputEvent:active:not(:disabled) {
   padding-right: 2px;
   display: inline-block;
   color: var(--text-color);
-}
-
-ul {
-  list-style-type: circle;
-  margin-block-start: 0;
-  margin-block-end: 0;
-  padding-inline-start: 24px;
-  /* list-style-position: ; */
-}
-
-.shadowBelow {
-  box-shadow: 0 -5px 5px 5px rgba(0, 0, 0, 0.4);
-  z-index: 1;
 }

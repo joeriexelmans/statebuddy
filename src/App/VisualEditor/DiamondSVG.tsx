@@ -4,6 +4,7 @@ import { Vec2D } from "../../util/geometry";
 import { RectHelper } from "./RectHelpers";
 import { memo } from "react";
 import { arraysEqual, jsonDeepEqual, mapsEqual, setsEqual } from "@/util/util";
+import styles from "./VisualEditor.module.css"
 
 export const DiamondShape = memo(function DiamondShape(props: {size: Vec2D, extraAttrs: object}) {
   const minSize = rountangleMinSize(props.size);
@@ -24,10 +25,10 @@ export const DiamondShape = memo(function DiamondShape(props: {size: Vec2D, extr
 export const DiamondSVG = memo(function DiamondSVG(props: { diamond: Diamond; selected: Set<RectSide>; highlight: RectSide[]; error?: string; active: boolean; }) {
   const minSize = rountangleMinSize(props.diamond.size);
   const extraAttrs = {
-    className: 'diamond'
-      + (props.selected.size === 4 ? " selected" : "")
-      + (props.error ? " error" : "")
-      + (props.active ? " active" : ""),
+    className: styles.diamond
+      + ' ' + (props.selected.size === 4 ? styles.selected : "")
+      + ' ' + (props.error ? styles.error : "")
+      + ' ' + (props.active ? styles.active : ""),
     "data-uid": props.diamond.uid,
     "data-parts": "left top right bottom",
   };
@@ -35,7 +36,7 @@ export const DiamondSVG = memo(function DiamondSVG(props: { diamond: Diamond; se
     <DiamondShape size={minSize} extraAttrs={extraAttrs}/>
 
     <text x={minSize.x/2} y={minSize.y/2}
-      className="uid"
+      className={styles.uid}
       textAnchor="middle">{props.diamond.uid}</text>
     
     {props.error && <text className="errorHover" x={minSize.x/2} y={minSize.y/2 - 20} textAnchor="middle">{props.error}</text>}

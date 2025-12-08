@@ -1,0 +1,5 @@
+
+.bottom {
+  border-top: 1px var(--separator-color) solid;
+  background-color: var(--bottom-panel-bg-color);
+}

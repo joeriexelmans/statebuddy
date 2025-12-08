@@ -9,6 +9,13 @@
       ![screenshot](./insert.png)
  * middle mouse button only to *select*
 
+## Keyboard shortcuts
+
+ * keyboard shortcuts for toolbar button actions are visible by default, and can be toggled with the `~` (tilde) button.
+ * extra shortcuts available in the editor:
+    * `Ctrl`+`A` select all shapes
+    * `Ctrl`+`C`, `Ctrl`+`X`, `Ctrl`+`V` copy, cut paste
+
 ## Syntax
 
 ### States

@@ -5,6 +5,8 @@ import { Dispatch, memo, ReactElement, SetStateAction, SVGTextElementAttributes 
 import { jsonDeepEqual } from "@/util/util";
 import { BoundingBox } from "./BoundingBox";
 
+import styles from "./VisualEditor.module.css";
+
 export const FragmentedText = function FragmentedText({start, end, text, highlightClassName, uid, parts, ...rest}: {start: number, end: number, text: string, highlightClassName: string, uid: string, parts: string} & SVGTextElementAttributes<SVGTextElement>) {
   if (start !== -1 && start !== end) {
     return <text data-uid={uid} data-parts={parts} {...rest}>
@@ -24,10 +26,10 @@ export const FragmentedText = function FragmentedText({start, end, text, highlig
 
 export const TextSVG = memo(function TextSVG(props: {text: Text, error: TraceableError|undefined, selected: boolean, highlight: boolean, onEdit: (text: Text, newText: string) => void, setModal: Dispatch<SetStateAction<ReactElement|null>>, findText: string}) {
 
-  const className = "draggableText"
-    + (props.selected ? " selected":"")
-    + (props.highlight ? " highlight":"")
-    + (props.error ? " error":"");
+  const className = styles.draggableText
+    + ' ' + (props.selected ? styles.selected : "")
+    + ' ' + (props.highlight ? styles.highlight : "")
+    + ' ' + (props.error ? styles.error : "");
 
   const found = props.text.text.indexOf(props.findText);
   const start = (found >= 0) ? found : -1
@@ -56,9 +58,9 @@ export const TextSVG = memo(function TextSVG(props: {text: Text, error: Traceabl
       }} />)
     }}>
       {textNode}
-      <text className="draggableText helper" textAnchor="middle" data-uid={props.text.uid} data-parts="text" style={{whiteSpace: "preserve"}}>{props.text.text}</text>
+      <text className={styles.helper} textAnchor="middle" data-uid={props.text.uid} data-parts="text" style={{whiteSpace: "preserve"}}>{props.text.text}</text>
       {props.error &&
-        <text className="errorHover" y={-20} textAnchor="middle">{props.error.message}</text>
+        <text className={styles.errorHover} y={-20} textAnchor="middle">{props.error.message}</text>
       }
     </g></>;
 }, (prevProps, newProps) => {

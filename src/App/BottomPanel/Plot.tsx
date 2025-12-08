@@ -1,4 +1,4 @@
-import "./Plot.css";
+import plotStyles from "./Plot.module.css";
 import { SVGAttributes, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Setters } from "../makePartialSetter";
 import { PreparedTraces } from "../SideBar/check_property";
@@ -93,7 +93,7 @@ export function Plot({traces, displayTime, nextWakeup, visiblePlots, setVisibleP
     return traceNames.map(name => {
       if (visiblePlots[name]) {
         const color = `var(--plot-color-${i%numColors})`;
-        return <path d={renderSignal(name, i++)} className="plotLine" style={{stroke: color}} />;
+        return <path d={renderSignal(name, i++)} className={plotStyles.plotLine} style={{stroke: color}} />;
       }
       else {
         return <></>;

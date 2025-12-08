@@ -96,7 +96,6 @@ export const TrafficLight = memo(function TrafficLight({state: {redOn, yellowOn,
         <text x={400} y={750} className="timer" fontFamily="digital-font" fontSize={100} fill={timerColor} textAnchor="end">{timerValue}</text>
       </>}
     </svg>
-    <br/>
     <button onClick={() => raiseUIEvent({name: "policeInterrupt"})}>POLICE INTERRUPT</button>
   </>;
 }, (oldProps, newProps) => {
@@ -110,7 +109,7 @@ const trafficLightPlantSpec: StatechartPlantSpec<TrafficLightState> = {
     const yellowOn = state.mode.has("87");
     const greenOn = state.mode.has("89");
     const timerGreen = state.mode.has("137");
-    const timerValue = state.environment.get("t");
+    const timerValue = state.environment.get("t", {kind: "state", thing: trafficLightAbstractSyntax.root});
     return { redOn, yellowOn, greenOn, timerGreen, timerValue };
   },
   render: TrafficLight,
@@ -122,7 +121,6 @@ const trafficLightPlantSpec: StatechartPlantSpec<TrafficLightState> = {
     "yellowOn",
     "greenOn",
     "timerGreen",
-    "timerValue",
   ],
 }
 

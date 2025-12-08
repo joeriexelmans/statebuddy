@@ -1,0 +1,95 @@
+.outputEvent {
+  cursor: default;
+  border: 1px var(--separator-color) solid;
+  border-radius: 6px;
+  padding-left: 2px;
+  padding-right: 2px;
+  background-color: var(--output-event-bg-color);
+  color: var(--text-color);
+  display: inline-block;
+}
+
+.internalEvent {
+  cursor: default;
+  border: 1px var(--separator-color) solid;
+  border-radius: 6px;
+  padding-left: 2px;
+  padding-right: 2px;
+  background-color: var(--internal-event-bg-color);
+  color: var(--text-color);
+  display: inline-block;
+}
+
+.inputEvent {
+  border: 1px var(--separator-color) solid !important;
+  background-color: var(--input-event-bg-color) !important;
+  border-radius: 6px;
+  padding-left: 2px;
+  padding-right: 2px;
+  color: var(--text-color);
+  display: inline-block;
+}
+.inputEvent:disabled {
+  color: darkgrey;
+}
+.inputEvent * {
+  vertical-align: middle;
+}
+.inputEvent:hover:not(:disabled) {
+  background-color: var(--input-event-hover-bg-color);
+}
+.inputEvent:active:not(:disabled) {
+  background-color: var(--input-event-active-bg-color);
+}
+
+
+.traceItem {
+  padding: 4px;
+}
+.traceItem:has(+.traceItem) {
+  border-bottom: 1px var(--separator-color) solid;
+}
+.traceItem:has(+.traceItem.active) {
+  border-bottom: 0;
+}
+.traceItem:hover {
+  background-color: var(--light-accent-color);
+  cursor: pointer;
+}
+.traceItem.active {
+  background-color: var(--light-accent-color);
+  border: solid var(--accent-border-color) 1px;
+}
+.traceItem.plantStep:not(.active) {
+  background-color: var(--inactive-bg-color);
+}
+.traceItem.plantStep * {
+  color: var(--inactive-fg-color);
+}
+.traceItem.runtimeError {
+  background-color: var(--error-bg-color);
+  color: var(--error-color); /* used to be darkred, but this one's a bit lighter */
+}
+.traceItem.runtimeError.active {
+  border-color: var(--error-color);/* used to be darkred, but this one's a bit lighter */
+}
+
+.status {
+  display: inline-block;
+  vertical-align: middle;
+  background-color: var(--status-inactive-color);
+  border-radius: 50%;
+  height: 12px;
+  width: 12px;
+  margin-left: 4px;
+  margin-right: 4px;
+}
+
+.status.violated {
+  background-color: var(--error-color);
+}
+
+.status.satisfied {
+  background-color: var(--status-ok-color);
+}
+

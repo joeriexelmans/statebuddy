@@ -4,7 +4,7 @@ import { ArcDirection, euclideanDistance } from "../../util/geometry";
 import { CORNER_HELPER_RADIUS } from "../parameters";
 import { arraysEqual, jsonDeepEqual, setsEqual } from "@/util/util";
 import { BoundingBox } from "./BoundingBox";
-
+import styles from "./VisualEditor.module.css";
 
 export const ArrowSVG = memo(function(props: { arrow: Arrow; selected: Set<ArrowPart>; error: string; highlight: boolean; fired: boolean; arc: ArcDirection; initialMarker: boolean }) {
   const { start, end, uid } = props.arrow;
@@ -23,11 +23,11 @@ export const ArrowSVG = memo(function(props: { arrow: Arrow; selected: Set<Arrow
     <BoundingBox {...endBBox} />
     <BoundingBox {...bbox} />
     <path
-      className={"arrow"
-        + (props.selected.size === 2 ? " selected" : "")
-        + (props.error ? " error" : "")
-        + (props.highlight ? " highlight" : "")
-        + (props.fired ? " fired" : "")
+      className={styles.arrow
+        + ' ' + (props.selected.size === 2 ? styles.selected : "")
+        + ' ' + (props.error ? styles.error : "")
+        + ' ' + (props.highlight ? styles.highlight : "")
+        + ' ' + (props.fired ? styles.fired : "")
       }
       markerStart={props.initialMarker ? 'url(#initialMarker)' : undefined}
       markerEnd='url(#arrowEnd)'
@@ -38,14 +38,14 @@ export const ArrowSVG = memo(function(props: { arrow: Arrow; selected: Set<Arrow
       data-parts="start end" />
 
     {props.error && <text
-      className="errorHover"
+      className={styles.errorHover}
       x={(start.x + end.x) / 2 + 5}
       y={(start.y + end.y) / 2}
       textAnchor="middle"
       >{props.error}</text>}
 
     <path
-      className="helper"
+      className={styles.helper}
       d={`M ${start.x} ${start.y}
             ${arcOrLine}
             ${end.x} ${end.y}`}
@@ -54,14 +54,14 @@ export const ArrowSVG = memo(function(props: { arrow: Arrow; selected: Set<Arrow
 
     {/* selection helper circles */}
     <circle
-      className="helper"
+      className={styles.helper}
       cx={start.x}
       cy={start.y}
       r={CORNER_HELPER_RADIUS}
       data-uid={uid}
       data-parts="start" />
     <circle
-      className="helper"
+      className={styles.helper}
       cx={end.x}
       cy={end.y}
       r={CORNER_HELPER_RADIUS}
@@ -70,14 +70,14 @@ export const ArrowSVG = memo(function(props: { arrow: Arrow; selected: Set<Arrow
 
     {/* selection indicator circles */}
     {props.selected.has("start") && <circle
-      className="selected"
+      className={styles.selected}
       cx={start.x}
       cy={start.y}
       r={CORNER_HELPER_RADIUS}
       data-uid={uid}
       data-parts="start" />}
     {props.selected.has("end") && <circle
-      className="selected"
+      className={styles.selected}
       cx={end.x}
       cy={end.y}
       r={CORNER_HELPER_RADIUS}

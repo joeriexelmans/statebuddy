@@ -12,12 +12,12 @@ import { DiamondSVG } from "./DiamondSVG";
 import { HistorySVG } from "./HistorySVG";
 import { RountangleSVG } from "./RountangleSVG";
 import { TextSVG } from "./TextSVG";
-import "./VisualEditor.css";
 import { useCopyPaste } from "./hooks/useCopyPaste";
 import { useMouse } from "./hooks/useMouse";
 import { Grid } from "./Grid";
 import { DebugContext } from "./context/DebugContext";
 import { EDITOR_HEIGHT, EDITOR_WIDTH } from "../parameters";
+import styles from "./VisualEditor.module.css";
 
 export type VisualEditorState = ConcreteSyntax & {
   nextID: number;
@@ -188,7 +188,7 @@ export const VisualEditor = memo(function VisualEditor({state, commitState, repl
   const renderSelection = new Selection([...selection, ...newSelection]);
 
   return <svg width={size} height={size}
-      className={"svgCanvas"+(highlightActive.has("root")?" active":"")+(dragging?" dragging":"")}
+      className={styles.svgCanvas+' '+(highlightActive.has("root")?styles.active:"")+' '+(dragging?styles.dragging:"")}
       onMouseDown={onMouseDown}
       onContextMenu={e => e.preventDefault()}
       ref={refSVG}
@@ -199,29 +199,37 @@ export const VisualEditor = memo(function VisualEditor({state, commitState, repl
       onPaste={onPaste}
       onCut={onCut}
     >
-      <defs>
-        <marker
-          id="initialMarker"
-          viewBox="0 0 9 9"
-          refX="4.5"
-          refY="4.5"
-          markerWidth="9"
-          markerHeight="9"
-          markerUnits="userSpaceOnUse">
-          <circle cx={4.5} cy={4.5} r={4.5}/>
-        </marker>
-        <marker
-          id="arrowEnd"
-          viewBox="0 0 10 10"
-          refX="5"
-          refY="5"
-          markerWidth="12"
-          markerHeight="12"
-          orient="auto-start-reverse"
-          markerUnits="userSpaceOnUse">
-          <path d="M 0 0 L 10 5 L 0 10 z"/>
-        </marker>
-      </defs>
+    <defs>
+      <marker
+        id="initialMarker"
+        viewBox="0 0 9 9"
+        refX="4.5"
+        refY="4.5"
+        markerWidth="9"
+        markerHeight="9"
+        markerUnits="userSpaceOnUse">
+        <circle cx={4.5} cy={4.5} r={4.5}/>
+      </marker>
+      <marker
+        id="arrowEnd"
+        viewBox="0 0 10 10"
+        refX="5"
+        refY="5"
+        markerWidth="12"
+        markerHeight="12"
+        orient="auto-start-reverse"
+        markerUnits="userSpaceOnUse">
+        <path d="M 0 0 L 10 5 L 0 10 z"/>
+      </marker>
+    </defs>
+    <style>{`
+      #arrowEnd {
+        fill: context-stroke;
+      }
+      #initialMarker {
+        fill: context-stroke;
+      }
+    `}</style>
 
     <Rountangles rountangles={state.rountangles} {...{selection: renderSelection, sidesToHighlight, rountanglesToHighlight, errors, highlightActive}}/>
     <Diamonds diamonds={state.diamonds} {...{selection: renderSelection, sidesToHighlight, rountanglesToHighlight, errors}}/>

@@ -1,8 +1,6 @@
 import { Dispatch } from "react";
 import { TraceableError } from "../../statecharts/parser";
 
-import "./BottomPanel.css";
-
 import { PersistentDetails } from "../Components/PersistentDetails";
 import { AppState } from "../App";
 import { VisualEditorState } from "../VisualEditor/VisualEditor";
@@ -12,6 +10,9 @@ import gitRev from "@/git-rev.txt";
 import { Tooltip } from "../Components/Tooltip";
 import { Stats } from "./Stats";
 import { Statechart } from "@/statecharts/abstract_syntax";
+
+import appStyles from "../App.module.css";
+import styles from "./BottomPanel.module.css";
 
 export type BottomPanelState = {
   errorsExpanded: boolean,
@@ -24,7 +25,9 @@ export const defaultBottomPanelState = {
 export function BottomPanel(props: {errors: TraceableError[], setEditorState: Dispatch<(state: VisualEditorState) => VisualEditorState>, ast: Statechart} & AppState & Setters<AppState>) {
 
   return <div className="bottom">
-    <div className={"stackHorizontal statusBar" + (props.errors.length ? " error" : "")}>
+    <div className={appStyles.stackHorizontal
+            + ' ' + appStyles.statusBar
+            + ' ' + (props.errors.length ? appStyles.error : "")}>
       <div style={{flexGrow:1}}>
       <PersistentDetails state={props.errorsExpanded} setState={props.setErrorsExpanded}>
           <summary>{props.errors.length} errors</summary>

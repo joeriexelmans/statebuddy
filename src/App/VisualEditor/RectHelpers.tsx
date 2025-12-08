@@ -3,6 +3,7 @@ import { RectSide } from "../../statecharts/concrete_syntax";
 import { Vec2D } from "../../util/geometry";
 import { CORNER_HELPER_OFFSET, CORNER_HELPER_RADIUS } from "../parameters";
 import { arraysEqual, objectsEqual, setsEqual } from "@/util/util";
+import styles from "./VisualEditor.module.css";
 
 function lineGeometryProps(size: Vec2D): [RectSide, object][] {
   return [
@@ -13,43 +14,46 @@ function lineGeometryProps(size: Vec2D): [RectSide, object][] {
   ];
 }
 
+const cornerClass = `${styles.helper} ${styles.corner}`;
+
 // no need to memo() this component, the parent component is already memoized
 export const RectHelper = memo(function RectHelper(props: { uid: string, size: Vec2D, selected: Set<RectSide>, highlight: string[] }) {
   const geomProps = lineGeometryProps(props.size);
   return <>
     {geomProps.map(([side, ps]) => <g key={side}>
-      {(props.selected.has(side) || props.highlight.includes(side)) && <line className={""
-            + (props.selected.has(side) ? " selected" : "")
-            + (props.highlight.includes(side) ? " highlight" : "")}
+      {(props.selected.has(side) || props.highlight.includes(side)) &&
+        <line className={""
+            + ' ' + (props.selected.has(side) ? styles.selected : "")
+            + ' ' + (props.highlight.includes(side) ? styles.highlight : "")}
             {...ps} data-uid={props.uid} data-parts={side}/>
       }
-      <line className="helper" {...ps} data-uid={props.uid} data-parts={side}/>
+      <line className={styles.helper} {...ps} data-uid={props.uid} data-parts={side}/>
     </g>)}
 
     {/* The corner-helpers have the DOM class 'corner' added to them, because we ignore them when the user is making a selection. Only if the user clicks directly on them, do we select their respective parts. */}
     <circle
-      className="helper corner"
+      className={cornerClass}
       cx={CORNER_HELPER_OFFSET}
       cy={CORNER_HELPER_OFFSET}
       r={CORNER_HELPER_RADIUS}
       data-uid={props.uid}
       data-parts="top left" />
     <circle
-      className="helper corner"
+      className={cornerClass}
       cx={props.size.x - CORNER_HELPER_OFFSET}
       cy={CORNER_HELPER_OFFSET}
       r={CORNER_HELPER_RADIUS}
       data-uid={props.uid}
       data-parts="top right" />
     <circle
-      className="helper corner"
+      className={cornerClass}
       cx={props.size.x - CORNER_HELPER_OFFSET}
       cy={props.size.y - CORNER_HELPER_OFFSET}
       r={CORNER_HELPER_RADIUS}
       data-uid={props.uid}
       data-parts="bottom right" />
     <circle
-      className="helper corner"
+      className={cornerClass}
       cx={CORNER_HELPER_OFFSET}
       cy={props.size.y - CORNER_HELPER_OFFSET}
       r={CORNER_HELPER_RADIUS}

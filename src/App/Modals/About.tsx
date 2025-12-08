@@ -27,7 +27,7 @@ export function About({setModal, trialStarted, remainingDays, startTrial}: {setM
 export function AboutStateBuddy({startTrial, setModal}: {startTrial: () => void, setModal: Dispatch<SetStateAction<ReactElement|null>>}) {
   const [_, setCount] = useState(0);
   
-  return <div style={{maxWidth: '500px', padding: 4}}>
+  return <div style={{maxWidth: '500px', padding: 4, display: 'flex', flexDirection: 'column', gap: '1em', alignItems: 'center'}}>
     <Logo onClick={() => {
       setCount(i => {
         if (i+1 === 7) {
@@ -149,7 +149,7 @@ export function AboutStateBoss(props: {remainingDays: number, setModal: Dispatch
     }
   };
 
-  return <div style={{maxWidth: '500px', padding: 8, backgroundColor: "#fc3b00", color: 'black'}}>
+  return <div style={{maxWidth: '500px', padding: 8, backgroundColor: "#fc3b00", color: 'black', display: 'flex', flexDirection: 'column', gap: '1em', alignItems: 'stretch'}}>
     <CorporateLogo width="100%"/>
     <style>{`
       .blink{animation:blink 1s steps(1,end) infinite}
@@ -172,6 +172,7 @@ export function AboutStateBoss(props: {remainingDays: number, setModal: Dispatch
       You have <span className={!accepting && !accepted && "blink" || ""} style={{fontWeight: 600, color: "yellow", fontSize: 30}}>{props.remainingDays} days</span> remaining to BUY a license!</p>
     </div>
 
+    <br/>
     <div style={{textAlign: 'left', fontSize: 12}}>
       <style>{`
         input[type=checkbox] {
@@ -190,7 +191,6 @@ export function AboutStateBoss(props: {remainingDays: number, setModal: Dispatch
           I accept the <b><em>StateBoss®™</em></b> privacy policy.
         </label>
       </div>
-      <br/>
       <div>
         I wish to receive <b><em>BossExpress®™</em></b>, the <b><em>StateBoss®™</em></b> weekly magazine(*) via:
         <div>
@@ -208,12 +208,11 @@ export function AboutStateBoss(props: {remainingDays: number, setModal: Dispatch
       </div>
       <span style={{fontSize:9}}>
       (*) To cancel your subscription(s), call <a href="tel:1-800-BOSS">1-800-BOSS</a> - Mon-Fri 8:00 AM - 6:00 PM (0.50 USD per minute) Sat-Sun 10:00 AM - 6:00 PM (2 USD per minute). Extra charges may apply.<br/>
-      (**) 5 USD will be charged for every delivered, undelivered or returned copy of physical mail.<br/><br/>
+      (**) 5 USD will be charged for every delivered, undelivered or returned copy of physical mail.<br/>
       StateBoss Corp always has the right to legal action against any person suspected of circumventing or tampering with the SoftSpy (SS) Secure Patented Technology, as well as encouraging or assisting others to perform such actions, in any active or passive manner.
       </span>
     </div>
 
-    <br/>
     <style>{`
     .notAccepted {
       background-color: black;
@@ -240,10 +239,8 @@ export function AboutStateBoss(props: {remainingDays: number, setModal: Dispatch
       style={{
         fontStyle: 'italic',
         fontWeight: 600,
-        fontSize:30,
+        fontSize: 'clamp(1rem, 5vw, 2rem)',
         border: 0,
-        boxSizing: 'border-box',
-        height: 36,
         userSelect: 'none',
       }}>{accepted ? "ANOTHER SATISFIED CUSTOMER" : (accepting ? "OPTIMIZING YOUR EXPERIENCE..." : "I ACCEPT")}</div>
   </div>

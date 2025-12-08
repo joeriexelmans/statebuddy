@@ -1,9 +1,12 @@
-import "../index.css";
+import styles from "./App.module.css";
+
+console.log({styles});
+
 import "./App.css";
 
 import { ReactElement, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { Connections, connectionsEqual, detectConnections, reducedConcreteSyntaxEqual } from "@/statecharts/detect_connections";
+import { connectionsEqual, detectConnections, reducedConcreteSyntaxEqual } from "@/statecharts/detect_connections";
 import { parseStatechart } from "../statecharts/parser";
 import { BottomPanel, BottomPanelState, defaultBottomPanelState } from "./BottomPanel/BottomPanel";
 import { defaultSideBarState, SideBar, SideBarState } from "./SideBar/SideBar";
@@ -19,7 +22,7 @@ import { initialEditorState } from "@/statecharts/concrete_syntax";
 import { ModalOverlay } from "./Overlays/ModalOverlay";
 import { FindReplace } from "./BottomPanel/FindReplace";
 import { useCustomMemo } from "@/hooks/useCustomMemo";
-import { defaultPlotState, Plot, PlotState } from "./Plot/Plot";
+import { defaultPlotState, Plot, PlotState } from "./BottomPanel/Plot";
 import { prepareTrace } from "./SideBar/check_property";
 import { useDisplayTime } from "@/hooks/useDisplayTime";
 import { Greeter } from "./BottomPanel/Greeter";
@@ -218,21 +221,19 @@ export function App() {
 
   const preparedTraces = useMemo(() => simulator.trace && prepareTrace(plant, simulator.trace.trace), [simulator.trace, plant]);
 
-  return <div style={{
-    height: '100%',
-  }}>
+  return <div className={styles.App}>
     <ModalOverlay modal={modal} setModal={setModal}>
       {/* top-to-bottom: everything -> bottom panel */}
-      <div className="stackVertical" style={{height:'100%'}}>
+      <div className={styles.stackVertical} style={{height:'100%'}}>
 
         {/* left-to-right: main -> sidebar */}
-        <div className="stackHorizontal" style={{flexGrow:1, overflow: "auto"}}>
+        <div className={styles.stackHorizontal} style={{flexGrow:1, overflow: "auto"}}>
 
           {/* top-to-bottom: top bar, editor */}
-          <div className="stackVertical" style={{flexGrow:1, overflow: "hidden"}}>
+          <div className={styles.stackVertical} style={{flexGrow:1, overflow: "hidden"}}>
             {/* Top bar */}
             <div
-              className="shadowBelow"
+              className={styles.shadowBelow}
               style={{flex: '0 0 content'}}
             >
               {editHistory && <TopPanel
@@ -271,7 +272,7 @@ export function App() {
             overflowX: "auto",
             maxWidth: 'min(400px, 50vw)',
           }}>
-            <div className="stackVertical" style={{height:'100%'}}>
+            <div className={styles.stackVertical} style={{height:'100%'}}>
               <SideBar {...{...appState, refRightSideBar, ast, preparedTraces, plantCS, plantState, ...simulator, ...setters}} />
             </div>
           </div>
@@ -280,7 +281,7 @@ export function App() {
         {/* Bottom panel */}
         <div style={{flex: '0 0 content', borderTop: '1px solid var(--separator-color'}}>
           <Greeter trial={trial}/>
-          <div className="statusBar">
+          <div className={styles.statusBar}>
             <PersistentDetails state={appState.showPlot} setState={setters.setShowPlot}>
               <summary>plot</summary>
               {preparedTraces &&

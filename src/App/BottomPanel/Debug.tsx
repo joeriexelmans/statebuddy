@@ -62,7 +62,8 @@ export function DebugPanel({showBBox, showGrid, showCells, hide, ...setters}: De
             // disabled={true}
             value={GRID_CELL_SIZE}
             readOnly={true}
-            className="readonlyTextBox" />
+            style={{width: 56}}
+            />
         </label>
       </Tooltip>
     </div>

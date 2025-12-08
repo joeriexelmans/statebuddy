@@ -5,6 +5,7 @@ import { HistoryIcon, PseudoStateIcon, RountangleIcon } from "./Icons";
 import TrendingFlatIcon from '@mui/icons-material/TrendingFlat';
 import { useShortcuts } from "@/hooks/useShortcuts";
 import { Tooltip } from "../Components/Tooltip";
+import { TwoStateButton } from "../Components/TwoStateButton";
 
 export type InsertMode = "and" | "or" | "pseudo" | "shallow" | "deep" | "transition" | "text";
 
@@ -32,11 +33,11 @@ export const InsertModes = memo(function InsertModes({showKeys, insertMode, setI
   const KeyInfo = showKeys ? KeyInfoVisible : KeyInfoHidden;
   return <>{insertModes.map(([m, hint, buttonTxt, keyInfo]) => <KeyInfo key={m} keyInfo={keyInfo}>
     <Tooltip tooltip={"draw "+hint}>
-    <button
+    <TwoStateButton
       disabled={insertMode===m}
-      className={insertMode===m ? "active":""}
+      active={insertMode===m}
       onClick={() => setInsertMode(m)}
-    >{buttonTxt}</button>
+    >{buttonTxt}</TwoStateButton>
     </Tooltip>
   </KeyInfo>)}</>;
 })
