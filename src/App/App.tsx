@@ -30,6 +30,7 @@ import { PersistentDetails } from "./Components/PersistentDetails";
 import { useTrial } from "./hooks/useTrial";
 import { DebugPanel, DebugState, defaultDebugState } from "./BottomPanel/Debug";
 import { DebugContext } from "./VisualEditor/context/DebugContext";
+import { formatDateTime } from "@/util/util";
 
 export type EditHistory = {
   current: VisualEditorState,
@@ -111,10 +112,8 @@ export function App() {
 
   useEffect(() => {
     // useful when bookmarking the page: model name is in the title (that's basically the only reason we have a model name)
-    const leadingZeros = (n: number) => ('0'+n).slice(-2);
-    const now = new Date();
-    const timeFormatted = `${now.getFullYear()}/${leadingZeros(now.getMonth()+1)}/${leadingZeros(now.getDate())} ${leadingZeros(now.getHours())}:${leadingZeros(now.getMinutes())}`;
-    document.title = `${location.hostname==="localhost"?"[dev] ":""}${appState.modelName} [StateBuddy] ${timeFormatted}`;
+    const timeFormatted = formatDateTime(new Date());
+    document.title = `${location.hostname === "localhost" ? "[dev] " : ""}${appState.modelName} [StateBuddy] ${timeFormatted}`;
   }, [appState]);
 
   const [persist, originalSize, compressedSize, state] = useUrlHashState<VisualEditorState | UrlState>(
@@ -236,8 +235,8 @@ export function App() {
               className={styles.shadowBelow}
               style={{flex: '0 0 content'}}
             >
-              {editHistory && <TopPanel
-                {...{onUndo, onRedo, onRotate, setModal, editHistory, ...simulator, ...setters, ...appState, setEditorState, displayTime, refreshDisplayTime, trial, originalSize, compressedSize, state}}
+              {editHistory && editorState && <TopPanel
+                {...{onUndo, onRedo, onRotate, setModal, editHistory, ...simulator, ...setters, ...appState, editorState, setEditorState, displayTime, refreshDisplayTime, trial, originalSize, compressedSize, state}}
               />}
             </div>
             {/* Editor */}

@@ -10,7 +10,7 @@
   --error-hover-bg-color: light-dark(rgb(102, 0, 0), rgb(238, 153, 153));
   --light-accent-color: light-dark(#1b45ff62, rgba(28, 71, 100, 0.377));
   --accent-border-color: light-dark(rgb(69, 48, 255), rgb(64, 185, 255));
-  --accent-opaque-color: light-dark(#a3aaff, #132731);
+  --accent-opaque-color: light-dark(#bbc0f8, #132731);
 
   --statusbar-bg-color: light-dark(rgb(225, 229, 235), rgb(48, 48, 68));
   --statusbar-fg-color: light-dark(rgb(0, 0, 0), white);
@@ -132,6 +132,18 @@
   background-color: var(--error-bg-color);
 }
 
+.App th, .App td {
+  border-bottom: 1px solid var(--separator-color);
+  vertical-align: top;
+}
+.App table {
+  text-align: left;
+  border-collapse: collapse;
+}
+
+.App ul {
+  list-style-type: none;
+}
 
 .App *:focus-visible {
   z-index: 1;

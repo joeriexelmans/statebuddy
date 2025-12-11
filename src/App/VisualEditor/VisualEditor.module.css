@@ -32,7 +32,7 @@
   stroke-width: 2px;
 }
 .rountangle.selected, .diamond.selected {
-  fill: var(--light-accent-color) !important;
+  fill: var(--accent-opaque-color) !important;
 }
 
 svg.dragging .rountangle.selected {

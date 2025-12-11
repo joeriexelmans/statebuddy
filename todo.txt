@@ -48,7 +48,6 @@ TODO
     (*) editing SC <-> Plant connections at runtime doesn't seem to work
     (*) runtime errors coming from plant are mistakenly shown as runtime errors on statechart
     (*) runtime errors during initialization do not appear in trace
-    (*) when dragging shapes in 'huge' example while zoomed out, they move too much (but not in other examples??)
 
 - maybe support:
     - explicit order of outgoing transitions?
@@ -58,7 +57,11 @@ TODO
     although ideally the tool should explain itself...
 
 - usability stuff:
+    - export/import model as JSON
+    - export/import traces and properties
+
     - traffic light plant: turn state of 'police interrupt' button into a signal
+    - show list of internal variables
     - make side panel user-resizable
     - use smaller margin for selecting endpoint of arrow?
         (right now, often one will select the side of a rountangle but not the arrow connecting to it)

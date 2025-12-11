@@ -13,9 +13,11 @@ import SkipNextIcon from '@mui/icons-material/SkipNext';
 import StopIcon from '@mui/icons-material/Stop';
 import BugReportIcon from '@mui/icons-material/BugReport';
 import SaveAltIcon from '@mui/icons-material/SaveAlt';
+import FileOpenTwoToneIcon from '@mui/icons-material/FileOpenTwoTone';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
 import { Dispatch, memo, ReactElement, SetStateAction, useCallback, useMemo } from "react";
 import { setPaused, setRealtime, TimeMode } from "../../statecharts/time";
-import { formatTime } from "../../util/util";
+import { formatDateTime, formatTime } from "../../util/util";
 import { AppState, EditHistory } from "../App";
 import { Tooltip } from "../Components/Tooltip";
 import { TwoStateButton } from "../Components/TwoStateButton";
@@ -32,8 +34,9 @@ import { ZoomButtons } from "./ZoomButtons";
 import { Trial } from '../hooks/useTrial';
 import { useUpdater } from '../hooks/useUpdater';
 import { downloadObjectAsJson } from '@/util/download_json';
-
 import styles from "../App.module.css";
+import { OpenFile } from '../Modals/OpenFile';
+import { prettyNumber } from '../../util/pretty';
 
 export type TopPanelProps = {
   trial: Trial,
@@ -57,6 +60,7 @@ export type TopPanelProps = {
   onBack: () => void,
   setModal: Dispatch<SetStateAction<ReactElement|null>>,
   editHistory: EditHistory,
+  editorState: VisualEditorState,
   setEditorState: Dispatch<(oldState: VisualEditorState) => VisualEditorState>,
 } & AppState & Setters<AppState>
 
@@ -66,14 +70,7 @@ function toggle(booleanSetter: Dispatch<(state: boolean) => boolean>) {
   return () => booleanSetter(x => !x);
 }
 
-function prettyNumber(n: number): string {
-  if (n >= 1000) {
-    return `${Math.floor(n/1000)},${n%1000}`;
-  }
-  return n.toString();
-}
-
-export const TopPanel = memo(function TopPanel({trial, trace, time, setTime, onUndo, onRedo, onRotate, onInit, onClear, onBack, insertMode, setInsertMode, setModal, zoom, setZoom, showKeys, setShowKeys, editHistory, showFindReplace, setShowFindReplace, displayTime, refreshDisplayTime, nextWakeup, modelName, setModelName, originalSize, compressedSize, state, showDebug, setShowDebug}: TopPanelProps) {
+export const TopPanel = memo(function TopPanel({trial, trace, time, setTime, onUndo, onRedo, onRotate, onInit, onClear, onBack, insertMode, setInsertMode, setModal, zoom, setZoom, showKeys, setShowKeys, editHistory, showFindReplace, setShowFindReplace, displayTime, refreshDisplayTime, nextWakeup, modelName, setModelName, originalSize, compressedSize, state, showDebug, setShowDebug, properties, editorState, savedTraces, setProperties, setSavedTraces, setEditorState}: TopPanelProps) {
   const [timescale, setTimescale] = usePersistentState("timescale", 1);
   const config = trace && trace.trace[trace.idx];
   const formattedDisplayTime = useMemo(() => formatTime(displayTime), [displayTime]);
@@ -142,19 +139,35 @@ Refresh the page to get the latest version.` : `about ${trial.appName}`} align="
           <InfoOutlineIcon fontSize='small'/>
         </button>
       </Tooltip>
+      <Tooltip tooltip='import file(s)...'>
+        <button onClick={() => {
+          setModal(<OpenFile
+            setModal={setModal}
+            properties={properties}
+            traces={savedTraces}
+            editorState={editorState}
+            bytes={originalSize}
+            modelName={modelName}
+            setProperties={setProperties}
+            setTraces={setSavedTraces}
+            replaceModel={setEditorState}/>);
+        }}>
+          <UploadFileIcon fontSize='small'/>
+        </button>
+      </Tooltip>
       <Tooltip tooltip={`model size (JSON): ${prettyNumber(originalSize)} bytes
 compressed: ${prettyNumber(compressedSize)} bytes (${Math.round(compressedSize/originalSize*100)}%)`} align='left'>
-      <input
-        type="text"
-        placeholder='model name'
-        value={modelName}
-        style={{width:Math.max(modelName.length*6.5, 100)}}
-        onChange={e => setModelName(e.target.value)}
-        />
+        <input
+          type="text"
+          placeholder='model name'
+          value={modelName}
+          style={{width:Math.max(modelName.length*6.5, 100)}}
+          onChange={e => setModelName(e.target.value)}
+          />
       </Tooltip>
       <Tooltip tooltip='export as JSON'>
         <button onClick={() => {
-          downloadObjectAsJson(state, trial.appName+"_"+modelName.replaceAll(' ','-')+".json");
+          downloadObjectAsJson(state, modelName.replaceAll(' ','-')+'_'+formatDateTime(new Date()).replaceAll('/','-').replaceAll(':','-').replaceAll(' ','_')+".statebuddy.json");
         }}>
           <SaveAltIcon fontSize='small'/>
         </button>

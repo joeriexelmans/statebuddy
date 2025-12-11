@@ -53,11 +53,11 @@
   border-bottom: 0;
 }
 .traceItem:hover {
-  background-color: var(--light-accent-color);
+  background-color: var(--accent-opaque-color);
   cursor: pointer;
 }
 .traceItem.active {
-  background-color: var(--light-accent-color);
+  background-color: var(--accent-opaque-color);
   border: solid var(--accent-border-color) 1px;
 }
 .traceItem.plantStep:not(.active) {

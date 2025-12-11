@@ -101,7 +101,8 @@
   padding-top: 2px;
   padding-bottom: 2px;
   cursor: normal;
-  user-select: none;;
+  user-select: none;
+  font-weight: 400;
 }
 .blurOnHover:hover *
 {

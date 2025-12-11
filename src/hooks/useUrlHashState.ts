@@ -31,7 +31,6 @@ export function useUrlHashState<T>(recoverCallback: (recoveredState: (T|null)) =
   // }, []);
 
   function persist(state: T, cancel: Promise<void>) {
-    console.log('persist');
     const str = JSON.stringify(state);
     const buf = str2buf(str);
     Promise.race([

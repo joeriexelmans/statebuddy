@@ -7,6 +7,12 @@ export function formatTime(timeMs: number) {
   return formatted;
 }
 
+const leadingZeros = (n: number) => ('0'+n).slice(-2);
+
+export function formatDateTime(now: Date) {
+  return `${now.getFullYear()}/${leadingZeros(now.getMonth()+1)}/${leadingZeros(now.getDate())} ${leadingZeros(now.getHours())}:${leadingZeros(now.getMinutes())}`;
+}
+
 export function* range(n: number) {
   for (let i=0; i<n; i++) yield n;
 }
