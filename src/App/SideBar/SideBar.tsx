@@ -276,7 +276,7 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
             <AddIcon fontSize="small"/> add property
           </button>
           <Tooltip tooltip="show table view">
-            <TwoStateButton active={showTable} onClick={() => setShowTable(s => !s)}>
+            <TwoStateButton active={showTable} onClick={() => setShowTable(s => !s)} disabled={savedTraces.length === 0 || properties.length === 0}>
               <TableViewIcon fontSize='small'/>
               Table
             </TwoStateButton>

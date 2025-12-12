@@ -251,7 +251,7 @@ export function App() {
             
             {/* Stuff that shows below editor but next to sidebar */}
             <Greeter trial={trial}/>
-            {appState.showTable &&
+            {appState.showTable && appState.properties.length > 0 && appState.savedTraces.length > 0 &&
               <BelowEditor>
                 <PropertyTraceTable
                   properties={appState.properties}
