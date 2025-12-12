@@ -58,7 +58,7 @@ export function FindReplace({findText, replaceText, setFindReplaceText, cs, setC
             <button
                 type="button" // <-- prevent form submission on click
                 onClick={onSwap}
-                style={{width: 40}}>
+                style={{width: 50}}>
               <SwapVertIcon fontSize="small"/>
             </button>
           </Tooltip>
@@ -66,7 +66,7 @@ export function FindReplace({findText, replaceText, setFindReplaceText, cs, setC
             <button
                 type="button" // <-- prevent form submission on click
                 onClick={hide}
-                style={{width: 60}}
+                style={{width: 50}}
                 >
               <CloseIcon fontSize="small"/>
             </button>

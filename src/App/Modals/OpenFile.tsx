@@ -10,6 +10,7 @@ import { count } from "@/util/util";
 import { prettyNumber } from "@/util/pretty";
 import styles from "../App.module.css";
 import { buf2base64, deflateBuffer, str2buf } from "@/compression/deflate";
+import { useShortcuts } from "@/hooks/useShortcuts";
 
 // The "file open"-dialog is a bit hacked together, but hopefully usable at the moment.
 // Properties and traces are reusable for models that have the same plant.
@@ -132,7 +133,12 @@ function ModelPreview({concreteSyntax}: {concreteSyntax: VisualEditorState}) {
   </div>;
 }
 
-export function OpenFile({setModal, properties, traces, editorState, bytes, modelName, replaceModel, setProperties, setTraces}: {setModal: Dispatch<SetStateAction<ReactElement|null>>, properties: string[], traces: Trace[], editorState: VisualEditorState, bytes: number, modelName: string, replaceModel: Dispatch<(oldState: VisualEditorState) => VisualEditorState>, setProperties: Dispatch<SetStateAction<string[]>>, setTraces: Dispatch<SetStateAction<Trace[]>>}) {
+export function OpenFile({onClose, properties, traces, editorState, bytes, modelName, replaceModel, setProperties, setTraces}: {onClose: () => void, properties: string[], traces: Trace[], editorState: VisualEditorState, bytes: number, modelName: string, replaceModel: Dispatch<(oldState: VisualEditorState) => VisualEditorState>, setProperties: Dispatch<SetStateAction<string[]>>, setTraces: Dispatch<SetStateAction<Trace[]>>}) {
+
+  useShortcuts([
+    {keys: ["Escape"], action: onClose},
+  ]);
+
   const [files, setFiles] = useState<FileImport[]|"pending">([]);
   const [propsToImport, setPropsToImport] = useState<Set<string>>(new Set());
   const [tracesToKeep, setTracesToKeep] = useState<boolean[]>(traces.map(_ => true));
@@ -223,7 +229,7 @@ export function OpenFile({setModal, properties, traces, editorState, bytes, mode
       }
       setProperties([...propsToImport]);
       setTraces(getTraces());
-      setModal(null);
+      onClose();
     }
   };
 
@@ -354,7 +360,7 @@ export function OpenFile({setModal, properties, traces, editorState, bytes, mode
           &nbsp;
           OK
         </button>
-        <Tooltip tooltip="Opens result in new window." above>
+        <Tooltip tooltip="open result in new window" above>
         <button disabled={!willImportModel && !totalNrOfProperties && !totalNrOfTraces} onClick={onImportNewWindow}>
           <OpenInNewIcon fontSize="small"/>
           &nbsp;
@@ -364,7 +370,7 @@ export function OpenFile({setModal, properties, traces, editorState, bytes, mode
         {/* gap */}
         <button
             type="button" // <-- prevent form submission on click
-            onClick={() => setModal(null)}
+            onClick={onClose}
             style={{marginLeft: 'auto'}}
             >
           <CloseIcon fontSize="small"/>

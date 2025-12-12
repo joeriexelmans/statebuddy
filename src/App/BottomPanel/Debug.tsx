@@ -73,7 +73,7 @@ export function DebugPanel({showBBox, showGrid, showCells, hide, ...setters}: De
           <button
               type="button" // <-- prevent form submission on click
               onClick={hide}
-              style={{width: 60}}
+              style={{width: 50}}
               >
             <CloseIcon fontSize="small"/>
           </button>

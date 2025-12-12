@@ -1,11 +1,13 @@
-import { ZOOM_MAX, ZOOM_MIN, ZOOM_STEP } from "@/App/parameters";
-import { Dispatch, memo, SetStateAction, useEffect } from "react";
+import { ZOOM_STEPS, ZOOM_MAX, ZOOM_MIN } from "@/App/parameters";
+import { Dispatch, memo, SetStateAction } from "react";
 import { KeyInfoHidden, KeyInfoVisible } from "./KeyInfo";
 
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import ZoomOutIcon from '@mui/icons-material/ZoomOut';
 import { useShortcuts } from "@/hooks/useShortcuts";
 import { Tooltip } from "../Components/Tooltip";
+import { EnterText } from "../Components/EnterText";
+import { stepDown, stepUp } from "@/util/steps";
 
 const shortcutZoomIn = <><kbd>Ctrl</kbd>+<kbd>+</kbd></>;
 const shortcutZoomOut = <><kbd>Ctrl</kbd>+<kbd>-</kbd></>;
@@ -23,24 +25,43 @@ export const ZoomButtons = memo(function ZoomButtons({showKeys, zoom, setZoom}: 
   const KeyInfo = showKeys ? KeyInfoVisible : KeyInfoHidden;
 
   function onZoomIn() {
-    setZoom(zoom => Math.min(zoom * ZOOM_STEP, ZOOM_MAX));
+    // somewhat confusingly, zoom is actually stored as a fraction, but we display a percentage (and also the zoom steps are defined as percentages).
+    // it would've been simpler to store the zoom also as a percentage, but we don't, to remain compatible with our models already 'out there'.
+    setZoom(stepUp(ZOOM_STEPS, zoom*100, 1)/100);
   }
   function onZoomOut() {
-    setZoom(zoom => Math.max(zoom / ZOOM_STEP, ZOOM_MIN));
+    // see comment above
+    setZoom(stepDown(ZOOM_STEPS, zoom*100, 1)/100);
+  }
+
+  function setZoomStr(str: string) {
+    if (str.endsWith('%')) {
+      str = str.substring(0, str.length-1);
+    }
+    const n = Number(str.trim());
+    if (!Number.isNaN(n)) {
+      const newZoom = n/100;
+      const bounded = Math.min(Math.max(0.1, newZoom), 9.99); // <-- let's keep it civilized
+      return setZoom(bounded);
+    }
   }
   
   return <>
     <KeyInfo keyInfo={shortcutZoomOut}>
       <Tooltip tooltip="zoom out">
-        <button onClick={onZoomOut} disabled={zoom <= ZOOM_MIN}><ZoomOutIcon fontSize="small"/></button>
+        <button onClick={onZoomOut} disabled={zoom*100 <= ZOOM_MIN}><ZoomOutIcon fontSize="small"/></button>
       </Tooltip>
     </KeyInfo>
     <Tooltip tooltip="current zoom level">
-      <input value={zoom.toFixed(3)} style={{width:40}} readOnly/>
+      <EnterText
+        value={Math.round(zoom*100)+'%'}
+        style={{width:40}}
+        onEnter={str => setZoomStr(str)}
+      />
     </Tooltip>
     <KeyInfo keyInfo={shortcutZoomIn}>
       <Tooltip tooltip="zoom in">
-        <button onClick={onZoomIn} disabled={zoom >= ZOOM_MAX}><ZoomInIcon fontSize="small"/></button>
+        <button onClick={onZoomIn} disabled={zoom*100 >= ZOOM_MAX}><ZoomInIcon fontSize="small"/></button>
       </Tooltip>
     </KeyInfo>
   </>;

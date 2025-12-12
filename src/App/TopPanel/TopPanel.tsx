@@ -37,6 +37,7 @@ import { downloadObjectAsJson } from '@/util/download_json';
 import styles from "../App.module.css";
 import { OpenFile } from '../Modals/OpenFile';
 import { prettyNumber } from '../../util/pretty';
+import favicon from "../../../artwork/new-logo/favicon-minified.png";
 
 export type TopPanelProps = {
   trial: Trial,
@@ -106,8 +107,28 @@ export const TopPanel = memo(function TopPanel({trial, trace, time, setTime, onU
 
   const togglePaused = useCallback(() => config && onChangePaused(time.kind !== "paused", Math.round(performance.now())), [config, time]);
 
+  const onOpen = () => {
+    setModal(<OpenFile
+      onClose={() => setModal(null)}
+      properties={properties}
+      traces={savedTraces}
+      editorState={editorState}
+      bytes={originalSize}
+      modelName={modelName}
+      setProperties={setProperties}
+      setTraces={setSavedTraces}
+      replaceModel={setEditorState}/>);
+  };
+
+  const onSave = () => {
+    downloadObjectAsJson(state, modelName.replaceAll(' ','-')+'_'+formatDateTime(new Date()).replaceAll('/','-').replaceAll(':','-').replaceAll(' ','_')+".statebuddy.json");
+  };
+
   useShortcuts([
     {keys: ["`"], action: toggle(setShowKeys)},
+    {keys: ["Shift", "~"], action: toggle(setShowKeys)},
+    {keys: ["Ctrl", "o"], action: onOpen},
+    {keys: ["Ctrl", "s"], action: onSave},
     {keys: ["Ctrl", "Shift", "F"], action: toggle(setShowFindReplace)},
     {keys: ["i"], action: onInit},
     {keys: ["c"], action: onClear},
@@ -128,33 +149,29 @@ export const TopPanel = memo(function TopPanel({trial, trace, time, setTime, onU
   return <div className={styles.toolbar} style={{columnGap: '1em'}}>
     {/* shortcuts / about */}
     <div className={styles.toolbar}>
+      <Tooltip tooltip={updateAvailable ? `${trial.appName} update available!
+Refresh the page to get the latest version.` : `about ${trial.appName}`} align="left" showWhen={updateAvailable ? "always" : "hover"}>
+        <button onClick={() => setModal(<About setModal={setModal} {...trial}/>)}
+          style={{verticalAlign: 'bottom'}}>
+          <InfoOutlineIcon fontSize='small'/>
+          {/* <img src={favicon} height={20}/> */}
+        </button>
+      </Tooltip>
       <KeyInfo keyInfo={ShortCutShowKeys}>
         <Tooltip tooltip="show/hide keyboard shortcuts" align="left">
         <TwoStateButton active={showKeys} onClick={useCallback(() => setShowKeys(s => !s), [setShowKeys])}><KeyboardIcon fontSize="small"/></TwoStateButton>
         </Tooltip>
       </KeyInfo>
-      <Tooltip tooltip={updateAvailable ? `${trial.appName} update available!
-Refresh the page to get the latest version.` : `about ${trial.appName}`} align="left" showWhen={updateAvailable ? "always" : "hover"}>
-        <button onClick={() => setModal(<About setModal={setModal} {...trial}/>)}>
-          <InfoOutlineIcon fontSize='small'/>
-        </button>
-      </Tooltip>
-      <Tooltip tooltip='import file(s)...'>
-        <button onClick={() => {
-          setModal(<OpenFile
-            setModal={setModal}
-            properties={properties}
-            traces={savedTraces}
-            editorState={editorState}
-            bytes={originalSize}
-            modelName={modelName}
-            setProperties={setProperties}
-            setTraces={setSavedTraces}
-            replaceModel={setEditorState}/>);
-        }}>
-          <UploadFileIcon fontSize='small'/>
-        </button>
-      </Tooltip>
+    </div>
+
+    <div className={styles.toolbar}>
+      <KeyInfo keyInfo={<><kbd>Ctrl</kbd>+<kbd>O</kbd></>}>
+        <Tooltip tooltip='import file(s)...'>
+          <button onClick={onOpen}>
+            <UploadFileIcon fontSize='small'/>
+          </button>
+        </Tooltip>
+      </KeyInfo>
       <Tooltip tooltip={`model size (JSON): ${prettyNumber(originalSize)} bytes
 compressed: ${prettyNumber(compressedSize)} bytes (${Math.round(compressedSize/originalSize*100)}%)`} align='left'>
         <input
@@ -165,13 +182,13 @@ compressed: ${prettyNumber(compressedSize)} bytes (${Math.round(compressedSize/o
           onChange={e => setModelName(e.target.value)}
           />
       </Tooltip>
-      <Tooltip tooltip='export as JSON'>
-        <button onClick={() => {
-          downloadObjectAsJson(state, modelName.replaceAll(' ','-')+'_'+formatDateTime(new Date()).replaceAll('/','-').replaceAll(':','-').replaceAll(' ','_')+".statebuddy.json");
-        }}>
-          <SaveAltIcon fontSize='small'/>
-        </button>
-      </Tooltip>
+      <KeyInfo keyInfo={<><kbd>Ctrl</kbd>+<kbd>S</kbd></>}>
+        <Tooltip tooltip='export as JSON'>
+          <button onClick={onSave}>
+            <SaveAltIcon fontSize='small'/>
+          </button>
+        </Tooltip>
+      </KeyInfo>
     </div>
 
     {/* zoom */}

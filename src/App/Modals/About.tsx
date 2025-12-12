@@ -8,8 +8,13 @@ import jingle from "../../../artwork/corporate-logo/stateboss.opus";
 import { CorporateLogo } from "../Logo/CorporateLogo";
 import { Logo } from "../Logo/Logo";
 import { Trial } from "../hooks/useTrial";
+import { useShortcuts } from "@/hooks/useShortcuts";
 
 export function About({setModal, trialStarted, remainingDays, startTrial}: {setModal: Dispatch<SetStateAction<ReactElement|null>>} & Trial) {
+  useShortcuts([
+    {keys: ["Escape"], action: () => setModal(null)},
+  ]);
+  
   if (trialStarted) {
     return <AboutStateBoss
       remainingDays={remainingDays}

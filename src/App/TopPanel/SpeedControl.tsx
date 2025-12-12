@@ -1,14 +1,15 @@
-import { Dispatch, memo, SetStateAction, useCallback, useEffect } from "react";
-import { KeyInfoHidden, KeyInfoVisible } from "./KeyInfo";
 import { setRealtime, TimeMode } from "@/statecharts/time";
+import { Dispatch, memo, SetStateAction, useCallback } from "react";
+import { KeyInfoHidden, KeyInfoVisible } from "./KeyInfo";
 
-import SpeedIcon from '@mui/icons-material/Speed';
 import { useShortcuts } from "@/hooks/useShortcuts";
+import { stepDown, stepUp } from "@/util/steps";
 import { Tooltip } from "../Components/Tooltip";
 
-import DirectionsWalkIcon from '@mui/icons-material/DirectionsWalk';
-import DirectionsRunIcon from '@mui/icons-material/DirectionsRun';
 import AssistWalkerIcon from '@mui/icons-material/AssistWalker';
+import DirectionsRunIcon from '@mui/icons-material/DirectionsRun';
+import { EnterText } from "../Components/EnterText";
+import { TIMESCALE_MAX, TIMESCALE_MIN, TIMESCALE_STEPS } from "../parameters";
 
 export const SpeedControl = memo(function SpeedControl({showKeys, timescale, setTimescale, setTime}: {showKeys: boolean, timescale: number, setTimescale: Dispatch<SetStateAction<number>>, setTime: Dispatch<SetStateAction<TimeMode>>}) {
 
@@ -17,8 +18,8 @@ export const SpeedControl = memo(function SpeedControl({showKeys, timescale, set
     if (Number.isNaN(asFloat)) {
       return;
     }
-    const maxed = Math.min(asFloat, 64);
-    const mined = Math.max(maxed, 1/64);
+    const maxed = Math.min(asFloat, TIMESCALE_MAX);
+    const mined = Math.max(maxed, TIMESCALE_MIN);
     setTimescale(mined);
     setTime(time => {
       if (time.kind === "paused") {
@@ -31,10 +32,10 @@ export const SpeedControl = memo(function SpeedControl({showKeys, timescale, set
   }, [setTime, setTimescale]);
 
   const onSlower = useCallback(() => {
-    onTimeScaleChange((timescale/2).toString(), Math.round(performance.now()));
+    onTimeScaleChange(stepDown(TIMESCALE_STEPS, timescale, 0.001).toString(), Math.round(performance.now()));
   }, [onTimeScaleChange, timescale]);
   const onFaster = useCallback(() => {
-    onTimeScaleChange((timescale*2).toString(), Math.round(performance.now()));
+    onTimeScaleChange(stepUp(TIMESCALE_STEPS, timescale, 0.001).toString(), Math.round(performance.now()));
   }, [onTimeScaleChange, timescale]);
 
   useShortcuts([
@@ -48,7 +49,7 @@ export const SpeedControl = memo(function SpeedControl({showKeys, timescale, set
       {/* <SpeedIcon fontSize="small"/> */}
       <KeyInfo keyInfo={<kbd>S</kbd>}>
         <Tooltip tooltip="real time: slow down">
-          <button onClick={onSlower}>
+          <button onClick={onSlower} disabled={timescale <= TIMESCALE_STEPS[0]}>
             {/* ÷2 */}
             <AssistWalkerIcon fontSize="small"/>
             {/* <DirectionsWalkIcon fontSize="small"/> */}
@@ -58,17 +59,15 @@ export const SpeedControl = memo(function SpeedControl({showKeys, timescale, set
       <Tooltip tooltip={`current time scale
 (e.g., a value of '2' means:
 twice as fast as wall clock time)`}>
-        
-        <input id="number-timescale"
+        <EnterText id="number-timescale"
           value={timescale.toFixed(3)}
           style={{width:40}}
-          readOnly
-          // onChange={e => onTimeScaleChange(e.target.value, Math.round(performance.now()))}
+          onEnter={str => onTimeScaleChange(str, Math.round(performance.now()))}
         />
       </Tooltip>
       <KeyInfo keyInfo={<kbd>F</kbd>}>
         <Tooltip tooltip="real time: speed up">
-          <button onClick={onFaster}>
+          <button onClick={onFaster} disabled={timescale >= TIMESCALE_STEPS.at(-1)!}>
             {/* ×2 */}
             <DirectionsRunIcon fontSize="small"/>
           </button>

@@ -31,6 +31,7 @@ import { useTrial } from "./hooks/useTrial";
 import { DebugPanel, DebugState, defaultDebugState } from "./BottomPanel/Debug";
 import { DebugContext } from "./VisualEditor/context/DebugContext";
 import { formatDateTime } from "@/util/util";
+import { OpenFile } from "./Modals/OpenFile";
 
 export type EditHistory = {
   current: VisualEditorState,
@@ -247,6 +248,8 @@ export function App() {
                 </DebugContext>}
             </div>
             
+            {/* Stuff that shows below editor but next to sidebar */}
+            <Greeter trial={trial}/>
             {editorState && appState.showFindReplace &&
               <div>
                 <FindReplace
@@ -257,7 +260,6 @@ export function App() {
                   hide={() => setters.setShowFindReplace(false)}/>
               </div>
             }
-
             {appState.showDebug &&
               <DebugPanel {...{...appState, ...setters}} hide={() => setters.setShowDebug(false)} />}
 
@@ -279,7 +281,6 @@ export function App() {
 
         {/* Bottom panel */}
         <div style={{flex: '0 0 content', borderTop: '1px solid var(--separator-color'}}>
-          <Greeter trial={trial}/>
           <div className={styles.statusBar}>
             <PersistentDetails state={appState.showPlot} setState={setters.setShowPlot}>
               <summary>plot</summary>
