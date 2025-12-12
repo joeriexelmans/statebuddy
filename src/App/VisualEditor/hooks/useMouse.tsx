@@ -23,7 +23,7 @@ function computeSelection(ss: SelectingState, refSVG: {current: SVGSVGElement | 
         size: scaleV2D(bbox.size, 1/zoom),
       }
       return isEntirelyWithin(scaledBBox, normalizedSS);
-    }).filter(el => !el.classList.contains("corner"));
+    }).filter(el => !el.classList.contains(styles.corner));
 
     const selection: Selection = new Selection();
     for (const shape of shapesInSelection) {
@@ -349,7 +349,7 @@ export function useMouse(
             size: scaleV2D(bbox.size, 1/zoom),
           }
           return isEntirelyWithin(scaledBBox, normalizedSS);
-        }).filter(el => !el.classList.contains("corner"));
+        }).filter(el => !el.classList.contains(styles.corner));
         
         replaceSelection(oldSelection => {
           return new Selection([...oldSelection, ...newSelection]);
