@@ -27,7 +27,8 @@
   --textbox-bg-color: light-dark(white, rgb(36, 41, 40));
   --modal-backdrop-color: light-dark(rgba(200,200,200,0.7), rgba(23, 22, 32, 0.849));
   --status-inactive-color: light-dark(grey, grey);
-  --status-ok-color: light-dark(forestgreen, forestgreen);
+  --status-ok-color: light-dark(rgb(70, 160, 70), rgb(105, 199, 105));
+  --status-nok-color: light-dark(rgb(206, 77, 77), rgb(255, 82, 82));
   --or-state-bg-color: light-dark(#eee, #000000);
   --and-state-bg-color: light-dark(white, rgb(49, 49, 49));
   --rountangle-stroke-color: light-dark(black, #ffffff);

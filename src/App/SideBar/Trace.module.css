@@ -86,7 +86,7 @@
 }
 
 .status.violated {
-  background-color: var(--error-color);
+  background-color: var(--status-nok-color);
 }
 
 .status.satisfied {
