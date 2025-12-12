@@ -9,6 +9,7 @@ import { BigStepCause, TraceItem, TraceState } from "../hooks/useSimulator";
 import styles from "./Trace.module.css";
 
 import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
+import { Status } from "./Status";
 
 type PropertyTrace = [number, boolean][];
 
@@ -21,7 +22,7 @@ type RTHistoryProps = {
   propertyTrace: PropertyTrace | null,
 }
 
-type PropertyStatus = "unknown" | "satisfied" | "violated";
+type PropertyStatus = "pending" | "satisfied" | "violated";
 
 function lookupPropertyStatus(simtime: number, propertyTrace: PropertyTrace, startAt=0): [number, boolean | undefined] {
   let i = startAt;
@@ -63,7 +64,7 @@ export function Trace({trace, setTrace, ast, setTime, showPlantTrace, propertyTr
     if (!showPlantTrace && isPlantStep) {
       return <></>
     }
-    let propertyStatus: PropertyStatus = "unknown";
+    let propertyStatus: PropertyStatus = "pending";
     if (propertyTrace !== null) {
       let satisfied;
       [j, satisfied] = lookupPropertyStatus(item.simtime, propertyTrace, j);
@@ -106,7 +107,7 @@ export const RTHistoryItem = memo(function RTHistoryItem({ast, idx, item, prevIt
       className={styles.traceItem + ' ' + (active ? styles.active : "") + ' ' + (isPlantStep ? styles.plantStep : "")}
       onMouseDown={useCallback(() => onMouseDown(idx, item.simtime), [idx, item.simtime])}>
       <div>
-        <div className={styles.status + ' ' + styles[propertyStatus]}/>
+        <Status status={propertyStatus}/>
         &emsp;
         {formatTime(item.simtime)}
         &emsp;

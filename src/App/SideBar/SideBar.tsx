@@ -6,6 +6,7 @@ import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import TableViewIcon from '@mui/icons-material/TableView';
 
 import { Conns } from '@/statecharts/timed_reactive';
 import { Dispatch, memo, Ref, SetStateAction, useCallback, useEffect, useRef, useState } from 'react';
@@ -26,13 +27,14 @@ import { DoubleClickButton } from '../Components/DoubleClickButton';
 import { Tooltip } from '../Components/Tooltip';
 import { ConcreteSyntax } from '@/statecharts/concrete_syntax';
 import { MoveUpDown } from '../Components/MoveUpDown';
-import { AppState, UrlState } from '../App';
-import { buf2base64, deflateBuffer, deflateString, str2buf } from '@/compression/deflate';
+import { buf2base64, deflateBuffer, str2buf } from '@/compression/deflate';
 
 import styles from "../App.module.css";
 import traceStyles from "./Trace.module.css";
+import { Status } from './Status';
+import { TwoStateButton } from '../Components/TwoStateButton';
 
-type SavedTraces = [string, BigStepCause[]][];
+export type SavedTraces = [string, BigStepCause[]][];
 
 export type SideBarState = {
   showStateTree: boolean,
@@ -43,6 +45,7 @@ export type SideBarState = {
   showConnections: boolean,
   showProperties: boolean,
   showExecutionTrace: boolean,
+  showTable: boolean,
 
   plantName: string,
   plantConns: Conns,
@@ -64,6 +67,7 @@ export const defaultSideBarState = {
   showConnections: false,
   showProperties: false,
   showExecutionTrace: true,
+  showTable: false,
 
   plantName: 'dummy',
   plantConns: {},
@@ -94,7 +98,7 @@ type SideBarProps = SideBarState & {
 
 export const SideBar = memo(function SideBar(props: SideBarProps) {
 
-  const {showExecutionTrace, showConnections, plantName, showPlantTrace, showProperties, activeProperty, autoConnect, autoScroll, plantConns, properties, savedTraces, refRightSideBar, ast, plant, plantCS, setSavedTraces, trace, setTrace, setProperties, setShowPlantTrace, setActiveProperty, setPlantConns, setPlantName, setAutoConnect, setShowProperties, setAutoScroll, time, plantState, onReplayTrace, onRaise, setTime, setShowConnections, setShowExecutionTrace, showPlant, setShowPlant, showOutputEvents, setShowOutputEvents, setShowInternalEvents, showInternalEvents, setShowInputEvents, setShowStateTree, showInputEvents, showStateTree, preparedTraces} = props;
+  const {showExecutionTrace, showConnections, plantName, showPlantTrace, showProperties, activeProperty, autoConnect, autoScroll, plantConns, properties, savedTraces, refRightSideBar, ast, plant, plantCS, setSavedTraces, trace, setTrace, setProperties, setShowPlantTrace, setActiveProperty, setPlantConns, setPlantName, setAutoConnect, setShowProperties, setAutoScroll, time, plantState, onReplayTrace, onRaise, setTime, setShowConnections, setShowExecutionTrace, showPlant, setShowPlant, showOutputEvents, setShowOutputEvents, setShowInternalEvents, showInternalEvents, setShowInputEvents, setShowStateTree, showInputEvents, showStateTree, preparedTraces, showTable, setShowTable} = props;
 
   const [propertyResults, setPropertyResults] = useState<PropertyCheckResult[] | null>(null);
 
@@ -233,18 +237,13 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
             violated = result[0] && result[0].length > 0 && !result[0][0][1];
             propertyError = result[1];
           }
-          const status = (violated === null) ? "pending" : (violated ? "property violated" : "property satisfied");
           return <div style={{display: 'flex'}} key={i} className={styles.toolbar}>
             <div>
-              <Tooltip tooltip={status} align="left">
-                <div className={"status" + (violated === null ? "" : (violated ? " violated" : " satisfied"))}/>
-              </Tooltip>
+              <Status status={(violated === null) ? "pending" : (violated ? "violated" : "satisfied")} />
               <Tooltip tooltip="see in trace (below)" align="left">
-                <button
-                  className={activeProperty === i ? "active" : ""}
-                  onClick={() => setActiveProperty(i)}>
+                <TwoStateButton active={activeProperty === i} onClick={() => setActiveProperty(i)}>
                   <VisibilityIcon fontSize="small"/>
-                </button>
+                </TwoStateButton>
               </Tooltip>
             </div>
             <Tooltip
@@ -276,6 +275,12 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
           <button onClick={() => setProperties(properties => [...properties, ""])} style={{flexGrow:1}}>
             <AddIcon fontSize="small"/> add property
           </button>
+          <Tooltip tooltip="show table view">
+            <TwoStateButton active={showTable} onClick={() => setShowTable(s => !s)}>
+              <TableViewIcon fontSize='small'/>
+              Table
+            </TwoStateButton>
+          </Tooltip>
           <Tooltip tooltip='see MTL examples' align='right'>
             <button onClick={() => window.open("https://github.com/mvcisback/py-metric-temporal-logic/blob/ceb2567ef90f3bd5d7a8d607806a9d2e7021639e/README.md#string-based-api", "_blank")?.focus()}><HelpOutlineIcon fontSize='small'/> help</button>
           </Tooltip>

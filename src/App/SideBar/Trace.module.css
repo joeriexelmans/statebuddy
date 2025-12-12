@@ -77,7 +77,7 @@
 .status {
   display: inline-block;
   vertical-align: middle;
-  background-color: var(--status-inactive-color);
+  background-color: var(--separator-color);
   border-radius: 50%;
   height: 12px;
   width: 12px;

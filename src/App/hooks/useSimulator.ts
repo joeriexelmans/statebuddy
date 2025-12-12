@@ -193,7 +193,7 @@ export function useSimulator(ast: Statechart|null, plant: Plant<any, UniversalPl
     }
   }, [trace, trace?.idx, setTime, setTrace]);
 
-  const onReplayTrace = useCallback((causes: BigStepCause[]) => {
+  const replayTrace = useCallback((causes: BigStepCause[]) => {
     if (cE) {
       function run_until(simtime: number) {
         while (true) {
@@ -237,15 +237,22 @@ export function useSimulator(ast: Statechart|null, plant: Plant<any, UniversalPl
           run_until(cause.simtime);
         }
       }
-      setTrace({trace: newTrace, idx: newTrace.length-1});
+      return {trace: newTrace, lastSimtime};
+    }
+  }, [cE]);
+
+  const onReplayTrace = useCallback((causes: BigStepCause[]) => {
+    if (cE) {
+      const {trace, lastSimtime} = replayTrace(causes)!;
+      setTrace({trace, idx: trace.length-1});
       setTime({kind: "paused", simtime: lastSimtime});
     }
-  }, [setTrace, setTime, cE]);
+  }, [replayTrace, cE]);
 
   // timestamp of next timed transition, in simulated time
   const timers: Timers = currentTraceItem?.kind === "bigstep" && currentTraceItem.state.sc.timers || [];
   const nextTimedTransition = timers[0];
   const nextWakeup = nextTimedTransition?.[0] || Infinity;
 
-  return {trace, setTrace, plant, onInit, onClear, onBack, onRaise, onReplayTrace, time, setTime, nextWakeup};
+  return {trace, setTrace, plant, onInit, onClear, onBack, onRaise, replayTrace, onReplayTrace, time, setTime, nextWakeup};
 }

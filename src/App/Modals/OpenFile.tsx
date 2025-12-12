@@ -11,12 +11,12 @@ import { prettyNumber } from "@/util/pretty";
 import styles from "../App.module.css";
 import { buf2base64, deflateBuffer, str2buf } from "@/compression/deflate";
 import { useShortcuts } from "@/hooks/useShortcuts";
+import { SavedTraces } from "../SideBar/SideBar";
 
 // The "file open"-dialog is a bit hacked together, but hopefully usable at the moment.
 // Properties and traces are reusable for models that have the same plant.
 // So the idea is that you can mix a model with properties and traces from various files.
 
-type Trace = [string, any[]];
 type FileImport = readonly [File, any, boolean, boolean[], boolean[]];
 
 function removeFileExtension(filename: string) {
@@ -32,7 +32,7 @@ async function attemptParse(file: File, importAll: boolean): Promise<FileImport|
     const buf = await file.arrayBuffer();
     const str = new TextDecoder().decode(buf);
     const json = JSON.parse(str);
-    return [file, json, importAll, (json.properties as string[]).map(_ => importAll), (json.savedTraces as Trace[]).map(_ => importAll)] as const;
+    return [file, json, importAll, (json.properties as string[]).map(_ => importAll), (json.savedTraces as SavedTraces).map(_ => importAll)] as const;
   }
   catch (e) {
     console.warn("parse error:", e);
@@ -85,7 +85,7 @@ function Properties({properties, propsToImport, setPropsToImport, propToIdx}: {p
   </div>;
 }
 
-function Traces({traces, toImport, setToImport}: {traces: Trace[], toImport: boolean[], setToImport: (callback: (old: boolean[]) => boolean[]) => void}) {
+function Traces({traces, toImport, setToImport}: {traces: SavedTraces, toImport: boolean[], setToImport: (callback: (old: boolean[]) => boolean[]) => void}) {
   return <div>
       <label>
         <input type="checkbox"
@@ -133,7 +133,7 @@ function ModelPreview({concreteSyntax}: {concreteSyntax: VisualEditorState}) {
   </div>;
 }
 
-export function OpenFile({onClose, properties, traces, editorState, bytes, modelName, replaceModel, setProperties, setTraces}: {onClose: () => void, properties: string[], traces: Trace[], editorState: VisualEditorState, bytes: number, modelName: string, replaceModel: Dispatch<(oldState: VisualEditorState) => VisualEditorState>, setProperties: Dispatch<SetStateAction<string[]>>, setTraces: Dispatch<SetStateAction<Trace[]>>}) {
+export function OpenFile({onClose, properties, traces, editorState, bytes, modelName, replaceModel, setProperties, setTraces}: {onClose: () => void, properties: string[], traces: SavedTraces, editorState: VisualEditorState, bytes: number, modelName: string, replaceModel: Dispatch<(oldState: VisualEditorState) => VisualEditorState>, setProperties: Dispatch<SetStateAction<string[]>>, setTraces: Dispatch<SetStateAction<SavedTraces>>}) {
 
   useShortcuts([
     {keys: ["Escape"], action: onClose},
@@ -214,8 +214,8 @@ export function OpenFile({onClose, properties, traces, editorState, bytes, model
         ...traces.filter((_, i) => tracesToKeep[i]),
         ...files.reduce((traces, f) => [
           ...traces,
-          ...(f[1].savedTraces as Trace[]).filter((_,i) => f[4][i]),
-        ], [] as Trace[]),
+          ...(f[1].savedTraces as SavedTraces).filter((_,i) => f[4][i]),
+        ], [] as SavedTraces),
       ];
     }
     else return [];

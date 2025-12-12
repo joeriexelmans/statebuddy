@@ -4,7 +4,7 @@ console.log({styles});
 
 import "./App.css";
 
-import { ReactElement, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { PropsWithChildren, ReactElement, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { connectionsEqual, detectConnections, reducedConcreteSyntaxEqual } from "@/statecharts/detect_connections";
 import { parseStatechart } from "../statecharts/parser";
@@ -32,6 +32,7 @@ import { DebugPanel, DebugState, defaultDebugState } from "./BottomPanel/Debug";
 import { DebugContext } from "./VisualEditor/context/DebugContext";
 import { formatDateTime } from "@/util/util";
 import { OpenFile } from "./Modals/OpenFile";
+import { PropertyTraceTable } from "./BottomPanel/PropertyTraceTable";
 
 export type EditHistory = {
   current: VisualEditorState,
@@ -250,18 +251,30 @@ export function App() {
             
             {/* Stuff that shows below editor but next to sidebar */}
             <Greeter trial={trial}/>
+            {appState.showTable &&
+              <BelowEditor>
+                <PropertyTraceTable
+                  properties={appState.properties}
+                  traces={appState.savedTraces}
+                  onClose={() => setters.setShowTable(false)}
+                  plant={plant}
+                  replayTrace={simulator.replayTrace}
+                />
+              </BelowEditor>}
             {editorState && appState.showFindReplace &&
-              <div>
+              <BelowEditor>
                 <FindReplace
                   {...appState}
                   setFindReplaceText={setFindReplaceText}
                   cs={editorState}
                   setCS={setEditorState}
                   hide={() => setters.setShowFindReplace(false)}/>
-              </div>
+              </BelowEditor>
             }
             {appState.showDebug &&
-              <DebugPanel {...{...appState, ...setters}} hide={() => setters.setShowDebug(false)} />}
+              <BelowEditor>
+                <DebugPanel {...{...appState, ...setters}} hide={() => setters.setShowDebug(false)} />
+              </BelowEditor>}
 
           </div>
 
@@ -293,6 +306,10 @@ export function App() {
       </div>
     </ModalOverlay>
   </div>;
+}
+
+function BelowEditor({children}: PropsWithChildren<{}>) {
+  return <div style={{borderTop: '1px var(--separator-color) solid'}}>{children}</div>;
 }
 
 export default App;
