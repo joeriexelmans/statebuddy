@@ -10,6 +10,7 @@ import { BigStepCause, TraceItem } from '../hooks/useSimulator';
 import { checkProperty, prepareTrace } from '../SideBar/check_property';
 import { Plant } from '../Plant/Plant';
 import { UniversalPlantState } from '../plants';
+import styles from "@/App/App.module.css";
 
 export function PropertyTraceTable({properties, traces, onClose, replayTrace, plant}: {properties: string[], traces: SavedTraces, onClose: () => void, replayTrace: (c: BigStepCause[]) => {trace: [TraceItem, ...TraceItem[]]} | undefined, plant: Plant<any, UniversalPlantState>}) {
   const [rotateText, setRotateText] = useState(false);
@@ -54,7 +55,7 @@ export function PropertyTraceTable({properties, traces, onClose, replayTrace, pl
           <tr>
             <th style={{verticalAlign: 'bottom'}}>property</th>
             {traces.map(([name, trace], j) => <th style={{verticalAlign: 'bottom'}}>
-              <div style={{writingMode: rotateText ? 'sideways-lr' : undefined}}>{j}. {name}</div>
+              <div style={{writingMode: rotateText ? 'sideways-lr' : undefined}}><span className={styles.description}>{name}</span></div>
             </th>)}
           </tr>
         </thead>
@@ -64,7 +65,7 @@ export function PropertyTraceTable({properties, traces, onClose, replayTrace, pl
             {traces.map(([name, trace], j) => <td>
               <Status status={results===null
                 ? "pending"
-                : (results[i][j])}
+                : (results[i]?.[j] || "pending")}
               />
             </td>)}
           </tr>)}
