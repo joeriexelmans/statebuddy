@@ -31,13 +31,16 @@ export const InsertModes = memo(function InsertModes({showKeys, insertMode, setI
   ]);
 
   const KeyInfo = showKeys ? KeyInfoVisible : KeyInfoHidden;
-  return <>{insertModes.map(([m, hint, buttonTxt, keyInfo]) => <KeyInfo key={m} keyInfo={keyInfo}>
-    <Tooltip tooltip={"draw "+hint}>
-    <TwoStateButton
-      disabled={insertMode===m}
-      active={insertMode===m}
-      onClick={() => setInsertMode(m)}
-    >{buttonTxt}</TwoStateButton>
-    </Tooltip>
-  </KeyInfo>)}</>;
+  return <>
+    {insertModes.map(([m, hint, buttonTxt, keyInfo], i) =>
+      <KeyInfo key={m} keyInfo={keyInfo}>
+        <Tooltip tooltip={"draw "+hint}>
+        <TwoStateButton
+          disabled={insertMode===m}
+          active={insertMode===m}
+          onClick={() => setInsertMode(m)}
+        >{buttonTxt}</TwoStateButton>
+        </Tooltip>
+      </KeyInfo>)}
+  </>;
 })

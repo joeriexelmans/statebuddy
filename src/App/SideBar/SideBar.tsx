@@ -288,7 +288,7 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
       </details>
 
       {/* Traces */}
-      <details open={showExecutionTrace} onToggle={e => setShowExecutionTrace(e.newState === "open")}><summary>execution trace</summary>
+      <details open={showExecutionTrace} onToggle={e => setShowExecutionTrace(e.newState === "open")}><summary>execution traces</summary>
         <div>
           {savedTraces.map((savedTrace, i) =>
             <div key={i} className={styles.toolbar} style={{alignItems: 'center'}}>
@@ -310,6 +310,7 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
                   type="text"
                   value={savedTrace[0]}
                   style={{flexGrow: 1}}
+                  className={styles.description}
                   onChange={e => setSavedTraces(savedTraces => savedTraces.toSpliced(i, 1, [e.target.value, savedTraces[i][1]]))}/>
               </Tooltip>
               <MoveUpDown i={i} ls={savedTraces} setter={setSavedTraces}/>

@@ -60,6 +60,8 @@
   color: var(--text-color);
 
   --tooltip-arrow-size: 6px;
+
+  --button-roundedness: 6px;
 }
 
 .App input {
@@ -137,6 +139,10 @@
   border-bottom: 1px solid var(--separator-color);
   vertical-align: top;
 }
+/* leave a bit of space between table columns */
+.App th:has(+ th), .App td:has(+ td) {
+  padding-right: 1em;
+}
 .App table {
   text-align: left;
   border-collapse: collapse;
@@ -174,35 +180,53 @@
   align-items: end;
   flex-wrap: wrap;
 }
-.toolbar button {
-  height: 26px;
-  /* reduce padding (default is 6px on each side) */
-  padding-left: 4px;
-  padding-right: 4px;
-}
+/* input elements have rounded corners by default */
+.toolbar button,
 .toolbar input:not([type=checkbox]) {
   height: 26px;
+
+  border-top-right-radius: var(--button-roundedness);
+  border-bottom-right-radius: var(--button-roundedness);
+  border-top-left-radius: var(--button-roundedness);
+  border-bottom-left-radius: var(--button-roundedness);
 }
 
-
+/* no rounded corners if input element touches another input element that is part of the same toolbar */
+.toolbar:not(:has(.toolbar)) *:has(+ * button) button,
+.toolbar:not(:has(.toolbar)) *:has(+ * input) button,
+.toolbar:not(:has(.toolbar)) *:has(+ * button) input,
+.toolbar:not(:has(.toolbar)) *:has(+ * input) input
+ {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.toolbar:not(:has(.toolbar)) *:has(button) + * button,
+.toolbar:not(:has(.toolbar)) *:has(input) + * button,
+.toolbar:not(:has(.toolbar)) *:has(button) + * input,
+.toolbar:not(:has(.toolbar)) *:has(input) + * input
+ {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
 
 .statusBar {
   background-color: var(--statusbar-bg-color);
   color: var(--statusbar-fg-color);
 }
-
 .statusBar.error {
   background-color: var(--statusbar-error-bg-color);
   color: var(--statusbar-error-fg-color);
 }
-
 .statusBar summary:hover {
   background-color: color-mix(in srgb, var(--statusbar-bg-color) 60%, var(--background-color));
 }
 .statusBar.error summary:hover {
   background-color: color-mix(in srgb, var(--statusbar-error-bg-color) 70%, var(--text-color));
 }
-
 .statusBar a {
   color: inherit;
+}
+
+.description {
+  font-style: italic;
 }

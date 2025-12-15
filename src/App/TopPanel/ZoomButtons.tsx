@@ -49,7 +49,12 @@ export const ZoomButtons = memo(function ZoomButtons({showKeys, zoom, setZoom}: 
   return <>
     <KeyInfo keyInfo={shortcutZoomOut}>
       <Tooltip tooltip="zoom out">
-        <button onClick={onZoomOut} disabled={zoom*100 <= ZOOM_MIN}><ZoomOutIcon fontSize="small"/></button>
+        <button
+          onClick={onZoomOut}
+          disabled={zoom*100 <= ZOOM_MIN}
+          >
+          <ZoomOutIcon fontSize="small"/>
+        </button>
       </Tooltip>
     </KeyInfo>
     <Tooltip tooltip="current zoom level">
@@ -61,7 +66,12 @@ export const ZoomButtons = memo(function ZoomButtons({showKeys, zoom, setZoom}: 
     </Tooltip>
     <KeyInfo keyInfo={shortcutZoomIn}>
       <Tooltip tooltip="zoom in">
-        <button onClick={onZoomIn} disabled={zoom*100 >= ZOOM_MAX}><ZoomInIcon fontSize="small"/></button>
+        <button
+          onClick={onZoomIn}
+          disabled={zoom*100 >= ZOOM_MAX}
+          >
+          <ZoomInIcon fontSize="small"/>
+        </button>
       </Tooltip>
     </KeyInfo>
   </>;

@@ -38,6 +38,7 @@ import styles from "../App.module.css";
 import { OpenFile } from '../Modals/OpenFile';
 import { prettyNumber } from '../../util/pretty';
 import favicon from "../../../artwork/new-logo/favicon-minified.png";
+import { Toolbar } from './Toolbar';
 
 export type TopPanelProps = {
   trial: Trial,
@@ -146,9 +147,9 @@ export const TopPanel = memo(function TopPanel({trial, trace, time, setTime, onU
   const progress = (displayTime-lastSimTime)/(nextWakeup-lastSimTime);
   const catchingUp = progress > 1;
 
-  return <div className={styles.toolbar} style={{columnGap: '1em'}}>
+  return <Toolbar style={{columnGap: '1em'}}>
     {/* shortcuts / about */}
-    <div className={styles.toolbar}>
+    <Toolbar>
       <Tooltip tooltip={updateAvailable ? `${trial.appName} update available!
 Refresh the page to get the latest version.` : `about ${trial.appName}`} align="left" showWhen={updateAvailable ? "always" : "hover"}>
         <button onClick={() => setModal(<About setModal={setModal} {...trial}/>)}
@@ -162,9 +163,9 @@ Refresh the page to get the latest version.` : `about ${trial.appName}`} align="
         <TwoStateButton active={showKeys} onClick={useCallback(() => setShowKeys(s => !s), [setShowKeys])}><KeyboardIcon fontSize="small"/></TwoStateButton>
         </Tooltip>
       </KeyInfo>
-    </div>
+    </Toolbar>
 
-    <div className={styles.toolbar}>
+    <Toolbar>
       <KeyInfo keyInfo={<><kbd>Ctrl</kbd>+<kbd>O</kbd></>}>
         <Tooltip tooltip='import file(s)...'>
           <button onClick={onOpen}>
@@ -172,7 +173,7 @@ Refresh the page to get the latest version.` : `about ${trial.appName}`} align="
           </button>
         </Tooltip>
       </KeyInfo>
-      <Tooltip tooltip={`model size (JSON): ${prettyNumber(originalSize)} bytes
+      <Tooltip tooltip={`model size: ${prettyNumber(originalSize)} bytes
 compressed: ${prettyNumber(compressedSize)} bytes (${Math.round(compressedSize/originalSize*100)}%)`} align='left'>
         <input
           type="text"
@@ -180,6 +181,7 @@ compressed: ${prettyNumber(compressedSize)} bytes (${Math.round(compressedSize/o
           value={modelName}
           style={{width:Math.max(modelName.length*6.5, 100)}}
           onChange={e => setModelName(e.target.value)}
+          className={styles.description}
           />
       </Tooltip>
       <KeyInfo keyInfo={<><kbd>Ctrl</kbd>+<kbd>S</kbd></>}>
@@ -189,30 +191,30 @@ compressed: ${prettyNumber(compressedSize)} bytes (${Math.round(compressedSize/o
           </button>
         </Tooltip>
       </KeyInfo>
-    </div>
+    </Toolbar>
 
     {/* zoom */}
-    <div className={styles.toolbar}>
+    <Toolbar>
       <ZoomButtons showKeys={showKeys} zoom={zoom} setZoom={setZoom}/>
-    </div>
+    </Toolbar>
 
     {/* undo / redo */}
-    <div className={styles.toolbar}>
+    <Toolbar>
       <UndoRedoButtons showKeys={showKeys} onUndo={onUndo} onRedo={onRedo} historyLength={editHistory.history.length} futureLength={editHistory.future.length}/>
-    </div>
+    </Toolbar>
 
     {/* insert rountangle / arrow / ... */}
-    <div className={styles.toolbar}>
+    <Toolbar>
       <InsertModes insertMode={insertMode} setInsertMode={setInsertMode} showKeys={showKeys}/>
-    </div>
+    </Toolbar>
 
     {/* rotate */}
-    <div className={styles.toolbar}>
+    <Toolbar>
       <RotateButtons selection={editHistory.current.selection} onRotate={onRotate}/>
-    </div>
+    </Toolbar>
 
     {/* find, replace */}
-    <div className={styles.toolbar}>
+    <Toolbar>
       <KeyInfo keyInfo={<><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd></>}>
         <Tooltip tooltip="find & replace ...">
           <TwoStateButton
@@ -231,13 +233,13 @@ compressed: ${prettyNumber(compressedSize)} bytes (${Math.round(compressedSize/o
           <BugReportIcon fontSize="small"/>
         </TwoStateButton>
       </Tooltip>
-    </div>
+    </Toolbar>
 
     {/* execution */}
-    <div className={styles.toolbar} style={{columnGap: '1em'}}>
+    <Toolbar style={{columnGap: '1em'}}>
 
       {/* init / clear */}
-      <div className={styles.toolbar}>
+      <Toolbar>
         <KeyInfo keyInfo={<kbd>I</kbd>}>
           <Tooltip tooltip="(re)initialize simulation">
             <button onClick={onInit} ><PlayArrowIcon fontSize="small"/>
@@ -252,10 +254,10 @@ compressed: ${prettyNumber(compressedSize)} bytes (${Math.round(compressedSize/o
             </button>
           </Tooltip>
         </KeyInfo>
-      </div>
+      </Toolbar>
         
       {/* pause / real time */}
-      <div className={styles.toolbar}>
+      <Toolbar>
         <KeyInfo keyInfo={<><kbd>Space</kbd> toggles</>}>
           <Tooltip tooltip="pause simulation">
             <TwoStateButton
@@ -276,15 +278,15 @@ compressed: ${prettyNumber(compressedSize)} bytes (${Math.round(compressedSize/o
             </TwoStateButton>
           </Tooltip>
         </KeyInfo>
-      </div>
+      </Toolbar>
 
       {/* speed */}
-      <div className={styles.toolbar}>
+      <Toolbar>
         <SpeedControl setTime={setTime} timescale={timescale} setTimescale={setTimescale} showKeys={showKeys} />
-      </div>
+      </Toolbar>
 
       {/* time, next */}
-      <div className={styles.toolbar} style={{columnGap:'1em'}}>
+      <Toolbar style={{columnGap:'1em'}}>
         <Tooltip tooltip="current simulated time">
           <label htmlFor="input-time"><AccessTimeIcon fontSize="small"/></label>
           <div style={{
@@ -310,7 +312,7 @@ compressed: ${prettyNumber(compressedSize)} bytes (${Math.round(compressedSize/o
             />
         </Tooltip>
 
-        <div>
+        <Toolbar>
           <Tooltip tooltip="next timed transition occurs at ...">
             <label htmlFor="next-timeout"><AccessAlarmIcon fontSize="small"/></label>
             <input
@@ -330,8 +332,8 @@ compressed: ${prettyNumber(compressedSize)} bytes (${Math.round(compressedSize/o
               </button>
             </Tooltip>
           </KeyInfo>
-        </div>
-      </div>
-    </div>
-  </div>;
+        </Toolbar>
+      </Toolbar>
+    </Toolbar>
+  </Toolbar>;
 });
