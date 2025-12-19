@@ -112,8 +112,6 @@ export function useMouse(
   // if dragging: position of cursor at last mouse event
   const [dragging, setDragging] = useState<Vec2D|null>(null);
 
-  const [shiftOrCtrlPressed, setShiftOrCtrlPressed] = useState(false);
-
   // not null while the user is making a selection
   const [selectingState, setSelectingState] = useState<SelectingState>(null);
 
@@ -139,7 +137,7 @@ export function useMouse(
     }
   }, [refSVG.current, zoom]);
 
-  const onMouseDown = useCallback((e: {button: number, target: any, pageX: number, pageY: number}) => {
+  const onMouseDown = useCallback((e: MouseEvent) => {
     const currentPointer = getCurrentPointer(e);
     if (e.button === 2) {
       // ignore selection, right mouse button always inserts
@@ -214,7 +212,8 @@ export function useMouse(
     }
 
     let appendTo: Selection;
-    if (shiftOrCtrlPressed) {
+    // if (shiftOrCtrlPressed) {
+    if (e.getModifierState("Shift") || e.getModifierState("Control")) {
       appendTo = selection;
     }
     else {
@@ -271,7 +270,7 @@ export function useMouse(
       // -> just start making a selection
       startMakingSelection();
     }
-  }, [commitState, commitSelection, getCurrentPointer, insertMode, selection, shiftOrCtrlPressed]);
+  }, [commitState, commitSelection, getCurrentPointer, insertMode, selection]);
 
   const [cursorPos, setCursorPos] = useState<Vec2D>({x:0,y:0});
 
@@ -359,10 +358,6 @@ export function useMouse(
     setSelectingState(null); // no longer making a selection
   }, [replaceState, replaceSelection, dragging, selectingState, setSelectingState, refSVG.current]);
 
-  const trackShiftKey = useCallback((e: KeyboardEvent) => {
-    setShiftOrCtrlPressed(e.shiftKey || e.ctrlKey);
-  }, []);
-
   const onSelectAll = useCallback(() => {
     setDragging(null);
     commitState(state => ({
@@ -394,13 +389,9 @@ export function useMouse(
     // mousemove and mouseup are global event handlers so they keep working when pointer is outside of browser window
     window.addEventListener("mouseup", onMouseUp);
     window.addEventListener("mousemove", onMouseMove);
-    window.addEventListener("keydown", trackShiftKey);
-    window.addEventListener("keyup", trackShiftKey);
     return () => {
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseup", onMouseUp);
-      window.removeEventListener("keydown", trackShiftKey);
-      window.removeEventListener("keyup", trackShiftKey);
     };
   }, [selectingState, dragging]);
 

@@ -50,6 +50,7 @@ export type AppState = {
   replaceText: string,
   showPlot: boolean,
   showDebug: boolean,
+  sidePanelWidth: number,
 } & PlotState & SideBarState & BottomPanelState & DebugState;
 
 // valid URL hashes contain:
@@ -67,6 +68,7 @@ export const defaultAppState: AppState = {
   replaceText: "",
   showPlot: false,
   showDebug: false,
+  sidePanelWidth: 400,
   ...defaultSideBarState,
   ...defaultPlotState,
   ...defaultBottomPanelState,
@@ -222,7 +224,22 @@ export function App() {
 
   const preparedTraces = useMemo(() => simulator.trace && prepareTrace(plant, simulator.trace.trace), [simulator.trace, plant]);
 
-  return <div className={styles.App}>
+  const [resizing, setResizing] = useState(false);
+
+  useEffect(() => {
+    const onMouseMove = (e: MouseEvent) => {
+      setters.setSidePanelWidth(width => width - e.movementX);
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (resizing) {
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', () => setResizing(false));
+    }
+    return () => window.removeEventListener('mousemove', onMouseMove);
+  }, [resizing])
+
+  return <div className={styles.App} style={{cursor: resizing ? 'col-resize' : undefined}}>
     <ModalOverlay modal={modal} setModal={setModal}>
       {/* top-to-bottom: everything -> bottom panel */}
       <div className={styles.stackVertical} style={{height:'100%'}}>
@@ -278,13 +295,29 @@ export function App() {
 
           </div>
 
+          {/* handle for resizing */}
+          <div style={{
+            flex: '0 0 content',
+          }}>
+            <div style={{
+              height: '100%',
+              backgroundColor: 'var(--separator-color)',
+              width: 1,
+              cursor: 'col-resize',
+            }}
+            onMouseDown={e => {
+              setResizing(true);
+              e.preventDefault();
+              e.stopPropagation();
+            }}></div>
+          </div>
+
           {/* Right: sidebar */}
           <div style={{
             flex: '0 0 content',
-            borderLeft: '1px solid var(--separator-color)',
             overflowY: "auto",
             overflowX: "auto",
-            maxWidth: 'min(400px, 50vw)',
+            maxWidth: `max(min(${appState.sidePanelWidth}px, 75vw), 100px)`,
           }}>
             <div className={styles.stackVertical} style={{height:'100%'}}>
               <SideBar {...{...appState, refRightSideBar, ast, preparedTraces, plantCS, plantState, ...simulator, ...setters}} />
