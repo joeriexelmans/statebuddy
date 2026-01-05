@@ -6,6 +6,8 @@ import { arraysEqual, jsonDeepEqual, setsEqual } from "@/util/util";
 import { BoundingBox } from "./BoundingBox";
 import styles from "./VisualEditor.module.css";
 
+console.log({styles});
+
 export const ArrowSVG = memo(function(props: { arrow: Arrow; selected: Set<ArrowPart>; error: string; highlight: boolean; fired: boolean; arc: ArcDirection; initialMarker: boolean }) {
   const { start, end, uid } = props.arrow;
   const radius = euclideanDistance(start, end) / 1.6;
@@ -29,6 +31,7 @@ export const ArrowSVG = memo(function(props: { arrow: Arrow; selected: Set<Arrow
         + ' ' + (props.highlight ? styles.highlight : "")
         + ' ' + (props.fired ? styles.fired : "")
       }
+      style={{animationName: props.fired ? styles.blinkTransition : ''}}
       markerStart={props.initialMarker ? 'url(#initialMarker)' : undefined}
       markerEnd='url(#arrowEnd)'
       d={`M ${start.x} ${start.y}

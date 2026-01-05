@@ -179,18 +179,8 @@ tspan.findText {
 .arrow.fired {
   stroke: var(--fired-transition-color);
   stroke-width: 3px;
-  animation: blinkTransition 1s;
-}
-
-@keyframes blinkTransition {
-  0% {
-    stroke: var(--firing-transition-color);
-    stroke-width: 6px;
-    filter: drop-shadow(0 0 5px var(--firing-transition-color));
-  }
-  100% {
-    stroke: var(--fired-transition-color);
-  }
+  animation-duration: 1s;
+  animation-name: blinkTransition;
 }
 
 text.uid {

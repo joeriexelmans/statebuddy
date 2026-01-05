@@ -167,8 +167,12 @@ function enterChildren(rt: RT_Microstep, parent: ConcreteState, toEnter: Set<str
       else if (parent.initial.length > 1) {
         throw new NonDeterminismError(`Non-determinism: multiple initial states.`, [parent.uid, ...parent.initial.map(i => i[0]), parent.uid]);
       }
-      const [[_, child]] = parent.initial;
+      const [[arrow, child]] = parent.initial;
       rt = enterState(rt, child, toEnter, trace);
+      rt = {
+        ...rt,
+        firedTransitions: [...rt.firedTransitions, arrow],  
+      }
     }
     else {
       throw new Error("can only enter one child of an OR-state, stupid!");
@@ -396,21 +400,26 @@ function handleInternalEvents(microstep: RT_Microstep, statechart: Statechart, t
     const [nextEvent, ...remainingEvents] = microstep.internalEvents;
     trace.log(`internal ${nextEvent.name}${logEventParam(nextEvent.param)}`);
     microstep = fairStep(
-      {...microstep, internalEvents: remainingEvents, firedArenas: []},
+      {
+        ...microstep,
+        internalEvents: remainingEvents,
+        firedArenas: [], // <-- reset
+      },
       {kind: "event", ...nextEvent},
       statechart,
       statechart.root,
       trace.indent());
   }
-  return {
-    simtime: microstep.simtime,
-    mode: microstep.mode,
-    environment: microstep.environment,
-    history: microstep.history,
-    timers: microstep.timers,
-    outputEvents: microstep.outputEvents,
-    firedTransitions: microstep.firedTransitions,
-  };
+  return microstep;
+  //  {
+  //   simtime: microstep.simtime,
+  //   mode: microstep.mode,
+  //   environment: microstep.environment,
+  //   history: microstep.history,
+  //   timers: microstep.timers,
+  //   outputEvents: microstep.outputEvents,
+  //   firedTransitions: microstep.firedTransitions,
+  // };
 }
 
 function resolveHistory(tgt: AbstractState, history: RT_History, trace: Tracer): Set<string> {

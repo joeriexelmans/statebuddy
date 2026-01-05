@@ -137,7 +137,7 @@ export function useMouse(
     }
   }, [refSVG.current, zoom]);
 
-  const onMouseDown = useCallback((e: MouseEvent) => {
+  const onMouseDown = useCallback((e: React.MouseEvent<SVGSVGElement, MouseEvent>) => {
     const currentPointer = getCurrentPointer(e);
     if (e.button === 2) {
       // ignore selection, right mouse button always inserts

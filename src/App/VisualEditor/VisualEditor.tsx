@@ -18,6 +18,7 @@ import { Grid } from "./Grid";
 import { DebugContext } from "./context/DebugContext";
 import { EDITOR_HEIGHT, EDITOR_WIDTH } from "../parameters";
 import styles from "./VisualEditor.module.css";
+import "./VisualEditor.css";
 
 export type VisualEditorState = ConcreteSyntax & {
   nextID: number;
@@ -73,11 +74,6 @@ const viewBox = `0 0 ${EDITOR_WIDTH} ${EDITOR_HEIGHT}`;
 
 export const VisualEditor = memo(function VisualEditor({state, commitState, replaceState, conns, syntaxErrors: errors, insertMode, highlightActive, highlightTransitions, setModal, zoom, findText}: VisualEditorProps) {
 
-  // While dragging, the editor is in a temporary state (a state that is not committed to the edit history). If the temporary state is not null, then this state will be what you see.
-  // const [temporaryState, setTemporaryState] = useState<VisualEditorState | null>(null);
-
-  // const state = temporaryState || committedState;
-
   // uid's of selected rountangles
   const selection = state.selection;
 
@@ -86,7 +82,8 @@ export const VisualEditor = memo(function VisualEditor({state, commitState, repl
   useEffect(() => {
     // bit of a hacky way to force the animation on fired transitions to replay, if the new 'rt' contains the same fired transitions as the previous one
     requestAnimationFrame(() => {
-      document.querySelectorAll(".arrow.fired").forEach(el => {
+      document.querySelectorAll(`.${styles.arrow}.${styles.fired}`).forEach(el => {
+        console.log('element:', el);
         // @ts-ignore
         el.style.animation = 'none';
         requestAnimationFrame(() => {
