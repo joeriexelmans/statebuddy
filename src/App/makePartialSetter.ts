@@ -27,7 +27,6 @@ export function makeAllSetters<T extends {[key: string]: any}>(
 ): Setters<T> {
   // @ts-ignore
   return useMemo(() => {
-    console.log('creating setters for App');
     // @ts-ignore
     return Object.fromEntries(keys.map((key: string) => {
       return [`set${key.charAt(0).toUpperCase()}${key.slice(1)}`, makePartialSetter(fullSetter, key)];
