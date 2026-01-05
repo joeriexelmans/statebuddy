@@ -10,6 +10,7 @@ import styles from "./Trace.module.css";
 
 import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
 import { Status } from "./Status";
+import { Tooltip } from "../Components/Tooltip";
 
 type PropertyTrace = [number, boolean][];
 
@@ -19,6 +20,7 @@ type RTHistoryProps = {
   ast: Statechart,
   setTime: Dispatch<SetStateAction<TimeMode>>,
   showPlantTrace: boolean,
+  showMicroSteps: boolean,
   propertyTrace: PropertyTrace | null,
 }
 
@@ -44,7 +46,7 @@ function lookupPropertyStatus(simtime: number, propertyTrace: PropertyTrace, sta
   return [i, propertyTrace[i] && propertyTrace[i][1]];
 }
 
-export function Trace({trace, setTrace, ast, setTime, showPlantTrace, propertyTrace}: RTHistoryProps) {
+export function Trace({trace, setTrace, ast, setTime, showPlantTrace, propertyTrace, showMicroSteps}: RTHistoryProps) {
   const onMouseDown = useCallback((idx: number, timestamp: number) => {
     setTrace(trace => trace && {
       ...trace,
@@ -73,7 +75,19 @@ export function Trace({trace, setTrace, ast, setTime, showPlantTrace, propertyTr
         propertyStatus = (satisfied ? "satisfied" : "violated");
       }
     }
-    return <RTHistoryItem ast={ast} idx={i} item={item} prevItem={prevItem} isPlantStep={isPlantStep} active={i === trace.idx} onMouseDown={onMouseDown} propertyStatus={propertyStatus} />;
+    return <>
+      <RTHistoryItem ast={ast} idx={i} item={item} prevItem={prevItem} isPlantStep={isPlantStep} active={i === trace.idx} onMouseDown={onMouseDown} propertyStatus={propertyStatus} />
+      {i === trace.idx && showMicroSteps &&
+        <div style={{
+          paddingLeft: 20,
+          color: 'grey',
+          transitionProperty: 'max-height',
+          maxHeight: 500,
+          transitionDuration: '1s',
+          transformOrigin: 'top',
+          whiteSpace: 'preserve',
+        }}>{item.msgs.map(msg => <div>{msg}</div>)}</div>}
+    </>;
   });
 }
 
@@ -109,7 +123,7 @@ export const RTHistoryItem = memo(function RTHistoryItem({ast, idx, item, prevIt
       <div>
         <Status status={propertyStatus}/>
         &emsp;
-        {formatTime(item.simtime)}
+        <Tooltip tooltip="simulated time">{formatTime(item.simtime)}</Tooltip>
         &emsp;
         <RTCause cause={isPlantStep ? item.state.plant.inputEvent : item.state.sc.inputEvent}/>
         {outputEvents.length>0 &&

@@ -32,8 +32,8 @@ export type BigStepCause = {
 };
 
 export type TraceItem =
-  { kind: "error" } & TraceItemError
-| { kind: "bigstep", simtime: number, cause: BigStepCause, state: CoupledState, outputEvents: RaisedEvent[] };
+  { kind: "error", msgs: string[] } & TraceItemError
+| { kind: "bigstep", simtime: number, cause: BigStepCause, state: CoupledState, outputEvents: RaisedEvent[], msgs: string[] };
 
 export type TraceState = {
   trace: [TraceItem, ...TraceItem[]], // non-empty
@@ -48,36 +48,31 @@ export function useSimulator(ast: Statechart|null, plant: Plant<any, UniversalPl
   const [trace, setTrace] = useState<TraceState|null>(null);
   const currentTraceItem = trace && trace.trace[trace.idx];
 
-  // coupled execution
+  const msgs = [] as string[];
+
+  const makeTracer = (indent: number) => ({
+    log: (msg: string) => msgs.push(' '.repeat(indent) + msg),
+    indent: () => makeTracer(indent + 1),
+  });
+
+  // cE is just a set of functions for stepping the coupled execution (statechart x plant)
   const cE = useMemo(() => ast && coupledExecution({
-    sc: statechartExecution(ast),
+    sc: statechartExecution(ast, makeTracer(0)),
     plant: plant.execution,
   }, {
     ...plantConns,
     ...Object.fromEntries(ast.inputEvents.map(({event}) => ["debug."+event, ['sc',event] as [string,string]])),
-  }), [ast, plant, plantConns]);
+  }), [ast, plant, plantConns, msgs]);
 
   const onInit = useCallback(() => {
     if (cE === null) return;
-    const metadata = {simtime: 0, cause: {kind: "init" as const, simtime: 0 as const}};
-    try {
-      const [outputEvents, state] = cE.initial(); // may throw if initialing the statechart results in a RuntimeError
-      setTrace({
-        trace: [{kind: "bigstep", ...metadata, state, outputEvents}],
-        idx: 0,
-      });
-    }
-    catch (error) {
-      if (error instanceof RuntimeError) {
-        setTrace({
-          trace: [{kind: "error", ...metadata, error}],
-          idx: 0,
-        });
-      }
-      else {
-        throw error; // probably a bug in the interpreter
-      }
-    }
+    const item = catchRuntimeError(0, {kind: "init", simtime: 0}, () => {
+      return cE.initial();
+    });
+    setTrace(_ => ({
+      trace: [item],
+      idx: 0,
+    }));
     setTime(time => {
       if (time.kind === "paused") {
         return {...time, simtime: 0};
@@ -98,17 +93,17 @@ export function useSimulator(ast: Statechart|null, plant: Plant<any, UniversalPl
     const metadata = {simtime, cause}
     try {
       const [outputEvents, state] = computeNewState(); // may throw RuntimeError
-      return {kind: "bigstep" as const, ...metadata, state, outputEvents};
+      return {kind: "bigstep" as const, ...metadata, state, outputEvents, msgs};
     }
     catch (error) {
       if (error instanceof RuntimeError) {
-        return {kind: "error" as const, ...metadata, error};
+        return {kind: "error" as const, ...metadata, error, msgs};
       }
       else {
         throw error;
       }
     }
-  }, []);
+  }, [msgs]);
 
   const appendNewConfig = useCallback((simtime: number, cause: BigStepCause, computeNewState: () => [RaisedEvent[], CoupledState]) => {
     const newItem = catchRuntimeError(simtime, cause, computeNewState);
@@ -126,7 +121,7 @@ export function useSimulator(ast: Statechart|null, plant: Plant<any, UniversalPl
       idx: trace!.idx+1,
     }));
     onStep();
-  }, [onStep, setTrace, setTime]);
+  }, [onStep, setTrace, setTime, msgs]);
 
   // raise input event, producing a new runtime configuration (or a runtime error)
   const onRaise = useMemo(() => {

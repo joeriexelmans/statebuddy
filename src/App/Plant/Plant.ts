@@ -3,6 +3,7 @@ import { Statechart } from "@/statecharts/abstract_syntax";
 import { EventTrigger } from "@/statecharts/label_ast";
 import { BigStep, RaisedEvent, RT_Statechart } from "@/statecharts/runtime_types";
 import { statechartExecution, TimedReactive } from "@/statecharts/timed_reactive";
+import { Tracer } from "@/statecharts/tracer";
 
 export type PlantRenderProps<StateType> = {
   state: StateType,
@@ -63,12 +64,12 @@ export type StatechartPlantSpec<CleanStateType> = {
   signals: string[],
 }
 
-export function makeStatechartPlant<CleanStateType>({uiEvents, ast, cleanupState, render, signals}: StatechartPlantSpec<CleanStateType>): Plant<BigStep, CleanStateType> {
+export function makeStatechartPlant<CleanStateType>({uiEvents, ast, cleanupState, render, signals}: StatechartPlantSpec<CleanStateType>, trace: Tracer): Plant<BigStep, CleanStateType> {
   return {
     uiEvents,
     inputEvents: ast.inputEvents,
     outputEvents: [...ast.outputEvents].map(e => ({kind: "event" as const, event: e})),
-    execution: statechartExecution(ast),
+    execution: statechartExecution(ast, trace),
     cleanupState,
     render,
     signals,

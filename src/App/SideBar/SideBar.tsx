@@ -54,6 +54,7 @@ export type SideBarState = {
   properties: string[],
   activeProperty: number,
   savedTraces: SavedTraces,
+  showMicroSteps: boolean,
   autoScroll: boolean,
   showPlantTrace: boolean,
 };
@@ -77,6 +78,7 @@ export const defaultSideBarState = {
   activeProperty: 0,
   savedTraces: [],
   autoScroll: false,
+  showMicroSteps: false,
   showPlantTrace: false,
 };
 
@@ -98,7 +100,7 @@ type SideBarProps = SideBarState & {
 
 export const SideBar = memo(function SideBar(props: SideBarProps) {
 
-  const {showExecutionTrace, showConnections, plantName, showPlantTrace, showProperties, activeProperty, autoConnect, autoScroll, plantConns, properties, savedTraces, refRightSideBar, ast, plant, plantCS, setSavedTraces, trace, setTrace, setProperties, setShowPlantTrace, setActiveProperty, setPlantConns, setPlantName, setAutoConnect, setShowProperties, setAutoScroll, time, plantState, onReplayTrace, onRaise, setTime, setShowConnections, setShowExecutionTrace, showPlant, setShowPlant, showOutputEvents, setShowOutputEvents, setShowInternalEvents, showInternalEvents, setShowInputEvents, setShowStateTree, showInputEvents, showStateTree, preparedTraces, showTable, setShowTable} = props;
+  const {showExecutionTrace, showConnections, plantName, showPlantTrace, showProperties, activeProperty, autoConnect, autoScroll, plantConns, properties, savedTraces, refRightSideBar, ast, plant, plantCS, setSavedTraces, trace, setTrace, setProperties, setShowPlantTrace, setActiveProperty, setPlantConns, setPlantName, setAutoConnect, setShowProperties, setAutoScroll, time, plantState, onReplayTrace, onRaise, setTime, setShowConnections, setShowExecutionTrace, showPlant, setShowPlant, showOutputEvents, setShowOutputEvents, setShowInternalEvents, showInternalEvents, setShowInputEvents, setShowStateTree, showInputEvents, showStateTree, preparedTraces, showTable, setShowTable, showMicroSteps, setShowMicroSteps} = props;
 
   const [propertyResults, setPropertyResults] = useState<PropertyCheckResult[] | null>(null);
 
@@ -325,12 +327,19 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
         </div>
         <div className={styles.toolbar} style={{justifyContent: 'space-around', gap: '1em'}}>
           <Tooltip tooltip="plant steps are steps where only the state of the plant changed" align="left">
-          <label>
-            <input id="checkbox-show-plant-items" type="checkbox"
-            checked={showPlantTrace}
-            onChange={e => setShowPlantTrace(e.target.checked)}/>
-            show plant steps</label>
+            <label>
+              <input id="checkbox-show-plant-items" type="checkbox"
+              checked={showPlantTrace}
+              onChange={e => setShowPlantTrace(e.target.checked)}/>
+              show plant steps
+            </label>
           </Tooltip>
+          <label>
+            <input id="checkbox-show-microsteps" type="checkbox"
+              checked={showMicroSteps}
+              onChange={e => setShowMicroSteps(e.target.checked)}/>
+              show microsteps
+          </label>
           <Tooltip tooltip="scroll down upon new events" align="left">
           <input id="checkbox-autoscroll" type="checkbox" checked={autoScroll} onChange={e => setAutoScroll(e.target.checked)}/>
           <label htmlFor="checkbox-autoscroll">auto-scroll</label>
@@ -338,7 +347,7 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
           <button
             disabled={trace === null}
             onClick={() => onSaveTrace()}
-            style={{marginLeft: 'auto'}}
+            style={{marginLeft: 'auto', flexGrow: 1}}
             >
             <SaveOutlinedIcon fontSize="small"/> save trace
           </button>
@@ -356,7 +365,7 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
         }}>
           <div ref={refRightSideBar}>
             {ast && <Trace {...{ast, trace, setTrace, setTime, showPlantTrace,
-              propertyTrace: propertyResults && propertyResults[activeProperty] && propertyResults[activeProperty][0] || []}}/>}
+              propertyTrace: propertyResults && propertyResults[activeProperty] && propertyResults[activeProperty][0] || [], showMicroSteps}}/>}
           </div>
       </div>}
   </>;

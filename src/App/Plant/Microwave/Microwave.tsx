@@ -20,6 +20,7 @@ import { parseStatechart } from "@/statecharts/parser";
 import microwaveJSON from "./model.json";
 import { ConcreteSyntax } from "@/statecharts/concrete_syntax";
 import { objectsEqual } from "@/util/util";
+import { dummyTracer } from "@/statecharts/tracer";
 
 export const microwaveConcreteSyntax = microwaveJSON as ConcreteSyntax;
 
@@ -131,7 +132,7 @@ const microwavePlantSpec: StatechartPlantSpec<MicrowaveState> = {
     const stopPressed = state.mode.has(microwaveAbstractSyntax.label2State.get("stopPressed")!.uid);
     const incTimePressed = state.mode.has(microwaveAbstractSyntax.label2State.get("incTimePressed")!.uid);
     // let startPressed, stopPressed, incTimePressed;
-    const timeDisplay = state.environment.get("timeDisplay");
+    const timeDisplay = state.environment.get("timeDisplay", {kind: "state", thing: microwaveAbstractSyntax.root});
     return {bellRinging, magnetronRunning, doorOpen, timeDisplay, startPressed, stopPressed, incTimePressed};
   },
   render: Microwave,
@@ -157,4 +158,4 @@ const microwavePlantSpec: StatechartPlantSpec<MicrowaveState> = {
   ]
 }
 
-export const microwavePlant = makeStatechartPlant(microwavePlantSpec);
+export const microwavePlant = makeStatechartPlant(microwavePlantSpec, dummyTracer);

@@ -16,6 +16,7 @@ import { RT_Statechart } from "@/statecharts/runtime_types";
 import { useAudioContext } from "@/hooks/useAudioContext";
 import { memo, useEffect, useMemo } from "react";
 import { objectsEqual } from "@/util/util";
+import { dummyTracer } from "@/statecharts/tracer";
 
 export const trafficLightConcreteSyntax = trafficLightJSON as ConcreteSyntax;
 
@@ -124,4 +125,4 @@ const trafficLightPlantSpec: StatechartPlantSpec<TrafficLightState> = {
   ],
 }
 
-export const trafficLightPlant = makeStatechartPlant(trafficLightPlantSpec);
+export const trafficLightPlant = makeStatechartPlant(trafficLightPlantSpec, dummyTracer);

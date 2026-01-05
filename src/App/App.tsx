@@ -228,7 +228,11 @@ export function App() {
 
   useEffect(() => {
     const onMouseMove = (e: MouseEvent) => {
-      setters.setSidePanelWidth(width => width - e.movementX);
+      setters.setSidePanelWidth(width => {
+        const newWidth = width - e.movementX;
+        console.log({newWidth});
+        return newWidth;
+      });
       e.preventDefault();
       e.stopPropagation();
     }
@@ -317,7 +321,11 @@ export function App() {
             flex: '0 0 content',
             overflowY: "auto",
             overflowX: "auto",
-            maxWidth: `max(min(${appState.sidePanelWidth}px, 75vw), 100px)`,
+            flexBasis: appState.sidePanelWidth,
+            maxWidth: '75vw',
+            minWidth: 20,
+
+            // maxWidth: `max(min(${appState.sidePanelWidth}px, 75vw), 100px)`,
           }}>
             <div className={styles.stackVertical} style={{height:'100%'}}>
               <SideBar {...{...appState, refRightSideBar, ast, preparedTraces, plantCS, plantState, ...simulator, ...setters}} />

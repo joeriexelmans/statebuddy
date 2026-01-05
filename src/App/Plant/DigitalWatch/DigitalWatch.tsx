@@ -13,6 +13,8 @@ import "./DigitalWatch.css";
 import imgNote from "./noteSmall.png";
 import imgWatch from "./watch.webp";
 import { jsonDeepEqual } from "@/util/util";
+import { Scope } from "@/statecharts/environment";
+import { dummyTracer } from "@/statecharts/tracer";
 
 export const dwatchConcreteSyntax = dwatchJSON as ConcreteSyntax;
 
@@ -52,11 +54,13 @@ export type DigitalWatchPlantState = {
   bottomLeftPressed: boolean,
 }
 
+const rootScope: Scope = {kind: "state", thing: dwatchAbstractSyntax.root};
+
 function dwatchConfigToState(rtConfig: RT_Statechart): DigitalWatchPlantState {
   return {
     lightOn: rtConfig.mode.has(dwatchAbstractSyntax.label2State.get("lightOn")!.uid),
     beep: rtConfig.mode.has(dwatchAbstractSyntax.label2State.get("beep")!.uid),
-    alarmOn: rtConfig.environment.get("alarm"),
+    alarmOn: rtConfig.environment.get("alarm", rootScope),
     displayingTime: rtConfig.mode.has(dwatchAbstractSyntax.label2State.get("displayingTime")!.uid),
     displayingAlarm: rtConfig.mode.has(dwatchAbstractSyntax.label2State.get("displayingAlarm")!.uid),
     displayingChrono: rtConfig.mode.has(dwatchAbstractSyntax.label2State.get("displayingChrono")!.uid),
@@ -64,15 +68,15 @@ function dwatchConfigToState(rtConfig: RT_Statechart): DigitalWatchPlantState {
     hideH: rtConfig.mode.has(dwatchAbstractSyntax.label2State.get("hideH")!.uid),
     hideM: rtConfig.mode.has(dwatchAbstractSyntax.label2State.get("hideM")!.uid),
     hideS: rtConfig.mode.has(dwatchAbstractSyntax.label2State.get("hideS")!.uid),
-    h: rtConfig.environment.get("h"),
-    m: rtConfig.environment.get("m"),
-    s: rtConfig.environment.get("s"),
-    ah: rtConfig.environment.get("ah"),
-    am: rtConfig.environment.get("am"),
-    as: rtConfig.environment.get("as"),
-    cm: rtConfig.environment.get("cm"),
-    cs: rtConfig.environment.get("cs"),
-    chs: rtConfig.environment.get("chs"),
+    h: rtConfig.environment.get("h", rootScope),
+    m: rtConfig.environment.get("m", rootScope),
+    s: rtConfig.environment.get("s", rootScope),
+    ah: rtConfig.environment.get("ah", rootScope),
+    am: rtConfig.environment.get("am", rootScope),
+    as: rtConfig.environment.get("as", rootScope),
+    cm: rtConfig.environment.get("cm", rootScope),
+    cs: rtConfig.environment.get("cs", rootScope),
+    chs: rtConfig.environment.get("chs", rootScope),
 
     topLeftPressed: rtConfig.mode.has(dwatchAbstractSyntax.label2State.get("topLeftPressed")!.uid),
     topRightPressed: rtConfig.mode.has(dwatchAbstractSyntax.label2State.get("topRightPressed")!.uid),
@@ -115,7 +119,7 @@ export const DigitalWatch = memo(function DigitalWatch({state: {displayingTime, 
         src: url(${digitalFont});
       }
     `}</style>
-    <svg version="1.1" width="222" height="236" style={{userSelect: 'none'}}>
+    <svg width="222" height="236" style={{userSelect: 'none'}}>
       <image width="222" height="236" xlinkHref={imgWatch}/>
 
       {lightOn &&
@@ -179,4 +183,4 @@ export const digitalWatchPlant = makeStatechartPlant({
     "bottomRightPressed",
     "bottomLeftPressed",
   ],
-});
+}, dummyTracer);

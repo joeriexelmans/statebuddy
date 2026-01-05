@@ -1,6 +1,7 @@
 import { Statechart } from "./abstract_syntax";
-import { makeBigStep, initialize, RuntimeError } from "./interpreter";
-import { BigStep, NormalEvent, RaisedEvent, RT_Statechart, Timers } from "./runtime_types";
+import { makeBigStep, initialize } from "./interpreter";
+import { Tracer } from "./tracer";
+import { BigStep, NormalEvent, RaisedEvent } from "./runtime_types";
 
 // an abstract interface for timed reactive discrete event systems somewhat similar but not equal to DEVS
 // differences from DEVS:
@@ -13,10 +14,10 @@ export type TimedReactive<RT_Config> = {
   extTransition: (simtime: number, c: RT_Config, e: NormalEvent) => [RaisedEvent[], RT_Config],
 }
 
-export function statechartExecution(ast: Statechart): TimedReactive<BigStep> {
+export function statechartExecution(ast: Statechart, trace: Tracer): TimedReactive<BigStep> {
   return {
     initial: () => {
-      const bigstep = initialize(ast);
+      const bigstep = initialize(ast, trace);
       return [bigstep.outputEvents, bigstep];
     },
     timeAdvance: (c: BigStep) => {
@@ -31,11 +32,11 @@ export function statechartExecution(ast: Statechart): TimedReactive<BigStep> {
       }
       const [[when, timerElapseEvent], ...remainingTimers] = c.timers;
       const newC = {...c, timers: remainingTimers, simtime: when};
-      const {outputEvents, ...rest} = makeBigStep(newC, timerElapseEvent, ast);
+      const {outputEvents, ...rest} = makeBigStep(newC, timerElapseEvent, ast, trace);
       return [outputEvents, {outputEvents, ...rest}];
     },
     extTransition: (simtime: number, c: BigStep, e: NormalEvent) => {
-      const {outputEvents, ...rest} = makeBigStep({...c, simtime}, e, ast);
+      const {outputEvents, ...rest} = makeBigStep({...c, simtime}, e, ast, trace);
       return [outputEvents, {outputEvents, ...rest}];
     },
   }

@@ -3,6 +3,7 @@ import { evalExpr } from "./actionlang_interpreter";
 import { Environment, FlatEnvironment, Scope } from "./environment";
 import { Action, EventTrigger, TransitionLabel } from "./label_ast";
 import { BigStep, RT_Event, RT_History, RT_Microstep, TimerElapseEvent, Timers } from "./runtime_types";
+import { Tracer } from "./tracer";
 
 export class RuntimeError extends Error {
   highlight: string[];
@@ -27,7 +28,9 @@ const emptyMicrostep = {
   firedArenas: [],
 }
 
-export function initialize(ast: Statechart): BigStep {
+export function initialize(ast: Statechart, trace: Tracer): BigStep {
+  trace.log('init')
+  const subTrace = trace.indent();
   const rt = enterState({
     simtime: 0,
     environment: initialFlatEnvironment,
@@ -35,14 +38,24 @@ export function initialize(ast: Statechart): BigStep {
     history: new Map(),
     timers: [],
     ...emptyMicrostep,
-  }, ast.root);
-  return handleInternalEvents(rt, ast);
+  }, ast.root, new Set(), subTrace);
+  return handleInternalEvents(rt, ast, subTrace);
 }
 
-function execAction(rt: RT_Microstep, action: Action, scope: Scope, uids: string[]): RT_Microstep {
+function logEventParam(param: any) {
+  if (param === undefined) {
+    return '';
+  }
+  else {
+    return `:${param}`;
+  }
+}
+
+function execAction(rt: RT_Microstep, action: Action, scope: Scope, uids: string[], trace: Tracer): RT_Microstep {
   if (action.kind === "assignment") {
     const rhs = evalExpr(action.rhs, rt.environment, uids);
     const environment = rt.environment.set(action.lhs, rhs, scope);
+    trace.log(`assign ${action.lhs} = ${rhs}`);
     return {
       ...rt,
       environment,
@@ -55,6 +68,7 @@ function execAction(rt: RT_Microstep, action: Action, scope: Scope, uids: string
     };
     if (action.event.startsWith('_')) {
       // append to internal events
+      trace.log(`raise internal ${raisedEvent.name}${logEventParam(raisedEvent.param)}`);
       return {
         ...rt,
         internalEvents: [...rt.internalEvents, raisedEvent],
@@ -62,6 +76,7 @@ function execAction(rt: RT_Microstep, action: Action, scope: Scope, uids: string
     }
     else {
       // append to output events
+      trace.log(`raise output ${raisedEvent.name}${logEventParam(raisedEvent.param)}`);
       return {
         ...rt,
         outputEvents: [...rt.outputEvents, raisedEvent],
@@ -71,13 +86,15 @@ function execAction(rt: RT_Microstep, action: Action, scope: Scope, uids: string
   throw new Error("should never reach here");
 }
 
-function enterState(rt: RT_Microstep, state: TransitionSrcTgt, toEnter: Set<string> = new Set()): RT_Microstep {
+function enterState(rt: RT_Microstep, state: TransitionSrcTgt, toEnter: Set<string> = new Set(), trace: Tracer): RT_Microstep {
   // add to mode
   rt = {...rt, mode: new Set([...rt.mode, state.uid])};
 
+  trace.log(`entering ${stateDescription(state)}`);
+
   // entry actions
   for (const action of state.entryActions) {
-    rt = execAction(rt, action, {kind: "state", thing: state}, [state.uid]);
+    rt = execAction(rt, action, {kind: "state", thing: state}, [state.uid], trace.indent());
   }
 
   if (state.kind !== "pseudo") {
@@ -93,16 +110,16 @@ function enterState(rt: RT_Microstep, state: TransitionSrcTgt, toEnter: Set<stri
     rt = {...rt, timers: newTimers};
 
     // enter children
-    rt = enterChildren(rt, state, toEnter);
+    rt = enterChildren(rt, state, toEnter, trace.indent());
   }
 
   return rt;
 }
 
-function exitState(rt: RT_Microstep, state: TransitionSrcTgt): RT_Microstep {
+function exitState(rt: RT_Microstep, state: TransitionSrcTgt, trace: Tracer): RT_Microstep {
   if (state.kind !== "pseudo") {
     // exit children first
-    rt = exitChildren(rt, state);
+    rt = exitChildren(rt, state, trace.indent());
 
     // cancel timers
     const newTimers = rt.timers.filter(([_, {state: s}]) => s !== state.uid);
@@ -111,8 +128,10 @@ function exitState(rt: RT_Microstep, state: TransitionSrcTgt): RT_Microstep {
 
   // exit actions
   for (const action of state.exitActions) {
-    (rt = execAction(rt, action, {kind: "state", thing: state}, [state.uid]));
+    (rt = execAction(rt, action, {kind: "state", thing: state}, [state.uid], trace.indent()));
   }
+
+  trace.log(`exiting ${stateDescription(state)}`);
 
   // remove from mode
   rt = {...rt, mode: new Set([...rt.mode].filter(s => s !== state.uid))};
@@ -122,12 +141,12 @@ function exitState(rt: RT_Microstep, state: TransitionSrcTgt): RT_Microstep {
 // recursively enter the given state's children
 // AND-states: all children are entered.
 // OR-states: if one of the children occurs in 'toEnter', this child will be chosen. if not, then the default child is entered.
-function enterChildren(rt: RT_Microstep, parent: ConcreteState, toEnter: Set<string> = new Set()): RT_Microstep {
+function enterChildren(rt: RT_Microstep, parent: ConcreteState, toEnter: Set<string> = new Set(), trace: Tracer): RT_Microstep {
   // enter children...
   if (parent.kind === "and") {
     // every child must be entered
     for (const child of parent.children) {
-      rt = enterState(rt, child, toEnter);
+      rt = enterState(rt, child, toEnter, trace);
     }
   }
   else if (parent.kind === "or") {
@@ -136,7 +155,7 @@ function enterChildren(rt: RT_Microstep, parent: ConcreteState, toEnter: Set<str
     if (childToEnter.length === 1) {
       // good
       const child = childToEnter[0];
-      rt = enterState(rt, child, toEnter);
+      rt = enterState(rt, child, toEnter, trace);
     }
     else if (childToEnter.length === 0) {
       // also good, enter default child
@@ -147,7 +166,7 @@ function enterChildren(rt: RT_Microstep, parent: ConcreteState, toEnter: Set<str
         throw new NonDeterminismError(`Non-determinism: multiple initial states.`, [parent.uid, ...parent.initial.map(i => i[0]), parent.uid]);
       }
       const [[_, child]] = parent.initial;
-      rt = enterState(rt, child, toEnter);
+      rt = enterState(rt, child, toEnter, trace);
     }
     else {
       throw new Error("can only enter one child of an OR-state, stupid!");
@@ -157,18 +176,19 @@ function enterChildren(rt: RT_Microstep, parent: ConcreteState, toEnter: Set<str
   return rt;
 }
 
-function recordDeepHistory(rt: RT_Microstep, state: ConcreteState, h: HistoryState): RT_Microstep {
+function recordDeepHistory(rt: RT_Microstep, state: ConcreteState, h: HistoryState, trace: Tracer): RT_Microstep {
   // horribly inefficient (i don't care)
   const history = new Map(rt.history);
-  history.set(h.uid,
-    getDescendants(state)
-      .difference(new Set([state.uid]))
-      .intersection(rt.mode));
+  const historyValue = getDescendants(state)
+    .difference(new Set([state.uid]))
+    .intersection(rt.mode);
+  trace.log(`recording history of ${stateDescription(state)} = ${historyValue}`);
+  history.set(h.uid, historyValue);
   return {...rt, history};
 }
 
 // exit the given state's active descendants
-export function exitChildren(rt: RT_Microstep, parent: ConcreteState): RT_Microstep {
+export function exitChildren(rt: RT_Microstep, parent: ConcreteState, trace: Tracer): RT_Microstep {
   // exit all active children...
   if (parent.kind === "and") {
     // record history...
@@ -187,12 +207,12 @@ export function exitChildren(rt: RT_Microstep, parent: ConcreteState): RT_Micros
         rt = {...rt, history};
       }
       else { // deep history
-        rt = recordDeepHistory(rt, parent, h);
+        rt = recordDeepHistory(rt, parent, h, trace);
       }
     }
     // every child is exited
     for (const child of parent.children) {
-      rt = exitState(rt, child);
+      rt = exitState(rt, child, trace);
     }
   }
   else if (parent.kind === "or") {
@@ -206,13 +226,13 @@ export function exitChildren(rt: RT_Microstep, parent: ConcreteState): RT_Micros
         rt = {...rt, history};
       }
       else { // deep history
-        rt = recordDeepHistory(rt, parent, h);
+        rt = recordDeepHistory(rt, parent, h, trace);
       }
     }
     // exit active child
     for (const child of parent.children) {
       if (rt.mode.has(child.uid)) {
-      rt = exitState(rt, child);
+      rt = exitState(rt, child, trace);
       }
     }
   }
@@ -278,8 +298,9 @@ function getEnabledTransitions(rt: RT_Microstep, sourceState: AbstractState, eve
   return enabled;
 }
 
-function attemptSrcState(rt: RT_Microstep, sourceState: AbstractState, event: RT_Event | undefined, statechart: Statechart): RT_Microstep | undefined {
+function attemptSrcState(rt: RT_Microstep, sourceState: AbstractState, event: RT_Event | undefined, statechart: Statechart, trace: Tracer): RT_Microstep | undefined {
   const enabled = getEnabledTransitions(rt, sourceState, event, statechart);
+  // trace(`state ${stateDescription(sourceState)} has ${enabled.length} enabled transitions`);
   if (enabled.length > 0) {
     if (enabled.length > 1) {
       throw new NonDeterminismError(`Non-determinism: multiple enabled transitions.`,
@@ -289,7 +310,7 @@ function attemptSrcState(rt: RT_Microstep, sourceState: AbstractState, event: RT
     // fairness: every arena can only fire once per 'fair step'
     if (sourceState.kind === "pseudo" || allowedToFire(transition.arena, rt.firedArenas)) {
       // fire transition!
-      rt = fire(rt, transition, event, statechart.transitions, label);
+      rt = fire(rt, transition, event, statechart.transitions, label, trace);
       rt = {...rt,
         firedTransitions: [...rt.firedTransitions, transition.uid],
         firedArenas: [...rt.firedArenas, transition.arena],
@@ -303,7 +324,7 @@ function attemptSrcState(rt: RT_Microstep, sourceState: AbstractState, event: RT
         if (!activePseudo) {
           break;
         }
-        const newRt = attemptSrcState(rt, activePseudo, undefined, statechart);
+        const newRt = attemptSrcState(rt, activePseudo, undefined, statechart, trace);
         if (newRt === undefined) {
           throw new RuntimeError("Stuck in choice-state.", [activePseudo.uid]);
         }
@@ -315,17 +336,17 @@ function attemptSrcState(rt: RT_Microstep, sourceState: AbstractState, event: RT
 }
 
 // A fair step is a response to one (input|internal) event, where possibly multiple transitions are made as long as their arenas do not overlap. A reasonably accurate and more intuitive explanation is that every orthogonal region is allowed to fire at most one transition.
-function fairStep(rt: RT_Microstep, event: RT_Event, statechart: Statechart, activeParent: StableState): RT_Microstep {
+function fairStep(rt: RT_Microstep, event: RT_Event, statechart: Statechart, activeParent: StableState, trace: Tracer): RT_Microstep {
   for (const state of activeParent.children) {
     if (rt.mode.has(state.uid)) {
-      const didFire = attemptSrcState(rt, state, event, statechart);
+      const didFire = attemptSrcState(rt, state, event, statechart, trace);
       if (didFire) {
         rt = didFire;
       }
       else {
         // no enabled outgoing transitions, try the children:
         if (state.kind !== "pseudo") {
-          rt = fairStep(rt, event, statechart, state);
+          rt = fairStep(rt, event, statechart, state, trace);
         }
       }
     }
@@ -333,27 +354,36 @@ function fairStep(rt: RT_Microstep, event: RT_Event, statechart: Statechart, act
   return rt;
 }
 
-export function makeBigStep(rt: BigStep, event: RT_Event, statechart: Statechart): BigStep {
+export function makeBigStep(rt: BigStep, event: RT_Event, statechart: Statechart, trace: Tracer): BigStep {
+  if (event.kind === "timer") {
+    trace.log(`timer`);
+  }
+  else {
+    trace.log(`input ${event.name}:${event.param})`);
+  }
   const microstep = fairStep({...rt,
     firedArenas: [],
     firedTransitions: [],
     internalEvents: [],
     outputEvents: [],
-  }, event, statechart, statechart.root);
-  return {
-    ...handleInternalEvents(microstep, statechart),
+  }, event, statechart, statechart.root, trace.indent());
+  const result = {
+    ...handleInternalEvents(microstep, statechart, trace),
     inputEvent: event,
   };
+  return result;
 }
 
-function handleInternalEvents(microstep: RT_Microstep, statechart: Statechart): BigStep {
+function handleInternalEvents(microstep: RT_Microstep, statechart: Statechart, trace: Tracer): BigStep {
   while (microstep.internalEvents.length > 0) {
     const [nextEvent, ...remainingEvents] = microstep.internalEvents;
+    trace.log(`internal ${nextEvent.name}${logEventParam(nextEvent.param)}`);
     microstep = fairStep(
-      {...microstep, internalEvents: remainingEvents},
+      {...microstep, internalEvents: remainingEvents, firedArenas: []},
       {kind: "event", ...nextEvent},
       statechart,
-      statechart.root);
+      statechart.root,
+      trace.indent());
   }
   return {
     simtime: microstep.simtime,
@@ -377,23 +407,23 @@ function resolveHistory(tgt: AbstractState, history: RT_History): Set<string> {
   }
 }
 
-function fire(rt: RT_Microstep, transition: Transition, event: RT_Event | undefined, ts: Map<string, Transition[]>, label: TransitionLabel): RT_Microstep {
+function fire(rt: RT_Microstep, transition: Transition, event: RT_Event | undefined, ts: Map<string, Transition[]>, label: TransitionLabel, trace: Tracer): RT_Microstep {
 
-  console.log('firing:', transitionDescription(transition));
+  trace.log(`firing ${transitionDescription(transition)}`);
 
-  rt = exitChildren(rt, transition.arena);
+  rt = exitChildren(rt, transition.arena, trace.indent());
 
   // transition actions
   rt = {...rt, environment: addEventParam(rt.environment, event, transition, label)};
   for (const action of label.actions) {
-    rt = execAction(rt, action, {kind: "transition", thing: transition}, [transition.uid]);
+    rt = execAction(rt, action, {kind: "transition", thing: transition}, [transition.uid], trace.indent());
   }
 
   const tgtPath = computePath({ancestor: transition.arena, descendant: transition.tgt});
   const toEnter = resolveHistory(transition.tgt, rt.history)
     .union(new Set(tgtPath.map(s=>s.uid)));
 
-  rt = enterChildren(rt, transition.arena, toEnter);
+  rt = enterChildren(rt, transition.arena, toEnter, trace.indent());
 
   return rt;
 }
