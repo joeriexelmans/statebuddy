@@ -118,6 +118,8 @@ function enterState(rt: RT_Microstep, state: TransitionSrcTgt, toEnter: Set<stri
 
 function exitState(rt: RT_Microstep, state: TransitionSrcTgt, trace: Tracer): RT_Microstep {
   if (state.kind !== "pseudo") {
+    rt = recordHistory(rt, state, trace);
+
     // exit children first
     rt = exitChildren(rt, state, trace.indent());
 
@@ -176,63 +178,74 @@ function enterChildren(rt: RT_Microstep, parent: ConcreteState, toEnter: Set<str
   return rt;
 }
 
+function logHistoryValue(v: Set<string>) {
+  return '{' + [...v].join(', ') + '}';
+}
+
 function recordDeepHistory(rt: RT_Microstep, state: ConcreteState, h: HistoryState, trace: Tracer): RT_Microstep {
   // horribly inefficient (i don't care)
   const history = new Map(rt.history);
   const historyValue = getDescendants(state)
     .difference(new Set([state.uid]))
     .intersection(rt.mode);
-  trace.log(`record history of ${stateDescription(state)} = ${historyValue}`);
+  trace.log(`record deep history of ${stateDescription(state)} = ${logHistoryValue(historyValue)}`);
   history.set(h.uid, historyValue);
   return {...rt, history};
+}
+
+function recordHistory(rt: RT_Microstep, state: ConcreteState, trace: Tracer): RT_Microstep {
+  if (state.kind === "and") {
+    for (const h of state.history) {
+      if (h.kind === "shallow") {
+        const history = new Map(rt.history);
+        // record the shallow history of every child (because recording the history of the AND-state itself would be redundant)
+        const historyValue = new Set([
+          ...state.children.map(child => child.uid),
+          ...state.children.flatMap(child =>
+            child.kind !== "pseudo" &&
+              child.children
+                .filter(child => rt.mode.has(child.uid))
+                .map(child => child.uid)
+              || [])]);
+        trace.log(`record shallow history of ${stateDescription(state)} = ${logHistoryValue(historyValue)}`);
+        history.set(h.uid, historyValue);
+        rt = {...rt, history};
+      }
+      else { // deep history
+        rt = recordDeepHistory(rt, state, h, trace);
+      }
+    }
+  }
+  else if (state.kind === "or") {
+    // record history...
+    for (const h of state.history) {
+      if (h.kind === "shallow") {
+        const history = new Map(rt.history);
+        const historyValue = new Set(state.children
+          .filter(child => rt.mode.has(child.uid))
+          .map(child => child.uid));
+        trace.log(`record shallow history of ${stateDescription(state)} = ${logHistoryValue(historyValue)}`);
+        history.set(h.uid, historyValue);
+        rt = {...rt, history};
+      }
+      else { // deep history
+        rt = recordDeepHistory(rt, state, h, trace);
+      }
+    }
+  }
+  return rt;
 }
 
 // exit the given state's active descendants
 export function exitChildren(rt: RT_Microstep, parent: ConcreteState, trace: Tracer): RT_Microstep {
   // exit all active children...
   if (parent.kind === "and") {
-    // record history...
-    for (const h of parent.history) {
-      if (h.kind === "shallow") {
-        const history = new Map(rt.history);
-        // record the shallow history of every child (because recording the history of the AND-state itself would be redundant)
-        const historyValue = new Set([
-          ...parent.children.map(child => child.uid),
-          ...parent.children.flatMap(child =>
-            child.kind !== "pseudo" &&
-              child.children
-                .filter(child => rt.mode.has(child.uid))
-                .map(child => child.uid)
-              || [])]);
-        trace.log(`record history of ${stateDescription(parent)} = ${historyValue}`);
-        history.set(h.uid, historyValue);
-        rt = {...rt, history};
-      }
-      else { // deep history
-        rt = recordDeepHistory(rt, parent, h, trace);
-      }
-    }
     // every child is exited
     for (const child of parent.children) {
       rt = exitState(rt, child, trace);
     }
   }
   else if (parent.kind === "or") {
-    // record history...
-    for (const h of parent.history) {
-      if (h.kind === "shallow") {
-        const history = new Map(rt.history);
-        const historyValue = new Set(parent.children
-          .filter(child => rt.mode.has(child.uid))
-          .map(child => child.uid));
-        trace.log(`record history of ${stateDescription(parent)} = ${[...historyValue].join(',')}`);
-        history.set(h.uid, historyValue);
-        rt = {...rt, history};
-      }
-      else { // deep history
-        rt = recordDeepHistory(rt, parent, h, trace);
-      }
-    }
     // exit active child
     for (const child of parent.children) {
       if (rt.mode.has(child.uid)) {
@@ -400,9 +413,10 @@ function handleInternalEvents(microstep: RT_Microstep, statechart: Statechart, t
   };
 }
 
-function resolveHistory(tgt: AbstractState, history: RT_History): Set<string> {
+function resolveHistory(tgt: AbstractState, history: RT_History, trace: Tracer): Set<string> {
   if (tgt.kind === "shallow" || tgt.kind === "deep") {
     const toEnter = history.get(tgt.uid) || new Set();
+    trace.log(`restore ${tgt.kind} history of ${stateDescription(tgt.parent!)} = ${logHistoryValue(toEnter)}`);
     return toEnter;
   }
   else {
@@ -424,7 +438,7 @@ function fire(rt: RT_Microstep, transition: Transition, event: RT_Event | undefi
   }
 
   const tgtPath = computePath({ancestor: transition.arena, descendant: transition.tgt});
-  const toEnter = resolveHistory(transition.tgt, rt.history)
+  const toEnter = resolveHistory(transition.tgt, rt.history, trace)
     .union(new Set(tgtPath.map(s=>s.uid)));
 
   rt = enterChildren(rt, transition.arena, toEnter, trace.indent());
