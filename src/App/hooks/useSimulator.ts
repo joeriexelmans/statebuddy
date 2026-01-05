@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Plant } from "../Plant/Plant";
 import { getSimTime, getWallClkDelay, TimeMode } from "@/statecharts/time";
 import { UniversalPlantState } from "../plants";
+import { useShortcuts } from "@/hooks/useShortcuts";
 
 type CoupledState = {
   sc: BigStep,
@@ -172,14 +173,9 @@ export function useSimulator(ast: Statechart|null, plant: Plant<any, UniversalPl
 
   const onBack = useCallback(() => {
     if (trace !== null && trace.idx > 0) {
-      setTime(() => {
-        if (trace !== null) {
-          return {
-            kind: "paused",
-            simtime: trace.trace[trace.idx-1].simtime,
-          }
-        }
-        return { kind: "paused", simtime: 0 };
+      setTime({
+        kind: "paused",
+        simtime: trace.trace[trace.idx-1].simtime,
       });
       setTrace({
         ...trace,
@@ -187,6 +183,24 @@ export function useSimulator(ast: Statechart|null, plant: Plant<any, UniversalPl
       });
     }
   }, [trace, trace?.idx, setTime, setTrace]);
+
+  const onNext = useCallback(() => {
+    if (trace !== null && trace.idx < trace.trace.length -1) {
+      setTime({
+        kind: "paused",
+        simtime: trace.trace[trace.idx+1].simtime,
+      });
+      setTrace({
+        ...trace,
+        idx: trace.idx+1,
+      });
+    }
+  }, [trace, trace?.idx, setTrace]);
+
+  useShortcuts([
+    {keys: ["ArrowUp"], action: onBack},
+    {keys: ["ArrowDown"], action: onNext},
+  ])
 
   const replayTrace = useCallback((causes: BigStepCause[]) => {
     if (cE) {

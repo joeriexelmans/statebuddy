@@ -128,10 +128,10 @@ export const RTHistoryItem = memo(function RTHistoryItem({ast, idx, item, prevIt
           {outputEvents.map((e:RaisedEvent) => <span className={styles.outputEvent}>{e.name}<RTEventParam param={e.param}/></span>)}
           </div>}
       </div>
-      {!isPlantStep &&
+      {/* {!isPlantStep &&
         <ShowFiredTransitions firedTransitions={
           [...ast.transitions.values().flatMap(t => t.filter(t => item.state.sc.firedTransitions.includes(t.uid)))]}/>
-      }
+      } */}
       <ShowEnvironment environment={item.state.sc.environment}/>
       {microsteps && <MicroSteps msgs={item.msgs} />}
     </div>;
@@ -158,7 +158,7 @@ export const RTHistoryItem = memo(function RTHistoryItem({ast, idx, item, prevIt
 
 function MicroSteps({msgs}: {msgs: string[]}) {
   return <div style={{
-    paddingLeft: 20,
+    paddingLeft: 8,
     whiteSpace: 'preserve',
     backgroundColor: 'var(--statusbar-bg-color)', // <-- just make it stand out a bit
   }}>{msgs.map(msg => <div>{msg}</div>)}</div>;
