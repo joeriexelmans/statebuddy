@@ -260,6 +260,7 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
                 type="text"
                 style={{flexGrow: 1}}
                 value={property}
+                size={1}
                 onChange={e => setProperties(properties => properties.toSpliced(i, 1, e.target.value))} 
                 placeholder='write MTL property...'
               />
@@ -312,6 +313,7 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
                   type="text"
                   value={savedTrace[0]}
                   style={{flexGrow: 1}}
+                  size={1}
                   className={styles.description}
                   onChange={e => setSavedTraces(savedTraces => savedTraces.toSpliced(i, 1, [e.target.value, savedTraces[i][1]]))}/>
               </Tooltip>
