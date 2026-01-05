@@ -28,7 +28,6 @@ export type VisualEditorState = ConcreteSyntax & {
 export function json2EditorState(json: {selection: ([string, string]|{uid: string, part: string})[]}) {
   const selection = new Selection();
   if (json.selection) {
-    console.log(json.selection);
     for (const item of json.selection) {
       // i kind of fucked things up by introducing over time 2 ways to serialize the selection, meaning that there are two formats that have to be supported (for backwards compatibility):
       let uid, part;
@@ -83,7 +82,6 @@ export const VisualEditor = memo(function VisualEditor({state, commitState, repl
     // bit of a hacky way to force the animation on fired transitions to replay, if the new 'rt' contains the same fired transitions as the previous one
     requestAnimationFrame(() => {
       document.querySelectorAll(`.${styles.arrow}.${styles.fired}`).forEach(el => {
-        console.log('element:', el);
         // @ts-ignore
         el.style.animation = 'none';
         requestAnimationFrame(() => {
