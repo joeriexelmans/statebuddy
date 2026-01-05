@@ -75,19 +75,16 @@ export function Trace({trace, setTrace, ast, setTime, showPlantTrace, propertyTr
         propertyStatus = (satisfied ? "satisfied" : "violated");
       }
     }
-    return <>
-      <RTHistoryItem ast={ast} idx={i} item={item} prevItem={prevItem} isPlantStep={isPlantStep} active={i === trace.idx} onMouseDown={onMouseDown} propertyStatus={propertyStatus} />
-      {i === trace.idx && showMicroSteps &&
-        <div style={{
-          paddingLeft: 20,
-          color: 'grey',
-          transitionProperty: 'max-height',
-          maxHeight: 500,
-          transitionDuration: '1s',
-          transformOrigin: 'top',
-          whiteSpace: 'preserve',
-        }}>{item.msgs.map(msg => <div>{msg}</div>)}</div>}
-    </>;
+    return <RTHistoryItem
+      ast={ast}
+      idx={i}
+      item={item}
+      prevItem={prevItem}
+      isPlantStep={isPlantStep}
+      active={i === trace.idx}
+      onMouseDown={onMouseDown}
+      propertyStatus={propertyStatus}
+      microsteps={i === trace.idx && showMicroSteps}/>;
   });
 }
 
@@ -114,7 +111,7 @@ function RTEventParam(props: {param?: any}) {
   return <>{props.param !== undefined && <>({JSON.stringify(props.param)})</>}</>;
 }
 
-export const RTHistoryItem = memo(function RTHistoryItem({ast, idx, item, prevItem, isPlantStep, active, onMouseDown, propertyStatus}: {idx: number, ast: Statechart, item: TraceItem, prevItem?: TraceItem, isPlantStep: boolean, active: boolean, onMouseDown: (idx: number, timestamp: number) => void, propertyStatus: PropertyStatus}) {
+export const RTHistoryItem = memo(function RTHistoryItem({ast, idx, item, prevItem, isPlantStep, active, onMouseDown, propertyStatus, microsteps}: {idx: number, ast: Statechart, item: TraceItem, prevItem?: TraceItem, isPlantStep: boolean, active: boolean, onMouseDown: (idx: number, timestamp: number) => void, propertyStatus: PropertyStatus, microsteps: boolean}) {
   if (item.kind === "bigstep") {
     const outputEvents = isPlantStep ? item.state.plant.outputEvents : item.state.sc.outputEvents;
     return <div
@@ -135,8 +132,8 @@ export const RTHistoryItem = memo(function RTHistoryItem({ast, idx, item, prevIt
         <ShowFiredTransitions firedTransitions={
           [...ast.transitions.values().flatMap(t => t.filter(t => item.state.sc.firedTransitions.includes(t.uid)))]}/>
       }
-      {/* <ShowMode mode={newStates} statechart={ast}/> */}
       <ShowEnvironment environment={item.state.sc.environment}/>
+      {microsteps && <MicroSteps msgs={item.msgs} />}
     </div>;
   }
   else {
@@ -154,9 +151,18 @@ export const RTHistoryItem = memo(function RTHistoryItem({ast, idx, item, prevIt
       <div>
         {item.error.message}
       </div>
+      {microsteps && <MicroSteps msgs={item.msgs} />}
     </div>;
   }
 });
+
+function MicroSteps({msgs}: {msgs: string[]}) {
+  return <div style={{
+    paddingLeft: 20,
+    whiteSpace: 'preserve',
+    backgroundColor: 'var(--statusbar-bg-color)', // <-- just make it stand out a bit
+  }}>{msgs.map(msg => <div>{msg}</div>)}</div>;
+}
 
 function ShowFiredTransitions({firedTransitions}: {firedTransitions: Transition[]}) {
   return <>
