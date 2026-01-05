@@ -292,9 +292,11 @@ compressed: ${prettyNumber(compressedSize)} bytes (${Math.round(compressedSize/o
           <div style={{
             position: 'absolute',
             marginTop: -4,
-            marginLeft: 20,
+            marginLeft: 17,
             height: 4,
             borderWidth: 0,
+            borderBottomLeftRadius: 4,
+            borderBottomRightRadius: 4,
             backgroundColor: catchingUp
               ? 'var(--firing-transition-color)'
               : 'var(--accent-border-color)',
