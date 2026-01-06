@@ -1,7 +1,5 @@
 import styles from "./App.module.css";
 
-console.log({styles});
-
 import "./App.css";
 
 import { PropsWithChildren, ReactElement, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -230,7 +228,6 @@ export function App() {
     const onMouseMove = (e: MouseEvent) => {
       setters.setSidePanelWidth(width => {
         const newWidth = width - e.movementX;
-        console.log({newWidth});
         return newWidth;
       });
       e.preventDefault();

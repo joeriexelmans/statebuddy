@@ -380,7 +380,7 @@ export function makeBigStep(rt: BigStep, event: RT_Event, statechart: Statechart
     trace.log(`timer`);
   }
   else {
-    trace.log(`input ${event.name}:${event.param})`);
+    trace.log(`input ${event.name}${logEventParam(event.param)}`);
   }
   const microstep = fairStep({...rt,
     firedArenas: [],

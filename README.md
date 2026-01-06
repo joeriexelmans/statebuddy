@@ -14,9 +14,15 @@ Live version available here:
   - simulation
       - step-by-step
       - (scaled) real-time
+  - live modeling (= ability to edit model at runtime -- use at your own risk :)
   - omniscient debugging (= ability to undo execution steps)
+      - logging of microsteps
   - ability to save / restore execution traces
   - metric temporal logic (MTL) property checking on saved traces
   - no need to install anything, runs entirely locally(*) in browser
 
-(*) except for MTL property checking, which depends on an external REST service endpoint.
+(*) except for MTL property checking, which depends on the Python library [py-metric-temporal-logic](https://github.com/mvcisback/py-metric-temporal-logic), for which I have set up a REST endpoint.
+
+### Manual
+
+See the [cheat sheet](./docs/cheat_sheet.md).

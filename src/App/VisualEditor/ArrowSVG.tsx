@@ -2,11 +2,9 @@ import { memo } from "react";
 import { Arrow, ArrowPart, getArrowFatBBox, getArrowFatBBoxes } from "../../statecharts/concrete_syntax";
 import { ArcDirection, euclideanDistance } from "../../util/geometry";
 import { CORNER_HELPER_RADIUS } from "../parameters";
-import { arraysEqual, jsonDeepEqual, setsEqual } from "@/util/util";
+import { jsonDeepEqual, setsEqual } from "@/util/util";
 import { BoundingBox } from "./BoundingBox";
 import styles from "./VisualEditor.module.css";
-
-console.log({styles});
 
 export const ArrowSVG = memo(function(props: { arrow: Arrow; selected: Set<ArrowPart>; error: string; highlight: boolean; fired: boolean; arc: ArcDirection; initialMarker: boolean }) {
   const { start, end, uid } = props.arrow;

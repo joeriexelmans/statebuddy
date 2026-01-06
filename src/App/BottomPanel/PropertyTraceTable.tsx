@@ -28,7 +28,6 @@ export function PropertyTraceTable({properties, traces, onClose, replayTrace, pl
             checkProperty(property, prepared).then(([result, errors]) => {
               if (result) {
                 const [[_, ok]] = result;
-                console.log({result});
                 setResults(results => {
                   if (results) {
                     return results?.with(i,
