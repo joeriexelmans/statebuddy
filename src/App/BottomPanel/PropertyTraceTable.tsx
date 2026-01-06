@@ -8,6 +8,7 @@ import { SavedTraces } from "../SideBar/SideBar";
 import { Status } from "../SideBar/Status";
 import { BigStepCause, TraceItem } from '../hooks/useSimulator';
 import { checkProperty, prepareTrace } from '../SideBar/check_property';
+import { checkProperty as checkProperty2 } from '../../mtl-checker/mtl';
 import { Plant } from '../Plant/Plant';
 import { UniversalPlantState } from '../plants';
 import styles from "@/App/App.module.css";
@@ -25,7 +26,7 @@ export function PropertyTraceTable({properties, traces, onClose, replayTrace, pl
           if (replayed) {
             const {trace} = replayed;
             const prepared = prepareTrace(plant, trace);
-            checkProperty(property, prepared).then(([result, errors]) => {
+            checkProperty2(property, prepared).then(([result, errors]) => {
               if (result) {
                 const [[_, ok]] = result;
                 setResults(results => {
