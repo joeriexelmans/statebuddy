@@ -15,3 +15,9 @@ declare module "*.module.css" {
   const classes: { readonly [key: string]: string };
   export = classes;
 }
+
+declare module "*.whl" {
+  // enable loading of .whl files
+  const path: `${string}.whl`;
+  export = path;
+}

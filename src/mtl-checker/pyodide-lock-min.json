@@ -1,0 +1,124 @@
+{
+  "info": {
+    "abi_version": "2025_0",
+    "arch": "wasm32",
+    "platform": "emscripten_4_0_9",
+    "python": "3.13.2",
+    "version": "0.28.0.dev0"
+  },
+  "packages": {
+    "metric-temporal-logic": {
+      "name": "metric-temporal-logic",
+      "version": "0.4.1",
+      "file_name": "https://deemz.org/public/python-crap/metric_temporal_logic-0.4.1-py3-none-any.whl",
+      "install_dir": "site",
+      "sha256": "eef0930c9544dcda45938fafef6f1a3747e00d5f19e9b96700aa9e7329f79c4f",
+      "imports": [],
+      "depends": [
+        "attrs",
+        "discrete-signals",
+        "lenses",
+        "parsimonious"
+      ]
+    },
+    "attrs": {
+      "name": "attrs",
+      "version": "22.2.0",
+      "file_name": "https://files.pythonhosted.org/packages/fb/6e/6f83bf616d2becdf333a1640f1d463fef3150e2e926b7010cb0f81c95e88/attrs-22.2.0-py3-none-any.whl",
+      "install_dir": "site",
+      "sha256": "29e95c7f6778868dbd49170f98f8818f78f3dc5e0e37c0b1f474e3561b240836",
+      "imports": [
+        "attr",
+        "attrs"
+      ],
+      "depends": []
+    },
+    "discrete-signals": {
+      "name": "discrete-signals",
+      "version": "0.8.3",
+      "file_name": "https://files.pythonhosted.org/packages/63/aa/74e7815dccd13061582d3426ecc8c66eb68fdc805a3f994aa2087dd4a2a5/discrete_signals-0.8.3-py3-none-any.whl",
+      "install_dir": "site",
+      "sha256": "62b614867c67dfb4a1d8c345064af3d8e0970634937613464a34bfd51c21a81c",
+      "imports": [],
+      "depends": [
+        "attrs",
+        "funcy",
+        "sortedcontainers"
+      ]
+    },
+    "funcy": {
+      "name": "funcy",
+      "version": "1.18",
+      "file_name": "https://files.pythonhosted.org/packages/e6/c1/8f2c327498b9a15bd7ba426d539760c5ad60b1c1ee8e372bbf43d36f7023/funcy-1.18-py2.py3-none-any.whl",
+      "install_dir": "site",
+      "sha256": "00ce91afc850357a131dc54f0db2ad8a1110d5087f1fa4480d7ea3ba0249f89d",
+      "imports": [
+        "funcy"
+      ],
+      "depends": []
+    },
+    "sortedcontainers": {
+      "depends": [],
+      "file_name": "https://cdn.jsdelivr.net/pyodide/v0.29.0/full/sortedcontainers-2.4.0-py2.py3-none-any.whl",
+      "imports": [
+        "sortedcontainers"
+      ],
+      "install_dir": "site",
+      "name": "sortedcontainers",
+      "package_type": "package",
+      "sha256": "6a41186806169b3ec6d955e20b50755984570f720b98a3b9edeed40e1734a8d2",
+      "unvendored_tests": false,
+      "version": "2.4.0"
+    },
+    "lenses": {
+      "name": "lenses",
+      "version": "0.5.0",
+      "file_name": "https://files.pythonhosted.org/packages/9c/5f/e6116e7eafd47b9289478d7abb7180217c1495e5b34cabbdd3bb5062ec96/lenses-0.5.0-py3-none-any.whl",
+      "install_dir": "site",
+      "sha256": "5fa2892eaf6c1da230423e9b4db70348f8dc6d193f3546fce2f2fe6e9e608dcd",
+      "imports": [
+        "lenses"
+      ],
+      "depends": [
+        "singledispatch"
+      ]
+    },
+    "singledispatch": {
+      "name": "singledispatch",
+      "version": "4.1.2",
+      "file_name": "https://files.pythonhosted.org/packages/71/9b/93adabae9d3979ac081f4488d3da1cf8ad8f3b27660f896d59c5a088253b/singledispatch-4.1.2-py3-none-any.whl",
+      "install_dir": "site",
+      "sha256": "24802c4e743a252645c461e71abcaa95c3f678a96688e72bb0bf63e663018c7a",
+      "imports": [
+        "singledispatch"
+      ],
+      "depends": []
+    },
+    "parsimonious": {
+      "name": "parsimonious",
+      "version": "0.9.0",
+      "file_name": "https://deemz.org/public/python-crap/parsimonious-0.9.0-py3-none-any.whl",
+      "install_dir": "site",
+      "sha256": "0e4e582e5ce183a42265bf48b4a8799721267b8e8927194f1191596785210b15",
+      "imports": [
+        "parsimonious"
+      ],
+      "depends": [
+        "regex"
+      ]
+    },
+    "regex": {
+      "depends": [],
+      "file_name": "https://cdn.jsdelivr.net/pyodide/v0.29.0/full/regex-2024.11.6-cp313-cp313-pyodide_2025_0_wasm32.whl",
+      "imports": [
+        "regex"
+      ],
+      "install_dir": "site",
+      "name": "regex",
+      "package_type": "package",
+      "sha256": "d2b08cca71336244c9fd93cf4b7b1713049cb0e3c09d6400a5e87e06e5314144",
+      "unvendored_tests": true,
+      "version": "2024.11.6"
+    }
+  }
+}

@@ -14,6 +14,7 @@ import { Statechart } from '@/statecharts/abstract_syntax';
 import { ShowAST, ShowInputEvents, ShowInternalEvents, ShowOutputEvents } from './ShowAST';
 import { Plant } from '../Plant/Plant';
 import { checkProperty, PreparedTraces, PropertyCheckResult } from './check_property';
+import { checkProperty as checkProperty2 } from '../../mtl-checker/mtl';
 import { Setters } from '../makePartialSetter';
 import { Trace } from './Trace';
 import { BigStepCause, TraceState } from '../hooks/useSimulator';
@@ -122,7 +123,7 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
       setPropertyResults(null);
       timeout = setTimeout(() => {
         Promise.all(properties.map((property, i) => {
-          return checkProperty(property, preparedTraces);
+          return checkProperty2(property, preparedTraces);
         }))
         .then(results => {
           setPropertyResults(results);
