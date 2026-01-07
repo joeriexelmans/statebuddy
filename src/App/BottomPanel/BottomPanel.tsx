@@ -22,7 +22,13 @@ export const defaultBottomPanelState = {
   errorsExpanded: false,
 }
 
-export function BottomPanel(props: {errors: TraceableError[], setEditorState: Dispatch<(state: VisualEditorState) => VisualEditorState>, ast: Statechart} & AppState & Setters<AppState>) {
+const statusStrings = {
+  "notLoaded": "not loaded",
+  "loading": "loading...",
+  "loaded": "ready",
+}
+
+export function BottomPanel(props: {errors: TraceableError[], setEditorState: Dispatch<(state: VisualEditorState) => VisualEditorState>, ast: Statechart, pyodideStatus: "notLoaded" | "loading" | "loaded"} & AppState & Setters<AppState>) {
 
   return <div className="bottom">
     <div className={appStyles.stackHorizontal
@@ -41,6 +47,10 @@ export function BottomPanel(props: {errors: TraceableError[], setEditorState: Di
       </div>
       <div style={{display: 'flex', alignItems: 'center'}}>
         <Stats ast={props.ast}/>
+        &nbsp;|&nbsp;
+        <Tooltip tooltip="MTL properties are checked with a Python library, which runs in your browser via Pyodide. Pyodide is slow to start and currently blocks the main thread, which is a known issue." above>
+          Pyodide: <span style={{fontWeight: props.pyodideStatus === "loading" ? 600 : 400, color: props.pyodideStatus === "loading" ? 'var(--accent-border-color)' : undefined}}>{statusStrings[props.pyodideStatus]}</span>
+        </Tooltip>
         &nbsp;|&nbsp;
         switch to&nbsp;
         <Tooltip tooltip="only works if you are running a development server locally" above={true}>

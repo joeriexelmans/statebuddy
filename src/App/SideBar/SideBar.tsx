@@ -13,8 +13,8 @@ import { Dispatch, memo, Ref, SetStateAction, useCallback, useEffect, useRef, us
 import { Statechart } from '@/statecharts/abstract_syntax';
 import { ShowAST, ShowInputEvents, ShowInternalEvents, ShowOutputEvents } from './ShowAST';
 import { Plant } from '../Plant/Plant';
-import { checkProperty, PreparedTraces, PropertyCheckResult } from './check_property';
-import { checkProperty as checkProperty2 } from '../../mtl-checker/mtl';
+import { /*checkProperty,*/ PreparedTraces, PropertyCheckResult } from './check_property';
+// import { checkProperty as checkProperty2 } from '../../mtl-checker/mtl';
 import { Setters } from '../makePartialSetter';
 import { Trace } from './Trace';
 import { BigStepCause, TraceState } from '../hooks/useSimulator';
@@ -97,11 +97,12 @@ type SideBarProps = SideBarState & {
   setTime: Dispatch<SetStateAction<TimeMode>>,
   time: TimeMode,
   preparedTraces: PreparedTraces | null,
+  checkProperty: (property: string, preparedTraces: PreparedTraces) => Promise<PropertyCheckResult>,
 } & Setters<SideBarState>;
 
 export const SideBar = memo(function SideBar(props: SideBarProps) {
 
-  const {showExecutionTrace, showConnections, plantName, showPlantTrace, showProperties, activeProperty, autoConnect, autoScroll, plantConns, properties, savedTraces, refRightSideBar, ast, plant, plantCS, setSavedTraces, trace, setTrace, setProperties, setShowPlantTrace, setActiveProperty, setPlantConns, setPlantName, setAutoConnect, setShowProperties, setAutoScroll, time, plantState, onReplayTrace, onRaise, setTime, setShowConnections, setShowExecutionTrace, showPlant, setShowPlant, showOutputEvents, setShowOutputEvents, setShowInternalEvents, showInternalEvents, setShowInputEvents, setShowStateTree, showInputEvents, showStateTree, preparedTraces, showTable, setShowTable, showMicroSteps, setShowMicroSteps} = props;
+  const {showExecutionTrace, showConnections, plantName, showPlantTrace, showProperties, activeProperty, autoConnect, autoScroll, plantConns, properties, savedTraces, refRightSideBar, ast, plant, plantCS, setSavedTraces, trace, setTrace, setProperties, setShowPlantTrace, setActiveProperty, setPlantConns, setPlantName, setAutoConnect, setShowProperties, setAutoScroll, time, plantState, onReplayTrace, onRaise, setTime, setShowConnections, setShowExecutionTrace, showPlant, setShowPlant, showOutputEvents, setShowOutputEvents, setShowInternalEvents, showInternalEvents, setShowInputEvents, setShowStateTree, showInputEvents, showStateTree, preparedTraces, showTable, setShowTable, showMicroSteps, setShowMicroSteps, checkProperty} = props;
 
   const [propertyResults, setPropertyResults] = useState<PropertyCheckResult[] | null>(null);
 
@@ -123,7 +124,7 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
       setPropertyResults(null);
       timeout = setTimeout(() => {
         Promise.all(properties.map((property, i) => {
-          return checkProperty2(property, preparedTraces);
+          return checkProperty(property, preparedTraces);
         }))
         .then(results => {
           setPropertyResults(results);

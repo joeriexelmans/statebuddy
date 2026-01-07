@@ -31,6 +31,7 @@ import { DebugContext } from "./VisualEditor/context/DebugContext";
 import { formatDateTime } from "@/util/util";
 import { OpenFile } from "./Modals/OpenFile";
 import { PropertyTraceTable } from "./BottomPanel/PropertyTraceTable";
+import { usePyodide } from "./hooks/usePyodide";
 
 export type EditHistory = {
   current: VisualEditorState,
@@ -240,6 +241,8 @@ export function App() {
     return () => window.removeEventListener('mousemove', onMouseMove);
   }, [resizing])
 
+  const {status, checkProperty} = usePyodide();
+
   return <div className={styles.App} style={{cursor: resizing ? 'col-resize' : undefined}}>
     <ModalOverlay modal={modal} setModal={setModal}>
       {/* top-to-bottom: everything -> bottom panel */}
@@ -277,6 +280,7 @@ export function App() {
                   onClose={() => setters.setShowTable(false)}
                   plant={plant}
                   replayTrace={simulator.replayTrace}
+                  checkProperty={checkProperty}
                 />
               </BelowEditor>}
             {editorState && appState.showFindReplace &&
@@ -325,7 +329,7 @@ export function App() {
             // maxWidth: `max(min(${appState.sidePanelWidth}px, 75vw), 100px)`,
           }}>
             <div className={styles.stackVertical} style={{height:'100%'}}>
-              <SideBar {...{...appState, refRightSideBar, ast, preparedTraces, plantCS, plantState, ...simulator, ...setters}} />
+              <SideBar {...{...appState, refRightSideBar, ast, preparedTraces, plantCS, plantState, ...simulator, ...setters, checkProperty}} />
             </div>
           </div>
         </div>
@@ -339,7 +343,7 @@ export function App() {
                 <Plot width="100%" traces={preparedTraces} displayTime={displayTime} nextWakeup={simulator.nextWakeup} {...appState} {...setters} />}
             </PersistentDetails>
           </div>
-          {syntaxErrors && ast && <BottomPanel {...{errors: syntaxErrors, ...appState, setEditorState, ...setters, ast}}/>}
+          {syntaxErrors && ast && <BottomPanel {...{errors: syntaxErrors, ...appState, setEditorState, ...setters, ast, pyodideStatus: status}}/>}
         </div>
       </div>
     </ModalOverlay>

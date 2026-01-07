@@ -7,13 +7,13 @@ import { TwoStateButton } from "../Components/TwoStateButton";
 import { SavedTraces } from "../SideBar/SideBar";
 import { Status } from "../SideBar/Status";
 import { BigStepCause, TraceItem } from '../hooks/useSimulator';
-import { checkProperty, prepareTrace } from '../SideBar/check_property';
-import { checkProperty as checkProperty2 } from '../../mtl-checker/mtl';
+import { PreparedTraces, prepareTrace, PropertyCheckResult } from '../SideBar/check_property';
 import { Plant } from '../Plant/Plant';
 import { UniversalPlantState } from '../plants';
 import styles from "@/App/App.module.css";
 
-export function PropertyTraceTable({properties, traces, onClose, replayTrace, plant}: {properties: string[], traces: SavedTraces, onClose: () => void, replayTrace: (c: BigStepCause[]) => {trace: [TraceItem, ...TraceItem[]]} | undefined, plant: Plant<any, UniversalPlantState>}) {
+export function PropertyTraceTable({properties, traces, onClose, replayTrace, plant, checkProperty}: {properties: string[], traces: SavedTraces, onClose: () => void, replayTrace: (c: BigStepCause[]) => {trace: [TraceItem, ...TraceItem[]]} | undefined, plant: Plant<any, UniversalPlantState>, checkProperty: (property: string, preparedTraces: PreparedTraces) => Promise<PropertyCheckResult>,
+}) {
   const [rotateText, setRotateText] = useState(false);
 
   const [results, setResults] = useState<("pending"|"satisfied"|"violated")[][]|null>(null);
@@ -26,7 +26,7 @@ export function PropertyTraceTable({properties, traces, onClose, replayTrace, pl
           if (replayed) {
             const {trace} = replayed;
             const prepared = prepareTrace(plant, trace);
-            checkProperty2(property, prepared).then(([result, errors]) => {
+            checkProperty(property, prepared).then(([result, errors]) => {
               if (result) {
                 const [[_, ok]] = result;
                 setResults(results => {

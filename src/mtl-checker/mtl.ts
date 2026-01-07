@@ -1,6 +1,6 @@
 import { PreparedTraces, PropertyCheckResult } from "@/App/SideBar/check_property";
 
-import { loadPyodide, Lockfile, version as pyodideVersion } from "pyodide";
+import { loadPyodide, Lockfile, PyodideAPI, version as pyodideVersion } from "pyodide";
 
 // import pyodideLock from "./wheels/pyodide-lock.json";
 import pyodideLock from "./wheels/pyodide-lock-min.json"; // <-- only what's strictly necessary
@@ -34,27 +34,29 @@ pyodideLock.packages['regex'].file_name = regex;
 //   }
 // }
 
-const pyodidePromise = (async () => {
+export async function initPyodide() {
+  console.log('loading pyodide...');
   const pyodide = await loadPyodide({
     checkAPIVersion: false,
     fullStdLib: false,
     indexURL: `https://cdn.jsdelivr.net/pyodide/v${pyodideVersion}/full/`,
     // @ts-ignore
     lockFileContents: pyodideLock as Lockfile,
-    stdout: (msg) => console.log(`Pyodide: ${msg}`),
+    stdout: (msg: string) => console.log(`Pyodide: ${msg}`),
     packages: ['metric-temporal-logic'],
+    packageBaseUrl: window.location.protocol + window.location.hostname + ':' + window.location.port + window.location.pathname,
   });
   console.log('loaded pyodide');
   await pyodide.runPythonAsync(`
     import mtl.parser
   `);
-  console.log("loaded mtl");
+  console.log("loaded mtl library");
   return pyodide;
-})();
+}
 
-export async function checkProperty(property: string, preparedTraces: PreparedTraces): Promise<PropertyCheckResult> {
-  const pyodide = await pyodidePromise;
+export const getPropertyChecker = (pyodide: PyodideAPI) => async (property: string, preparedTraces: PreparedTraces): Promise<PropertyCheckResult> => {
   const codeToRun = `
+    import mtl.parser
     result = None
     error = None
     try:
