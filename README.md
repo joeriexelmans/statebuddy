@@ -44,7 +44,7 @@ Or just play with one of the **example models**:
 3. build artifacts can be found in `dist/` (`index.html` and a bunch of supporting files). Any static file server can host these files.
 
 
-## Documentation
+## User documentation
 
 See the [cheat sheet](./docs/cheat_sheet.md).
 
