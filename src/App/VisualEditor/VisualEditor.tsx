@@ -261,7 +261,7 @@ export const VisualEditor = memo(function VisualEditor({state, commitState, repl
 
     <Texts texts={state.texts} {...{selection: renderSelection, textsToHighlight, errors, onEditText, setModal, findText}}/>
 
-    {(rootErrors.length>0) && <text className="errorHover" x={5} y={20} style={{display:'inline'}}>{rootErrors.join('\n')}</text>}
+    {(rootErrors.length>0) && <text className={styles.errorHover} x={5} y={20} style={{display:'inline'}}>{rootErrors.join('\n')}</text>}
 
     {debugContext.showGrid && <Grid width={EDITOR_WIDTH} height={EDITOR_HEIGHT} />}
 
