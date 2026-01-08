@@ -3,19 +3,10 @@
 
 ## Mouse
 
-Each of three mouse buttons (left, middle, right) can be mapped to a different tool.
+Each of three mouse buttons (left, middle, right) can be mapped to any of the available tools.
 The available tools are shown in the top panel (from left to right):
 
 ![](./tools-available.png)
-
- * select / move / resize
- * draw AND-states
- * draw OR-states
- * draw pseudo-states
- * draw shallow history
- * draw deep history
- * draw arrows
- * insert text
 
 The mouse button mapping is always visible. For instance, in the next screenshot, the 'select / move / resize' tool is mapped to the left mouse button, and the 'draw arrows' tool is mapped to the right mouse button:
 
