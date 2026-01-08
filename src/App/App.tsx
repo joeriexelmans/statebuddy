@@ -8,7 +8,7 @@ import { connectionsEqual, detectConnections, reducedConcreteSyntaxEqual } from 
 import { parseStatechart } from "../statecharts/parser";
 import { BottomPanel, BottomPanelState, defaultBottomPanelState } from "./BottomPanel/BottomPanel";
 import { defaultSideBarState, SideBar, SideBarState } from "./SideBar/SideBar";
-import { InsertMode } from "./TopPanel/InsertModes";
+import { defaultToolSelectState, ToolMode, ToolSelectState } from "./TopPanel/ToolSelect";
 import { TopPanel } from "./TopPanel/TopPanel";
 import { json2EditorState, VisualEditor, VisualEditorState } from "./VisualEditor/VisualEditor";
 import { makeAllSetters } from "./makePartialSetter";
@@ -43,14 +43,13 @@ export type AppState = {
   modelName: string,
   showKeys: boolean,
   zoom: number,
-  insertMode: InsertMode,
   showFindReplace: boolean,
   findText: string,
   replaceText: string,
   showPlot: boolean,
   showDebug: boolean,
   sidePanelWidth: number,
-} & PlotState & SideBarState & BottomPanelState & DebugState;
+} & ToolSelectState & PlotState & SideBarState & BottomPanelState & DebugState;
 
 // valid URL hashes contain:
 export type UrlState = {
@@ -61,13 +60,13 @@ export const defaultAppState: AppState = {
   modelName: "",
   showKeys: true,
   zoom: 1,
-  insertMode: 'and',
   showFindReplace: false,
   findText: "",
   replaceText: "",
   showPlot: false,
   showDebug: false,
   sidePanelWidth: 400,
+  ...defaultToolSelectState,
   ...defaultSideBarState,
   ...defaultPlotState,
   ...defaultBottomPanelState,

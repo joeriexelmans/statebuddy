@@ -25,7 +25,7 @@ import { About } from "../Modals/About";
 import { VisualEditorState } from "../VisualEditor/VisualEditor";
 import { TraceState } from "../hooks/useSimulator";
 import { Setters } from "../makePartialSetter";
-import { InsertModes } from "./InsertModes";
+import { ToolSelect } from "./ToolSelect";
 import { KeyInfoHidden, KeyInfoVisible } from "./KeyInfo";
 import { RotateButtons } from "./RotateButtons";
 import { SpeedControl } from "./SpeedControl";
@@ -72,7 +72,9 @@ function toggle(booleanSetter: Dispatch<(state: boolean) => boolean>) {
   return () => booleanSetter(x => !x);
 }
 
-export const TopPanel = memo(function TopPanel({trial, trace, time, setTime, onUndo, onRedo, onRotate, onInit, onClear, onBack, insertMode, setInsertMode, setModal, zoom, setZoom, showKeys, setShowKeys, editHistory, showFindReplace, setShowFindReplace, displayTime, refreshDisplayTime, nextWakeup, modelName, setModelName, originalSize, compressedSize, state, showDebug, setShowDebug, properties, editorState, savedTraces, setProperties, setSavedTraces, setEditorState}: TopPanelProps) {
+export const TopPanel = memo(function TopPanel(props: TopPanelProps) {
+  const {trial, trace, time, setTime, onUndo, onRedo, onRotate, onInit, onClear, onBack, insertMode, setInsertMode, setModal, zoom, setZoom, showKeys, setShowKeys, editHistory, showFindReplace, setShowFindReplace, displayTime, refreshDisplayTime, nextWakeup, modelName, setModelName, originalSize, compressedSize, state, showDebug, setShowDebug, properties, editorState, savedTraces, setProperties, setSavedTraces, setEditorState} = props;
+
   const [timescale, setTimescale] = usePersistentState("timescale", 1);
   const config = trace && trace.trace[trace.idx];
   const formattedDisplayTime = useMemo(() => formatTime(displayTime), [displayTime]);
@@ -205,7 +207,7 @@ compressed: ${prettyNumber(compressedSize)} bytes (${Math.round(compressedSize/o
 
     {/* insert rountangle / arrow / ... */}
     <Toolbar>
-      <InsertModes insertMode={insertMode} setInsertMode={setInsertMode} showKeys={showKeys}/>
+      <ToolSelect {...props}/>
     </Toolbar>
 
     {/* rotate */}

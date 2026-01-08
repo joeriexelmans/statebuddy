@@ -47,9 +47,7 @@ export async function initPyodide() {
     packageBaseUrl: window.location.protocol + window.location.hostname + ':' + window.location.port + window.location.pathname,
   });
   console.log('loaded pyodide');
-  await pyodide.runPythonAsync(`
-    import mtl.parser
-  `);
+  await pyodide.pyimport('mtl.parser');
   console.log("loaded mtl library");
   return pyodide;
 }

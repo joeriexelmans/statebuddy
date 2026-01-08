@@ -3,7 +3,7 @@ import { addV2D, area, isEntirelyWithin, normalizeRect, Rect2D, roundLine2D, rou
 import { getBBoxInSvgCoords } from "@/util/svg_helper";
 import { Dispatch, useCallback, useEffect, useMemo, useState } from "react";
 import { MIN_ROUNTANGLE_SIZE } from "../../parameters";
-import { InsertMode } from "../../TopPanel/InsertModes";
+import { ToolMode } from "../../TopPanel/ToolSelect";
 import { Selecting, SelectingState } from "../Selection";
 import { Parts, Selection, VisualEditorState } from "../VisualEditor";
 import { useShortcuts } from "@/hooks/useShortcuts";
@@ -101,7 +101,9 @@ function drag(state: VisualEditorState, pointerDelta: Vec2D) {
 }
 
 export function useMouse(
-  insertMode: InsertMode,
+  leftMouseMode: ToolMode,
+  middleMouseMode: ToolMode,
+  insertMode: ToolMode,
   zoom: number,
   refSVG: {current: SVGSVGElement|null},
   state: VisualEditorState,
@@ -137,89 +139,8 @@ export function useMouse(
     }
   }, [refSVG.current, zoom]);
 
-  const onMouseDown = useCallback((e: React.MouseEvent<SVGSVGElement, MouseEvent>) => {
+  const startSelect = useCallback((e: React.MouseEvent<SVGSVGElement, MouseEvent>) => {
     const currentPointer = getCurrentPointer(e);
-    if (e.button === 2) {
-      // ignore selection, right mouse button always inserts
-      commitState(state => {
-        const newID = state.nextID.toString();
-        if (insertMode === "and" || insertMode === "or") {
-          // insert rountangle
-          return {
-            ...state,
-            rountangles: [...state.rountangles, {
-              uid: newID,
-              topLeft: currentPointer,
-              size: MIN_ROUNTANGLE_SIZE,
-              kind: insertMode,
-            }],
-            nextID: state.nextID+1,
-            selection: new Selection([[newID, new Parts(["bottom", "right"])]]),
-          };
-        }
-        else if (insertMode === "pseudo") {
-          return {
-            ...state,
-            diamonds: [...state.diamonds, {
-              uid: newID,
-              topLeft: currentPointer,
-              size: MIN_ROUNTANGLE_SIZE,
-            }],
-            nextID: state.nextID+1,
-            selection: new Selection([[newID, new Parts(["bottom", "right"])]]),
-          };
-        }
-        else if (insertMode === "shallow" || insertMode === "deep") {
-          return {
-            ...state,
-            history: [...state.history, {
-              uid: newID,
-              kind: insertMode,
-              topLeft: currentPointer,
-            }],
-            nextID: state.nextID+1,
-            selection: new Selection([[newID, new Parts(["history"])]]),
-          }
-        }
-        else if (insertMode === "transition") {
-          return {
-            ...state,
-            arrows: [...state.arrows, {
-              uid: newID,
-              start: currentPointer,
-              end: currentPointer,
-            }],
-            nextID: state.nextID+1,
-            selection: new Selection([[newID, new Parts(["end"])]]),
-          }
-        }
-        else if (insertMode === "text") {
-          return {
-            ...state,
-            texts: [...state.texts, {
-              uid: newID,
-              text: "// Double-click to edit",
-              topLeft: currentPointer,
-            }],
-            nextID: state.nextID+1,
-            selection: new Selection([[newID, new Parts(["text"])]]),
-          }
-        }
-        throw new Error("unreachable, mode=" + insertMode); // shut up typescript
-      });
-      setDragging(currentPointer);
-      return;
-    }
-
-    let appendTo: Selection;
-    // if (shiftOrCtrlPressed) {
-    if (e.getModifierState("Shift") || e.getModifierState("Control")) {
-      appendTo = selection;
-    }
-    else {
-      appendTo = new Selection();
-    }
-
     const startMakingSelection = () => {
       setDragging(null);
       setSelectingState({
@@ -228,49 +149,146 @@ export function useMouse(
       });
       commitSelection(_ => appendTo);
     }
-
-    if (e.button === 0) {
-      // left mouse button
-      const uid = e.target?.dataset.uid;
-      const parts = new Parts(e.target?.dataset.parts?.split(' ').filter((p:string) => p!=="") || []);
-      if (uid && parts.size > 0) {
-        // mouse hovers over a shape or part of a shape
-        const allPartsInSelection = parts.difference(selection.get(uid) || new Set()).size === 0;
-        if (!allPartsInSelection) {
-          // existing selection does not (entirely) cover the part
-          if (e.target.classList.contains(styles.helper)) {
-            // it's only a helper
-            // -> update selection by the part and start dragging it
-            commitSelection(() => new Selection([
-              ...appendTo,
-              [uid, parts],
-            ]));
-            setDragging(currentPointer);
-          }
-          else {
-            // it's an actual shape
-            // (we treat shapes differently from helpers because in a big hierarchical model it is nearly impossible to click anywhere without clicking inside a shape)
-            startMakingSelection();
-          }
+    let appendTo: Selection;
+    // if (shiftOrCtrlPressed) {
+    if (e.getModifierState("Shift") || e.getModifierState("Control")) {
+      appendTo = selection;
+    }
+    else {
+      appendTo = new Selection();
+    }
+    // left mouse button
+    const uid = e.target?.dataset.uid;
+    const parts = new Parts(e.target?.dataset.parts?.split(' ').filter((p:string) => p!=="") || []);
+    if (uid && parts.size > 0) {
+      // mouse hovers over a shape or part of a shape
+      const allPartsInSelection = parts.difference(selection.get(uid) || new Set()).size === 0;
+      if (!allPartsInSelection) {
+        // existing selection does not (entirely) cover the part
+        if (e.target.classList.contains(styles.helper)) {
+          // it's only a helper
+          // -> update selection by the part and start dragging it
+          commitSelection(() => new Selection([
+            ...appendTo,
+            [uid, parts],
+          ]));
+          setDragging(currentPointer);
         }
         else {
-          // the part is in existing selection
-          // -> just start dragging
-          commitSelection(s => s); // <-- but also create an undo-checkpoint!
-          setDragging(currentPointer);
+          // it's an actual shape
+          // (we treat shapes differently from helpers because in a big hierarchical model it is nearly impossible to click anywhere without clicking inside a shape)
+          startMakingSelection();
         }
       }
       else {
-        // mouse is not on any shape
-        startMakingSelection();
+        // the part is in existing selection
+        // -> just start dragging
+        commitSelection(s => s); // <-- but also create an undo-checkpoint!
+        setDragging(currentPointer);
       }
     }
     else {
-      // any other mouse button (e.g., middle mouse button)
-      // -> just start making a selection
+      // mouse is not on any shape
       startMakingSelection();
     }
-  }, [commitState, commitSelection, getCurrentPointer, insertMode, selection]);
+  }, [getCurrentPointer, commitSelection, selection]);
+
+  const startInsert = useCallback((e: React.MouseEvent<SVGSVGElement, MouseEvent>, mode: ToolMode) => {
+    const currentPointer = getCurrentPointer(e);
+    // ignore selection, right mouse button always inserts
+    commitState(state => {
+      const newID = state.nextID.toString();
+      if (mode === "and" || mode === "or") {
+        // insert rountangle
+        return {
+          ...state,
+          rountangles: [...state.rountangles, {
+            uid: newID,
+            topLeft: currentPointer,
+            size: MIN_ROUNTANGLE_SIZE,
+            kind: mode,
+          }],
+          nextID: state.nextID+1,
+          selection: new Selection([[newID, new Parts(["bottom", "right"])]]),
+        };
+      }
+      else if (mode === "pseudo") {
+        return {
+          ...state,
+          diamonds: [...state.diamonds, {
+            uid: newID,
+            topLeft: currentPointer,
+            size: MIN_ROUNTANGLE_SIZE,
+          }],
+          nextID: state.nextID+1,
+          selection: new Selection([[newID, new Parts(["bottom", "right"])]]),
+        };
+      }
+      else if (mode === "shallow" || mode === "deep") {
+        return {
+          ...state,
+          history: [...state.history, {
+            uid: newID,
+            kind: mode,
+            topLeft: currentPointer,
+          }],
+          nextID: state.nextID+1,
+          selection: new Selection([[newID, new Parts(["history"])]]),
+        }
+      }
+      else if (mode === "transition") {
+        return {
+          ...state,
+          arrows: [...state.arrows, {
+            uid: newID,
+            start: currentPointer,
+            end: currentPointer,
+          }],
+          nextID: state.nextID+1,
+          selection: new Selection([[newID, new Parts(["end"])]]),
+        }
+      }
+      else if (mode === "text") {
+        return {
+          ...state,
+          texts: [...state.texts, {
+            uid: newID,
+            text: "// Double-click to edit",
+            topLeft: currentPointer,
+          }],
+          nextID: state.nextID+1,
+          selection: new Selection([[newID, new Parts(["text"])]]),
+        }
+      }
+      throw new Error("unreachable, mode=" + mode); // shut up typescript
+    });
+    setDragging(currentPointer);
+    return;
+  }, [getCurrentPointer, commitState]);
+
+  const modeToAction = (mode: ToolMode, e: React.MouseEvent<SVGSVGElement, MouseEvent>) => {
+    if (mode === "nothing") {
+      return;
+    }
+    else if (mode === "select") {
+      startSelect(e);
+    }
+    else {
+      startInsert(e, mode);
+    }
+  }
+
+  const onMouseDown = useCallback((e: React.MouseEvent<SVGSVGElement, MouseEvent>) => {
+    if (e.button === 0) {
+      modeToAction(leftMouseMode, e);
+    }
+    else if (e.button === 1) {
+      modeToAction(middleMouseMode, e);
+    }
+    else if (e.button === 2) {
+      modeToAction(insertMode, e);
+    }
+  }, [insertMode, leftMouseMode, modeToAction]);
 
   const [cursorPos, setCursorPos] = useState<Vec2D>({x:0,y:0});
 

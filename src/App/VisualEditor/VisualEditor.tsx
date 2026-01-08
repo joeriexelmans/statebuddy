@@ -6,7 +6,7 @@ import { ArrowPart, ConcreteSyntax, Diamond, RectSide, Rountangle, Text } from "
 import { Connections } from "../../statecharts/detect_connections";
 import { TraceableError } from "../../statecharts/parser";
 import { ArcDirection, arcDirection } from "../../util/geometry";
-import { InsertMode } from "../TopPanel/InsertModes";
+import { ToolMode, ToolSelectState } from "../TopPanel/ToolSelect";
 import { ArrowSVG } from "./ArrowSVG";
 import { DiamondSVG } from "./DiamondSVG";
 import { HistorySVG } from "./HistorySVG";
@@ -61,17 +61,16 @@ type VisualEditorProps = {
   replaceState: Dispatch<(v:VisualEditorState) => VisualEditorState>,
   conns: Connections,
   syntaxErrors: TraceableError[],
-  insertMode: InsertMode,
   highlightActive: Set<string>,
   highlightTransitions: string[],
   setModal: Dispatch<SetStateAction<ReactElement|null>>,
   zoom: number;
   findText: string;
-};
+} & ToolSelectState;
 
 const viewBox = `0 0 ${EDITOR_WIDTH} ${EDITOR_HEIGHT}`;
 
-export const VisualEditor = memo(function VisualEditor({state, commitState, replaceState, conns, syntaxErrors: errors, insertMode, highlightActive, highlightTransitions, setModal, zoom, findText}: VisualEditorProps) {
+export const VisualEditor = memo(function VisualEditor({state, commitState, replaceState, conns, syntaxErrors: errors, leftMouseMode, middleMouseMode, insertMode, highlightActive, highlightTransitions, setModal, zoom, findText}: VisualEditorProps) {
 
   // uid's of selected rountangles
   const selection = state.selection;
@@ -93,10 +92,10 @@ export const VisualEditor = memo(function VisualEditor({state, commitState, repl
   }, [highlightTransitions]);
 
 
-  const {onMouseDown, selectionRect, newSelection, dragging, setDragging, cursorPos} = useMouse(insertMode, zoom, refSVG,
-    state,
-    commitState,
-    replaceState);
+  const {onMouseDown, selectionRect, newSelection, dragging, setDragging, cursorPos} = useMouse(
+    leftMouseMode, middleMouseMode, insertMode,
+    zoom, refSVG, state,
+    commitState, replaceState);
 
   const startDragging = useCallback(() => setDragging(cursorPos), [setDragging, cursorPos]);
     
