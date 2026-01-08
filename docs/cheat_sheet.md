@@ -4,9 +4,9 @@
 ## Mouse
 
 Each of three mouse buttons (left, middle, right) can be mapped to a different tool.
-The tools are (from left to right):
+The available tools are shown in the top panel (from left to right):
 
-![](./tools.png)
+![](./tools-available.png)
 
  * select / move / resize
  * draw AND-states
@@ -17,7 +17,10 @@ The tools are (from left to right):
  * draw arrows
  * insert text
 
-In the above screenshot, the 'select / move / resize' tool is mapped to the left mouse button, and the 'draw arrows' tool is mapped to the right mouse button.
+The mouse button mapping is always visible. For instance, in the next screenshot, the 'select / move / resize' tool is mapped to the left mouse button, and the 'draw arrows' tool is mapped to the right mouse button:
+
+![](./tools.png)
+
 
 ## Keyboard shortcuts
 
