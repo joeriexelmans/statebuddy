@@ -56,7 +56,6 @@ export async function initPyodide() {
 
 export const getPropertyChecker = (pyodide: PyodideAPI) => async (property: string, preparedTraces: PreparedTraces): Promise<PropertyCheckResult> => {
   const codeToRun = `
-    import mtl.parser
     result = None
     error = None
     try:
@@ -72,5 +71,7 @@ export const getPropertyChecker = (pyodide: PyodideAPI) => async (property: stri
     (result, error)
   `;
   const result = await pyodide.runPythonAsync(codeToRun);
-  return result;
+  const result2 = result.toJs();
+  result.destroy();
+  return result2;
 }

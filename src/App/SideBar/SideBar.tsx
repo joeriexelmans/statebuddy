@@ -13,8 +13,7 @@ import { Dispatch, memo, Ref, SetStateAction, useCallback, useEffect, useRef, us
 import { Statechart } from '@/statecharts/abstract_syntax';
 import { ShowAST, ShowInputEvents, ShowInternalEvents, ShowOutputEvents } from './ShowAST';
 import { Plant } from '../Plant/Plant';
-import { /*checkProperty,*/ PreparedTraces, PropertyCheckResult } from './check_property';
-// import { checkProperty as checkProperty2 } from '../../mtl-checker/mtl';
+import { PreparedTraces, PropertyCheckResult } from './check_property';
 import { Setters } from '../makePartialSetter';
 import { Trace } from './Trace';
 import { BigStepCause, TraceState } from '../hooks/useSimulator';
@@ -254,7 +253,7 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
               tooltip={propertyError || plant && "available signals:\n"+plant.signals.map(s => "• "+s).join('\n')}
               align='left'
               fullWidth={true}
-              error={propertyError !== null}
+              error={Boolean(propertyError)}
               showWhen='focus'
               >
               <input
