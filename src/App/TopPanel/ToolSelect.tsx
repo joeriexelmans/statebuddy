@@ -47,13 +47,22 @@ export const ToolSelect = memo(function InsertModes({showKeys, insertMode, setIn
     {keys: ["h"], action: () => setInsertMode(mode => mode === "shallow" ? "deep" : "shallow")},
   ]);
 
-  console.log({leftMouseMode, insertMode});
-
   const KeyInfo = showKeys ? KeyInfoVisible : KeyInfoHidden;
   return <>
-    {insertModes.map(([m, hint, buttonTxt, keyInfo], i) =>
-      <KeyInfo key={m} keyInfo={keyInfo}>
-        <Tooltip tooltip={hint }>
+    {insertModes.map(([m, hint, buttonTxt, keyInfo], i) => {
+      const mappedTo = [] as string[];
+      if (leftMouseMode === m) {
+        mappedTo.push("left");
+      }
+      if (middleMouseMode === m) {
+        mappedTo.push("middle");
+      }
+      if (insertMode === m) {
+        mappedTo.push("right");
+      }
+      const extraToolTip = mappedTo.length > 0 ? `\nmapped to: ${mappedTo.join('+')} mouse button` : "";
+      return <KeyInfo key={m} keyInfo={keyInfo}>
+        <Tooltip tooltip={hint + extraToolTip}>
           <TwoStateButton
             active={insertMode===m || leftMouseMode===m || middleMouseMode === m}
             onMouseUp={e => {
@@ -72,6 +81,7 @@ export const ToolSelect = memo(function InsertModes({showKeys, insertMode, setIn
             </div>
           </TwoStateButton>
         </Tooltip>
-      </KeyInfo>)}
+      </KeyInfo>;
+    })}
   </>;
 })
