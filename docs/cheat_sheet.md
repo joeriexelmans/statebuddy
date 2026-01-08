@@ -3,11 +3,21 @@
 
 ## Mouse
 
- * **left mouse button** to *select, move, resize*
- * **right mouse button** to *insert* new states, transitions, etc.
-   Select the shape to insert in the top panel toolbar:
-      ![screenshot](./insert.png)
- * **middle mouse button** to only *select*
+Each of three mouse buttons (left, middle, right) can be mapped to a different tool.
+The tools are (from left to right):
+
+![](./tools.png)
+
+ * select / move / resize
+ * draw AND-states
+ * draw OR-states
+ * draw pseudo-states
+ * draw shallow history
+ * draw deep history
+ * draw arrows
+ * insert text
+
+In the above screenshot, the 'select / move / resize' tool is mapped to the left mouse button, and the 'draw arrows' tool is mapped to the right mouse button.
 
 ## Keyboard shortcuts
 
