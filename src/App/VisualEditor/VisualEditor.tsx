@@ -13,7 +13,7 @@ import { HistorySVG } from "./HistorySVG";
 import { RountangleSVG } from "./RountangleSVG";
 import { TextSVG } from "./TextSVG";
 import { useCopyPaste } from "./hooks/useCopyPaste";
-import { useMouse } from "./hooks/useMouse";
+import { mergeSelections, useMouse } from "./hooks/useMouse";
 import { Grid } from "./Grid";
 import { DebugContext } from "./context/DebugContext";
 import { EDITOR_HEIGHT, EDITOR_WIDTH } from "../parameters";
@@ -179,7 +179,7 @@ export const VisualEditor = memo(function VisualEditor({state, commitState, repl
 
   const debugContext = useContext(DebugContext);
 
-  const renderSelection = new Selection([...selection, ...newSelection]);
+  const renderSelection = mergeSelections(selection, newSelection);
 
   return <svg width={size} height={size}
       className={styles.svgCanvas+' '+(highlightActive.has("root")?styles.active:"")+' '+(dragging?styles.dragging:"")}

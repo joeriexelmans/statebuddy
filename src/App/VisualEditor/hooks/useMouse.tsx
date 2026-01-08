@@ -9,6 +9,14 @@ import { Parts, Selection, VisualEditorState } from "../VisualEditor";
 import { useShortcuts } from "@/hooks/useShortcuts";
 import styles from "../VisualEditor.module.css";
 
+export function mergeSelections(a: Selection, b: Selection) {
+  const result = new Selection(a);
+  for (const [uid, parts] of b.entries()) {
+    result.set(uid, (result.get(uid) || new Set()).union(parts));
+  }
+  return result;
+}
+
 // get list of parts of shapes that are within the selecting-rectangle
 function computeSelection(ss: SelectingState, refSVG: {current: SVGSVGElement | null}, zoom: number): Selection {
   if (ss) {
@@ -141,21 +149,20 @@ export function useMouse(
 
   const startSelect = useCallback((e: React.MouseEvent<SVGSVGElement, MouseEvent>) => {
     const currentPointer = getCurrentPointer(e);
+    let toGrow: Selection;
+    if (e.getModifierState("Shift") || e.getModifierState("Control")) {
+      toGrow = selection;
+    }
+    else {
+      toGrow = new Selection();
+    }
     const startMakingSelection = () => {
       setDragging(null);
       setSelectingState({
         topLeft: currentPointer,
         size: {x: 0, y: 0},
       });
-      commitSelection(_ => appendTo);
-    }
-    let appendTo: Selection;
-    // if (shiftOrCtrlPressed) {
-    if (e.getModifierState("Shift") || e.getModifierState("Control")) {
-      appendTo = selection;
-    }
-    else {
-      appendTo = new Selection();
+      commitSelection(_ => toGrow);
     }
     // left mouse button
     const uid = e.target?.dataset.uid;
@@ -169,8 +176,8 @@ export function useMouse(
           // it's only a helper
           // -> update selection by the part and start dragging it
           commitSelection(() => new Selection([
-            ...appendTo,
-            [uid, parts],
+            ...toGrow,
+            [uid, (toGrow.get(uid) || new Set()).union(parts)],
           ]));
           setDragging(currentPointer);
         }
@@ -297,6 +304,7 @@ export function useMouse(
     setCursorPos(currentPointer);
     setDragging(prevPointer => {
       if (prevPointer) {
+        // user was dragging / resizing
         const pointerDelta = subtractV2D(currentPointer, prevPointer);
         // update state in next event cycle ()
         setTimeout(() => { // <-- bit hacky, but React complains if we call replaceState directly.
@@ -350,27 +358,13 @@ export function useMouse(
           if (uid) {
             replaceSelection(oldSelection => new Selection([
               ...oldSelection,
-              [uid, parts],
+              [uid, (oldSelection.get(uid) || new Set()).union(parts)],
             ]));
           }
         }
       }
       else {
-        // complete selection
-        const normalizedSS = normalizeRect(selectingState);
-        const shapes = Array.from(refSVG.current?.querySelectorAll("rect, line, circle, text") || []) as SVGGraphicsElement[];
-        const shapesInSelection = shapes.filter(el => {
-          const bbox = getBBoxInSvgCoords(el, refSVG.current!);
-          const scaledBBox = {
-            topLeft: scaleV2D(bbox.topLeft, 1/zoom),
-            size: scaleV2D(bbox.size, 1/zoom),
-          }
-          return isEntirelyWithin(scaledBBox, normalizedSS);
-        }).filter(el => !el.classList.contains(styles.corner));
-        
-        replaceSelection(oldSelection => {
-          return new Selection([...oldSelection, ...newSelection]);
-        });
+        replaceSelection(oldSelection => mergeSelections(oldSelection, newSelection));
       }
     }
     setSelectingState(null); // no longer making a selection
