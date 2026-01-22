@@ -1,5 +1,7 @@
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import FindInPageOutlinedIcon from '@mui/icons-material/FindInPageOutlined';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import gitRev from "@/git-rev.txt";
 
 import { usePersistentState } from "@/hooks/usePersistentState";
 import { useShortcuts } from "@/hooks/useShortcuts";
@@ -157,7 +159,13 @@ Refresh the page to get the latest version.` : `about ${trial.appName}`} align="
         <button onClick={() => setModal(<About setModal={setModal} {...trial}/>)}
           style={{verticalAlign: 'bottom'}}>
           <InfoOutlineIcon fontSize='small'/>
-          {/* <img src={favicon} height={20}/> */}
+        </button>
+      </Tooltip>
+      <Tooltip tooltip="open cheat sheet" align='left'>
+        <button onClick={() => {
+          window.open(`https://deemz.org/git/research/statebuddy/src/commit/${gitRev}/docs/cheat_sheet.md`, '_blank');
+        }}>
+          <HelpOutlineIcon fontSize='small'/>
         </button>
       </Tooltip>
       <KeyInfo keyInfo={ShortCutShowKeys}>
