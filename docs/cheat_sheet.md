@@ -3,8 +3,8 @@
 
 ## Mouse
 
-Each of three mouse buttons (left, middle, right) can be mapped to any of the available tools.
-The available tools are shown in the top panel (from left to right):
+Each of three mouse buttons (left, middle, right) can be mapped to any of the available tools, by clicking on the tool button with the desired mouse button (e.g., right-click to map to right mouse button).
+The tools are shown in the top panel:
 
 ![](./tools-available.png)
 
