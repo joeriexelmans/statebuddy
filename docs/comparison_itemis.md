@@ -1,5 +1,11 @@
 # Comparison with Itemis CREATE
 
+Of course I'm a bit biased here towards my own tool :)
+
+Remember that Itemis CREATE primarily serves the demands of its large industrial clients, and has to stay compatible with whatever models they have "out there", even if that means strange semantics (e.g., their cycle-based execution).
+StateBuddy's aims to be a pleasant, logically consistent experience where I ultimately decide what gets implemented and what doesn't.
+
+
 |                           | Itemis CREATE                                          | StateBuddy                                                    |
 |---------------------------|--------------------------------------------------------|---------------------------------------------------------------|
 | profit model              | for profit                                             | not-for-profit (currently)                                    |
