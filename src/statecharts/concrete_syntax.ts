@@ -121,11 +121,11 @@ export function point2LineDistance(point: Vec2D, {start, end}: Line2D): number {
 
 // 'fatten' a line so it becomes a long thin rectangle with the same orientation, whose longest side length is equal to the length of the line
 //
-// e.g.     --------------------------------
+// e.g.     +------------------------------+
 // becomes
 //          +------------------------------+
 //          |                              |
-//          |                              |
+//          +------------------------------+   <-- original line
 //          |                              |
 //          +------------------------------+
 function fattenLine(
