@@ -119,6 +119,68 @@ export function point2LineDistance(point: Vec2D, {start, end}: Line2D): number {
   return distance;
 }
 
+// 'fatten' a line so it becomes a long thin rectangle with the same orientation, whose longest side length is equal to the length of the line
+//
+// e.g.     --------------------------------
+// becomes
+//          +------------------------------+
+//          |                              |
+//          |                              |
+//          |                              |
+//          +------------------------------+
+function fattenLine(
+  line: Line2D,
+  threshold: number // thickness on each side of the line
+): [Vec2D, Vec2D, Vec2D, Vec2D] {
+  const dx = line.end.x - line.start.x;
+  const dy = line.end.y - line.start.y;
+
+  const len = Math.hypot(dx, dy);
+  if (len === 0) {
+    throw new Error("Line length must be greater than zero");
+  }
+
+  // Unit direction
+  const ux = dx / len;
+  const uy = dy / len;
+
+  // Perpendicular (normal)
+  const nx = -uy * threshold;
+  const ny = ux * threshold;
+
+  const A = { x: line.start.x + nx, y: line.start.y + ny };
+  const B = { x: line.end.x + nx, y: line.end.y + ny };
+  const C = { x: line.end.x - nx, y: line.end.y - ny };
+  const D = { x: line.start.x - nx, y: line.start.y - ny };
+
+  return [A, B, C, D];
+}
+
+function isPointInRectangle(
+  p: Vec2D,
+  rect: [Vec2D, Vec2D, Vec2D, Vec2D]
+): boolean {
+  const cross = (a: Vec2D, b: Vec2D, c: Vec2D) =>
+    (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
+
+  const [A, B, C, D] = rect;
+
+  const c1 = cross(A, B, p);
+  const c2 = cross(B, C, p);
+  const c3 = cross(C, D, p);
+  const c4 = cross(D, A, p);
+
+  const hasNegative = c1 < 0 || c2 < 0 || c3 < 0 || c4 < 0;
+  const hasPositive = c1 > 0 || c2 > 0 || c3 > 0 || c4 > 0;
+
+  return !(hasNegative && hasPositive);
+}
+
+function pointBelongsToLine(point: Vec2D, line: Line2D) {
+  const rect = fattenLine(line, TEXT_SNAP_THRESHOLD);
+  return isPointInRectangle(point, rect);
+}
+
 // used to find which arrow a text label belongs to (if any)
 //  author: ChatGPT
 export function findNearestArrow(point: Vec2D, candidates: Iterable<Arrow>): Arrow | undefined {
@@ -128,7 +190,7 @@ export function findNearestArrow(point: Vec2D, candidates: Iterable<Arrow>): Arr
   for (const arrow of candidates) {
     const distance = point2LineDistance(point, arrow);
 
-    if (distance < TEXT_SNAP_THRESHOLD && distance < bestDistance) {
+    if (pointBelongsToLine(point, arrow) && distance < bestDistance) {
       bestDistance = distance;
       best = arrow;
     }

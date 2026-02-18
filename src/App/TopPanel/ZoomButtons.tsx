@@ -60,7 +60,7 @@ export const ZoomButtons = memo(function ZoomButtons({showKeys, zoom, setZoom}: 
     <Tooltip tooltip="current zoom level">
       <EnterText
         value={Math.round(zoom*100)+'%'}
-        style={{width:40}}
+        style={{width:40, textAlign: 'center'}}
         onEnter={str => setZoomStr(str)}
       />
     </Tooltip>

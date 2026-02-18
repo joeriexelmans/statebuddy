@@ -12,7 +12,17 @@ function lineGeometryProps(size: Vec2D): [RectSide, object][] {
     ["bottom", {x1: 0,      y1: size.y, x2: size.x, y2: size.y}],
     ["left",   {x1: 0,      y1: 0,      x2: 0,      y2: size.y}],
   ];
-}
+};
+
+// function lineGeometryProps(size: Vec2D): [RectSide, object][] {
+//   return [
+//     ["top",    {x1: CORNER_HELPER_RADIUS,      y1: 0,      x2: size.x - CORNER_HELPER_RADIUS, y2: 0     }],
+//     ["bottom", {x1: CORNER_HELPER_RADIUS,      y1: size.y, x2: size.x - CORNER_HELPER_RADIUS, y2: size.y}],
+//     ["right",  {x1: size.x, y1: CORNER_HELPER_RADIUS,      x2: size.x, y2: size.y - CORNER_HELPER_RADIUS}],
+//     ["left",   {x1: 0,      y1: CORNER_HELPER_RADIUS,      x2: 0,      y2: size.y - CORNER_HELPER_RADIUS}],
+//   ];
+// };
+
 
 const cornerClass = `${styles.helper} ${styles.corner}`;
 

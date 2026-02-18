@@ -168,7 +168,12 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
 
       {/* Internal events */}
       <PersistentDetails state={showInternalEvents} setState={setShowInternalEvents}>
-        <summary>internal events</summary>
+        <summary>
+          internal events
+          <Tooltip tooltip="internal events always start with '_' (underscore)">
+            <HelpOutlineIcon fontSize='small'/>
+          </Tooltip>
+        </summary>
         {ast && <ShowInternalEvents internalEvents={ast.internalEvents}/>}
       </PersistentDetails>
 

@@ -320,7 +320,7 @@ compressed: ${prettyNumber(compressedSize)} bytes (${Math.round(compressedSize/o
             disabled={!config}
             value={formattedDisplayTime}
             readOnly={true}
-            style={{width:56}}
+            style={{width:56, cursor: 'not-allowed'}}
             />
         </Tooltip>
 
@@ -332,7 +332,7 @@ compressed: ${prettyNumber(compressedSize)} bytes (${Math.round(compressedSize/o
               disabled={!config}
               value={formatTime(nextWakeup)}
               readOnly={true}
-              style={{width:56}}
+              style={{width:56, cursor: 'not-allowed'}}
             />
           </Tooltip>
           <KeyInfo keyInfo={<kbd>Tab</kbd>}>

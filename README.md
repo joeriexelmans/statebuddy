@@ -23,6 +23,7 @@ Statechart design, simulation and testing tool, developed with the goal of teach
   - Metric Temporal Logic (MTL) property checking on saved traces
   - No need to install anything, everything runs locally in browser
 
+See also the [comparison with Itemis CREATE](./docs/comparison_itemis.md), the tool it meant to replace (for teaching Statecharts).
 
 ## Try it now!
 
