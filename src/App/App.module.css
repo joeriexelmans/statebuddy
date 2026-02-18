@@ -217,6 +217,10 @@
   background-color: var(--statusbar-error-bg-color);
   color: var(--statusbar-error-fg-color);
 }
+.statusBar.pyodideLoading {
+  background-color: rgb(0, 135, 177);
+  color: white;
+}
 .statusBar summary:hover {
   background-color: color-mix(in srgb, var(--statusbar-bg-color) 60%, var(--background-color));
 }

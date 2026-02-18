@@ -1,12 +1,16 @@
-import { addV2D, centerOf, rotateLine90CCW, rotateLine90CW, rotatePoint90CCW, rotatePoint90CW, rotateRect90CCW, rotateRect90CW, subtractV2D } from "@/util/geometry";
-import { HISTORY_RADIUS } from "../parameters";
-import { Dispatch, SetStateAction, useCallback, useEffect } from "react";
-import { EditHistory } from "../App";
-import { VisualEditorState } from "../VisualEditor/VisualEditor";
+import { addV2D, centerOf, rotateLine90CCW, rotateLine90CW, rotatePoint90CCW, rotatePoint90CW, rotateRect90CCW, rotateRect90CW, subtractV2D, Vec2D } from "@/util/geometry";
+import { EDITOR_HEIGHT, EDITOR_WIDTH, HISTORY_RADIUS } from "../parameters";
+import { Dispatch, SetStateAction, useCallback, useEffect, useRef, useState } from "react";
+import { AppState, EditHistory } from "../App";
+import { Selection, VisualEditorState } from "../VisualEditor/VisualEditor";
 import { useTrial } from "./useTrial";
-import { entirelySelectedShapes, shapesBBox } from "@/statecharts/concrete_syntax";
+import { emptyEditorState, entirelySelectedShapes, initialEditorState, shapesBBox } from "@/statecharts/concrete_syntax";
+import { useCopyPaste } from "../VisualEditor/hooks/useCopyPaste";
+import { mergeSelections, useMouse } from "../VisualEditor/hooks/useMouse";
+import { Selecting, SelectingState } from "../VisualEditor/Selection";
+import { ToolSelectState } from "../TopPanel/ToolSelect";
 
-export function useEditor(setEditHistory: Dispatch<SetStateAction<EditHistory|null>>) {
+export function useEditor(state: VisualEditorState|null, setEditHistory: Dispatch<SetStateAction<EditHistory|null>>, {leftMouseMode, middleMouseMode, insertMode, zoom}: ToolSelectState & {zoom: number}) {
   const {appName} = useTrial();
   useEffect(() => {
     console.info(`Welcome to ${appName}!`);
@@ -15,6 +19,7 @@ export function useEditor(setEditHistory: Dispatch<SetStateAction<EditHistory|nu
     }
   }, []);
 
+  // creates new entry in undo history
   const commitState = useCallback((callback: (oldState: VisualEditorState) => VisualEditorState) => {
     setEditHistory(historyState => {
       if (historyState === null) return null; // no change
@@ -27,6 +32,8 @@ export function useEditor(setEditHistory: Dispatch<SetStateAction<EditHistory|nu
       // }
     });
   }, [setEditHistory]);
+
+  // overwrites last entry in undo history
   const replaceState = useCallback((callback: (oldState: VisualEditorState) => VisualEditorState) => {
     setEditHistory(historyState => {
       if (historyState === null) return null; // no change
@@ -37,6 +44,7 @@ export function useEditor(setEditHistory: Dispatch<SetStateAction<EditHistory|nu
       };
     });
   }, [setEditHistory]);
+
   const onUndo = useCallback(() => {
     setEditHistory(historyState => {
       if (historyState === null) return null;
@@ -50,6 +58,7 @@ export function useEditor(setEditHistory: Dispatch<SetStateAction<EditHistory|nu
       }
     })
   }, [setEditHistory]);
+
   const onRedo = useCallback(() => {
     setEditHistory(historyState => {
       if (historyState === null) return null;
@@ -63,6 +72,7 @@ export function useEditor(setEditHistory: Dispatch<SetStateAction<EditHistory|nu
       }
     });
   }, [setEditHistory]);
+
   const onRotate = useCallback((direction: "ccw" | "cw") => {
     commitState(editorState => {
       const selection = editorState.selection;
@@ -127,5 +137,57 @@ export function useEditor(setEditHistory: Dispatch<SetStateAction<EditHistory|nu
       };
     });
   }, [setEditHistory]);
-  return {commitState, replaceState, onUndo, onRedo, onRotate};
+
+  // if not dragging: null
+  // if dragging: position of cursor at last mouse event
+  const [dragging, setDragging] = useState<Vec2D|null>(null);
+
+  // not null while the user is making a selection
+  const [selectingState, setSelectingState] = useState<SelectingState>(null);
+
+  const refSVG = useRef<SVGSVGElement>(null);
+
+  // even though the VisualEditor component is not rendered unless we have a valid application state (which we don't while we are still loading the state from the URL asynchronously), hooks cannot be called conditionally, so we need *some* state to pass to them.
+  const stateOrDefaultState = state || emptyEditorState;
+
+  const {onMouseDown, newSelection, cursorPos} = useMouse(
+    dragging, setDragging,
+    selectingState, setSelectingState,
+    leftMouseMode, middleMouseMode, insertMode,
+    zoom, refSVG, stateOrDefaultState.selection,
+    commitState, replaceState);
+
+  const renderSelection = mergeSelections(stateOrDefaultState.selection, newSelection);
+
+  // copy/paste depends on 'useMouse' (it updates the 'dragging' state on paste)
+  const startDragging = useCallback(() => setDragging(cursorPos), [setDragging, cursorPos]);
+  const copyPasteCallbacks = useCopyPaste(stateOrDefaultState, commitState, renderSelection, startDragging, cursorPos);
+
+  // const viewBox = `0 0 ${EDITOR_WIDTH} ${EDITOR_HEIGHT}`;
+  // const renderSvg = (renderChildren: (selection: Selection)) => <svg width={EDITOR_WIDTH*zoom} height={EDITOR_HEIGHT*zoom}
+  //     className={styles.svgCanvas
+  //       + ' ' + (highlightActive.has("root") ? styles.active : "")
+  //       + ' ' + (dragging ? styles.dragging : "")}
+  //     onMouseDown={onMouseDown}
+  //     onContextMenu={e => e.preventDefault()}
+  //     ref={refSVG}
+  //     {...copyPasteCallbacks}
+  //     viewBox={viewBox}
+  // >
+  //   {renderChildren(renderSelection)}
+  // </svg>;
+
+  return {
+    commitState, replaceState,
+    onMouseDown,
+    onUndo, onRedo,
+    onRotate,
+    ...copyPasteCallbacks,
+    refSVG,
+    dragging: Boolean(dragging),
+    startDragging,
+    renderSelection,
+    selectingState,
+    // renderSvg,
+  };
 }

@@ -33,7 +33,9 @@ export function BottomPanel(props: {errors: TraceableError[], setEditorState: Di
   return <div className="bottom">
     <div className={appStyles.stackHorizontal
             + ' ' + appStyles.statusBar
-            + ' ' + (props.errors.length ? appStyles.error : "")}>
+            + ' ' + (props.errors.length ? appStyles.error : ""
+            + ' ' + (props.pyodideStatus === "loading" ? appStyles.pyodideLoading : "")
+            )}>
       <div style={{flexGrow:1}}>
       <PersistentDetails state={props.errorsExpanded} setState={props.setErrorsExpanded}>
           <summary>{props.errors.length} errors</summary>
@@ -49,7 +51,9 @@ export function BottomPanel(props: {errors: TraceableError[], setEditorState: Di
         <Stats ast={props.ast}/>
         &nbsp;|&nbsp;
         <Tooltip tooltip="MTL properties are checked with a Python library, which runs in your browser via Pyodide. Pyodide is slow to start and currently blocks the main thread, which is a known issue." above>
-          Pyodide: <span style={{fontWeight: props.pyodideStatus === "loading" ? 600 : 400, color: props.pyodideStatus === "loading" ? 'var(--accent-border-color)' : undefined}}>{statusStrings[props.pyodideStatus]}</span>
+          Pyodide: <span style={{
+            fontWeight: props.pyodideStatus === "loading" ? 600 : 400,
+          }}>{statusStrings[props.pyodideStatus]}</span>
         </Tooltip>
         &nbsp;|&nbsp;
         switch to&nbsp;

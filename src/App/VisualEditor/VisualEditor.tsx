@@ -1,24 +1,25 @@
-import { Dispatch, memo, ReactElement, SetStateAction, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { Dispatch, memo, MouseEvent, MouseEventHandler, ReactElement, RefObject, SetStateAction, useCallback, useContext, useEffect, useRef, useState } from "react";
 
 import { Mode } from "@/statecharts/runtime_types";
 import { arraysEqual, mapsEqual, objectsEqual, setsEqual } from "@/util/util";
 import { ArrowPart, ConcreteSyntax, Diamond, RectSide, Rountangle, Text } from "../../statecharts/concrete_syntax";
 import { Connections } from "../../statecharts/detect_connections";
 import { TraceableError } from "../../statecharts/parser";
-import { ArcDirection, arcDirection } from "../../util/geometry";
+import { ArcDirection, arcDirection, Vec2D } from "../../util/geometry";
 import { ToolMode, ToolSelectState } from "../TopPanel/ToolSelect";
 import { ArrowSVG } from "./ArrowSVG";
 import { DiamondSVG } from "./DiamondSVG";
 import { HistorySVG } from "./HistorySVG";
 import { RountangleSVG } from "./RountangleSVG";
 import { TextSVG } from "./TextSVG";
-import { useCopyPaste } from "./hooks/useCopyPaste";
+import { CopyPasteCallbacks, useCopyPaste } from "./hooks/useCopyPaste";
 import { mergeSelections, useMouse } from "./hooks/useMouse";
 import { Grid } from "./Grid";
 import { DebugContext } from "./context/DebugContext";
 import { EDITOR_HEIGHT, EDITOR_WIDTH } from "../parameters";
 import styles from "./VisualEditor.module.css";
 import "./VisualEditor.css";
+import { Selecting, SelectingState } from "./Selection";
 
 export type VisualEditorState = ConcreteSyntax & {
   nextID: number;
@@ -58,7 +59,7 @@ export class Parts extends Set<string> {}
 type VisualEditorProps = {
   state: VisualEditorState,
   commitState: Dispatch<(v:VisualEditorState) => VisualEditorState>,
-  replaceState: Dispatch<(v:VisualEditorState) => VisualEditorState>,
+  // replaceState: Dispatch<(v:VisualEditorState) => VisualEditorState>,
   conns: Connections,
   syntaxErrors: TraceableError[],
   highlightActive: Set<string>,
@@ -66,16 +67,19 @@ type VisualEditorProps = {
   setModal: Dispatch<SetStateAction<ReactElement|null>>,
   zoom: number;
   findText: string;
-} & ToolSelectState;
+  refSVG: RefObject<SVGSVGElement | null>;
+  renderSelection: Selection;
+  selectingState: SelectingState;
+  dragging: boolean;
+  onMouseDown: MouseEventHandler<SVGSVGElement>;
+} & ToolSelectState & CopyPasteCallbacks;
 
 const viewBox = `0 0 ${EDITOR_WIDTH} ${EDITOR_HEIGHT}`;
 
-export const VisualEditor = memo(function VisualEditor({state, commitState, replaceState, conns, syntaxErrors: errors, leftMouseMode, middleMouseMode, insertMode, highlightActive, highlightTransitions, setModal, zoom, findText}: VisualEditorProps) {
+export const VisualEditor = memo(function VisualEditor({state, commitState, conns, syntaxErrors: errors, highlightActive, highlightTransitions, setModal, zoom, findText, onCopy, onPaste, onCut, refSVG, renderSelection, selectingState, dragging, onMouseDown}: VisualEditorProps) {
 
   // uid's of selected rountangles
   const selection = state.selection;
-
-  const refSVG = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
     // bit of a hacky way to force the animation on fired transitions to replay, if the new 'rt' contains the same fired transitions as the previous one
@@ -90,16 +94,6 @@ export const VisualEditor = memo(function VisualEditor({state, commitState, repl
       });
     })
   }, [highlightTransitions]);
-
-
-  const {onMouseDown, selectionRect, newSelection, dragging, setDragging, cursorPos} = useMouse(
-    leftMouseMode, middleMouseMode, insertMode,
-    zoom, refSVG, state,
-    commitState, replaceState);
-
-  const startDragging = useCallback(() => setDragging(cursorPos), [setDragging, cursorPos]);
-    
-  const {onCopy, onPaste, onCut} = useCopyPaste(state, commitState, selection, startDragging, cursorPos);
 
   // for visual feedback, when selecting/moving one thing, we also highlight (in green) all the things that belong to the thing we selected.
   const sidesToHighlight: {[key: string]: RectSide[]} = {};
@@ -179,19 +173,18 @@ export const VisualEditor = memo(function VisualEditor({state, commitState, repl
 
   const debugContext = useContext(DebugContext);
 
-  const renderSelection = mergeSelections(selection, newSelection);
 
   return <svg width={size} height={size}
-      className={styles.svgCanvas+' '+(highlightActive.has("root")?styles.active:"")+' '+(dragging?styles.dragging:"")}
+      className={styles.svgCanvas
+        + ' ' + (highlightActive.has("root") ? styles.active : "")
+        + ' ' + (dragging ? styles.dragging : "")}
       onMouseDown={onMouseDown}
       onContextMenu={e => e.preventDefault()}
       ref={refSVG}
-
-      viewBox={viewBox}
-
       onCopy={onCopy}
       onPaste={onPaste}
       onCut={onCut}
+      viewBox={viewBox}
     >
     <defs>
       <marker
@@ -265,7 +258,7 @@ export const VisualEditor = memo(function VisualEditor({state, commitState, repl
 
     {debugContext.showGrid && <Grid width={EDITOR_WIDTH} height={EDITOR_HEIGHT} />}
 
-    {selectionRect}
+    {selectingState && <Selecting {...selectingState}/>}
   </svg>;
 });
 

@@ -17,6 +17,9 @@ import BugReportIcon from '@mui/icons-material/BugReport';
 import SaveAltIcon from '@mui/icons-material/SaveAlt';
 import FileOpenTwoToneIcon from '@mui/icons-material/FileOpenTwoTone';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import ContentPasteIcon from '@mui/icons-material/ContentPaste';
+
 import { Dispatch, memo, ReactElement, SetStateAction, useCallback, useMemo } from "react";
 import { setPaused, setRealtime, TimeMode } from "../../statecharts/time";
 import { formatDateTime, formatTime } from "../../util/util";
@@ -41,6 +44,7 @@ import { OpenFile } from '../Modals/OpenFile';
 import { prettyNumber } from '../../util/pretty';
 import favicon from "../../../artwork/new-logo/favicon-minified.png";
 import { Toolbar } from './Toolbar';
+import { copySelection, pasteData } from '../VisualEditor/hooks/useCopyPaste';
 
 export type TopPanelProps = {
   trial: Trial,
@@ -58,6 +62,8 @@ export type TopPanelProps = {
   setTime: Dispatch<SetStateAction<TimeMode>>,
   onUndo: () => void,
   onRedo: () => void,
+  onCopy: () => void,
+  onPaste: () => void,
   onRotate: (direction: "ccw"|"cw") => void,
   onInit: () => void,
   onClear: () => void,
@@ -66,6 +72,7 @@ export type TopPanelProps = {
   editHistory: EditHistory,
   editorState: VisualEditorState,
   setEditorState: Dispatch<(oldState: VisualEditorState) => VisualEditorState>,
+  startDragging: () => void,
 } & AppState & Setters<AppState>
 
 const ShortCutShowKeys = <kbd>~</kbd>;
@@ -75,7 +82,7 @@ function toggle(booleanSetter: Dispatch<(state: boolean) => boolean>) {
 }
 
 export const TopPanel = memo(function TopPanel(props: TopPanelProps) {
-  const {trial, trace, time, setTime, onUndo, onRedo, onRotate, onInit, onClear, onBack, insertMode, setInsertMode, setModal, zoom, setZoom, showKeys, setShowKeys, editHistory, showFindReplace, setShowFindReplace, displayTime, refreshDisplayTime, nextWakeup, modelName, setModelName, originalSize, compressedSize, state, showDebug, setShowDebug, properties, editorState, savedTraces, setProperties, setSavedTraces, setEditorState} = props;
+  const {trial, trace, time, setTime, onUndo, onRedo, onCopy, onPaste, onRotate, onInit, onClear, onBack, insertMode, setInsertMode, setModal, zoom, setZoom, showKeys, setShowKeys, editHistory, showFindReplace, setShowFindReplace, displayTime, refreshDisplayTime, nextWakeup, modelName, setModelName, originalSize, compressedSize, state, showDebug, setShowDebug, properties, editorState, savedTraces, setProperties, setSavedTraces, setEditorState, startDragging} = props;
 
   const [timescale, setTimescale] = usePersistentState("timescale", 1);
   const config = trace && trace.trace[trace.idx];
@@ -211,6 +218,36 @@ compressed: ${prettyNumber(compressedSize)} bytes (${Math.round(compressedSize/o
     {/* undo / redo */}
     <Toolbar>
       <UndoRedoButtons showKeys={showKeys} onUndo={onUndo} onRedo={onRedo} historyLength={editHistory.history.length} futureLength={editHistory.future.length}/>
+    </Toolbar>
+
+    {/* copy / paste */}
+    <Toolbar>
+      <KeyInfo keyInfo={<><kbd>Ctrl</kbd>+<kbd>C</kbd></>}>
+        <Tooltip tooltip='copy'>
+          <button
+            disabled={editHistory.current.selection.size === 0}
+            onClick={() => {
+              const item = new ClipboardItem({"text/plain": copySelection(editHistory.current, editHistory.current.selection)});
+              navigator.clipboard.write([item]);
+            }}
+          >
+            <ContentCopyIcon fontSize='small'/>
+          </button>
+        </Tooltip>
+      </KeyInfo>
+      <KeyInfo keyInfo={<><kbd>Ctrl</kbd>+<kbd>V</kbd></>}>
+        <Tooltip tooltip='paste'>
+          <button
+            onClick={() => {
+              navigator.clipboard.readText().then((text) => {
+                pasteData(text, {x: 500, y: 100}, setEditorState, startDragging);
+              });
+            }}
+          >
+            <ContentPasteIcon fontSize='small'/>
+          </button>
+        </Tooltip>
+      </KeyInfo>
     </Toolbar>
 
     {/* insert rountangle / arrow / ... */}

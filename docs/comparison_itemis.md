@@ -15,7 +15,7 @@ StateBuddy's aims to be a pleasant, logically consistent experience where I ulti
 | download size             | >300 MB zipped (need to unzip, trust and run the code) | <10 MB zipped (just a web page -> already sandboxed)          |
 | boot time                 | ~7 seconds (not including download time)               | <1 second (includes download time)                            |
 |                           |                                                        |                                                               |
-| **model editor**          |                                                        |                                                               |
+| **concrete syntax**          |                                                        |                                                               |
 | what you edit             | shapes, nesting, connections, waypoints of connections | just a bunch of flat shapes                                   |
 | layout struggle           | ❌ transitions and labels may jump unexpectedly         | ✅ you are in total control                                    |
 | hidden information        | ❌ yes (which label belongs to which transition?)       | ✅ no (you see what parser sees)                               |

@@ -74,6 +74,16 @@ export const initialEditorState: VisualEditorState = {
   selection: new Selection(),
 };
 
+export const emptyEditorState: VisualEditorState = {
+  rountangles: [],
+  diamonds:[],
+  history:[],
+  arrows:[],
+  texts:[],
+  nextID: 1,
+  selection: new Selection(),
+}
+
 // used to find which rountangle an arrow connects to (src/tgt)
 export function findNearestSide(arrow: Line2D, arrowPart: "start" | "end", candidates: Iterable<(Rountangle|Diamond)>): {uid: string, part: RectSide} | undefined {
   let best = Infinity;

@@ -8,7 +8,7 @@ import { connectionsEqual, detectConnections, reducedConcreteSyntaxEqual } from 
 import { parseStatechart } from "../statecharts/parser";
 import { BottomPanel, BottomPanelState, defaultBottomPanelState } from "./BottomPanel/BottomPanel";
 import { defaultSideBarState, SideBar, SideBarState } from "./SideBar/SideBar";
-import { defaultToolSelectState, ToolMode, ToolSelectState } from "./TopPanel/ToolSelect";
+import { defaultToolSelectState, ToolSelectState } from "./TopPanel/ToolSelect";
 import { TopPanel } from "./TopPanel/TopPanel";
 import { json2EditorState, VisualEditor, VisualEditorState } from "./VisualEditor/VisualEditor";
 import { makeAllSetters } from "./makePartialSetter";
@@ -29,7 +29,6 @@ import { useTrial } from "./hooks/useTrial";
 import { DebugPanel, DebugState, defaultDebugState } from "./BottomPanel/Debug";
 import { DebugContext } from "./VisualEditor/context/DebugContext";
 import { formatDateTime } from "@/util/util";
-import { OpenFile } from "./Modals/OpenFile";
 import { PropertyTraceTable } from "./BottomPanel/PropertyTraceTable";
 import { usePyodide } from "./hooks/usePyodide";
 
@@ -80,8 +79,6 @@ export function App() {
   const [modal, setModal] = useState<ReactElement|null>(null);
   const trial = useTrial();
 
-  const {commitState, replaceState, onRedo, onUndo, onRotate} = useEditor(setEditHistory);
-
   const editorState = editHistory && editHistory.current;
   const setEditorState = useCallback((cb: (value: VisualEditorState) => VisualEditorState) => {
     setEditHistory(historyState => historyState && ({...historyState, current: cb(historyState.current)}));
@@ -111,6 +108,8 @@ export function App() {
   const ast = parsed && parsed[0];
 
   const [appState, setAppState] = useState<AppState>(defaultAppState);
+
+  const editorStuff = useEditor(editHistory?.current || null, setEditHistory, appState);
 
   useEffect(() => {
     // useful when bookmarking the page: model name is in the title (that's basically the only reason we have a model name)
@@ -257,15 +256,40 @@ export function App() {
               className={styles.shadowBelow}
               style={{flex: '0 0 content'}}
             >
-              {editHistory && editorState && <TopPanel
-                {...{onUndo, onRedo, onRotate, setModal, editHistory, ...simulator, ...setters, ...appState, editorState, setEditorState, displayTime, refreshDisplayTime, trial, originalSize, compressedSize, state}}
+              {editHistory && editorState && editorStuff && <TopPanel
+                {...{
+                  ...editorStuff,
+                  setModal,
+                  editHistory,
+                  ...simulator,
+                  ...setters,
+                  ...appState,
+                  editorState,
+                  setEditorState,
+                  displayTime,
+                  refreshDisplayTime,
+                  trial,
+                  originalSize,
+                  compressedSize,
+                  state,
+                }}
               />}
             </div>
             {/* Editor */}
             <div style={{flexGrow: 1, overflow: "auto"}}>
-              {editorState && conns && syntaxErrors &&
+              {editorState && editorStuff && conns && syntaxErrors &&
                 <DebugContext value={{showBBox: appState.showBBox, showCells: appState.showCells, showGrid: appState.showGrid}}>
-                <VisualEditor {...{state: editorState, commitState, replaceState, conns, syntaxErrors: allErrors, highlightActive, highlightTransitions, setModal, ...appState, findText: appState.showFindReplace ? appState.findText : ""}}/>
+                  <VisualEditor {...{
+                    state: editorState,
+                    conns,
+                    syntaxErrors: allErrors,
+                    highlightActive,
+                    highlightTransitions,
+                    setModal,
+                    ...appState,
+                    findText: appState.showFindReplace ? appState.findText : "",
+                    ...editorStuff,
+                  }}/>
                 </DebugContext>}
             </div>
             

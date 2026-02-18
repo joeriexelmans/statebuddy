@@ -1,7 +1,7 @@
 import { allArrowParts, allHistoryParts, allRectParts, allTextParts, rountangleMinSize } from "@/statecharts/concrete_syntax";
 import { addV2D, area, isEntirelyWithin, normalizeRect, Rect2D, roundLine2D, roundRect2D, roundVec2D, scaleV2D, subtractV2D, transformLine, transformRect, Vec2D } from "@/util/geometry";
 import { getBBoxInSvgCoords } from "@/util/svg_helper";
-import { Dispatch, useCallback, useEffect, useMemo, useState } from "react";
+import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useState } from "react";
 import { MIN_ROUNTANGLE_SIZE } from "../../parameters";
 import { ToolMode } from "../../TopPanel/ToolSelect";
 import { Selecting, SelectingState } from "../Selection";
@@ -109,23 +109,17 @@ function drag(state: VisualEditorState, pointerDelta: Vec2D) {
 }
 
 export function useMouse(
+  dragging: Vec2D|null, setDragging: Dispatch<SetStateAction<Vec2D|null>>,
+  selectingState: SelectingState, setSelectingState: Dispatch<SetStateAction<SelectingState>>,
   leftMouseMode: ToolMode,
   middleMouseMode: ToolMode,
   insertMode: ToolMode,
   zoom: number,
   refSVG: {current: SVGSVGElement|null},
-  state: VisualEditorState,
+  selection: Selection,
   commitState: Dispatch<(v: VisualEditorState) => VisualEditorState>,
   replaceState: Dispatch<(v: VisualEditorState) => VisualEditorState>)
 {
-  // if not dragging: null
-  // if dragging: position of cursor at last mouse event
-  const [dragging, setDragging] = useState<Vec2D|null>(null);
-
-  // not null while the user is making a selection
-  const [selectingState, setSelectingState] = useState<SelectingState>(null);
-
-  const selection = state.selection;
   const commitSelection = useCallback((cb: (oldSelection: Selection) => Selection) => {
     commitState(oldState => ({...oldState, selection: cb(oldState.selection)}));
   },[commitState]);
@@ -165,13 +159,16 @@ export function useMouse(
       commitSelection(_ => toGrow);
     }
     // left mouse button
+    // @ts-ignore: dataset property unknown to TypeScript
     const uid = e.target?.dataset.uid;
+    // @ts-ignore: dataset property unknown to TypeScript
     const parts = new Parts(e.target?.dataset.parts?.split(' ').filter((p:string) => p!=="") || []);
     if (uid && parts.size > 0) {
       // mouse hovers over a shape or part of a shape
       const allPartsInSelection = parts.difference(selection.get(uid) || new Set()).size === 0;
       if (!allPartsInSelection) {
         // existing selection does not (entirely) cover the part
+        // @ts-ignore: classList property unknown to TypeScript
         if (e.target.classList.contains(styles.helper)) {
           // it's only a helper
           // -> update selection by the part and start dragging it
@@ -407,5 +404,5 @@ export function useMouse(
     };
   }, [selectingState, dragging]);
 
-  return {onMouseDown, selectionRect: selectingState && <Selecting {...selectingState} />, newSelection, dragging, setDragging, cursorPos};
+  return {onMouseDown, newSelection, dragging, setDragging, cursorPos};
 }
