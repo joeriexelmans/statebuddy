@@ -56,7 +56,7 @@ StateBuddy was written in TypeScript, using React as the frontend framework.
 
 Probably the "dirtiest" aspect of the code right now, is that most of the application state sits at or very close to the top, meaning that many properties need to passed down rather deep. I'm aware that 'contexts' are the React feature that aims to solve this problem, but I find them a bit dirty because it's rather implicit and you have to specify default values for everything, which sometimes doesn't make sense. So I'd rather group properties hierarchically into objects, so properties that belong together are passed together, reducing the amount of repetition. Some day ... :)
 
-The [language](./src/statecharts/), which could be used independently from the frontend, consists of:
+The [statechart language](./src/statecharts/), which could be used independently from the frontend, consists of:
   - type definitions for
       - [concrete syntax](./src/statecharts/concrete_syntax.ts)
       - [abstract syntax](./src/statecharts/abstract_syntax.ts)
