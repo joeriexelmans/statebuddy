@@ -53,6 +53,7 @@ export type Transition = {
   arena: OrState;
 }
 
+// Abstract syntax for our Statechart language
 export type Statechart = {
   root: OrState;
   transitions: Map<string, Transition[]>; // key: source state uid

@@ -158,4 +158,4 @@ const microwavePlantSpec: StatechartPlantSpec<MicrowaveState> = {
   ]
 }
 
-export const microwavePlant = makeStatechartPlant(microwavePlantSpec, dummyTracer);
+export const microwavePlant = makeStatechartPlant(microwavePlantSpec);

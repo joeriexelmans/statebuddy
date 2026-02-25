@@ -1,18 +1,18 @@
 import CloseIcon from '@mui/icons-material/Close';
 import TextRotateUpIcon from '@mui/icons-material/TextRotateUp';
-import TextRotationNoneIcon from '@mui/icons-material/TextRotationNone';
+// import TextRotationNoneIcon from '@mui/icons-material/TextRotationNone';
 import { useEffect, useState } from "react";
 import { Tooltip } from "../Components/Tooltip";
 import { TwoStateButton } from "../Components/TwoStateButton";
 import { SavedTraces } from "../SideBar/SideBar";
 import { Status } from "../SideBar/Status";
-import { BigStepCause, TraceItem } from '../hooks/useSimulator';
-import { PreparedTraces, prepareTrace, PropertyCheckResult } from '../SideBar/check_property';
-import { Plant } from '../Plant/Plant';
-import { UniversalPlantState } from '../plants';
+import { PreparedTraces, prepareTraces, PropertyCheckResult } from '../SideBar/prepare_trace';
 import styles from "@/App/App.module.css";
+import { restoreTrace } from '@/devs/serialize_trace';
+import { DEVSComponent } from '@/devs/devs';
+import { CoupledState, PlantsState } from '../hooks/useSimulator';
 
-export function PropertyTraceTable({properties, traces, onClose, replayTrace, plant, checkProperty}: {properties: string[], traces: SavedTraces, onClose: () => void, replayTrace: (c: BigStepCause[]) => {trace: [TraceItem, ...TraceItem[]]} | undefined, plant: Plant<any, UniversalPlantState>, checkProperty: (property: string, preparedTraces: PreparedTraces) => Promise<PropertyCheckResult>,
+export function PropertyTraceTable({properties, traces, onClose, cE, plantsState, checkProperty}: {properties: string[], traces: SavedTraces, onClose: () => void, cE: DEVSComponent<CoupledState>, plantsState: PlantsState, checkProperty: (property: string, preparedTraces: PreparedTraces) => Promise<PropertyCheckResult>,
 }) {
   const [rotateText, setRotateText] = useState(false);
 
@@ -22,23 +22,21 @@ export function PropertyTraceTable({properties, traces, onClose, replayTrace, pl
     setResults(() => {
       return properties.map((property, i) => {
         return traces.map(([name, trace], j) => {
-          const replayed = replayTrace(trace);
-          if (replayed) {
-            const {trace} = replayed;
-            const prepared = prepareTrace(plant, trace);
-            checkProperty(property, prepared).then(([result, errors]) => {
-              if (result) {
-                const [[_, ok]] = result;
-                setResults(results => {
-                  if (results) {
-                    return results?.with(i,
-                      results[i].with(j, ok ? "satisfied" : "violated"));
-                  }
-                  return null;
-                });
-              }
-            });
-          }
+          // replay each saved trace (obtaining the full trace), and property check it
+          const restored = restoreTrace(trace, cE);
+          const prepared = prepareTraces(plantsState, restored);
+          checkProperty(property, prepared).then(([result, errors]) => {
+            if (result) {
+              const [[_, ok]] = result;
+              setResults(results => {
+                if (results) {
+                  return results?.with(i,
+                    results[i].with(j, ok ? "satisfied" : "violated"));
+                }
+                return null;
+              });
+            }
+          });
           return "pending";
         })
       })

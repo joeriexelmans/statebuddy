@@ -1,4 +1,4 @@
-import { PreparedTraces, PropertyCheckResult } from "@/App/SideBar/check_property";
+import { PreparedTraces, PropertyCheckResult } from "@/App/SideBar/prepare_trace";
 
 import { loadPyodide, Lockfile, PyodideAPI, version as pyodideVersion } from "pyodide";
 

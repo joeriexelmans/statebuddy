@@ -15,13 +15,12 @@ import { makeAllSetters } from "./makePartialSetter";
 import { useEditor } from "./hooks/useEditor";
 import { useSimulator } from "./hooks/useSimulator";
 import { useUrlHashState } from "../hooks/useUrlHashState";
-import { plants } from "./plants";
 import { initialEditorState } from "@/statecharts/concrete_syntax";
 import { ModalOverlay } from "./Overlays/ModalOverlay";
 import { FindReplace } from "./BottomPanel/FindReplace";
 import { useCustomMemo } from "@/hooks/useCustomMemo";
 import { defaultPlotState, Plot, PlotState } from "./BottomPanel/Plot";
-import { prepareTrace } from "./SideBar/check_property";
+import { prepareTraces } from "./SideBar/prepare_trace";
 import { useDisplayTime } from "@/hooks/useDisplayTime";
 import { Greeter } from "./BottomPanel/Greeter";
 import { PersistentDetails } from "./Components/PersistentDetails";
@@ -38,6 +37,8 @@ export type EditHistory = {
   future: VisualEditorState[],
 }
 
+// Most of the application state is contained herein.
+// JSON-serializable.
 export type AppState = {
   modelName: string,
   showKeys: boolean,
@@ -163,11 +164,9 @@ export function App() {
 
   const {
     autoScroll,
-    plantConns,
-    plantName,
   } = appState;
 
-  const [_, plant, plantCS] = plants.find(([pn, p]) => pn === plantName)!;
+  // const [_, plant, plantCS] = plants.find(([pn, p]) => pn === plantName)!;
 
   const refRightSideBar = useRef<HTMLDivElement>(null);
   const scrollDownSidebar = useCallback(() => {
@@ -180,7 +179,7 @@ export function App() {
     }
   }, [refRightSideBar.current, autoScroll]);
 
-  const simulator = useSimulator(ast, plant, plantConns, scrollDownSidebar);
+  const simulator = useSimulator(ast, appState.plantsState, scrollDownSidebar);
   const {displayTime, refreshDisplayTime} = useDisplayTime(simulator.time);
   
   const setters = makeAllSetters(setAppState, Object.keys(appState) as (keyof AppState)[]);
@@ -203,23 +202,24 @@ export function App() {
   }, [setAppState]);
 
   const syntaxErrors = parsed && parsed[1] || [];
-  const currentTraceItem = simulator.trace && simulator.trace.trace[simulator.trace.idx];
-  const currentBigStep = currentTraceItem && currentTraceItem.kind === "bigstep" && currentTraceItem;
-  const allErrors = [
-    ...syntaxErrors,
-    ...(currentTraceItem && currentTraceItem.kind === "error") ? currentTraceItem.error.highlight.map(uid => ({
-      message: currentTraceItem.error.message,
-      shapeUid: uid,
-    })) : [],
-  ];
-  const highlightActive = (currentBigStep && currentBigStep.state.sc.mode) || new Set();
-  const highlightTransitions = currentBigStep && currentBigStep.state.sc.firedTransitions || [];
+  const currentRuntimeError = simulator.currentTraceItem
+    && !simulator.currentTraceItem.result.ok
+    && simulator.currentTraceItem.result.error;
+  const runtimeErrors = currentRuntimeError
+    && currentRuntimeError.highlight.map(uid => ({
+        message: currentRuntimeError.message,
+        shapeUid: uid,
+      }))
+    || [];
+  const allErrors = [...syntaxErrors, ...runtimeErrors];
+  const currentBigStep = simulator.currentTraceItem?.result.ok && simulator.currentTraceItem.result.newState.sc.bigstep;
+  const highlightActive = (currentBigStep && currentBigStep.mode) || new Set();
+  const highlightTransitions = currentBigStep && currentBigStep.firedTransitions || [];
 
-  const plantState = useMemo(() =>
-    currentBigStep && currentBigStep.state.plant || plant.execution.initial()[1],
-  [currentBigStep, plant]);
-
-  const preparedTraces = useMemo(() => simulator.trace && prepareTrace(plant, simulator.trace.trace), [simulator.trace, plant]);
+  const preparedTraces = useMemo(() => simulator.trace && prepareTraces(
+    appState.plantsState,
+    simulator.trace.trace,
+  ), [simulator.trace, appState.plantsState]);
 
   const [resizing, setResizing] = useState(false);
 
@@ -295,15 +295,15 @@ export function App() {
             
             {/* Stuff that shows below editor but next to sidebar */}
             <Greeter trial={trial}/>
-            {appState.showTable && appState.properties.length > 0 && appState.savedTraces.length > 0 &&
+            {appState.showTable && appState.properties.length > 0 && appState.savedTraces.length > 0 && simulator.cE &&
               <BelowEditor>
                 <PropertyTraceTable
                   properties={appState.properties}
                   traces={appState.savedTraces}
                   onClose={() => setters.setShowTable(false)}
-                  plant={plant}
-                  replayTrace={simulator.replayTrace}
                   checkProperty={checkProperty}
+                  cE={simulator.cE}
+                  plantsState={appState.plantsState}
                 />
               </BelowEditor>}
             {editorState && appState.showFindReplace &&
@@ -352,7 +352,7 @@ export function App() {
             // maxWidth: `max(min(${appState.sidePanelWidth}px, 75vw), 100px)`,
           }}>
             <div className={styles.stackVertical} style={{height:'100%'}}>
-              <SideBar {...{...appState, refRightSideBar, ast, preparedTraces, plantCS, plantState, ...simulator, ...setters, checkProperty}} />
+              <SideBar {...{...appState, refRightSideBar, ast, preparedTraces, ...simulator, ...setters, checkProperty}} />
             </div>
           </div>
         </div>

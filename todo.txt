@@ -60,6 +60,9 @@ TODO
     - export/import model as JSON
     - export/import traces and properties
 
+    - use Langium for action language and for MTL expressions
+    - make MTL expression language consistent with action language
+
     - traffic light plant: turn state of 'police interrupt' button into a signal
     - show list of internal variables
     - make side panel user-resizable

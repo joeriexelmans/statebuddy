@@ -1,7 +1,7 @@
 import { getPropertyChecker, initPyodide } from "@/mtl-checker/mtl";
 import { PyodideAPI } from "pyodide";
 import { useState } from "react";
-import { PreparedTraces, PropertyCheckResult } from "../SideBar/check_property";
+import { PreparedTraces, PropertyCheckResult } from "../SideBar/prepare_trace";
 
 export function usePyodide() {
   const [state, setState] = useState<{

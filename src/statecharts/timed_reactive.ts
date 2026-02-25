@@ -2,177 +2,190 @@ import { Statechart } from "./abstract_syntax";
 import { makeBigStep, initialize } from "./interpreter";
 import { Tracer } from "./tracer";
 import { BigStep, NormalEvent, RaisedEvent } from "./runtime_types";
+import { Statechart2DEVSState } from "@/devs/sc2devs";
 
-// an abstract interface for timed reactive discrete event systems somewhat similar but not equal to DEVS
-// differences from DEVS:
+// An abstract interface for timed reactive discrete event systems somewhat similar but not equal to DEVS (https://en.wikipedia.org/wiki/DEVS).
+// Differences from DEVS:
 //   - extTransition can have output events
 //   - time is kept as absolute simulated time (since beginning of simulation), not relative to the last transition
-export type TimedReactive<RT_Config> = {
-  initial: () => [RaisedEvent[], RT_Config],
-  timeAdvance: (c: RT_Config) => number,
-  intTransition: (c: RT_Config) => [RaisedEvent[], RT_Config],
-  extTransition: (simtime: number, c: RT_Config, e: NormalEvent) => [RaisedEvent[], RT_Config],
-}
+// The main reason for deviating from DEVS is that a Statechart can raise output events also when responding to an input event. This could be worked around by immediately making an internal transition after making an external transition, but it would become harder to understand 
+// export type DEVSComponent<RT_Config> = {
+//   initial: () => [RaisedEvent[], RT_Config],
+//   timeAdvance: (c: RT_Config) => number,
+//   intTransition: (c: RT_Config) => [RaisedEvent[], RT_Config],
+//   extTransition: (simtime: number, c: RT_Config, e: NormalEvent) => RT_Config,
 
-export function statechartExecution(ast: Statechart, trace: Tracer): TimedReactive<BigStep> {
-  return {
-    initial: () => {
-      const bigstep = initialize(ast, trace);
-      return [bigstep.outputEvents, bigstep];
-    },
-    timeAdvance: (c: BigStep) => {
-      if (c.timers[0]) {
-        return c.timers[0][0];
-      }
-      return Infinity;
-    },
-    intTransition: (c: BigStep) => {
-      if (c.timers.length === 0) {
-        throw new Error("cannot make intTransition - timeAdvance is infinity")
-      }
-      const [[when, timerElapseEvent], ...remainingTimers] = c.timers;
-      const newC = {...c, timers: remainingTimers, simtime: when};
-      const {outputEvents, ...rest} = makeBigStep(newC, timerElapseEvent, ast, trace);
-      return [outputEvents, {outputEvents, ...rest}];
-    },
-    extTransition: (simtime: number, c: BigStep, e: NormalEvent) => {
-      const {outputEvents, ...rest} = makeBigStep({...c, simtime}, e, ast, trace);
-      return [outputEvents, {outputEvents, ...rest}];
-    },
-  }
-}
+//   // in/out event names:
+//   inputs: string[],
+//   outputs: string[],
+// }
 
-export type EventDestination = ModelDestination | OutputDestination;
+// export function statechartExecution(ast: Statechart, trace: Tracer): DEVSComponent<Statechart2DEVSState> {
+//   return {
+//     initial: () => {
+//       const bigstep = initialize(ast, trace);
+//       return [bigstep.outputEvents, bigstep];
+//     },
+//     timeAdvance: (c) => {
+//       if (c.timers[0]) {
+//         return c.timers[0][0];
+//       }
+//       return Infinity;
+//     },
+//     intTransition: (c) => {
+//       if (c.timers.length === 0) {
+//         throw new Error("cannot make intTransition - timeAdvance is infinity")
+//       }
+//       const [[when, timerElapseEvent], ...remainingTimers] = c.timers;
+//       const newC = {...c, timers: remainingTimers, simtime: when};
+//       const {outputEvents, ...rest} = makeBigStep(newC, timerElapseEvent, ast, trace);
+//       return [outputEvents, {outputEvents, ...rest}];
+//     },
+//     extTransition: (simtime: number, c: BigStep, e: NormalEvent) => {
+//       const {outputEvents, ...rest} = makeBigStep({...c, simtime}, e, ast, trace);
+//       return [outputEvents, {outputEvents, ...rest}];
+//     },
 
-export type ModelDestination = {
-  kind: "model",
-  model: string,
-  eventName: string,
-};
+//     inputs: ast.inputEvents.map(e => e.event),
+//     outputs: [...ast.outputEvents],
+//   }
+// }
 
-export type OutputDestination = {
-  kind: "output",
-  eventName: string,
-};
+// export type EventDestination = ModelDestination | OutputDestination;
+
+// export type ModelDestination = {
+//   kind: "model",
+//   model: string,
+//   eventName: string,
+// };
+
+// export type OutputDestination = {
+//   kind: "output",
+//   eventName: string,
+// };
 
 // maps source to target. e.g.:
 // {
 //  "sc.incTime": ["plant", "incTime"],
 //  "DEBUG_topRightClicked": ["sc", "topRightClicked"],
 // }
-export type Conns = {[eventName: string]: [string|null, string]};
+// export type Conns = {[eventName: string]: [string|null, string]};
 
-export function coupledExecution<T extends {[name: string]: any}>(models: {[name in keyof T]: TimedReactive<T[name]>}, conns: Conns, /*inputEvents: string[], outputEvents: []*/): TimedReactive<T> {
+// // Kind of like Coupled DEVS. Closed under coupling.
+// export function coupledExecution<T extends {[name: string]: any}>(models: {[name in keyof T]: DEVSComponent<T[name]>}, conns: Conns, inputs: string[], outputs: []): DEVSComponent<T> {
 
-  function makeModelExtTransition(simtime: number, c: T, model: string, e: NormalEvent) {
-    const [outputEvents, newConfig] = models[model].extTransition(simtime, c[model], e);
-    return processOutputs(simtime, outputEvents, model, {
-      ...c,
-      [model]: newConfig,
-    });
-  }
+//   function makeModelExtTransition(simtime: number, c: T, model: string, e: NormalEvent) {
+//     const [outputEvents, newConfig] = models[model].extTransition(simtime, c[model], e);
+//     return processOutputs(simtime, outputEvents, model, {
+//       ...c,
+//       [model]: newConfig,
+//     });
+//   }
 
-  // one model's output events are possibly input events for another model.
-  function processOutputs(simtime: number, events: RaisedEvent[], model: string, c: T): [RaisedEvent[], T] {
-    if (events.length > 0) {
-      const [event, ...rest] = events;
-      const destination = conns[model+'.'+event.name];
-      if (destination === undefined) {
-        // ignore
-        console.log(`${model}.${event.name} goes nowhere`);
-        return processOutputs(simtime, rest, model, c);
-      }
-      const [destinationModel, destinationEventName] = destination;
-      if (destinationModel !== null) {
-        // output event is input for another model
-        console.log(`${model}.${event.name} goes to ${destinationModel}.${destinationEventName}`);
-        const inputEvent = {
-          kind: "event" as const,
-          name: destinationEventName,
-          param: event.param,
-        };
-        const [outputEvents, newConfig] = makeModelExtTransition(simtime, c, destinationModel, inputEvent);
+//   // one model's output events are possibly input events for another model.
+//   function processOutputs(simtime: number, events: RaisedEvent[], model: string, c: T): [RaisedEvent[], T] {
+//     if (events.length > 0) {
+//       const [event, ...rest] = events;
+//       const destination = conns[model+'.'+event.name];
+//       if (destination === undefined) {
+//         // ignore
+//         console.log(`${model}.${event.name} goes nowhere`);
+//         return processOutputs(simtime, rest, model, c);
+//       }
+//       const [destinationModel, destinationEventName] = destination;
+//       if (destinationModel !== null) {
+//         // output event is input for another model
+//         console.log(`${model}.${event.name} goes to ${destinationModel}.${destinationEventName}`);
+//         const inputEvent = {
+//           kind: "event" as const,
+//           name: destinationEventName,
+//           param: event.param,
+//         };
+//         const [outputEvents, newConfig] = makeModelExtTransition(simtime, c, destinationModel, inputEvent);
 
-        // proceed with 'rest':
-        const [restOutputEvents, newConfig2] = processOutputs(simtime, rest, model, newConfig);
-        return [[...outputEvents, ...restOutputEvents], newConfig2];
-      }
-      else {
-        // event is output event of our coupled execution
-        console.log(`${model}.${event.name} becomes ^${destinationEventName}`);
-        const [outputEvents, newConfig] = processOutputs(simtime, rest, model, c);
-        return [[event, ...outputEvents], newConfig];
-      }
-    }
-    else {
-      return [[], c];
-    }
-  }
+//         // proceed with 'rest':
+//         const [restOutputEvents, newConfig2] = processOutputs(simtime, rest, model, newConfig);
+//         return [[...outputEvents, ...restOutputEvents], newConfig2];
+//       }
+//       else {
+//         // event is output event of our coupled execution
+//         console.log(`${model}.${event.name} becomes ^${destinationEventName}`);
+//         const [outputEvents, newConfig] = processOutputs(simtime, rest, model, c);
+//         return [[event, ...outputEvents], newConfig];
+//       }
+//     }
+//     else {
+//       return [[], c];
+//     }
+//   }
 
-  return {
-    initial: () => {
-      // 1. initialize every model
-      const allOutputs = [];
-      let state = {} as T;
-      for (const [modelName, model] of Object.entries(models)) {
-        const [outputEvents, modelState] = model.initial();
-        for (const o of outputEvents) {
-          allOutputs.push([modelName, o]);
-        }
-        // @ts-ignore
-        state[modelName] = modelState;
-      }
-      // 2. handle all output events (models' outputs may be inputs for each other)
-      let finalOutputs = [];
-      for (const [modelName, outputEvent] of allOutputs) {
-        let newOutputs;
-        [newOutputs, state] = processOutputs(0, [outputEvent], modelName, state);
-        finalOutputs.push(...newOutputs);
-      }
-      return [finalOutputs, state];
-    },
-    timeAdvance: (c) => {
-      return Object.entries(models).reduce((acc, [name, {timeAdvance}]) => Math.min(timeAdvance(c[name]), acc), Infinity);
-    },
-    intTransition: (c) => {
-      // find earliest internal transition among all models:
-      const [when, name] = Object.entries(models).reduce(([earliestSoFar, earliestModel], [name, {timeAdvance}]) => {
-        const when = timeAdvance(c[name]);
-        if (when < earliestSoFar) {
-          return [when, name] as [number, string];
-        }
-        return [earliestSoFar, earliestModel];
-      }, [Infinity, null] as [number, string | null]);
-      if (name !== null) {
-        const [outputEvents, newConfig] = models[name].intTransition(c[name]);
-        return processOutputs(when, outputEvents, name, {...c, [name]: newConfig});
-      }
-      throw new Error("cannot make intTransition - timeAdvance is infinity");
-    },
-    extTransition: (simtime, c, e) => {
-      if (conns[e.name] === undefined) {
-        console.warn('input event', e.name, 'goes to nowhere');
-        return [[], c];
-      }
-      else {
-        const [model, eventName] = conns[e.name];
-        // console.log(conns);
-        if (model !== null) {
-          console.log('input event', e.name, 'goes to', `${model}.${eventName}`);
-          const inputEvent: NormalEvent = {
-            kind: "event" as const,
-            name: eventName,
-            param: e.param,
-          };
-          return makeModelExtTransition(simtime, c, model, inputEvent);
-        }
-        else {
-          throw new Error("not implemented: input event becoming output event right away.")
-        }
-      }
-    },
-  }
-}
+//   return {
+//     initial: () => {
+//       // 1. initialize every model
+//       const allOutputs = [];
+//       let state = {} as T;
+//       for (const [modelName, model] of Object.entries(models)) {
+//         const [outputEvents, modelState] = model.initial();
+//         for (const o of outputEvents) {
+//           allOutputs.push([modelName, o]);
+//         }
+//         // @ts-ignore
+//         state[modelName] = modelState;
+//       }
+//       // 2. handle all output events (models' outputs may be inputs for each other)
+//       let finalOutputs = [];
+//       for (const [modelName, outputEvent] of allOutputs) {
+//         let newOutputs;
+//         [newOutputs, state] = processOutputs(0, [outputEvent], modelName, state);
+//         finalOutputs.push(...newOutputs);
+//       }
+//       return [finalOutputs, state];
+//     },
+//     timeAdvance: (c) => {
+//       return Object.entries(models).reduce((acc, [name, {timeAdvance}]) => Math.min(timeAdvance(c[name]), acc), Infinity);
+//     },
+//     intTransition: (c) => {
+//       // find earliest internal transition among all models:
+//       const [when, name] = Object.entries(models).reduce(([earliestSoFar, earliestModel], [name, {timeAdvance}]) => {
+//         const when = timeAdvance(c[name]);
+//         if (when < earliestSoFar) {
+//           return [when, name] as [number, string];
+//         }
+//         return [earliestSoFar, earliestModel];
+//       }, [Infinity, null] as [number, string | null]);
+//       if (name !== null) {
+//         const [outputEvents, newConfig] = models[name].intTransition(c[name]);
+//         return processOutputs(when, outputEvents, name, {...c, [name]: newConfig});
+//       }
+//       throw new Error("cannot make intTransition - timeAdvance is infinity");
+//     },
+//     extTransition: (simtime, c, e) => {
+//       if (conns[e.name] === undefined) {
+//         console.warn('input event', e.name, 'goes to nowhere');
+//         return [[], c];
+//       }
+//       else {
+//         const [model, eventName] = conns[e.name];
+//         // console.log(conns);
+//         if (model !== null) {
+//           console.log('input event', e.name, 'goes to', `${model}.${eventName}`);
+//           const inputEvent: NormalEvent = {
+//             kind: "event" as const,
+//             name: eventName,
+//             param: e.param,
+//           };
+//           return makeModelExtTransition(simtime, c, model, inputEvent);
+//         }
+//         else {
+//           throw new Error("not implemented: input event becoming output event right away.")
+//         }
+//       }
+//     },
+
+//     inputs,
+//     outputs,
+//   }
+// }
 
 
 // Example of a coupled execution:

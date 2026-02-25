@@ -14,7 +14,6 @@ import imgNote from "./noteSmall.png";
 import imgWatch from "./watch.webp";
 import { jsonDeepEqual } from "@/util/util";
 import { Scope } from "@/statecharts/environment";
-import { dummyTracer } from "@/statecharts/tracer";
 
 export const dwatchConcreteSyntax = dwatchJSON as ConcreteSyntax;
 
@@ -183,4 +182,4 @@ export const digitalWatchPlant = makeStatechartPlant({
     "bottomRightPressed",
     "bottomLeftPressed",
   ],
-}, dummyTracer);
+});

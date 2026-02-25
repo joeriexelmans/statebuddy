@@ -125,4 +125,4 @@ const trafficLightPlantSpec: StatechartPlantSpec<TrafficLightState> = {
   ],
 }
 
-export const trafficLightPlant = makeStatechartPlant(trafficLightPlantSpec, dummyTracer);
+export const trafficLightPlant = makeStatechartPlant(trafficLightPlantSpec);

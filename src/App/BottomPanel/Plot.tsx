@@ -1,7 +1,7 @@
 import plotStyles from "./Plot.module.css";
 import { SVGAttributes, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Setters } from "../makePartialSetter";
-import { PreparedTraces } from "../SideBar/check_property";
+import { PreparedTraces } from "../SideBar/prepare_trace";
 
 export type PlotState = {
   visiblePlots: {[name: string]: boolean},

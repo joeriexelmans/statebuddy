@@ -1,5 +1,4 @@
 import AddIcon from '@mui/icons-material/Add';
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import CachedOutlinedIcon from '@mui/icons-material/CachedOutlined';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
@@ -8,33 +7,30 @@ import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import TableViewIcon from '@mui/icons-material/TableView';
 
-import { Conns } from '@/statecharts/timed_reactive';
 import { Dispatch, memo, Ref, SetStateAction, useCallback, useEffect, useRef, useState } from 'react';
 import { Statechart } from '@/statecharts/abstract_syntax';
 import { ShowAST, ShowInputEvents, ShowInternalEvents, ShowOutputEvents } from './ShowAST';
 import { Plant } from '../Plant/Plant';
-import { PreparedTraces, PropertyCheckResult } from './check_property';
+import { PreparedTraces, PropertyCheckResult } from './prepare_trace';
 import { Setters } from '../makePartialSetter';
 import { Trace } from './Trace';
-import { BigStepCause, TraceState } from '../hooks/useSimulator';
-import { plants, UniversalPlantState } from '../plants';
-import { TimeMode } from '@/statecharts/time';
+import { plants } from '../plants';
+import { getSimTime, TimeMode } from '@/statecharts/time';
 import { PersistentDetails } from '../Components/PersistentDetails';
 import "./SideBar.css";
 import { objectsEqual } from '@/util/util';
 import { RaisedEvent } from '@/statecharts/runtime_types';
 import { DoubleClickButton } from '../Components/DoubleClickButton';
 import { Tooltip } from '../Components/Tooltip';
-import { ConcreteSyntax } from '@/statecharts/concrete_syntax';
 import { MoveUpDown } from '../Components/MoveUpDown';
-import { buf2base64, deflateBuffer, str2buf } from '@/compression/deflate';
 
 import styles from "../App.module.css";
-import traceStyles from "./Trace.module.css";
 import { Status } from './Status';
 import { TwoStateButton } from '../Components/TwoStateButton';
+import { ExtTransitionTrace, saveExtTransitions } from '@/devs/serialize_trace';
+import { CoupledState, defaultPlantsState, PlantsState, StateBuddyTraceState } from '../hooks/useSimulator';
 
-export type SavedTraces = [string, BigStepCause[]][];
+export type SavedTraces = [string, ExtTransitionTrace][];
 
 export type SideBarState = {
   showStateTree: boolean,
@@ -47,10 +43,7 @@ export type SideBarState = {
   showExecutionTrace: boolean,
   showTable: boolean,
 
-  plantName: string,
-  plantConns: Conns,
-  autoConnect: boolean,
-
+  plantsState: PlantsState,
   properties: string[],
   activeProperty: number,
   savedTraces: SavedTraces,
@@ -70,10 +63,7 @@ export const defaultSideBarState = {
   showExecutionTrace: true,
   showTable: false,
 
-  plantName: 'dummy',
-  plantConns: {},
-  autoConnect: true,
-
+  plantsState: defaultPlantsState,
   properties: [],
   activeProperty: 0,
   savedTraces: [],
@@ -85,14 +75,11 @@ export const defaultSideBarState = {
 type SideBarProps = SideBarState & {
   refRightSideBar: Ref<HTMLDivElement>,
   ast: Statechart | null,
-  plant: Plant<any, UniversalPlantState>,
-  plantCS: ConcreteSyntax | null,
-  // setSavedTraces: Dispatch<SetStateAction<SavedTraces>>,
-  trace: TraceState|null,
-  setTrace: Dispatch<SetStateAction<TraceState|null>>,
-  plantState: UniversalPlantState,
+  trace: StateBuddyTraceState|null,
+  setTrace: Dispatch<SetStateAction<StateBuddyTraceState|null>>,
+  coupledState: CoupledState|null,
   onRaise: (inputEvent: string, param: any) => void,
-  onReplayTrace: (causes: BigStepCause[]) => void,
+  onReplayTrace: (extTrace: ExtTransitionTrace) => void,
   setTime: Dispatch<SetStateAction<TimeMode>>,
   time: TimeMode,
   preparedTraces: PreparedTraces | null,
@@ -101,7 +88,7 @@ type SideBarProps = SideBarState & {
 
 export const SideBar = memo(function SideBar(props: SideBarProps) {
 
-  const {showExecutionTrace, showConnections, plantName, showPlantTrace, showProperties, activeProperty, autoConnect, autoScroll, plantConns, properties, savedTraces, refRightSideBar, ast, plant, plantCS, setSavedTraces, trace, setTrace, setProperties, setShowPlantTrace, setActiveProperty, setPlantConns, setPlantName, setAutoConnect, setShowProperties, setAutoScroll, time, plantState, onReplayTrace, onRaise, setTime, setShowConnections, setShowExecutionTrace, showPlant, setShowPlant, showOutputEvents, setShowOutputEvents, setShowInternalEvents, showInternalEvents, setShowInputEvents, setShowStateTree, showInputEvents, showStateTree, preparedTraces, showTable, setShowTable, showMicroSteps, setShowMicroSteps, checkProperty} = props;
+  const {showExecutionTrace, showConnections, showPlantTrace, showProperties, activeProperty, autoScroll, plantsState, setPlantsState, properties, savedTraces, refRightSideBar, ast, setSavedTraces, trace, setTrace, setProperties, setShowPlantTrace, setActiveProperty, setShowProperties, setAutoScroll, time, onReplayTrace, onRaise, setTime, setShowConnections, setShowExecutionTrace, showPlant, setShowPlant, showOutputEvents, setShowOutputEvents, setShowInternalEvents, showInternalEvents, setShowInputEvents, setShowStateTree, showInputEvents, showStateTree, preparedTraces, showTable, setShowTable, showMicroSteps, setShowMicroSteps, checkProperty} = props;
 
   const [propertyResults, setPropertyResults] = useState<PropertyCheckResult[] | null>(null);
 
@@ -109,10 +96,11 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
 
   const onSaveTrace = useCallback(() => {
     if (trace) {
+      const extTrace = saveExtTransitions(trace.trace, getSimTime(time, performance.now()));
       setSavedTraces(savedTraces => [
-        ...savedTraces,
-        ["", trace.trace.map((item) => item.cause)] as [string, BigStepCause[]],
-      ]);
+        ...savedTraces, 
+        ["", extTrace] as const,
+      ])
     }
   }, [trace, setSavedTraces]);
 
@@ -134,14 +122,34 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
   }, [preparedTraces, properties]);
 
   // whenever the ast, the plant or 'autoconnect' option changes, detect connections:
-  useEffect(() => {
-    if (ast && autoConnect) {
-      autoDetectConns(ast, plant, setPlantConns);
-    }
-  }, [ast, plant, autoConnect]);
+  // useEffect(() => {
+  //   if (ast && autoConnect) {
+  //     autoDetectConns(ast, plant, setPlantConns);
+  //   }
+  // }, [ast, plant, autoConnect]);
 
   const raiseDebugEvent = useCallback((e: string, p: any) => onRaise("debug."+e,p), [onRaise]);
   const raiseUIEvent = useCallback((e: RaisedEvent) => onRaise("plant.ui."+e.name, e.param), [onRaise]);
+
+  // const [selectedPlant, setSelectedPlant] = useState<string>("add plant ...");
+
+  const onAddPlant = (plantName: string) => {
+    const plantToInstantiate = plants.find(([n]) => plantName === n);
+    if (plantToInstantiate !== undefined) {
+      setPlantsState(ps => ({
+        plants: [
+          ...ps.plants,
+          {
+            id: plantName + ps.nextPlantID.toString(), // <-- for readability, we include the plant type in the ID
+            name: plantName,
+            type: plantName,
+          },
+        ],
+        conns: ps.conns,
+        nextPlantID: ps.nextPlantID+1,
+      }));
+    }
+  };
 
   return <>
     <div
@@ -162,7 +170,7 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
         {ast && <ShowInputEvents
           inputEvents={ast.inputEvents}
           onRaise={raiseDebugEvent}
-          disabled={trace===null || trace.trace[trace.idx].kind === "error"}
+          disabled={trace===null || !trace.trace[trace.idx].result.ok}
         />}
       </PersistentDetails>
 
@@ -185,18 +193,19 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
 
       {/* Plant */}
       <PersistentDetails state={showPlant} setState={setShowPlant}>
-        <summary>plant</summary>
+        <summary>plant(s)</summary>
         <div className={styles.toolbar}>
           <select
             disabled={trace!==null}
-            value={plantName}
-            onChange={e => setPlantName(() => e.target.value)}>
+            value="add plant..."
+            onChange={e => onAddPlant(e.target.value)}>
+            <option>add plant...</option>
             {plants.map(([plantName]) =>
               <option key={plantName}>{plantName}</option>
             )}
           </select>
           &nbsp;
-          <Tooltip tooltip='the behavior of each plant is also modeled by a statechart'>
+          {/* <Tooltip tooltip='the behavior of each plant is also modeled by a statechart'>
             <button
               disabled={plantCS === null}
               onClick={() => {
@@ -214,25 +223,35 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
               <OpenInNewIcon fontSize='small'/>
               &nbsp;plant statechart
             </button>
-          </Tooltip>
+          </Tooltip> */}
         </div>
-        {/* Render plant */}
-        {<plant.render state={plant.cleanupState(plantState)} speed={speed}
+        {/* Render plants */}
+        {plantsState.plants.map(({id, name, type: plant}, i) => <div>
+            <input value={name} onChange={e => setPlantsState(ps => ({
+              ...ps,
+              plants: ps.plants.with(i, {id, name: e.target.value, type: plant})}))}/>
+            {/* {(() => {
+              const plant = plants.find(p => p[0] === plant);
+              return plant && <plant[1].render state={plant.cleanupState()} speed={speed} />
+            })()} */}
+        </div>)}
+        {/* {<plant.render state={plant.cleanupState(plantState)} speed={speed}
           raiseUIEvent={raiseUIEvent}
-          />}
+          />} */}
       </PersistentDetails>
 
-      {/* Connections */}
+      {/* Connect */}
       <PersistentDetails state={showConnections} setState={setShowConnections}>
-        <summary>connections</summary>
-        <Tooltip tooltip="auto-connect (name-based)" align="left">
+        <summary>connect</summary>
+        {/* <Tooltip tooltip="auto-connect (name-based)" align="left">
           <button
             className={autoConnect?"active":""}
             onClick={() => setAutoConnect(c => !c)}>
             <AutoAwesomeIcon fontSize="small"/>
           </button>
-        </Tooltip>
-        {ast && ConnEditor(ast, plant, plantConns, setPlantConns)}
+        </Tooltip> */}
+        {/* {ast && ConnEditor(ast, plant, plantConns, setPlantConns)} */}
+        {/* <Connections conns={plantConns} setConns={setPlantConns}/> */}
       </PersistentDetails>
 
       {/* Properties */}
@@ -255,7 +274,8 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
               </Tooltip>
             </div>
             <Tooltip
-              tooltip={propertyError || plant && "available signals:\n"+plant.signals.map(s => "• "+s).join('\n')}
+              // tooltip={propertyError || plant && "available signals:\n"+plant.signals.map(s => "• "+s).join('\n')}
+              tooltip=""
               align='left'
               fullWidth={true}
               error={Boolean(propertyError)}
@@ -307,11 +327,11 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
                   <CachedOutlinedIcon fontSize="small"/>
                 </button>
               </Tooltip>
-              <Tooltip tooltip='duration (approx.)' align='left'>
-                <div style={{display:'inline-block', width: 22, fontSize: 9, textAlign: 'center'}}>{(Math.floor(savedTrace[1].at(-1)!.simtime/1000))}s</div>
+              <Tooltip tooltip='duration' align='left'>
+                <div style={{display:'inline-block', width: 22, fontSize: 9, textAlign: 'center'}}>{(Math.floor(savedTrace[1].lastSimTime/1000))}s</div>
               </Tooltip>
               <Tooltip tooltip='number of steps' align='left'>
-                <div style={{display:'inline-block', width: 22, fontSize: 9, textAlign: 'center'}}>({savedTrace[1].length})</div>
+                <div style={{display:'inline-block', width: 22, fontSize: 9, textAlign: 'center'}}>({savedTrace[1].trace.length})</div>
               </Tooltip>
               <Tooltip tooltip='does not have to be unique, can be empty...' align='left' fullWidth={true} showWhen='focus'>
                 <input
@@ -381,80 +401,81 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
   return objectsEqual(prevProps, nextProps);
 });
 
-function autoDetectConns(ast: Statechart, plant: Plant<any, any>, setPlantConns: Dispatch<SetStateAction<Conns>>) {
-  for (const {event: a} of plant.uiEvents) {
-    for (const {event: b} of plant.inputEvents) {
-      if (a === b) {
-        setPlantConns(conns => ({...conns, ['plant.ui.'+a]: ['plant', b]}));
-        break;
-      }
-    }
-    for (const {event: b} of ast.inputEvents) {
-      if (a === b) {
-        setPlantConns(conns => ({...conns, ['plant.ui.'+a]: ['sc', b]}));
-      }
-    }
-  }
-  for (const a of ast.outputEvents) {
-    for (const {event: b} of plant.inputEvents) {
-      if (a === b) {
-        setPlantConns(conns => ({...conns, ['sc.'+a]: ['plant', b]}));
-      }
-    }
-  }
-  for (const {event: a} of plant.outputEvents) {
-    for (const {event: b} of ast.inputEvents) {
-      if (a === b) {
-        setPlantConns(conns => ({...conns, ['plant.'+a]: ['sc', b]}));
-      }
-    }
-  }
-}
+// function autoDetectConns(ast: Statechart, plant: Plant<any, any>, setPlantConns: Dispatch<SetStateAction<Conns>>) {
+//   for (const {event: a} of plant.uiEvents) {
+//     for (const {event: b} of plant.inputEvents) {
+//       if (a === b) {
+//         setPlantConns(conns => ({...conns, ['plant.ui.'+a]: ['plant', b]}));
+//         break;
+//       }
+//     }
+//     for (const {event: b} of ast.inputEvents) {
+//       if (a === b) {
+//         setPlantConns(conns => ({...conns, ['plant.ui.'+a]: ['sc', b]}));
+//       }
+//     }
+//   }
+//   for (const a of ast.outputEvents) {
+//     for (const {event: b} of plant.inputEvents) {
+//       if (a === b) {
+//         setPlantConns(conns => ({...conns, ['sc.'+a]: ['plant', b]}));
+//       }
+//     }
+//   }
+//   for (const {event: a} of plant.outputEvents) {
+//     for (const {event: b} of ast.inputEvents) {
+//       if (a === b) {
+//         setPlantConns(conns => ({...conns, ['plant.'+a]: ['sc', b]}));
+//       }
+//     }
+//   }
+// }
 
-function ConnEditor(ast: Statechart, plant: Plant<any, any>, plantConns: Conns, setPlantConns: Dispatch<SetStateAction<Conns>>) {
-  const plantInputs = <>{plant.inputEvents.map(e => <option key={'plant.'+e.event} value={'plant.'+e.event}>plant.{e.event}</option>)}</>
-  const scInputs = <>{ast.inputEvents.map(e => <option key={'sc.'+e.event} value={'sc.'+e.event}>sc.{e.event}</option>)}</>;
-  return <>
+// function ConnEditor(ast: Statechart, plant: Plant<any, any>, plantConns: Conns, setPlantConns: Dispatch<SetStateAction<Conns>>) {
+//   const plantInputs = <>{plant.inputEvents.map(e => <option key={'plant.'+e.event} value={'plant.'+e.event}>plant.{e.event}</option>)}</>
+//   const scInputs = <>{ast.inputEvents.map(e => <option key={'sc.'+e.event} value={'sc.'+e.event}>sc.{e.event}</option>)}</>;
+//   console.log({plantConns});
+//   return <>
     
-    {/* SC output events can go to Plant */}
-    {[...ast.outputEvents].map(e => <div key={e} style={{width:'100%', textAlign:'right'}}>
-      <label htmlFor={`select-dst-sc-${e}`} style={{width:'50%'}}>sc.{e}&nbsp;→&nbsp;</label>
-      <select id={`select-dst-sc-${e}`}
-        style={{width:'50%'}}
-        value={plantConns['sc.'+e]?.join('.')}
-        // @ts-ignore
-        onChange={domEvent => setPlantConns(conns => ({...conns, [`sc.${e}`]: (domEvent.target.value === "" ? undefined : (domEvent.target.value.split('.') as [string,string]))}))}>
-        <option key="none" value=""></option>
-        {plantInputs}
-      </select>
-    </div>)}
+//     {/* SC output events can go to Plant */}
+//     {[...ast.outputEvents].map(e => <div key={e} style={{width:'100%', textAlign:'right'}}>
+//       <label htmlFor={`select-dst-sc-${e}`} style={{width:'50%'}}>sc.{e}&nbsp;→&nbsp;</label>
+//       <select id={`select-dst-sc-${e}`}
+//         style={{width:'50%'}}
+//         value={plantConns['sc.'+e]?.join('.')}
+//         // @ts-ignore
+//         onChange={domEvent => setPlantConns(conns => ({...conns, [`sc.${e}`]: (domEvent.target.value === "" ? undefined : (domEvent.target.value.split('.') as [string,string]))}))}>
+//         <option key="none" value=""></option>
+//         {plantInputs}
+//       </select>
+//     </div>)}
 
-    {/* Plant output events can go to Statechart */}
-    {[...plant.outputEvents.map(e => <div key={e.event} style={{width:'100%', textAlign:'right'}}>
-      <label htmlFor={`select-dst-plant-${e.event}`} style={{width:'50%'}}>plant.{e.event}&nbsp;→&nbsp;</label>
-      <select id={`select-dst-plant-${e.event}`}
-        style={{width:'50%'}}
-        value={plantConns['plant.'+e.event]?.join('.')}
-        // @ts-ignore
-        onChange={(domEvent => setPlantConns(conns => ({...conns, [`plant.${e.event}`]: (domEvent.target.value === "" ? undefined : (domEvent.target.value.split('.') as [string,string]))})))}>
-        <option key="none" value=""></option>
-        {scInputs}
-      </select>
-    </div>)]}
+//     {/* Plant output events can go to Statechart */}
+//     {[...plant.outputEvents.map(e => <div key={e.event} style={{width:'100%', textAlign:'right'}}>
+//       <label htmlFor={`select-dst-plant-${e.event}`} style={{width:'50%'}}>plant.{e.event}&nbsp;→&nbsp;</label>
+//       <select id={`select-dst-plant-${e.event}`}
+//         style={{width:'50%'}}
+//         value={plantConns['plant.'+e.event]?.join('.')}
+//         // @ts-ignore
+//         onChange={(domEvent => setPlantConns(conns => ({...conns, [`plant.${e.event}`]: (domEvent.target.value === "" ? undefined : (domEvent.target.value.split('.') as [string,string]))})))}>
+//         <option key="none" value=""></option>
+//         {scInputs}
+//       </select>
+//     </div>)]}
 
-    {/* Plant UI events typically go to the Plant */}
-    {plant.uiEvents.map(e => <div key={e.event} style={{width:'100%', textAlign:'right'}}>
-      <label htmlFor={`select-dst-plant-ui-${e.event}`} style={{width:'50%', color: 'grey'}}>ui.{e.event}&nbsp;→&nbsp;</label>
-      <select id={`select-dst-plant-ui-${e.event}`}
-        style={{width:'50%'}}
-        value={plantConns['plant.ui.'+e.event]?.join('.')}
-        // @ts-ignore
-        onChange={domEvent => setPlantConns(conns => ({...conns, [`plant.ui.${e.event}`]: (domEvent.target.value === "" ? undefined : (domEvent.target.value.split('.') as [string,string]))}))}>
-        <option key="none" value=""></option>
-        {scInputs}
-        {plantInputs}
-      </select>
-    </div>)}
-  </>;
-}
+//     {/* Plant UI events typically go to the Plant */}
+//     {plant.uiEvents.map(e => <div key={e.event} style={{width:'100%', textAlign:'right'}}>
+//       <label htmlFor={`select-dst-plant-ui-${e.event}`} style={{width:'50%', color: 'grey'}}>ui.{e.event}&nbsp;→&nbsp;</label>
+//       <select id={`select-dst-plant-ui-${e.event}`}
+//         style={{width:'50%'}}
+//         value={plantConns['plant.ui.'+e.event]?.join('.')}
+//         // @ts-ignore
+//         onChange={domEvent => setPlantConns(conns => ({...conns, [`plant.ui.${e.event}`]: (domEvent.target.value === "" ? undefined : (domEvent.target.value.split('.') as [string,string]))}))}>
+//         <option key="none" value=""></option>
+//         {scInputs}
+//         {plantInputs}
+//       </select>
+//     </div>)}
+//   </>;
+// }
 

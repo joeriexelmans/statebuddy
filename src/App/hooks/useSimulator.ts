@@ -1,83 +1,103 @@
-import { Statechart } from "@/statecharts/abstract_syntax";
-import { RuntimeError } from "@/statecharts/interpreter";
-import { BigStep, RaisedEvent, Timers } from "@/statecharts/runtime_types";
-import { Conns, coupledExecution, statechartExecution } from "@/statecharts/timed_reactive";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Plant } from "../Plant/Plant";
-import { getSimTime, getWallClkDelay, TimeMode } from "@/statecharts/time";
-import { UniversalPlantState } from "../plants";
+import { CoupledDEVSConns, makeCoupledDEVS, Model2ModelConn } from "@/devs/coupled_devs";
+import { sc2DEVS, Statechart2DEVSState } from "@/devs/sc2devs";
+import { ExtTransitionTrace, restoreTrace } from "@/devs/serialize_trace";
+import { DEVSTrace, extTransition, initTrace, intTransition, timeAdvance } from "@/devs/trace";
 import { useShortcuts } from "@/hooks/useShortcuts";
-import { Tracer } from "@/statecharts/tracer";
+import { Statechart } from "@/statecharts/abstract_syntax";
+import { getSimTime, getWallClkDelay, TimeMode } from "@/statecharts/time";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { lookupPlant } from "../plants";
 
-type CoupledState = {
-  sc: BigStep,
-  plant: BigStep,
+// In StateBuddy, currently, the state of our simulation is always a CoupledDEVS state of our statechart model (with a DEVS adapter around it) and a bunch of 'plants'.
+// Perhaps in the future, we could let the user arbitrarily configure this setup (anything on the spectrum from a single Statechart Atomic DEVS to many nested Coupled DEVS ...), but for now, it is what it is.
+export type CoupledState = {
+  sc: Statechart2DEVSState, // <-- there's always our Statechart execution state ...
+} & {
+  // ... and a bunch (0..*) of plants:
+  [plantName: string]: any, // <-- plant state is a black box?
 };
 
-export type TraceItemError = {
-  cause: BigStepCause, // event name, <init> or <timer>
-  simtime: number,
-  error: RuntimeError,
+// The 'state' of the currently active trace.
+export type StateBuddyTraceState = {
+  trace: DEVSTrace<CoupledState>, // <-- the execution trace
+  idx: number, // <-- currently selected trace item
+};
+
+// For every plant the user instantiates, we keep the following kind of entry:
+export type PlantInstance = {
+  id: string, // <-- every plant instance gets a unique immutable ID
+  name: string, // <-- a human-readable and editable name for the plant
+  type: string, // <-- the plant type ("digital watch", "traffic light", "microwave", ...)
 }
 
-export type BigStepCause = {
-  kind: "init",
-  simtime: 0,
-} | {
-  kind: "input",
-  simtime: number,
-  eventName: string,
-  param?: any,
-} | {
-  kind: "timer",
-  simtime: number,
+// Statebuddy's application state wrt. plants:
+// JSON-serializable.
+export type PlantsState = {
+  plants: PlantInstance[],
+  nextPlantID: number,
+  conns: Model2ModelConn[], // <-- the user can configure the connections between the different components (meaning: the statechart model and the plant(s))
+}
+
+export const defaultPlantsState = {
+  plants: [],
+  nextPlantID: 0,
+  conns: [],
 };
 
-export type TraceItem =
-  { kind: "error", msgs: string[] } & TraceItemError
-| { kind: "bigstep", simtime: number, cause: BigStepCause, state: CoupledState, outputEvents: RaisedEvent[], msgs: string[] };
+const ignoreRaise = (_inputEvent: string, _param: any) => {};
 
-export type TraceState = {
-  trace: [TraceItem, ...TraceItem[]], // non-empty
-  idx: number,
-};
-
-const ignoreRaise = (inputEvent: string, param: any) => {};
-
-
-export function useSimulator(ast: Statechart|null, plant: Plant<any, UniversalPlantState>, plantConns: Conns, onStep: () => void) {
+export function useSimulator(ast: Statechart|null, plantsState: PlantsState, onStep: () => void) {
   const [time, setTime] = useState<TimeMode>({kind: "paused", simtime: 0});
-  const [trace, setTrace] = useState<TraceState|null>(null);
+
+  // trace is 'null' when there is no ongoing execution
+  const [trace, setTrace] = useState<StateBuddyTraceState|null>(null);
+
+  // The currently active item in the execution trace, if there is one
   const currentTraceItem = trace && trace.trace[trace.idx];
 
-  const makeTracer = (indent: number, msgs: string[]) => ({
-    log: (msg: string) => msgs.push(' '.repeat(indent) + msg),
-    indent: () => makeTracer(indent + 1, msgs),
-  });
+  // The current coupled state, if there is one
+  const coupledState = currentTraceItem
+    && currentTraceItem.result.ok
+    && currentTraceItem.result.newState
+    || null;
 
-  const makeCoupledExecution = useCallback((tracer: Tracer) => ast && coupledExecution({
-    sc: statechartExecution(ast, tracer),
-    plant: plant.execution,
-  }, {
-    ...plantConns,
-    ...Object.fromEntries(ast.inputEvents.map(({event}) => ["debug."+event, ['sc',event] as [string,string]])),
-  }),
-  [ast, plant, plantConns]);
-
-  // // cE is just a set of functions for stepping the coupled execution (statechart x plant)
-  // const cE = useMemo(makeCoupledExecution, []);
+  const cE = useMemo(() => ast && makeCoupledDEVS(
+    {
+      sc: sc2DEVS(ast),
+      ...Object.fromEntries(plantsState.plants.map(({id, type: plant}) =>
+        [id, lookupPlant(plant)!.execution])),
+    }, {
+      inputs: [
+        // expose all input events
+        ...ast.inputEvents.map(({event}) => ({
+          coupledInputEvent: event,
+          inputModelName: "sc",
+          inputEvent: event,
+        })),
+      ],
+      model2Model: plantsState.conns,
+      outputs: [
+        // expose all output events
+        ...[...ast.outputEvents].map(event => ({
+          outputModelName: "sc",
+          outputEvent: event,
+          coupledOutputEvent: event,
+        })),
+      ],
+    } as CoupledDEVSConns,
+    ast.inputEvents.map(({event}) => event), // <-- every SC input becomes coupled input
+    [...ast.outputEvents], // <-- every SC output becomes coupled output
+  ),
+  [ast, plantsState]);
 
   const onInit = useCallback(() => {
-    const msgs = [] as string[];
-    const cE = makeCoupledExecution(makeTracer(0, msgs))
     if (cE === null) return;
-    const item = catchRuntimeError(0, {kind: "init", simtime: 0}, () => {
-      return cE.initial();
-    }, msgs);
-    setTrace(_ => ({
-      trace: [item],
+    const trace = initTrace(cE);
+    console.log('onInit', trace);
+    setTrace({
+      trace,
       idx: 0,
-    }));
+    });
     setTime(time => {
       if (time.kind === "paused") {
         return {...time, simtime: 0};
@@ -87,97 +107,61 @@ export function useSimulator(ast: Statechart|null, plant: Plant<any, UniversalPl
       }
     });
     onStep();
-  }, [makeCoupledExecution, onStep]);
+  }, [cE, onStep]);
 
   const onClear = useCallback(() => {
     setTrace(null);
     setTime({kind: "paused", simtime: 0});
   }, [setTrace, setTime]);
 
-  const catchRuntimeError = useCallback((simtime: number, cause: BigStepCause, computeNewState: () => [RaisedEvent[], CoupledState], msgs: string[]) => {
-    const metadata = {simtime, cause}
-    try {
-      const [outputEvents, state] = computeNewState(); // may throw RuntimeError
-      return {kind: "bigstep" as const, ...metadata, state, outputEvents, msgs};
-    }
-    catch (error) {
-      if (error instanceof RuntimeError) {
-        return {kind: "error" as const, ...metadata, error, msgs};
-      }
-      else {
-        throw error;
-      }
-    }
-  }, []);
-
-  const appendNewConfig = useCallback((simtime: number, cause: BigStepCause, computeNewState: () => [RaisedEvent[], CoupledState], msgs: string[]) => {
-    const newItem = catchRuntimeError(simtime, cause, computeNewState, msgs);
-    if (newItem.kind === "error") {
-      // also pause the simulation, for dramatic effect:
-      setTime({kind: "paused", simtime});
-    }
-    // @ts-ignore
-    setTrace(trace => ({
-      trace: [
-        ...trace!.trace.slice(0, trace!.idx+1), // remove everything after current item
-        newItem,
-      ],
-      // idx: 0,
-      idx: trace!.idx+1,
-    }));
-    onStep();
-  }, [onStep, setTrace, setTime]);
-
-  // raise input event, producing a new runtime configuration (or a runtime error)
-  const onRaise = useMemo(() => {
-    const msgs = [] as string[];
-    const cE = makeCoupledExecution(makeTracer(0, msgs));
+  // raise input event at current point in simulated time (depends on 'time'), producing a new runtime configuration (or a runtime error)
+  const onRaise = useCallback(() => {
     if (cE === null || currentTraceItem === null) {
       return ignoreRaise; // this speeds up rendering of components that depend on onRaise if the model is being edited while there is no ongoing trace
     }
     else return (inputEvent: string, param: any) => {
-      if (currentTraceItem.kind === "bigstep") {
-        const simtime = getSimTime(time, Math.round(performance.now()));
-        appendNewConfig(simtime, {kind: "input", simtime, eventName: inputEvent, param}, () => {
-          return cE.extTransition(simtime, currentTraceItem.state, {kind: "event", name: inputEvent, param});
-        }, msgs);
-      }
+      const simtime = getSimTime(time, Math.round(performance.now()));
+      const newTrace = extTransition(cE,
+        trace!.trace.slice(0, trace!.idx) as DEVSTrace<CoupledState>,
+        {kind: "event", name: inputEvent, param},
+        simtime);
+      setTrace({
+        trace: newTrace,
+        idx: newTrace.length-1, // <-- last (= new) item becomes active
+      });
     };
-  }, [makeCoupledExecution, currentTraceItem, time, appendNewConfig]);
+  }, [cE, currentTraceItem, time]);
 
   // timer elapse events are triggered by a change of the simulated time (possibly as a scheduled JS event loop timeout)
   useEffect(() => {
-    // console.log('time effect:', time, currentTraceItem);
     let timeout: NodeJS.Timeout | undefined;
-    const msgs = [] as string[];
-    const cE = makeCoupledExecution(makeTracer(0, msgs));
     if (currentTraceItem !== null && cE !== null) {
-      if (currentTraceItem.kind === "bigstep") {
-        const nextTimeout = cE?.timeAdvance(currentTraceItem.state);
+      const nextTimeout = timeAdvance(cE, trace!.trace);
 
-        const raiseTimeEvent = () => {
-          appendNewConfig(nextTimeout, {kind: "timer", simtime: nextTimeout}, () => {
-            return cE.intTransition(currentTraceItem.state);
-          }, msgs);
-        }
+      const makeIntTransition = () => {
+        const newTrace = intTransition(cE, trace!.trace);
+        setTrace({
+          trace: newTrace,
+          idx: newTrace.length - 1,
+        });
+      }
 
-        if (time.kind === "realtime") {
-          const wallclkDelay = getWallClkDelay(time, nextTimeout, Math.round(performance.now()));
-          if (wallclkDelay !== Infinity) {
-            timeout = setTimeout(raiseTimeEvent, wallclkDelay);
-          }
+      if (time.kind === "realtime") {
+        const wallclkDelay = getWallClkDelay(time, nextTimeout, Math.round(performance.now()));
+        if (wallclkDelay !== Infinity) {
+          timeout = setTimeout(makeIntTransition, wallclkDelay);
         }
-        else if (time.kind === "paused") {
-          if (nextTimeout <= time.simtime) {
-            raiseTimeEvent();
-          }
+      }
+      else if (time.kind === "paused") {
+        if (nextTimeout <= time.simtime) {
+          makeIntTransition();
         }
       }
     }
     return () => {
       if (timeout) clearTimeout(timeout);
     }
-  }, [time, currentTraceItem]); // <-- todo: is this really efficient?
+  }, [cE, time, currentTraceItem]); // <-- todo: is this really efficient?
 
   const onBack = useCallback(() => {
     if (trace !== null && trace.idx > 0) {
@@ -210,72 +194,18 @@ export function useSimulator(ast: Statechart|null, plant: Plant<any, UniversalPl
     {keys: ["ArrowDown"], action: onNext},
   ])
 
-  const replayTrace = useCallback((causes: BigStepCause[]) => {
-    if (true) {
-      function run_until(simtime: number) {
-        while (true) {
-          const msgs = [] as string[];
-          const cE = makeCoupledExecution(makeTracer(0, msgs));
-          const nextTimeout = cE!.timeAdvance(lastState);
-          if (nextTimeout > simtime) {
-            break;
-          }
-          const item = catchRuntimeError(nextTimeout, {kind: "timer", simtime: nextTimeout}, () => cE!.intTransition(lastState), msgs);
-          newTrace.push(item);
-          if (item.kind === "error") {
-            return;
-          }
-          else {
-            lastState = item.state;
-            lastSimtime = item.simtime;
-          }
-        }
-      }
-      const msgs = [] as string[];
-      const cE = makeCoupledExecution(makeTracer(0, msgs));
-      const [outputEvents, coupledState] = cE!.initial();
-      const newTrace = [{kind: "bigstep", simtime: 0, state: coupledState, outputEvents, cause: {kind: "init"} as BigStepCause, msgs} as TraceItem] as [TraceItem, ...TraceItem[]];
-      let lastState = coupledState;
-      let lastSimtime = 0;
-      for (const cause of causes) {
-        if (cause.kind === "input") {
-          run_until(cause.simtime); // <-- just make sure we haven't missed any timers elapsing
-          const msgs = [] as string[];
-          const cE = makeCoupledExecution(makeTracer(0, msgs));
-          const item = catchRuntimeError(cause.simtime, cause,
-            () => cE!.extTransition(cause.simtime,
-              // @ts-ignore
-              newTrace.at(-1)!.state,
-              {kind: "event", name: cause.eventName, param: cause.param}), msgs);
-          newTrace.push(item);
-          if (item.kind === "error") {
-            break;
-          }
-          else {
-            lastState = item.state;
-            lastSimtime = item.simtime;
-          }
-        }
-        else if (cause.kind === "timer") {
-          run_until(cause.simtime);
-        }
-      }
-      return {trace: newTrace, lastSimtime};
-    }
-  }, [makeCoupledExecution]);
-
-  const onReplayTrace = useCallback((causes: BigStepCause[]) => {
-    if (true) {
-      const {trace, lastSimtime} = replayTrace(causes)!;
+  const onReplayTrace = useCallback((extTrace: ExtTransitionTrace) => {
+    if (cE) {
+      const trace = restoreTrace(extTrace, cE);
       setTrace({trace, idx: trace.length-1});
-      setTime({kind: "paused", simtime: lastSimtime});
+      setTime({kind: "paused", simtime: extTrace.lastSimTime});
     }
-  }, [replayTrace]);
+  }, [cE]);
 
   // timestamp of next timed transition, in simulated time
-  const timers: Timers = currentTraceItem?.kind === "bigstep" && currentTraceItem.state.sc.timers || [];
+  const timers = currentTraceItem?.result.ok && currentTraceItem.result.newState.sc.bigstep.timers || [];
   const nextTimedTransition = timers[0];
   const nextWakeup = nextTimedTransition?.[0] || Infinity;
 
-  return {trace, setTrace, plant, onInit, onClear, onBack, onRaise, replayTrace, onReplayTrace, time, setTime, nextWakeup};
+  return {trace, setTrace, onInit, onClear, onBack, onRaise, onReplayTrace, time, setTime, nextWakeup, currentTraceItem, coupledState, cE};
 }
