@@ -47,7 +47,7 @@ function logEventParam(param: any) {
     return '';
   }
   else {
-    return `:${param}`;
+    return `(${param})`;
   }
 }
 

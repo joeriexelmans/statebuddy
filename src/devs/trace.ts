@@ -108,9 +108,10 @@ export function intTransition<T>(devs: DEVSComponent<T>, trace: DEVSTrace<T>): D
 }
 
 // Perform extTransition on last item in trace, growing the trace with 1 item.
-export function extTransition<T>(devs: DEVSComponent<T>, trace: DEVSTrace<T>, e: NormalEvent, simtime: number): DEVSTrace<T> {
+export function extTransition<T>(devs: DEVSComponent<T>, trace: DEVSTrace<T>, e: RaisedEvent, simtime: number): DEVSTrace<T> {
   const lastState = expectNonFaultyTrace(trace);
   const result = catchRuntimeError(() => devs.extTransition(simtime, lastState, e));
+  console.log('extTransition..', trace);
   return [
     ...trace,
     {

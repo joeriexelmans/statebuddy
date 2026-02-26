@@ -21,6 +21,8 @@ export type Setters<T extends {[key: string]: any}> = {
   [K in keyof T as `set${Capitalize<Extract<K, string>>}`]: Dispatch<SetStateAction<T[K]>>;
 }
 
+export type WithSetters<T extends {[key: string]: any}> = T & Setters<T>;
+
 export function makeAllSetters<T extends {[key: string]: any}>(
   fullSetter: Dispatch<SetStateAction<T>>,
   keys: (keyof T)[],

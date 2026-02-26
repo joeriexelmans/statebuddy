@@ -38,7 +38,6 @@ export function restoreTrace<T>(extTransitions: ExtTransitionTraceItem[], devs: 
     }
     // now we fire the extTransition
     trace = extTransition(devs, trace, {
-      kind: "event",
       name: nextExtTransition.eventName,
       param: nextExtTransition.param,
     }, nextExtTransition.simtime);

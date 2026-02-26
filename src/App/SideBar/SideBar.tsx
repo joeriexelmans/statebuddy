@@ -12,7 +12,7 @@ import { Statechart } from '@/statecharts/abstract_syntax';
 import { ShowAST, ShowInputEvents, ShowInternalEvents, ShowOutputEvents } from './ShowAST';
 import { Plant } from '../Plant/Plant';
 import { PreparedTraces, PropertyCheckResult } from './prepare_trace';
-import { Setters } from '../makePartialSetter';
+import { Setters, WithSetters } from '../makePartialSetter';
 import { Trace } from './Trace';
 import { plants } from '../plants';
 import { getSimTime, TimeMode } from '@/statecharts/time';
@@ -72,16 +72,15 @@ export const defaultSideBarState = {
   showPlantTrace: false,
 };
 
-type SideBarProps = SideBarState & {
+type SideBarProps = SideBarState & WithSetters<{
+  trace: StateBuddyTraceState|null,
+  time: TimeMode,
+}> & {
   refRightSideBar: Ref<HTMLDivElement>,
   ast: Statechart | null,
-  trace: StateBuddyTraceState|null,
-  setTrace: Dispatch<SetStateAction<StateBuddyTraceState|null>>,
   coupledState: CoupledState|null,
   onRaise: (inputEvent: string, param: any) => void,
   onReplayTrace: (extTrace: ExtTransitionTrace) => void,
-  setTime: Dispatch<SetStateAction<TimeMode>>,
-  time: TimeMode,
   preparedTraces: PreparedTraces | null,
   checkProperty: (property: string, preparedTraces: PreparedTraces) => Promise<PropertyCheckResult>,
 } & Setters<SideBarState>;
@@ -128,7 +127,7 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
   //   }
   // }, [ast, plant, autoConnect]);
 
-  const raiseDebugEvent = useCallback((e: string, p: any) => onRaise("debug."+e,p), [onRaise]);
+  const raiseDebugEvent = useCallback((e: string, p: any) => onRaise(e,p), [onRaise]);
   const raiseUIEvent = useCallback((e: RaisedEvent) => onRaise("plant.ui."+e.name, e.param), [onRaise]);
 
   // const [selectedPlant, setSelectedPlant] = useState<string>("add plant ...");
@@ -188,10 +187,10 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
       {/* Output events */}
       <PersistentDetails state={showOutputEvents} setState={setShowOutputEvents}>
         <summary>output events</summary>
-        {ast && <ShowOutputEvents outputEvents={ast.outputEvents}/>}
+        {ast && <ShowOutputEvents outputEvents={[...ast.outputEvents].map(e => ({name: e}))}/>}
       </PersistentDetails>
 
-      {/* Plant */}
+      {/* Plant(s) */}
       <PersistentDetails state={showPlant} setState={setShowPlant}>
         <summary>plant(s)</summary>
         <div className={styles.toolbar}>
@@ -317,7 +316,8 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
       </details>
 
       {/* Traces */}
-      <details open={showExecutionTrace} onToggle={e => setShowExecutionTrace(e.newState === "open")}><summary>execution traces</summary>
+      <details open={showExecutionTrace} onToggle={e => setShowExecutionTrace(e.newState === "open")}>
+        <summary>execution traces</summary>
         <div>
           {savedTraces.map((savedTrace, i) =>
             <div key={i} className={styles.toolbar} style={{alignItems: 'center'}}>
@@ -362,15 +362,15 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
               show plant steps
             </label>
           </Tooltip>
-          <label>
-            <input id="checkbox-show-microsteps" type="checkbox"
-              checked={showMicroSteps}
-              onChange={e => setShowMicroSteps(e.target.checked)}/>
-              show microsteps
-          </label>
+            <label>
+              <input id="checkbox-show-microsteps" type="checkbox"
+                checked={showMicroSteps}
+                onChange={e => setShowMicroSteps(e.target.checked)}/>
+                show microsteps
+            </label>
           <Tooltip tooltip="scroll down upon new events" align="left">
-          <input id="checkbox-autoscroll" type="checkbox" checked={autoScroll} onChange={e => setAutoScroll(e.target.checked)}/>
-          <label htmlFor="checkbox-autoscroll">auto-scroll</label>
+            <input id="checkbox-autoscroll" type="checkbox" checked={autoScroll} onChange={e => setAutoScroll(e.target.checked)}/>
+            <label htmlFor="checkbox-autoscroll">auto-scroll</label>
           </Tooltip>
           <button
             disabled={trace === null}
@@ -392,8 +392,10 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
         // minHeight: '75%', // <-- allows us to always scroll down the sidebar far enough such that the execution history is enough in view
         }}>
           <div ref={refRightSideBar}>
-            {ast && <Trace {...{ast, trace, setTrace, setTime, showPlantTrace,
-              propertyTrace: propertyResults && propertyResults[activeProperty] && propertyResults[activeProperty][0] || [], showMicroSteps}}/>}
+            {/* @ts-ignore */}
+            {ast && trace && <Trace {...{trace, setTrace, setTime, ast, showMicroSteps, setShowMicroSteps}}/>}
+            {/* {ast && trace && <Trace {...{ast, trace, setTrace, setTime, showPlantTrace,
+              propertyTrace: propertyResults && propertyResults[activeProperty] && propertyResults[activeProperty][0] || [], showMicroSteps}}/>} */}
           </div>
       </div>}
   </>;

@@ -57,6 +57,9 @@
   cursor: pointer;
 }
 .traceItem.active {
+  /* less padding needed because of the added border: */
+  padding-left: 3px;
+
   background-color: var(--accent-opaque-color);
   border: solid var(--accent-border-color) 1px;
 }

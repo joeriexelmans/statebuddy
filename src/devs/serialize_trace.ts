@@ -20,16 +20,17 @@ export type ExtTransitionTrace = {
 // returns a trace containing only the extTransitions.
 // this is the minimum of information we need to replay a trace.
 export function saveExtTransitions<T>(trace: DEVSTrace<T>, lastSimTime: number): ExtTransitionTrace {
-  const reducedTrace = trace.reduce((prev, cur) => {
+  const reducedTrace = trace.reduce((acc, cur) => {
     if (cur.kind === "extTransition") {
-      return [...prev, {
+      return [...acc, {
         simtime: cur.simtime,
         eventName: cur.eventName,
         param: cur.param,
       } as ExtTransitionTraceItem];
     }
-    return prev;
+    return acc;
   }, [] as ExtTransitionTraceItem[]);
+  console.log({reducedTrace, lastSimTime});
   return {
     trace: reducedTrace,
     lastSimTime,
@@ -51,17 +52,16 @@ function runUntil<T>(devs: DEVSComponent<T>, trace: DEVSTrace<T>, until: number)
 export function restoreTrace<T>(extTrace: ExtTransitionTrace, devs: DEVSComponent<T>): DEVSTrace<T> {
   let trace = initTrace(devs) as DEVSTrace<T>;
   let remaining = extTrace.trace;
-  while (extTrace.trace.length > 1) {
-    let nextExtTransition;
-    [nextExtTransition, ...remaining] = remaining; // pop
+  while (remaining.length > 0) {
+    let nextInput;
+    [nextInput, ...remaining] = remaining; // pop
     // now, we'll fire all intTransitions that must fire before the next extTransition
-    trace = runUntil(devs, trace, nextExtTransition.simtime);
+    trace = runUntil(devs, trace, nextInput.simtime);
     // now we fire the extTransition
     trace = extTransition(devs, trace, {
-      kind: "event",
-      name: nextExtTransition.eventName,
-      param: nextExtTransition.param
-    }, nextExtTransition.simtime);
+      name: nextInput.eventName,
+      param: nextInput.param
+    }, nextInput.simtime);
   }
   // finally run a bit more because there may still be intTransitions that need to fire
   trace = runUntil(devs, trace, extTrace.lastSimTime);

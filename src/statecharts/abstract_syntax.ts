@@ -56,7 +56,9 @@ export type Transition = {
 // Abstract syntax for our Statechart language
 export type Statechart = {
   root: OrState;
-  transitions: Map<string, Transition[]>; // key: source state uid
+
+
+  transitions: Map<string, Transition[]>; // mapping from source state (uid) to outgoing transitions
 
   variables: Set<string>;
 

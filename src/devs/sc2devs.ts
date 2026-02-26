@@ -39,7 +39,7 @@ export function sc2DEVS(ast: Statechart): DEVSComponent<Statechart2DEVSState> {
     },
     timeAdvance: (c: Statechart2DEVSState) => {
       if (c.outputQueue.length > 0) {
-        return 0;
+        return c.bigstep.simtime; // immediately (= current simulated time)
       }
       if (c.bigstep.timers[0]) {
         return c.bigstep.timers[0][0];
@@ -69,9 +69,9 @@ export function sc2DEVS(ast: Statechart): DEVSComponent<Statechart2DEVSState> {
         outputQueue: [], // <-- we immediately output our output events
       }];
     },
-    extTransition: (simtime: number, c: Statechart2DEVSState, e: NormalEvent) => {
+    extTransition: (simtime: number, c: Statechart2DEVSState, e: RaisedEvent) => {
       const [microsteps, tracer] = newTracer();
-      const bigStep = makeBigStep({...c.bigstep, simtime}, e, ast, tracer);
+      const bigStep = makeBigStep({...c.bigstep, simtime}, {kind: "event", ...e}, ast, tracer);
       const result = {
         bigstep: {...bigStep, microsteps},
         // append output events to output queue:

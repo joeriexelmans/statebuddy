@@ -115,15 +115,15 @@ export function useSimulator(ast: Statechart|null, plantsState: PlantsState, onS
   }, [setTrace, setTime]);
 
   // raise input event at current point in simulated time (depends on 'time'), producing a new runtime configuration (or a runtime error)
-  const onRaise = useCallback(() => {
+  const onRaise = useMemo(() => {
     if (cE === null || currentTraceItem === null) {
       return ignoreRaise; // this speeds up rendering of components that depend on onRaise if the model is being edited while there is no ongoing trace
     }
     else return (inputEvent: string, param: any) => {
       const simtime = getSimTime(time, Math.round(performance.now()));
       const newTrace = extTransition(cE,
-        trace!.trace.slice(0, trace!.idx) as DEVSTrace<CoupledState>,
-        {kind: "event", name: inputEvent, param},
+        trace!.trace.slice(0, trace!.idx + 1) as DEVSTrace<CoupledState>,
+        {name: inputEvent, param},
         simtime);
       setTrace({
         trace: newTrace,

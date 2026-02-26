@@ -1,4 +1,4 @@
-import { NormalEvent, RaisedEvent } from "../statecharts/runtime_types";
+import { RaisedEvent } from "../statecharts/runtime_types";
 
 // An abstract interface for timed reactive discrete event systems somewhat similar but not equal to DEVS (https://en.wikipedia.org/wiki/DEVS).
 // Differences from DEVS:
@@ -8,7 +8,7 @@ export type DEVSComponent<StateType> = {
   initial: () => StateType,
   timeAdvance: (c: StateType) => number,
   intTransition: (c: StateType) => [RaisedEvent[], StateType],
-  extTransition: (simtime: number, c: StateType, e: NormalEvent) => StateType,
+  extTransition: (simtime: number, c: StateType, e: RaisedEvent) => StateType,
 
   // in/out event names:
   inputs: string[],

@@ -8,8 +8,10 @@ import { useShortcuts } from '@/hooks/useShortcuts';
 import { arraysEqual, jsonDeepEqual } from '@/util/util';
 import { Tooltip } from '../Components/Tooltip';
 
+import ArrowOutwardIcon from '@mui/icons-material/ArrowOutward';
 import styles from "./Trace.module.css";
 import appStyles from "../App.module.css";
+import { RaisedEvent } from '@/statecharts/runtime_types';
 
 export function ShowTransition(props: {transition: Transition}) {
   return <>➝ {stateDescription(props.transition.tgt)}</>;
@@ -125,8 +127,12 @@ export function ShowInternalEvents(props: {internalEvents: EventTrigger[]}) {
 }
 
 
-export function ShowOutputEvents(props: {outputEvents: Set<string>}) {
-  return [...props.outputEvents].map(eventName => {
-      return <div className={styles.outputEvent} key={eventName}>{eventName}</div>;
+export function ShowOutputEvents(props: {outputEvents: RaisedEvent[]}) {
+  return props.outputEvents.map(({name, param}) => {
+      return <Tooltip tooltip='output event'><div className={styles.outputEvent} key={name}>
+        <ArrowOutwardIcon fontSize="small" style={{verticalAlign: "middle"}}/>
+        {name}
+        {param !== undefined && <>({param.toString()})</>}
+      </div></Tooltip>;
     });
 }

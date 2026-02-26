@@ -6,7 +6,7 @@ type CoupledStatechartState = {
   // there's always the design model:
   sc: DEVSComponent<Statechart2DEVSState>;
 } & {
-  // and the plants:
+  // and the plants
   [plantName: string]: any;
 };
 
