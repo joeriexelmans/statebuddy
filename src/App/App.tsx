@@ -30,6 +30,8 @@ import { DebugContext } from "./VisualEditor/context/DebugContext";
 import { formatDateTime } from "@/util/util";
 import { PropertyTraceTable } from "./BottomPanel/PropertyTraceTable";
 import { usePyodide } from "./hooks/usePyodide";
+import { Tooltip } from "./Components/Tooltip";
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 
 export type EditHistory = {
   current: VisualEditorState,
@@ -202,9 +204,7 @@ export function App() {
   }, [setAppState]);
 
   const syntaxErrors = parsed && parsed[1] || [];
-  const currentRuntimeError = simulator.currentTraceItem
-    && !simulator.currentTraceItem.result.ok
-    && simulator.currentTraceItem.result.error;
+  const currentRuntimeError = simulator.trace?.runtimeError;
   const runtimeErrors = currentRuntimeError
     && currentRuntimeError.highlight.map(uid => ({
         message: currentRuntimeError.message,
@@ -212,15 +212,17 @@ export function App() {
       }))
     || [];
   const allErrors = [...syntaxErrors, ...runtimeErrors];
-  const currentBigStep = simulator.currentTraceItem?.result.ok && simulator.currentTraceItem.result.newState.sc.bigstep;
+  const currentBigStep = simulator.currentTraceItem?.newState.sc.at(-1)?.newState.bigstep;
   const highlightActive = (currentBigStep && currentBigStep.mode) || new Set();
   const highlightTransitions = currentBigStep && currentBigStep.firedTransitions || [];
 
-  const preparedTraces = useMemo(() => simulator.trace && prepareTraces(
+  const preparedTraces = useMemo(() => simulator.trace && ast && prepareTraces(
+    ast,
     appState.plantsState,
     simulator.trace.trace,
-  ), [simulator.trace, appState.plantsState]);
+  ) || {}, [simulator.trace, appState.plantsState]);
 
+  // whether the user is resizing (i.e., mouse down on edge) the side panel
   const [resizing, setResizing] = useState(false);
 
   useEffect(() => {
@@ -295,9 +297,10 @@ export function App() {
             
             {/* Stuff that shows below editor but next to sidebar */}
             <Greeter trial={trial}/>
-            {appState.showTable && appState.properties.length > 0 && appState.savedTraces.length > 0 && simulator.cE &&
+            {appState.showTable && appState.properties.length > 0 && appState.savedTraces.length > 0 && simulator.cE && ast &&
               <BelowEditor>
                 <PropertyTraceTable
+                  ast={ast}
                   properties={appState.properties}
                   traces={appState.savedTraces}
                   onClose={() => setters.setShowTable(false)}
@@ -329,8 +332,8 @@ export function App() {
           }}>
             <div style={{
               height: '100%',
-              backgroundColor: 'var(--separator-color)',
-              width: 1,
+              backgroundColor: resizing ? 'var(--tooltip-bg-color)' : 'var(--separator-color)',
+              width: 2,
               cursor: 'col-resize',
             }}
             onMouseDown={e => {
@@ -361,9 +364,20 @@ export function App() {
         <div style={{flex: '0 0 content', borderTop: '1px solid var(--separator-color'}}>
           <div className={styles.statusBar}>
             <PersistentDetails state={appState.showPlot} setState={setters.setShowPlot}>
-              <summary>plot</summary>
+              <summary>
+                plot
+                <Tooltip tooltip="All signals are boolean. Input/ouput event parameters start with `in_`/`out_` resp. Plant state starts with `<plantname>_`" above align="left">
+                  <HelpOutlineIcon fontSize='small'/>
+                </Tooltip>
+              </summary>
               {preparedTraces &&
-                <Plot width="100%" traces={preparedTraces} displayTime={displayTime} nextWakeup={simulator.nextWakeup} {...appState} {...setters} />}
+                <Plot width="100%" traces={preparedTraces}
+                  displayTime={displayTime}
+                  nextWakeup={simulator.lastWakeup}
+                  endOfTime={simulator.endOfTime}
+                  {...appState}
+                  {...setters}
+                />}
             </PersistentDetails>
           </div>
           {syntaxErrors && ast && <BottomPanel {...{errors: syntaxErrors, ...appState, setEditorState, ...setters, ast, pyodideStatus: status}}/>}

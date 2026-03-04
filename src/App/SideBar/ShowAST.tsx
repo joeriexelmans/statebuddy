@@ -96,14 +96,15 @@ export const ShowInputEvents = memo(function ShowInputEvents({inputEvents, onRai
     const width = Math.max(value.length, (paramName||"").length)*8+10;
     const shortcut = (i+1)%10;
     const KI = (i < 10) ? KeyInfo : KeyInfoHidden;
-    return <span key={key}>
+    return <div key={key}>
       <KI keyInfo={<kbd>{shortcut}</kbd>} horizontal={true}>
-        <Tooltip tooltip='click to raise'>
+        <Tooltip tooltip='input event - click to raise' align='left'>
           <button
             className={styles.inputEvent}
             disabled={disabled}
             onClick={raiseHandlers[i]}>
-            <BoltIcon fontSize="small"/>
+            {/* <BoltIcon fontSize="small"/> */}
+            &#8600;
             {event}
           </button>
         </Tooltip>
@@ -112,7 +113,7 @@ export const ShowInputEvents = memo(function ShowInputEvents({inputEvents, onRai
         <><input id={`input-${event}-param`} style={{width, overflow: 'visible'}} placeholder={paramName} value={value} onChange={e => setInputParams(params => ({...params, [key]: e.target.value, }))}/></>
       }
       &nbsp;
-    </span>;
+    </div>;
   })
 }, (prevProps, nextProps) => {
   return prevProps.onRaise === nextProps.onRaise
@@ -122,17 +123,29 @@ export const ShowInputEvents = memo(function ShowInputEvents({inputEvents, onRai
 
 export function ShowInternalEvents(props: {internalEvents: EventTrigger[]}) {
   return [...props.internalEvents].map(({event, paramName}) => {
-      return <div className={styles.internalEvent} key={event}>{event}{paramName===undefined?<></>:<>({paramName})</>}</div>;
+      return <div key={event}>
+        <Tooltip tooltip='internal event' align='left'>
+          <div className={styles.internalEvent}>
+            {event}
+            {paramName !== undefined && <>({paramName})</>}
+          </div>
+        </Tooltip>
+      </div>;
     });
 }
 
 
 export function ShowOutputEvents(props: {outputEvents: RaisedEvent[]}) {
   return props.outputEvents.map(({name, param}) => {
-      return <Tooltip tooltip='output event'><div className={styles.outputEvent} key={name}>
-        <ArrowOutwardIcon fontSize="small" style={{verticalAlign: "middle"}}/>
-        {name}
-        {param !== undefined && <>({param.toString()})</>}
-      </div></Tooltip>;
+      return <div key={name}>
+        <Tooltip tooltip='output event' align='left'>
+          <div className={styles.outputEvent} >
+            {/* <ArrowOutwardIcon fontSize="small" style={{verticalAlign: "middle"}}/> */}
+            &#8599;
+            {name}
+            {param !== undefined && <>({param.toString()})</>}
+          </div>
+        </Tooltip>
+      </div>;
     });
 }

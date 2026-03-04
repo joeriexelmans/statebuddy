@@ -29,6 +29,8 @@ import { Status } from './Status';
 import { TwoStateButton } from '../Components/TwoStateButton';
 import { ExtTransitionTrace, saveExtTransitions } from '@/devs/serialize_trace';
 import { CoupledState, defaultPlantsState, PlantsState, StateBuddyTraceState } from '../hooks/useSimulator';
+import { ShowPlants } from './ShowPlants';
+import { Connect } from './Connect';
 
 export type SavedTraces = [string, ExtTransitionTrace][];
 
@@ -48,6 +50,7 @@ export type SideBarState = {
   activeProperty: number,
   savedTraces: SavedTraces,
   showMicroSteps: boolean,
+  showTransitions: boolean,
   autoScroll: boolean,
   showPlantTrace: boolean,
 };
@@ -69,6 +72,7 @@ export const defaultSideBarState = {
   savedTraces: [],
   autoScroll: false,
   showMicroSteps: false,
+  showTransitions: false,
   showPlantTrace: false,
 };
 
@@ -87,7 +91,7 @@ type SideBarProps = SideBarState & WithSetters<{
 
 export const SideBar = memo(function SideBar(props: SideBarProps) {
 
-  const {showExecutionTrace, showConnections, showPlantTrace, showProperties, activeProperty, autoScroll, plantsState, setPlantsState, properties, savedTraces, refRightSideBar, ast, setSavedTraces, trace, setTrace, setProperties, setShowPlantTrace, setActiveProperty, setShowProperties, setAutoScroll, time, onReplayTrace, onRaise, setTime, setShowConnections, setShowExecutionTrace, showPlant, setShowPlant, showOutputEvents, setShowOutputEvents, setShowInternalEvents, showInternalEvents, setShowInputEvents, setShowStateTree, showInputEvents, showStateTree, preparedTraces, showTable, setShowTable, showMicroSteps, setShowMicroSteps, checkProperty} = props;
+  const {showExecutionTrace, showConnections, showPlantTrace, showProperties, activeProperty, autoScroll, plantsState, setPlantsState, properties, savedTraces, refRightSideBar, ast, setSavedTraces, trace, setTrace, setProperties, setShowPlantTrace, setActiveProperty, setShowProperties, setAutoScroll, time, onReplayTrace, onRaise, setTime, setShowConnections, setShowExecutionTrace, showPlant, setShowPlant, showOutputEvents, setShowOutputEvents, setShowInternalEvents, showInternalEvents, setShowInputEvents, setShowStateTree, showInputEvents, showStateTree, preparedTraces, showTable, setShowTable, showMicroSteps, setShowMicroSteps, checkProperty, showTransitions, setShowTransitions, coupledState} = props;
 
   const [propertyResults, setPropertyResults] = useState<PropertyCheckResult[] | null>(null);
 
@@ -128,7 +132,7 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
   // }, [ast, plant, autoConnect]);
 
   const raiseDebugEvent = useCallback((e: string, p: any) => onRaise(e,p), [onRaise]);
-  const raiseUIEvent = useCallback((e: RaisedEvent) => onRaise("plant.ui."+e.name, e.param), [onRaise]);
+  // const raiseUIEvent = useCallback((e: RaisedEvent) => onRaise("plant.ui."+e.name, e.param), [onRaise]);
 
   // const [selectedPlant, setSelectedPlant] = useState<string>("add plant ...");
 
@@ -140,7 +144,7 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
           ...ps.plants,
           {
             id: plantName + ps.nextPlantID.toString(), // <-- for readability, we include the plant type in the ID
-            name: plantName,
+            name: plantName + ps.nextPlantID.toString(),
             type: plantName,
           },
         ],
@@ -166,11 +170,13 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
       {/* Input events */}
       <PersistentDetails state={showInputEvents} setState={setShowInputEvents}>
         <summary>input events</summary>
-        {ast && <ShowInputEvents
-          inputEvents={ast.inputEvents}
-          onRaise={raiseDebugEvent}
-          disabled={trace===null || !trace.trace[trace.idx].result.ok}
-        />}
+        {ast && <div style={{columnWidth: 160}}>
+          <ShowInputEvents
+            inputEvents={ast.inputEvents}
+            onRaise={raiseDebugEvent}
+            disabled={trace===null || trace.runtimeError!==undefined}
+          />
+        </div>}
       </PersistentDetails>
 
       {/* Internal events */}
@@ -181,28 +187,34 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
             <HelpOutlineIcon fontSize='small'/>
           </Tooltip>
         </summary>
-        {ast && <ShowInternalEvents internalEvents={ast.internalEvents}/>}
+        {ast && <div style={{columnWidth: 160}}>
+          <ShowInternalEvents internalEvents={ast.internalEvents}/>
+        </div>}
       </PersistentDetails>
 
       {/* Output events */}
       <PersistentDetails state={showOutputEvents} setState={setShowOutputEvents}>
         <summary>output events</summary>
-        {ast && <ShowOutputEvents outputEvents={[...ast.outputEvents].map(e => ({name: e}))}/>}
+        {ast && <div style={{columnWidth: 160}}>
+          <ShowOutputEvents outputEvents={[...ast.outputEvents].toSorted((a,b) => a.localeCompare(b)).map(e => ({name: e}))}/>
+        </div>}
       </PersistentDetails>
 
       {/* Plant(s) */}
       <PersistentDetails state={showPlant} setState={setShowPlant}>
         <summary>plant(s)</summary>
         <div className={styles.toolbar}>
-          <select
-            disabled={trace!==null}
-            value="add plant..."
-            onChange={e => onAddPlant(e.target.value)}>
-            <option>add plant...</option>
-            {plants.map(([plantName]) =>
-              <option key={plantName}>{plantName}</option>
-            )}
-          </select>
+          <Tooltip tooltip={trace!==null?"clear the current execution to add plant":""} align='left'>
+            <select
+              disabled={trace!==null}
+              value="add plant..."
+              onChange={e => onAddPlant(e.target.value)}>
+              <option>add plant...</option>
+              {plants.map(([plantName]) =>
+                <option key={plantName}>{plantName}</option>
+              )}
+            </select>
+          </Tooltip>
           &nbsp;
           {/* <Tooltip tooltip='the behavior of each plant is also modeled by a statechart'>
             <button
@@ -225,23 +237,19 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
           </Tooltip> */}
         </div>
         {/* Render plants */}
-        {plantsState.plants.map(({id, name, type: plant}, i) => <div>
-            <input value={name} onChange={e => setPlantsState(ps => ({
-              ...ps,
-              plants: ps.plants.with(i, {id, name: e.target.value, type: plant})}))}/>
-            {/* {(() => {
-              const plant = plants.find(p => p[0] === plant);
-              return plant && <plant[1].render state={plant.cleanupState()} speed={speed} />
-            })()} */}
-        </div>)}
-        {/* {<plant.render state={plant.cleanupState(plantState)} speed={speed}
-          raiseUIEvent={raiseUIEvent}
-          />} */}
+        <ShowPlants
+          plantsState={plantsState}
+          setPlantsState={setPlantsState}
+          speed={speed}
+          coupledState={coupledState}
+          onRaise={(e) => raiseDebugEvent(e.name, e.param)}
+        />
       </PersistentDetails>
 
       {/* Connect */}
       <PersistentDetails state={showConnections} setState={setShowConnections}>
         <summary>connect</summary>
+        {ast && <Connect ast={ast} plantsState={plantsState} setPlantsState={setPlantsState}/>}
         {/* <Tooltip tooltip="auto-connect (name-based)" align="left">
           <button
             className={autoConnect?"active":""}
@@ -354,20 +362,26 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
           )}
         </div>
         <div className={styles.toolbar} style={{justifyContent: 'space-around', gap: '1em'}}>
-          <Tooltip tooltip="plant steps are steps where only the state of the plant changed" align="left">
+          <Tooltip tooltip="plant steps are steps where only the state of a plant changed" align="left">
             <label>
-              <input id="checkbox-show-plant-items" type="checkbox"
+              <input type="checkbox"
               checked={showPlantTrace}
               onChange={e => setShowPlantTrace(e.target.checked)}/>
               show plant steps
             </label>
           </Tooltip>
-            <label>
-              <input id="checkbox-show-microsteps" type="checkbox"
-                checked={showMicroSteps}
-                onChange={e => setShowMicroSteps(e.target.checked)}/>
-                show microsteps
-            </label>
+          <label>
+            <input type="checkbox"
+              checked={showMicroSteps}
+              onChange={e => setShowMicroSteps(e.target.checked)}/>
+              show microsteps
+          </label>
+          <label>
+            <input type="checkbox"
+              checked={showTransitions}
+              onChange={e => setShowTransitions(e.target.checked)}/>
+              show transitions
+          </label>
           <Tooltip tooltip="scroll down upon new events" align="left">
             <input id="checkbox-autoscroll" type="checkbox" checked={autoScroll} onChange={e => setAutoScroll(e.target.checked)}/>
             <label htmlFor="checkbox-autoscroll">auto-scroll</label>
@@ -392,10 +406,12 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
         // minHeight: '75%', // <-- allows us to always scroll down the sidebar far enough such that the execution history is enough in view
         }}>
           <div ref={refRightSideBar}>
-            {/* @ts-ignore */}
-            {ast && trace && <Trace {...{trace, setTrace, setTime, ast, showMicroSteps, setShowMicroSteps}}/>}
-            {/* {ast && trace && <Trace {...{ast, trace, setTrace, setTime, showPlantTrace,
-              propertyTrace: propertyResults && propertyResults[activeProperty] && propertyResults[activeProperty][0] || [], showMicroSteps}}/>} */}
+            {ast && trace &&
+              <Trace {...{trace, setTrace, setTime, ast, showMicroSteps, setShowMicroSteps, showTransitions, showPlantTrace,
+                plantsState,
+                propertyTrace: propertyResults && propertyResults[activeProperty] && propertyResults[activeProperty][0] || []}}
+              />
+            }
           </div>
       </div>}
   </>;

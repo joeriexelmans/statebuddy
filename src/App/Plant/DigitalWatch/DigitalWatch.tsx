@@ -26,16 +26,8 @@ if (dwatchErrors.length > 0) {
 }
 
 export type DigitalWatchPlantState = {
-  lightOn: boolean,
-  beep: boolean,
-  alarmOn: boolean,
-  displayingTime: boolean,
-  displayingAlarm: boolean,
-  displayingChrono: boolean,
-  editing: boolean,
-  hideH: boolean,
-  hideM: boolean,
-  hideS: boolean,
+  // from environment (variables)
+  alarmEnabled: boolean,
   h: number,
   m: number,
   s: number,
@@ -46,27 +38,23 @@ export type DigitalWatchPlantState = {
   cs: number,
   chs: number,
 
-  // these properties are true for as long as the mouse button is down:
-  topLeftPressed: boolean,
-  topRightPressed: boolean,
-  bottomRightPressed: boolean,
-  bottomLeftPressed: boolean,
+  // from modal state
+  light: boolean,
+  beep: boolean,
+  displayingTime: boolean,
+  displayingAlarm: boolean,
+  displayingChrono: boolean,
+  editing: boolean,
+  hideH: boolean,
+  hideM: boolean,
+  hideS: boolean,
 }
 
 const rootScope: Scope = {kind: "state", thing: dwatchAbstractSyntax.root};
 
 function dwatchConfigToState(rtConfig: RT_Statechart): DigitalWatchPlantState {
   return {
-    lightOn: rtConfig.mode.has(dwatchAbstractSyntax.label2State.get("lightOn")!.uid),
-    beep: rtConfig.mode.has(dwatchAbstractSyntax.label2State.get("beep")!.uid),
-    alarmOn: rtConfig.environment.get("alarm", rootScope),
-    displayingTime: rtConfig.mode.has(dwatchAbstractSyntax.label2State.get("displayingTime")!.uid),
-    displayingAlarm: rtConfig.mode.has(dwatchAbstractSyntax.label2State.get("displayingAlarm")!.uid),
-    displayingChrono: rtConfig.mode.has(dwatchAbstractSyntax.label2State.get("displayingChrono")!.uid),
-    editing: rtConfig.mode.has(dwatchAbstractSyntax.label2State.get("editing")!.uid),
-    hideH: rtConfig.mode.has(dwatchAbstractSyntax.label2State.get("hideH")!.uid),
-    hideM: rtConfig.mode.has(dwatchAbstractSyntax.label2State.get("hideM")!.uid),
-    hideS: rtConfig.mode.has(dwatchAbstractSyntax.label2State.get("hideS")!.uid),
+    alarmEnabled: rtConfig.environment.get("alarmEnabled", rootScope),
     h: rtConfig.environment.get("h", rootScope),
     m: rtConfig.environment.get("m", rootScope),
     s: rtConfig.environment.get("s", rootScope),
@@ -77,18 +65,22 @@ function dwatchConfigToState(rtConfig: RT_Statechart): DigitalWatchPlantState {
     cs: rtConfig.environment.get("cs", rootScope),
     chs: rtConfig.environment.get("chs", rootScope),
 
-    topLeftPressed: rtConfig.mode.has(dwatchAbstractSyntax.label2State.get("topLeftPressed")!.uid),
-    topRightPressed: rtConfig.mode.has(dwatchAbstractSyntax.label2State.get("topRightPressed")!.uid),
-    bottomRightPressed: rtConfig.mode.has(dwatchAbstractSyntax.label2State.get("bottomRightPressed")!.uid),
-    bottomLeftPressed: rtConfig.mode.has(dwatchAbstractSyntax.label2State.get("bottomLeftPressed")!.uid),
-
+    light: rtConfig.mode.has(dwatchAbstractSyntax.label2State.get("lightOn")!.uid),
+    beep: rtConfig.mode.has(dwatchAbstractSyntax.label2State.get("beep")!.uid),
+    displayingTime: rtConfig.mode.has(dwatchAbstractSyntax.label2State.get("displayingTime")!.uid),
+    displayingAlarm: rtConfig.mode.has(dwatchAbstractSyntax.label2State.get("displayingAlarm")!.uid),
+    displayingChrono: rtConfig.mode.has(dwatchAbstractSyntax.label2State.get("displayingChrono")!.uid),
+    editing: rtConfig.mode.has(dwatchAbstractSyntax.label2State.get("editing")!.uid),
+    hideH: rtConfig.mode.has(dwatchAbstractSyntax.label2State.get("hideH")!.uid),
+    hideM: rtConfig.mode.has(dwatchAbstractSyntax.label2State.get("hideM")!.uid),
+    hideS: rtConfig.mode.has(dwatchAbstractSyntax.label2State.get("hideS")!.uid),
   }
 }
 
 
 const twoDigits = (n: number) => ("0"+n.toString()).slice(-2);
 
-export const DigitalWatch = memo(function DigitalWatch({state: {displayingTime, displayingAlarm, displayingChrono, lightOn, alarmOn, beep, h, m, s, ah, am, as, cm, cs, chs, hideH, hideM, hideS}, speed, raiseUIEvent}: PlantRenderProps<DigitalWatchPlantState>) {
+export const DigitalWatch = memo(function DigitalWatch({state: {displayingTime, displayingAlarm, displayingChrono, light, alarmEnabled, beep, h, m, s, ah, am, as, cm, cs, chs, hideH, hideM, hideS}, speed, raiseUIEvent}: PlantRenderProps<DigitalWatchPlantState>) {
 
   let hhmmss;
   if (displayingTime) {
@@ -121,29 +113,29 @@ export const DigitalWatch = memo(function DigitalWatch({state: {displayingTime, 
     <svg width="222" height="236" style={{userSelect: 'none'}}>
       <image width="222" height="236" xlinkHref={imgWatch}/>
 
-      {lightOn &&
+      {light &&
         <rect x={52} y={98} width={120} height={52} fill="#deeaffff" rx={5} ry={5} />}
 
       <text x="111" y="126" dominantBaseline="middle" textAnchor="middle" fontFamily="digital-font" fontSize={28} style={{whiteSpace:'preserve'}}>{hhmmss}</text>
     
       <rect className="watchButtonHelper" x={0} y={54} width={24} height={24} 
-        onMouseDown={() => raiseUIEvent({name: "topLeftMouseDown"})}
-        onMouseUp={() => raiseUIEvent({name: "topLeftMouseUp"})}
+        onMouseDown={() => raiseUIEvent({name: "topLeft", param: true})}
+        onMouseUp={() => raiseUIEvent({name: "topLeft", param: false})}
       />
       <rect className="watchButtonHelper" x={198} y={54} width={24} height={24}
-        onMouseDown={() => raiseUIEvent({name: "topRightMouseDown"})}
-        onMouseUp={() => raiseUIEvent({name: "topRightMouseUp"})}
+        onMouseDown={() => raiseUIEvent({name: "topRight", param: true})}
+        onMouseUp={() => raiseUIEvent({name: "topRight", param: false})}
       />
       <rect className="watchButtonHelper" x={0} y={154} width={24} height={24}
-        onMouseDown={() => raiseUIEvent({name: "bottomLeftMouseDown"})}
-        onMouseUp={() => raiseUIEvent({name: "bottomLeftMouseUp"})}
+        onMouseDown={() => raiseUIEvent({name: "bottomLeft", param: true})}
+        onMouseUp={() => raiseUIEvent({name: "bottomLeft", param: false})}
       />
       <rect className="watchButtonHelper" x={198} y={154} width={24} height={24}
-        onMouseDown={() => raiseUIEvent({name: "bottomRightMouseDown"})}
-        onMouseUp={() => raiseUIEvent({name: "bottomRightMouseUp"})}
+        onMouseDown={() => raiseUIEvent({name: "bottomRight", param: true})}
+        onMouseUp={() => raiseUIEvent({name: "bottomRight", param: false})}
       />
 
-      {alarmOn &&
+      {alarmEnabled &&
         <image x="54" y="98" xlinkHref={imgNote} />
       }
     </svg>
@@ -155,19 +147,15 @@ export const digitalWatchPlant = makeStatechartPlant({
   cleanupState: dwatchConfigToState,
   render: DigitalWatch,
   uiEvents: [
-    { kind: "event", event: "topLeftMouseDown" },
-    { kind: "event", event: "topRightMouseDown" },
-    { kind: "event", event: "bottomRightMouseDown" },
-    { kind: "event", event: "bottomLeftMouseDown" },
-    { kind: "event", event: "topLeftMouseUp" },
-    { kind: "event", event: "topRightMouseUp" },
-    { kind: "event", event: "bottomRightMouseUp" },
-    { kind: "event", event: "bottomLeftMouseUp" },
+    { kind: "event", event: "topLeft" },
+    { kind: "event", event: "topRight" },
+    { kind: "event", event: "bottomRight" },
+    { kind: "event", event: "bottomLeft" },
   ],
   signals: [
-    "lightOn",
+    "light",
     "beep",
-    "alarmOn",
+    "alarmEnabled",
     "displayingTime",
     "displayingAlarm",
     "displayingChrono",
@@ -175,11 +163,5 @@ export const digitalWatchPlant = makeStatechartPlant({
     "hideH",
     "hideM",
     "hideS",
-
-    // these properties are true for as long as the mouse button is down:
-    "topLeftPressed",
-    "topRightPressed",
-    "bottomRightPressed",
-    "bottomLeftPressed",
   ],
 });

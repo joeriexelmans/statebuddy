@@ -1,0 +1,3 @@
+.grid  .row:has(~:hover) {
+  background-color: var(--summary-hover-bg-color);
+}

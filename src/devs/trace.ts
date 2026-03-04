@@ -1,125 +1,114 @@
-import { RuntimeError } from "@/statecharts/interpreter";
 import { DEVSComponent } from "./devs";
-import { NormalEvent, RaisedEvent } from "@/statecharts/runtime_types";
+import { RaisedEvent } from "@/statecharts/runtime_types";
 
-
-type DEVSStepResult<T> = {
-  ok: true,
+export type DEVSTraceItemInit<T> = {
+  kind: "init",
+  simtime: 0,
   newState: T,
-} | {
-  ok: false,
-  error: RuntimeError,
-};
+}
 
-export type DEVSTraceItem<T> =
-(
-  {
-    kind: "init",
-    simtime: 0, // simulated time
-  } | {
-    kind: "extTransition",
-    simtime: number,
-    eventName: string,
-    param?: any,
-  } | {
-    kind: "intTransition",
-    simtime: number,
-    outputEvents: RaisedEvent[], // <-- empty if `result.ok` is false
+export type DEVSTraceItemExtTransition<T> = {
+  kind: "extTransition",
+  simtime: number,
+  eventName: string,
+  param?: any,
+  newState: T,
+}
+
+export type DEVSTraceItemIntTransition<T> = {
+  kind: "intTransition",
+  simtime: number,
+  outputEvents: RaisedEvent[], // <-- empty if `result.ok` is false
+  newState: T,
+}
+
+export type DEVSTraceItem<T> = DEVSTraceItemInit<T> | DEVSTraceItemExtTransition<T> | DEVSTraceItemIntTransition<T>;
+
+export type DEVSTrace<T> = [DEVSTraceItem<T>, ...DEVSTraceItem<T>[]]; // <-- always at least one item
+
+// Transforms a DEVS component with state-type T into a DEVS component with state-type DEVSTract<T>.
+// The behavior remains exactly the same, except that runtime errors are caught and appended to the end of the trace.
+export function makeTracedDEVS<T>(devs: DEVSComponent<T>): DEVSComponent<DEVSTrace<T>> {
+  return {
+    initial: () => {
+      // initial is trace with one item:
+      return [
+        {
+          kind: "init",
+          simtime: 0,
+          newState: devs.initial(),
+        }
+      ];
+    },
+    timeAdvance: (trace: DEVSTrace<T>) => {
+      const lastState = trace.at(-1)!.newState;
+      return devs.timeAdvance(lastState);
+    },
+    intTransition: (trace: DEVSTrace<T>) => {
+      const lastState = trace.at(-1)!.newState;
+      const simtime = devs.timeAdvance(lastState);
+      const [outputEvents, newState] = devs.intTransition(lastState);
+      return [
+        outputEvents,
+        [
+          ...trace,
+          {
+            kind: "intTransition",
+            simtime,
+            newState,
+            outputEvents,
+          } as DEVSTraceItem<T>,
+        ]
+      ];
+    },
+    extTransition: (simtime: number, trace: DEVSTrace<T>, e: RaisedEvent) => {
+      const lastState = trace.at(-1)!.newState;
+      const newState = devs.extTransition(simtime, lastState, e);
+      return [
+        ...trace,
+        {
+          kind: "extTransition",
+          simtime,
+          eventName: e.name,
+          param: e.param,
+          newState,
+        } as DEVSTraceItem<T>,
+      ];
+    },
+    inputs: devs.inputs,
+    outputs: devs.outputs,
   }
-) & {
-  result: DEVSStepResult<T>,
-};
-
-export type DEVSTrace<T> = [DEVSTraceItem<T>, ...DEVSTraceItem<T>[]];
-
-function expectNonFaultyTrace<T>(trace: DEVSTrace<T>): T {
-  const lastItem = trace.at(-1)!;
-  if (lastItem.result.ok) {
-    const lastState = lastItem.result.newState;
-    return lastState;
-  }
-  else {
-    throw new Error("trace contains an error");
-  }
 }
 
-function catchRuntimeError<T>(possiblyFailingCallback: () => T): DEVSStepResult<T> {
-  try {
-    const newState = possiblyFailingCallback();
-    return {
-      ok: true,
-      newState,
-    };
-  }
-  catch (error) {
-    if (error instanceof RuntimeError) {
-      return {
-        ok: false,
-        error,
-      };
-    }
-    else {
-      // all other errors are just passed through
-      throw error;
-    }
-  }
-}
+// function expectNonFaultyTrace<T>(trace: DEVSTrace<T>): T {
+//   const lastItem = trace.at(-1)!;
+//   if (lastItem.result.ok) {
+//     const lastState = lastItem.result.newState;
+//     return lastState;
+//   }
+//   else {
+//     throw new Error("trace contains an error");
+//   }
+// }
 
-// below are a bunch of wrappers for executing DEVS functions and appending the result to a DEVSTrace:
-
-// Initialize DEVS component, resulting in trace with one item.
-export function initTrace<T>(devs: DEVSComponent<T>): [DEVSTraceItem<T>] {
-  const result = catchRuntimeError(() => devs.initial());
-  return [
-    {
-      kind: "init",
-      simtime: 0,
-      result,
-    }
-  ];
-}
-
-// Call timeAdvance on last item in trace
-export function timeAdvance<T>(devs: DEVSComponent<T>, trace: DEVSTrace<T>): number {
-  const lastState = expectNonFaultyTrace(trace);
-  return devs.timeAdvance(lastState);
-}
-
-// Perform intTransition on last item in trace, growing the trace with 1 item.
-export function intTransition<T>(devs: DEVSComponent<T>, trace: DEVSTrace<T>): DEVSTrace<T> {
-  const lastState = expectNonFaultyTrace(trace);
-  const simtime = devs.timeAdvance(lastState);
-  let outputEvents: RaisedEvent[] = [];
-  const result = catchRuntimeError(() => {
-    let newState;
-    // overwrite our outputEvents variable above:
-    [outputEvents, newState] = devs.intTransition(lastState);
-    return newState;
-  });
-  return [
-    ...trace,
-    {
-      kind: "intTransition",
-      simtime,
-      result,
-      outputEvents,
-    } as DEVSTraceItem<T>,
-  ];
-}
-
-// Perform extTransition on last item in trace, growing the trace with 1 item.
-export function extTransition<T>(devs: DEVSComponent<T>, trace: DEVSTrace<T>, e: RaisedEvent, simtime: number): DEVSTrace<T> {
-  const lastState = expectNonFaultyTrace(trace);
-  const result = catchRuntimeError(() => devs.extTransition(simtime, lastState, e));
-  console.log('extTransition..', trace);
-  return [
-    ...trace,
-    {
-      kind: "extTransition",
-      simtime,
-      eventName: e.name,
-      param: e.param,
-      result,
-    } as DEVSTraceItem<T>,
-  ];
-}
+// function catchRuntimeError<T>(possiblyFailingCallback: () => T): DEVSStepResult<T> {
+//   try {
+//     const newState = possiblyFailingCallback();
+//     return {
+//       ok: true,
+//       newState,
+//     };
+//   }
+//   catch (error) {
+//     if (error instanceof RuntimeError) {
+//       return {
+//         ok: false,
+//         error,
+//       };
+//     }
+//     else {
+//       // all other errors are just passed through
+//       throw error;
+//     }
+//   }
+// }

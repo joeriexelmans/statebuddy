@@ -3,11 +3,11 @@ import { ButtonHTMLAttributes, useEffect, useRef, useState } from "react";
 import "./DoubleClickButton.css";
 import { Tooltip } from "./Tooltip";
 
-export function DoubleClickButton({children, onDoubleClick, align, tooltip, ...rest}: {align?: "center" | "left" | "right", tooltip: string} & ButtonHTMLAttributes<HTMLButtonElement>) {
+export function DoubleClickButton({children, onDoubleClick, align, tooltip, fullWidth, ...rest}: {align?: "center" | "left" | "right", tooltip: string, fullWidth?: boolean} & ButtonHTMLAttributes<HTMLButtonElement>) {
   const [clickedOnce, setClickedOnce] = useState(false);
 
   if (clickedOnce) {
-    return <Tooltip tooltip="click again to confirm" align={align} showWhen="always">
+    return <Tooltip tooltip="click again to confirm" align={align} showWhen="always" fullWidth={fullWidth}>
       <button
         {...rest}
         className="alert"
@@ -19,7 +19,7 @@ export function DoubleClickButton({children, onDoubleClick, align, tooltip, ...r
     </Tooltip>;
   }
   else {
-    return <Tooltip tooltip={tooltip} align={align} showWhen="hover">
+    return <Tooltip tooltip={tooltip} align={align} fullWidth={fullWidth}>
       <button
         {...rest}
         onClick={() => setClickedOnce(true)}

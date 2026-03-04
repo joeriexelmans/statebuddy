@@ -1,6 +1,5 @@
 .grid > *:hover > * {
   background-color: var(--summary-hover-bg-color);
-
 }
 
 /* .row:hover {

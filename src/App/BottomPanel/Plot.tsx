@@ -2,6 +2,8 @@ import plotStyles from "./Plot.module.css";
 import { SVGAttributes, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Setters } from "../makePartialSetter";
 import { PreparedTraces } from "../SideBar/prepare_trace";
+import { Tooltip } from "../Components/Tooltip";
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 
 export type PlotState = {
   visiblePlots: {[name: string]: boolean},
@@ -14,15 +16,17 @@ export const defaultPlotState = {
 type PlotProperties = PlotState & Setters<PlotState> & SVGAttributes<SVGElement> & {
   traces: PreparedTraces,
   displayTime: number,
+  endOfTime: number,
   nextWakeup: number, // nextEventTime is the furthest we can confidently extend the signal plots into the future.
 }
 
 const numColors = 6; // corresponds to CSS variables --plot-color-N in index.css
 
-export function Plot({traces, displayTime, nextWakeup, visiblePlots, setVisiblePlots, ...rest}: PlotProperties) {
+export function Plot({traces, displayTime, endOfTime, nextWakeup, visiblePlots, setVisiblePlots, ...rest}: PlotProperties) {
   const refSVG = useRef(null);
   const [width, setWidth] = useState<number>(window.innerWidth);
 
+  const atLeastOnePlot = Object.entries(visiblePlots).some(([key, val]) => val === true && Object.hasOwn(traces, key));
   const traceNames = useMemo(() => Object.keys(traces).filter(name => !["true", "false"].includes(name)), [traces]);
 
   useLayoutEffect(() => {
@@ -41,7 +45,7 @@ export function Plot({traces, displayTime, nextWakeup, visiblePlots, setVisibleP
 
   traces = Object.fromEntries(Object.entries(traces).filter(([name]) => !["true", "false"].includes(name)))
 
-  const maxTime = Math.max(displayTime, 1);
+  const maxTime = Math.max(endOfTime, 1);
   const margin = 2; // if 0, the lines would overlap
   const yDiff = height / (numVisible);
 
@@ -65,16 +69,18 @@ export function Plot({traces, displayTime, nextWakeup, visiblePlots, setVisibleP
       prevY = y;
     }
     // extend signal to next wakeup (this is reasonable)
-    const lastX = Math.min(nextWakeup, displayTime); // if nextWakeup is Infinity, draw the line to the end instead (we cannot draw a line to infinity)
+    const lastX = Math.min(nextWakeup, endOfTime); // if nextWakeup is Infinity, draw the line to the end instead (we cannot draw a line to infinity)
     path += ` L${toSVGcoords(lastX)},${prevY}`;
     return path;
   }
 
-  const markerEveryXMs = Math.max(250*2**Math.ceil(Math.log2(displayTime/1000/30/width*2000)), 250);
+  const currentTimeSvgX = toSVGcoords(displayTime);
+
+  const markerEveryXMs = Math.max(250*2**Math.ceil(Math.log2(endOfTime/1000/30/width*2000)), 250);
   const labelEveryXMarkers = 2;
 
   const marks = [];
-  for (let i=0; i<displayTime; i+=markerEveryXMs) {
+  for (let i=0; i<endOfTime; i+=markerEveryXMs) {
     marks.push(i);
   }
 
@@ -103,23 +109,35 @@ export function Plot({traces, displayTime, nextWakeup, visiblePlots, setVisibleP
 
   const checkboxes = (() => {
     let i=0;
-    return traceNames.map(name => {
+    return traceNames.map((name, j) => {
       const color = visiblePlots[name]
         ? `var(--plot-color-${i++%numColors})`
         : 'var(--text-color)';
-      return <label key={name} htmlFor={`checkbox-trace-${name}`}>
-        <input type="checkbox" id={`checkbox-trace-${name}`} checked={visiblePlots[name]} onChange={e => setVisiblePlots(visible => ({...visible, [name]: e.target.checked}))} style={{accentColor: color}}/>
-        <span style={{color}}>{name}</span>
-      </label>;
+      const prevPrefix = traceNames[j-1]?.split('_')[0];
+      const curPrefix = name.split('_')[0];
+      return <>
+        {(prevPrefix && ((prevPrefix === curPrefix)
+          && <br/>
+          || <div style={{breakAfter: 'column'}}></div>))}
+          {/*             ^ doesn't yet work in Firefox :( */}
+        <label key={name} htmlFor={`checkbox-trace-${name}`} style={{breakInside: 'avoid'}}>
+          <input type="checkbox" id={`checkbox-trace-${name}`} checked={visiblePlots[name]} onChange={e => setVisiblePlots(visible => ({...visible, [name]: e.target.checked}))} style={{accentColor: color}}/>
+          <span style={{color}}>{name}</span>
+        </label>
+      </>;
     });
   })();
 
   return <>
-    <svg style={{height: height+18}} ref={refSVG} viewBox={`0 0 ${width} ${height+18}`} {...rest}>
-      {xAxis}
-      {paths}
-    </svg>
-    <div>
+    {atLeastOnePlot &&
+      <svg style={{height: height+18}} ref={refSVG} viewBox={`0 0 ${width} ${height+18}`} {...rest}>
+        <line x1={currentTimeSvgX} x2={currentTimeSvgX} y1={0} y2={height+4} stroke="grey" strokeWidth={6} />
+        {xAxis}
+        {paths}
+      </svg>}
+      <div style={{
+        columnWidth: 220,
+      }}>
       {checkboxes}
     </div>
   </>;

@@ -1,23 +1,25 @@
-import { Dispatch, memo, SetStateAction, useCallback } from "react";
+import { Dispatch, memo, PropsWithChildren, SetStateAction, useCallback } from "react";
 import { Statechart, stateDescription, Transition } from "../../statecharts/abstract_syntax";
 import { RaisedEvent, RT_Event } from "../../statecharts/runtime_types";
-import { arraysEqual, formatTime, jsonDeepEqual } from "../../util/util";
+import { arraysEqual, formatTime, jsonDeepEqual, memoizeOne } from "../../util/util";
 import { TimeMode, timeTravel } from "../../statecharts/time";
 import { Environment } from "@/statecharts/environment";
 
 import styles from "./Trace.module.css";
 
-import BoltIcon from '@mui/icons-material/Bolt';
+import ReplayIcon from '@mui/icons-material/Replay';import BoltIcon from '@mui/icons-material/Bolt';
 import SubdirectoryArrowRightIcon from '@mui/icons-material/SubdirectoryArrowRight';
 import ArrowOutwardIcon from '@mui/icons-material/ArrowOutward';
 import FlareIcon from '@mui/icons-material/Flare';
 import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
 import { Status } from "./Status";
 import { Tooltip } from "../Components/Tooltip";
-import { CoupledState, StateBuddyTraceState } from "../hooks/useSimulator";
+import { CoupledState, PlantsState, StateBuddyTraceState } from "../hooks/useSimulator";
 import { WithSetters } from "../makePartialSetter";
-import { DEVSTraceItem } from "@/devs/trace";
+import { DEVSTrace, DEVSTraceItem, DEVSTraceItemExtTransition, DEVSTraceItemInit, DEVSTraceItemIntTransition } from "@/devs/trace";
 import { ShowOutputEvents } from "./ShowAST";
+import { Statechart2DEVSState } from "@/devs/sc2devs";
+import { whoMadeTransition } from "@/devs/coupled_trace";
 
 type PropertyTrace = [number, boolean][];
 type PropertyStatus = "pending" | "satisfied" | "violated";
@@ -50,90 +52,358 @@ type TraceProps = WithSetters<{
   // clicking on an item in the trace will jump to it so we need to set the time to that point.
   setTime: Dispatch<SetStateAction<TimeMode>>,
 
-
   ast: Statechart,
 
   // // just some switches
-  // showPlantTrace: boolean,
+  showTransitions: boolean,
+  showPlantTrace: boolean,
 
-  // // result of checking a property is a trace of booleans which we display in the trace
-  // propertyTrace: PropertyTrace | null,
+  // result of checking a property is a trace of booleans which we display in the trace
+  propertyTrace: PropertyTrace | null,
+  plantsState: PlantsState,
 }
 
-export function Trace({trace, setTrace, setTime, ast, showMicroSteps, setShowMicroSteps}: TraceProps) {
+// An 'output step' is when a Statechart performs an intTransition immediately after handling an input event (extTransition), with the purpose of only outputting some events.
+// If a Statechart makes an output step, we render that step slightly differently (we hide the timer icon), so it becomes a bit clearer that in the world of Statecharts, the output step was caused by (or even stronger: is part of) the previous step.
+function isOutputStepHeuristic(trace: DEVSTrace<Statechart2DEVSState>) {
+  const itemState = trace.at(-1)!;
+  const prevItemState = trace.at(-2);
+  const prevScheduledOutputs = prevItemState?.newState.outputQueue;
+  const curOutputs = itemState.kind === "intTransition" && itemState.outputEvents;
+  const isOutputStep = jsonDeepEqual(prevScheduledOutputs, curOutputs) // the scheduled outputs of previous SC step are equal to the current outputs
+    && prevItemState?.simtime === itemState.simtime; // time didn't change
+  return isOutputStep;
+}
+
+// Things are a bit funny here. We want to render the execution history of our Statechart, but we have a Coupled DEVS trace containing all the steps made by both the Statechart and the plant(s). We offer the user to hide steps made by the plant(s).
+export function Trace({trace, setTrace, setTime, ast, showMicroSteps, setShowMicroSteps, showTransitions, showPlantTrace, propertyTrace, plantsState}: TraceProps) {
+  let j=0;
   return <div>
     {trace.trace.map((item, i) => {
       const prevItem = trace.trace[i-1];
-      const prevScheduledOutputs = prevItem?.result.ok && prevItem.result.newState.sc.outputQueue;
-      const curOutputs = item.kind === "intTransition" && item.outputEvents;
-      const isOutputStep = curOutputs && jsonDeepEqual(prevScheduledOutputs, curOutputs);
+
+      // in every step of the Coupled DEVS, each component can step at most once
+      const whichPlantsStepped = Object.entries(item.newState).flatMap(([plantId, s]) => (s !== prevItem?.newState[plantId]) ? [plantId] : []);
+
+      const isPlantStep = !whichPlantsStepped.includes("sc");
+
+      let satisfied;
+      [j, satisfied] = lookupPropertyStatus(item.simtime, propertyTrace || [], j);
+      let propertyStatus: PropertyStatus = "pending";
+      if (satisfied !== null && satisfied !== undefined) {
+        propertyStatus = (satisfied ? "satisfied" : "violated");
+      }
+
+      if (isPlantStep && !showPlantTrace) {
+        return <></>;
+      }
       return <div
           className={styles.traceItem
-                    + ' ' + ((trace.idx === i) ? styles.active : "")}
+                    + ' ' + ((trace.idx === i) ? styles.active : "")
+                    + ' ' + (isPlantStep ? styles.plantStep : "")}
+          onDoubleClick={e => {
+            setShowMicroSteps(x => !x);
+            e.preventDefault();
+            e.stopPropagation();
+          }}
           onMouseDown={e => {
             if (e.button === 0) {
-              if (trace.idx === i) {
-                setShowMicroSteps(x => !x);
-              }
-              else {
-                setTrace(trace => ({trace: trace.trace, idx: i}));
-                setTime(_ => ({kind: "paused", simtime: item.simtime}));
-              }
+              setTrace(trace => ({trace: trace.trace, idx: i}));
+              setTime(_ => ({kind: "paused", simtime: item.simtime}));
             }
           }}
         >
         <div style={{display: 'flex', gap: '1em'}}>
-          <Tooltip tooltip="timestamp" align="left">
-            <div style={{width: 50, textAlign: 'right'}}>
-              {item.simtime !== prevItem?.simtime && formatTime(item.simtime)}
-            </div>
-          </Tooltip>
-          <TraceItem item={item} isOutputStep={isOutputStep}/>
-          {item.result.ok && !isOutputStep && <>
-            <ShowFiredTransitions
-              firedTransitions={[...ast.transitions.values().flatMap(t =>
-                // @ts-ignore
-                t.filter(t => item.result.newState?.sc.bigstep.firedTransitions.includes(t.uid)))]}/>
-          </>}
+          {/* #{i} */}
+          <CoupledDEVSTraceItem
+            item={item}
+            prevItem={prevItem}
+            status={propertyStatus}
+            plantsState={plantsState}
+            // only show micro-steps of currently selected item:
+            showMicroSteps={showMicroSteps && i === trace.idx}
+            showTransitions={showTransitions}
+            ast={ast}
+          />
         </div>
-        {item.result.ok && showMicroSteps && trace.idx === i &&
-          <MicroSteps msgs={isOutputStep ? ["(step was only made to produce output events)"] : item.result.newState.sc.bigstep.microsteps}/>}
       </div>;
     })}
   </div>;
 }
 
-function TraceItem({item, isOutputStep}: {item: DEVSTraceItem<CoupledState>, isOutputStep: boolean}) {
+function TraceItemHeader({status, simtime, hide}: {status: PropertyStatus, simtime: number, hide: boolean}) {
+  return <>
+    {/* property check result */}
+    <div style={{visibility: hide ? "hidden" : undefined}}>
+      <Status status={status}/>
+    </div>
+
+    {/* timestamp */}
+    <div style={{visibility: hide ? "hidden" : undefined}}>
+      <Tooltip tooltip="timestamp">
+        <div style={{textAlign: 'right'}}>
+          {formatTime(simtime)}
+        </div>
+      </Tooltip>
+    </div>
+  </>;
+}
+
+function lookupName(plantsState: PlantsState, plantId: string) {
+  return plantsState.plants.find(({id}) => id === plantId)?.name || plantId;
+}
+
+type ThingsToPassOn = {
+  status: PropertyStatus,
+  showMicroSteps: boolean,
+  showTransitions: boolean,
+  plantsState: PlantsState,
+  ast: Statechart,
+}
+
+function CoupledDEVSTraceItem({item, prevItem, status, ...thingsToPassOn}: {
+  item: DEVSTraceItem<CoupledState>,
+  prevItem: DEVSTraceItem<CoupledState>,
+} & ThingsToPassOn) {
+  const commonArgs = {status, ...thingsToPassOn};
   if (item.kind === "init") {
+    return <CoupledDEVSInitialization item={item} {...commonArgs} />;
+  }
+  else if (item.kind === "intTransition") {
+    return <CoupledDEVSInternalTransition item={item} prevItem={prevItem} {...commonArgs} />;
+  }
+  else if (item.kind === "extTransition") {
+    return <CoupledDEVSExternalTransition item={item} prevItem={prevItem} {...commonArgs} />;
+  }
+}
+
+const allTransitions = memoizeOne(function allTransitions(ast: Statechart) {
+  const alreadyHave = new Set<string>();
+  return [...ast.transitions.values().flatMap(ts => {
+    return ts.filter(t => !alreadyHave.has(t.uid) && alreadyHave.add(t.uid));
+  })];
+}, (a,b) => a === b);
+
+function getFiredTransitions(ast: Statechart, item: DEVSTraceItem<Statechart2DEVSState>) {
+  const all = allTransitions(ast);
+  const result = all.filter(t => item.newState.bigstep.firedTransitions.includes(t.uid));
+  console.log({ast, all, fired: item.newState.bigstep.firedTransitions, result});
+  return result;
+}
+
+function CoupledDEVSInitialization({item, status, plantsState, showMicroSteps, showTransitions, ast}: {
+  item: DEVSTraceItemInit<CoupledState>,
+} & ThingsToPassOn) {
+  // just show the initialization of every component:
+  return <>
+    <TraceItemHeader hide={false} simtime={0} status={status} />
+    {Object.entries(item.newState).map(([componentId, componentTrace]) => {
+      const componentTraceItem = componentTrace.at(-1)!;
+      const componentName = plantsState.plants.find(({id}) => id === componentId)?.name || componentId;
+      return <StepColumn key={componentId}>
+        <div>{componentName}</div>
+        <DEVSStepCause item={componentTraceItem} />
+        {componentId === "sc" && <>
+          {showMicroSteps && <MicroSteps item={componentTraceItem}/>}
+          {showTransitions && <ShowFiredTransitions
+            firedTransitions={getFiredTransitions(ast, componentTraceItem)} />}
+        </>}
+      </StepColumn>;
+    })}
+  </>;
+}
+
+// An internal transition step made by Coupled DEVS
+function CoupledDEVSInternalTransition({item, prevItem, status, showMicroSteps, showTransitions, plantsState, ast}: {
+  item: DEVSTraceItemIntTransition<CoupledState>,
+  prevItem: DEVSTraceItem<CoupledState>,
+} & ThingsToPassOn) {
+  // one component will have made 1 intTransition, and some other components may have made 1 extTransition.
+  const componentMadeIntTransition = whoMadeTransition([prevItem, item], "intTransition");
+  const blessedTrace = item.newState[componentMadeIntTransition];
+  const blessedItem = blessedTrace.at(-1)! as DEVSTraceItemIntTransition<any>;
+
+  const isOutputStep = isOutputStepHeuristic(blessedTrace);
+
+  return <>
+    {/* header */}
+    <TraceItemHeader hide={isOutputStep} simtime={item.simtime} status={status}/>
+
+    {/* first we show the component that made the intTransition */}
+    <StepColumn>
+      <div>{lookupName(plantsState, componentMadeIntTransition)}</div>
+      {!isOutputStep && <DEVSStepCause item={blessedItem} />}
+      <ShowOutputEvents outputEvents={blessedItem.outputEvents} />
+      {showMicroSteps && componentMadeIntTransition === "sc" && <MicroSteps item={blessedItem}/>}
+      {showTransitions && componentMadeIntTransition === "sc" && <ShowFiredTransitions firedTransitions={getFiredTransitions(ast, blessedItem)}/>}
+    </StepColumn>
+
+    {/* then we show the components that made an extTransition */}
+    {Object.entries(item.newState).map(([componentId, componentTrace]) => {
+      if (componentId === componentMadeIntTransition) {
+        // we've already rendered this one
+        return <></>;
+      }
+      if (prevItem.newState[componentId] === componentTrace) {
+        // component did not step
+        return <></>;
+      }
+      return <StepColumn>
+        <div>{lookupName(plantsState, componentId)}</div>
+        <DEVSExternalTransition
+          item={componentTrace.at(-1)!}
+          showMicroSteps={showMicroSteps && componentId === "sc"}
+          showTransitions={showTransitions && componentId === "sc"}
+          ast={ast}
+        />
+      </StepColumn>;
+    })}
+  </>;
+}
+
+function StepColumn({children}: PropsWithChildren<{}>) {
+  return <div style={{display: 'flex', flexDirection: 'column', alignItems: 'start'}}>
+    {children}
+  </div>;
+}
+
+function DEVSExternalTransition({item, showMicroSteps, showTransitions, ast}: {
+  item: DEVSTraceItem<any>,
+  showMicroSteps: boolean,
+  showTransitions: boolean,
+  ast: Statechart,
+}) {
+  return <StepColumn>
+    <DEVSStepCause item={item}/>
+    {showMicroSteps && <MicroSteps item={item}/>}
+    {showTransitions && <StepColumn>
+      <ShowFiredTransitions firedTransitions={getFiredTransitions(ast, item)} />
+    </StepColumn>}
+  </StepColumn>;
+}
+
+// An internal transition step made by Coupled DEVS
+function CoupledDEVSExternalTransition({item, prevItem, status, showMicroSteps, showTransitions, plantsState, ast}: {
+  item: DEVSTraceItemExtTransition<CoupledState>,
+  prevItem: DEVSTraceItem<CoupledState>,
+} & ThingsToPassOn) {
+  const componentMadeExtTransition = whoMadeTransition([prevItem, item], "extTransition");
+  const componentStep = item.newState.sc.at(-1)!;
+  return <>
+    <TraceItemHeader hide={false} simtime={item.simtime} status={status} />
+    <StepColumn>
+      <div>{lookupName(plantsState, componentMadeExtTransition)}</div>
+      <DEVSExternalTransition
+        item={componentStep}
+        showMicroSteps={showMicroSteps && componentMadeExtTransition === "sc"}
+        showTransitions={showTransitions && componentMadeExtTransition === "sc"}
+        ast={ast}
+      />
+    </StepColumn>
+  </>;
+}
+
+
+function DEVSStepCause({item}: {item: DEVSTraceItem<any>}) {
+  if (item.kind === "init") {
+    return <div className={styles.inputEvent}>
+      <Tooltip tooltip="initialization" align="left">
+        <FlareIcon fontSize="small"/>
+      </Tooltip>
+    </div>;
+  }
+  else if (item.kind === "intTransition") {
+    return <div className={styles.inputEvent}>
+      <Tooltip tooltip="timer elapse" align="left">
+        <AccessAlarmIcon fontSize="small"/>
+      </Tooltip>
+    </div>
+  }
+  else if (item.kind === "extTransition") {
+    return <div className={styles.inputEvent}>
+      <Tooltip tooltip="input event" align="left">
+        {/* <BoltIcon fontSize="small"/> */}
+        &#8600;
+        {item.eventName}
+        <EventParam param={item.param}/>
+      </Tooltip>
+    </div>;
+  }
+}
+
+
+function Step({item, isOutputStep}: {item: DEVSTraceItem<any>, isOutputStep: boolean}) {
+  const scState = item;
+  if (scState.kind === "init") {
     return <div className={styles.inputEvent}>
       <Tooltip tooltip="execution initialized" align="left">
         <FlareIcon fontSize="small"/>
       </Tooltip>
     </div>;
   }
-  else if (item.kind === "intTransition") {
+  else if (scState.kind === "intTransition") {
     return <>
-      <div className={styles.inputEvent}>
-        {isOutputStep
-          &&  <Tooltip tooltip="internal transition (DEVS) only to produce output events, caused by previous step" align="left">
-                <SubdirectoryArrowRightIcon fontSize="small"/>
-              </Tooltip>
-          ||  <Tooltip tooltip="timer elapse" align="left">
-                <AccessAlarmIcon fontSize="small"/>
-              </Tooltip>}
-        {/* todo: show which timer elapsed? */}
+      <div style={{width: 24}}>
+        {!isOutputStep && <div className={styles.inputEvent}>
+          <Tooltip tooltip="timer elapse" align="left">
+            <AccessAlarmIcon fontSize="small"/>
+          </Tooltip>
+          {/* todo: show which timer elapsed? */}
+        </div>}
       </div>
-      <ShowOutputEvents outputEvents={item.outputEvents}/>
+      <ShowOutputEvents outputEvents={scState.outputEvents}/>
     </>;
   }
-  else if (item.kind === "extTransition") {
+  else if (scState.kind === "extTransition") {
     return <div className={styles.inputEvent}>
       <Tooltip tooltip="input event" align="left">
-        <BoltIcon fontSize="small"/>
-        {item.eventName}
-        <EventParam param={item.param}/>
+        {/* <BoltIcon fontSize="small"/> */}
+        &#8600;
+        {scState.eventName}
+        <EventParam param={scState.param}/>
       </Tooltip>
     </div>;
+  }
+}
+
+
+
+function TraceItem({item, isOutputStep, isPlantStep, whichPlantsStepped}: {item: DEVSTraceItem<CoupledState>, isOutputStep: boolean, isPlantStep: boolean, whichPlantsStepped: string[]}) {
+  if (isPlantStep) {
+    return <></>;
+  }
+  else {
+    const scState = item.newState.sc.at(-1)!;
+    if (scState.kind === "init") {
+      return <div className={styles.inputEvent}>
+        <Tooltip tooltip="execution initialized" align="left">
+          <FlareIcon fontSize="small"/>
+        </Tooltip>
+      </div>;
+    }
+    else if (scState.kind === "intTransition") {
+      return <>
+        <div style={{width: 24}}>
+          {!isOutputStep && <div className={styles.inputEvent}>
+            <Tooltip tooltip="timer elapse" align="left">
+              <AccessAlarmIcon fontSize="small"/>
+            </Tooltip>
+            {/* todo: show which timer elapsed? */}
+          </div>}
+        </div>
+        <ShowOutputEvents outputEvents={scState.outputEvents}/>
+      </>;
+    }
+    else if (scState.kind === "extTransition") {
+      return <div className={styles.inputEvent}>
+        <Tooltip tooltip="input event" align="left">
+          {/* <BoltIcon fontSize="small"/> */}
+          &#8600;
+          {scState.eventName}
+          <EventParam param={scState.param}/>
+        </Tooltip>
+      </div>;
+    }
   }
 }
 
@@ -247,14 +517,15 @@ function EventParam(props: {param?: any}) {
 //   }
 // });
 
-function MicroSteps({msgs}: {msgs: string[]}) {
+function MicroSteps({item}: {item: DEVSTraceItem<Statechart2DEVSState>}) {
   return <div style={{
     paddingLeft: 4,
+    paddingRight: 4,
     whiteSpace: 'preserve',
     backgroundColor: 'var(--statusbar-bg-color)', // <-- just make it stand out a bit
     borderRadius: '4px', // <-- make it look pretty
     marginTop: 4,
-  }}>{msgs.map(msg => <div>{msg}</div>)}</div>;
+  }}>{item.newState.bigstep.microsteps.map(msg => <div>{msg}</div>)}</div>;
 }
 
 function ShowFiredTransitions({firedTransitions}: {firedTransitions: Transition[]}) {
@@ -264,12 +535,20 @@ function ShowFiredTransitions({firedTransitions}: {firedTransitions: Transition[
 }
 
 function ShowTransition({transition}: {transition: Transition}) {
-  return <span>
-    <span className="activeState">{stateDescription(transition.src)}</span>
-    &#x2192;
-    <span className="activeState">{stateDescription(transition.tgt)}</span>
-    &emsp;
-  </span>
+  if (transition.src === transition.tgt) {
+    return <span>
+      <span className="activeState">{stateDescription(transition.src)}</span>
+      &#x21BA;
+    </span>
+  }
+  else {
+    return <span>
+      <span className="" style={{border: '1px solid var(--rountangle-stroke-color)', borderRadius: 4, paddingLeft: 2, paddingRight: 2, marginLeft: 2, marginRight: 2}}>{stateDescription(transition.src)}</span>
+      &#x21B7;
+      <span className="activeState">{stateDescription(transition.tgt)}</span>
+      &emsp;
+    </span>;
+  }
 }
 
 // function ShowCause(props: {cause: BigStepCause}) {

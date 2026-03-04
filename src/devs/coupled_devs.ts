@@ -22,13 +22,13 @@ export type CoupledDEVSConns = {
   model2Model: Model2ModelConn[],
 };
 
-type CoupledDEVSState = {
-  [name: string]: any, // <-- the state type of every component can be anything
+export type CoupledDEVSState<ComponentStateType> = {
+  [name: string]: ComponentStateType,
 };
 
 // Given a bunch of sub-components and routing connections, creates a Coupled DEVS.
 // One deviation from 'real DEVS' is that there is no tie breaking function.
-export function makeCoupledDEVS<T extends CoupledDEVSState>(
+export function makeCoupledDEVS<T extends CoupledDEVSState<any>>(
   models: {[modelId in keyof T]: DEVSComponent<T[modelId]>},
   conns: CoupledDEVSConns,
   inputs: string[],

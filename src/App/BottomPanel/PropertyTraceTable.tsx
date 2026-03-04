@@ -11,8 +11,10 @@ import styles from "@/App/App.module.css";
 import { restoreTrace } from '@/devs/serialize_trace';
 import { DEVSComponent } from '@/devs/devs';
 import { CoupledState, PlantsState } from '../hooks/useSimulator';
+import { Statechart } from '@/statecharts/abstract_syntax';
+import { DEVSTrace } from '@/devs/trace';
 
-export function PropertyTraceTable({properties, traces, onClose, cE, plantsState, checkProperty}: {properties: string[], traces: SavedTraces, onClose: () => void, cE: DEVSComponent<CoupledState>, plantsState: PlantsState, checkProperty: (property: string, preparedTraces: PreparedTraces) => Promise<PropertyCheckResult>,
+export function PropertyTraceTable({ast, properties, traces, onClose, cE, plantsState, checkProperty}: {ast: Statechart, properties: string[], traces: SavedTraces, onClose: () => void, cE: DEVSComponent<DEVSTrace<CoupledState>>, plantsState: PlantsState, checkProperty: (property: string, preparedTraces: PreparedTraces) => Promise<PropertyCheckResult>,
 }) {
   const [rotateText, setRotateText] = useState(false);
 
@@ -24,7 +26,7 @@ export function PropertyTraceTable({properties, traces, onClose, cE, plantsState
         return traces.map(([name, trace], j) => {
           // replay each saved trace (obtaining the full trace), and property check it
           const restored = restoreTrace(trace, cE);
-          const prepared = prepareTraces(plantsState, restored);
+          const prepared = prepareTraces(ast, plantsState, restored);
           checkProperty(property, prepared).then(([result, errors]) => {
             if (result) {
               const [[_, ok]] = result;
