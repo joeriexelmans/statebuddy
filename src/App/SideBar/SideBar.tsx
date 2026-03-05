@@ -14,7 +14,7 @@ import { Plant } from '../Plant/Plant';
 import { PreparedTraces, PropertyCheckResult } from './prepare_trace';
 import { Setters, WithSetters } from '../makePartialSetter';
 import { Trace } from './Trace';
-import { plants } from '../plants';
+import { statebuddyPlants } from '../plants';
 import { getSimTime, TimeMode } from '@/statecharts/time';
 import { PersistentDetails } from '../Components/PersistentDetails';
 import "./SideBar.css";
@@ -136,16 +136,16 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
 
   // const [selectedPlant, setSelectedPlant] = useState<string>("add plant ...");
 
-  const onAddPlant = (plantName: string) => {
-    const plantToInstantiate = plants.find(([n]) => plantName === n);
+  const onAddPlant = (type: string) => {
+    const plantToInstantiate = statebuddyPlants[type];
     if (plantToInstantiate !== undefined) {
       setPlantsState(ps => ({
         plants: [
           ...ps.plants,
           {
-            id: plantName + ps.nextPlantID.toString(), // <-- for readability, we include the plant type in the ID
-            name: plantName + ps.nextPlantID.toString(),
-            type: plantName,
+            id: type + ps.nextPlantID.toString(), // <-- for readability, we include the plant type in the ID
+            name: type + ps.nextPlantID.toString(),
+            type,
           },
         ],
         conns: ps.conns,
@@ -210,8 +210,8 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
               value="add plant..."
               onChange={e => onAddPlant(e.target.value)}>
               <option>add plant...</option>
-              {plants.map(([plantName]) =>
-                <option key={plantName}>{plantName}</option>
+              {Object.keys(statebuddyPlants).map((type) =>
+                <option key={type}>{type}</option>
               )}
             </select>
           </Tooltip>

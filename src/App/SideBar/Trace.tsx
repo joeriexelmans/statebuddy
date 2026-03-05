@@ -14,6 +14,7 @@ import { CoupledState, PlantsState, StateBuddyTraceState } from "../hooks/useSim
 import { WithSetters } from "../makePartialSetter";
 import { ShowOutputEvents } from "./ShowAST";
 import { Status } from "./Status";
+import { statebuddyPlants } from "../plants";
 
 type PropertyTrace = [number, boolean][];
 type PropertyStatus = "pending" | "satisfied" | "violated";
@@ -74,6 +75,7 @@ function isOutputStepHeuristic(trace: DEVSTrace<Statechart2DEVSState>) {
 // Things are a bit funny here. We want to render the execution history of our Statechart, but we have a Coupled DEVS trace containing all the steps made by both the Statechart and the plant(s). We offer the user to hide steps made by the plant(s).
 export function Trace({trace, setTrace, setTime, ast, showMicroSteps, setShowMicroSteps, showTransitions, showPlantTrace, propertyTrace, plantsState}: TraceProps) {
   let j=0;
+  console.log({trace});
   return <div>
     {trace.trace.map((item, i) => {
       const prevItem = trace.trace[i-1];
@@ -90,9 +92,6 @@ export function Trace({trace, setTrace, setTime, ast, showMicroSteps, setShowMic
         propertyStatus = (satisfied ? "satisfied" : "violated");
       }
 
-      if (isPlantStep && !showPlantTrace) {
-        return <></>;
-      }
       return <div
           className={styles.traceItem
                     + ' ' + ((trace.idx === i) ? styles.active : "")
@@ -108,9 +107,10 @@ export function Trace({trace, setTrace, setTime, ast, showMicroSteps, setShowMic
               setTime(_ => ({kind: "paused", simtime: item.simtime}));
             }
           }}
+          style={{display: (isPlantStep && !showPlantTrace) ? 'none' : undefined}}
         >
         <div style={{display: 'flex', gap: '1em'}}>
-          {/* #{i} */}
+          #{i}
           <CoupledDEVSTraceItem
             item={item}
             prevItem={prevItem}
@@ -173,18 +173,14 @@ function CoupledDEVSTraceItem({item, prevItem, status, ...thingsToPassOn}: {
   }
 }
 
-const allTransitions = memoizeOne(function allTransitions(ast: Statechart) {
-  const alreadyHave = new Set<string>();
-  return [...ast.transitions.values().flatMap(ts => {
-    return ts.filter(t => !alreadyHave.has(t.uid) && alreadyHave.add(t.uid));
-  })];
-}, (a,b) => a === b);
-
-function getFiredTransitions(ast: Statechart, item: DEVSTraceItem<Statechart2DEVSState>) {
-  const all = allTransitions(ast);
-  const result = all.filter(t => item.newState.bigstep.firedTransitions.includes(t.uid));
-  console.log({ast, all, fired: item.newState.bigstep.firedTransitions, result});
-  return result;
+function getAbstractSyntax(componentId: string, plantsState: PlantsState, ast: Statechart) {
+  if (componentId === "sc") {
+    return ast;
+  }
+  const plantType = plantsState.plants.find(({id}) => id === componentId)?.type;
+  if (plantType) {
+    return statebuddyPlants[plantType].as;
+  }
 }
 
 function CoupledDEVSInitialization({item, status, plantsState, showMicroSteps, showTransitions, ast}: {
@@ -195,14 +191,16 @@ function CoupledDEVSInitialization({item, status, plantsState, showMicroSteps, s
     <TraceItemHeader hide={false} simtime={0} status={status} />
     {Object.entries(item.newState).map(([componentId, componentTrace]) => {
       const componentTraceItem = componentTrace.at(-1)!;
-      const componentName = plantsState.plants.find(({id}) => id === componentId)?.name || componentId;
+      const plant = plantsState.plants.find(({id}) => id === componentId);
+      const componentDisplayName = plant?.name || componentId;
+      const abstractSyntax = getAbstractSyntax(componentId, plantsState, ast);
       return <StepColumn key={componentId}>
-        <div>{componentName}</div>
+        <div>{componentDisplayName}</div>
         <DEVSStepCause item={componentTraceItem} />
-        {componentId === "sc" && <>
+        {<>
           {showMicroSteps && <MicroSteps microsteps={getMicroSteps(componentTraceItem)}/>}
-          {showTransitions && <ShowFiredTransitions
-            firedTransitions={getFiredTransitions(ast, componentTraceItem)} />}
+          {abstractSyntax && showTransitions && <ShowFiredTransitions
+            firedTransitions={getFiredTransitions(abstractSyntax, componentTraceItem)} />}
         </>}
       </StepColumn>;
     })}
@@ -218,6 +216,7 @@ function CoupledDEVSInternalTransition({item, prevItem, status, showMicroSteps, 
   const componentMadeIntTransition = whoMadeTransition([prevItem, item], "intTransition");
   const blessedTrace = item.newState[componentMadeIntTransition];
   const blessedItem = blessedTrace.at(-1)! as DEVSTraceItemIntTransition<any>;
+  const blessedAs = getAbstractSyntax(componentMadeIntTransition, plantsState, ast);
 
   const isOutputStep = isOutputStepHeuristic(blessedTrace);
 
@@ -230,8 +229,8 @@ function CoupledDEVSInternalTransition({item, prevItem, status, showMicroSteps, 
       <div>{lookupName(plantsState, componentMadeIntTransition)}</div>
       {!isOutputStep && <DEVSStepCause item={blessedItem} />}
       <ShowOutputEvents outputEvents={blessedItem.outputEvents} />
-      {showMicroSteps && componentMadeIntTransition === "sc" && <MicroSteps microsteps={isOutputStep && ["(output from previous step)"] || getMicroSteps(blessedItem)}/>}
-      {showTransitions && componentMadeIntTransition === "sc" && <ShowFiredTransitions firedTransitions={getFiredTransitions(ast, blessedItem)}/>}
+      {showMicroSteps && <MicroSteps microsteps={isOutputStep && ["(output from previous step)"] || getMicroSteps(blessedItem)}/>}
+      {blessedAs && showTransitions && <ShowFiredTransitions firedTransitions={getFiredTransitions(blessedAs, blessedItem)}/>}
     </StepColumn>
 
     {/* then we show the components that made an extTransition */}
@@ -244,13 +243,14 @@ function CoupledDEVSInternalTransition({item, prevItem, status, showMicroSteps, 
         // component did not step
         return <></>;
       }
+      const abstractSyntax = getAbstractSyntax(componentId, plantsState, ast);
       return <StepColumn>
         <div>{lookupName(plantsState, componentId)}</div>
         <DEVSExternalTransition
           item={componentTrace.at(-1)!}
-          showMicroSteps={showMicroSteps && componentId === "sc"}
-          showTransitions={showTransitions && componentId === "sc"}
-          ast={ast}
+          showMicroSteps={showMicroSteps}
+          showTransitions={Boolean(abstractSyntax) && showTransitions}
+          abstractSyntax={abstractSyntax!}
         />
       </StepColumn>;
     })}
@@ -263,17 +263,17 @@ function StepColumn({children}: PropsWithChildren<{}>) {
   </div>;
 }
 
-function DEVSExternalTransition({item, showMicroSteps, showTransitions, ast}: {
+function DEVSExternalTransition({item, showMicroSteps, showTransitions, abstractSyntax}: {
   item: DEVSTraceItem<any>,
   showMicroSteps: boolean,
   showTransitions: boolean,
-  ast: Statechart,
+  abstractSyntax: Statechart,
 }) {
   return <StepColumn>
     <DEVSStepCause item={item}/>
     {showMicroSteps && <MicroSteps microsteps={getMicroSteps(item)}/>}
     {showTransitions && <StepColumn>
-      <ShowFiredTransitions firedTransitions={getFiredTransitions(ast, item)} />
+      <ShowFiredTransitions firedTransitions={getFiredTransitions(abstractSyntax, item)} />
     </StepColumn>}
   </StepColumn>;
 }
@@ -284,16 +284,17 @@ function CoupledDEVSExternalTransition({item, prevItem, status, showMicroSteps, 
   prevItem: DEVSTraceItem<CoupledState>,
 } & ThingsToPassOn) {
   const componentMadeExtTransition = whoMadeTransition([prevItem, item], "extTransition");
-  const componentStep = item.newState.sc.at(-1)!;
+  const blessedItem = item.newState[componentMadeExtTransition].at(-1)!;
+  const blessedAs = getAbstractSyntax(componentMadeExtTransition, plantsState, ast);
   return <>
     <TraceItemHeader hide={false} simtime={item.simtime} status={status} />
     <StepColumn>
       <div>{lookupName(plantsState, componentMadeExtTransition)}</div>
       <DEVSExternalTransition
-        item={componentStep}
-        showMicroSteps={showMicroSteps && componentMadeExtTransition === "sc"}
-        showTransitions={showTransitions && componentMadeExtTransition === "sc"}
-        ast={ast}
+        item={blessedItem}
+        showMicroSteps={showMicroSteps}
+        showTransitions={Boolean(blessedAs) && showTransitions}
+        abstractSyntax={blessedAs!}
       />
     </StepColumn>
   </>;
@@ -524,8 +525,26 @@ function MicroSteps({microsteps}: {microsteps: string[]}) {
   }}>{microsteps.map(x => <div>{x}</div>)}</div>;
 }
 
-function getMicroSteps(item: DEVSTraceItem<Statechart2DEVSState>) {
-  return item.newState.bigstep.microsteps;
+function getMicroSteps(item: DEVSTraceItem<any>) {
+  if (item.newState.bigstep) {
+    return item.newState.bigstep.microsteps as string[];
+  }
+  else {
+    return [];
+  }
+}
+
+const allTransitions = memoizeOne(function allTransitions(ast: Statechart) {
+  const alreadyHave = new Set<string>();
+  return [...ast.transitions.values().flatMap(ts => {
+    return ts.filter(t => !alreadyHave.has(t.uid) && alreadyHave.add(t.uid));
+  })];
+}, (a,b) => a === b);
+
+function getFiredTransitions(ast: Statechart, item: DEVSTraceItem<Statechart2DEVSState>) {
+  const all = allTransitions(ast);
+  const result = all.filter(t => item.newState.bigstep.firedTransitions.includes(t.uid));
+  return result;
 }
 
 function ShowFiredTransitions({firedTransitions}: {firedTransitions: Transition[]}) {

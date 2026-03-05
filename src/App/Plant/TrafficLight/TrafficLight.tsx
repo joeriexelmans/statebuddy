@@ -28,14 +28,14 @@ if (trafficLightErrors.length > 0) {
 }
 
 type TrafficLightState = {
-  redOn: boolean,
-  yellowOn: boolean,
-  greenOn: boolean,
+  red: boolean,
+  yellow: boolean,
+  green: boolean,
   timerGreen: boolean,
   timerValue: number,
 }
 
-export const TrafficLight = memo(function TrafficLight({state: {redOn, yellowOn, greenOn, timerGreen, timerValue}, speed, raiseUIEvent}: PlantRenderProps<TrafficLightState>) {
+export const TrafficLight = memo(function TrafficLight({state: {red, yellow, green, timerGreen, timerValue}, speed, raiseUIEvent}: PlantRenderProps<TrafficLightState>) {
   // preload(imgBackground, {as: "image"});
   preload(imgRedOverlay, {as: "image"});
   preload(imgYellowOverlay, {as: "image"});
@@ -54,7 +54,7 @@ export const TrafficLight = memo(function TrafficLight({state: {redOn, yellowOn,
   }, []);
 
   // for added realism, every light color has its own buzzing noise volume
-  for (const [color, gain] of [[redOn, 0.5], [yellowOn, 1], [greenOn, 0.3]] as [boolean, number][]) {
+  for (const [color, gain] of [[red, 0.5], [yellow, 1], [green, 0.3]] as [boolean, number][]) {
     useEffect(() => {
       if (color) {
         const snd = playURL(sndBuzz, true, gain);
@@ -83,22 +83,22 @@ export const TrafficLight = memo(function TrafficLight({state: {redOn, yellowOn,
     }`,
     [timerColor, speed, fontDigital]);
 
-  return <>
+  return <div style={{display: 'flex', flexDirection: 'column'}}>
     <style>{style}</style>
     <svg width={200} height='auto' viewBox="0 0 424 791">
       <image xlinkHref={imgBackground} width={424} height={791}/>
 
-      <image className={redOn    ? "" : "hidden"} xlinkHref={imgRedOverlay}    width={424} height={791}/>
-      <image className={yellowOn ? "" : "hidden"} xlinkHref={imgYellowOverlay} width={424} height={791}/>
-      <image className={greenOn  ? "" : "hidden"} xlinkHref={imgGreenOverlay}  width={424} height={791}/>
+      <image className={red    ? "" : "hidden"} xlinkHref={imgRedOverlay}    width={424} height={791}/>
+      <image className={yellow ? "" : "hidden"} xlinkHref={imgYellowOverlay} width={424} height={791}/>
+      <image className={green  ? "" : "hidden"} xlinkHref={imgGreenOverlay}  width={424} height={791}/>
 
       {timerValue >= 0 && <>
         <rect x={300} y={676} width={108} height={84} fill="black" />
         <text x={400} y={750} className="timer" fontFamily="digital-font" fontSize={100} fill={timerColor} textAnchor="end">{timerValue}</text>
       </>}
     </svg>
-    <button onClick={() => raiseUIEvent({name: "policeInterrupt"})}>POLICE INTERRUPT</button>
-  </>;
+    <button style={{flexGrow: 1}} onClick={() => raiseUIEvent({name: "policeInterrupt"})}>POLICE INTERRUPT</button>
+  </div>;
 }, (oldProps, newProps) => {
   return objectsEqual(oldProps, newProps);
 });
@@ -106,21 +106,21 @@ export const TrafficLight = memo(function TrafficLight({state: {redOn, yellowOn,
 const trafficLightPlantSpec: StatechartPlantSpec<TrafficLightState> = {
   ast: trafficLightAbstractSyntax,
   cleanupState: (state: RT_Statechart) => {
-    const redOn = state.mode.has("85");
-    const yellowOn = state.mode.has("87");
-    const greenOn = state.mode.has("89");
-    const timerGreen = state.mode.has("137");
+    const red = state.mode.has(trafficLightAbstractSyntax.label2State.get("red on")!.uid);
+    const yellow = state.mode.has(trafficLightAbstractSyntax.label2State.get("yellow on")!.uid);
+    const green = state.mode.has(trafficLightAbstractSyntax.label2State.get("green on")!.uid);
+    const timerGreen = state.mode.has(trafficLightAbstractSyntax.label2State.get("timer green")!.uid);
     const timerValue = state.environment.get("t", {kind: "state", thing: trafficLightAbstractSyntax.root});
-    return { redOn, yellowOn, greenOn, timerGreen, timerValue };
+    return { red, yellow, green, timerGreen, timerValue };
   },
   render: TrafficLight,
   uiEvents: [
     {kind: "event", event: "policeInterrupt"},
   ],
   signals: [
-    "redOn",
-    "yellowOn",
-    "greenOn",
+    "red",
+    "yellow",
+    "green",
     "timerGreen",
   ],
 }

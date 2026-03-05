@@ -1,7 +1,7 @@
 import { CoupledState, PlantsState } from "../hooks/useSimulator";
 import { DEVSTrace } from "@/devs/trace";
-import { lookupPlant } from "../plants";
 import { Statechart } from "@/statecharts/abstract_syntax";
+import { statebuddyPlants } from "../plants";
 
 export type PropertyTrace = [number, boolean][]; // list of tuples [timestamp, true or false]
 
@@ -15,6 +15,7 @@ export type PreparedTraces = { [name: string]: PropertyTrace };
 
 // Given a coupled DEVS execution trace, turn it into a bunch of signals that our MTL property checker understands.
 export function prepareTraces(ast: Statechart, plantsState: PlantsState, trace: DEVSTrace<CoupledState>): PreparedTraces {  
+  console.log({trace});
   const result = {} as {[key: string]: PropertyTrace};
 
   for (const signal of [
@@ -43,10 +44,10 @@ export function prepareTraces(ast: Statechart, plantsState: PlantsState, trace: 
     for (const [modelId, modelTrace] of Object.entries(item.newState)) {
       const plantInstance = plantsState.plants.find(({id}) => id === modelId);
       if (plantInstance) {
-        const plant = lookupPlant(plantInstance.type);
+        const plant = statebuddyPlants[plantInstance.type];
         if (plant) {
           const modelState = modelTrace.at(-1)!.newState;
-          const cleanedState = plant.cleanupState(modelState); // state as a JSON-like object
+          const cleanedState = plant.plant.cleanupState(modelState); // state as a JSON-like object
           // console.log(item.simtime, cleanedState);
           for (const [key, val] of Object.entries(cleanedState)) {
             appendToSignal(result, `${plantInstance.name}_${key}`, item.simtime, Boolean(val));

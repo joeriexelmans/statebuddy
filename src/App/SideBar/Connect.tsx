@@ -4,7 +4,6 @@ import connectStyles from "./Connect.module.css";
 import { Model2ModelConn } from "@/devs/coupled_devs"
 import { Statechart } from "@/statecharts/abstract_syntax";
 import { PlantsState } from "../hooks/useSimulator";
-import { lookupPlant } from "../plants";
 import traceStyles from "./Trace.module.css";
 import { useMemo, useState } from "react";
 import { WithSetters } from "../makePartialSetter";
@@ -13,6 +12,7 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { DoubleClickButton } from "../Components/DoubleClickButton";
 import { Tooltip } from "../Components/Tooltip";
+import { statebuddyPlants } from "../plants";
 
 type ConnectProps = {
   ast: Statechart,
@@ -61,7 +61,7 @@ function Connections({conns, startIdx, componentNames, actions, bgColor}: {
 export function Connect({ast, plantsState, setPlantsState}: ConnectProps) {
   const [selectedOutput, setSelectedOutput] = useState("-1");
   const [selectedInput, setSelectedInput] = useState("-1");
-  const plants = plantsState.plants.map(({id, type}) => [id, lookupPlant(type)!] as const);
+  const plants = plantsState.plants.map(({id, type}) => [id, statebuddyPlants[type]!] as const);
   const names = Object.fromEntries([
     ['sc', ''],
     ...plantsState.plants.map(({id, name}) => [id, name]),
@@ -70,14 +70,14 @@ export function Connect({ast, plantsState, setPlantsState}: ConnectProps) {
     ...[...ast.outputEvents].map(eventName =>
         ['sc', eventName] as const),
     ...plants.flatMap(([plantId, plant]) =>
-        plant.execution.outputs.map(eventName =>
+        plant.plant.execution.outputs.map(eventName =>
           [plantId, eventName] as const)),
   ];
   const allInputs = [
     ...ast.inputEvents.map(({event}) =>
         ['sc', event] as const),
     ...plants.flatMap(([plantId, plant]) =>
-        plant.execution.inputs.map(eventName =>
+        plant.plant.execution.inputs.map(eventName =>
           [plantId, eventName] as const)),
   ];
   const findMatchingEvent = (selectedIdx: string, selectedArray: (readonly [string, string])[], arrayToSearch: (readonly [string, string])[], currIdx: string) => {

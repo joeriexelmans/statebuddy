@@ -147,7 +147,9 @@ function fattenLine(
 
   const len = Math.hypot(dx, dy);
   if (len === 0) {
-    throw new Error("Line length must be greater than zero");
+    // can't really perform this operation if line length is zero
+    // but we have to return something...
+    return [line.start, line.end, line.end, line.start];
   }
 
   // Unit direction

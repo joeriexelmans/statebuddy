@@ -55,11 +55,6 @@ type MicrowaveState = {
   magnetronRunning: boolean,
   doorOpen: boolean,
   timeDisplay: number,
-
-  // these booleans are true for as long as the respective button is pressed (i.e., mouse button is down)
-  startPressed: boolean,
-  stopPressed: boolean,
-  incTimePressed: boolean,
 }
 
 export const Microwave = memo(function Microwave({state: {bellRinging, magnetronRunning, doorOpen, timeDisplay}, speed, raiseUIEvent}: PlantRenderProps<MicrowaveState>) {
@@ -100,21 +95,21 @@ export const Microwave = memo(function Microwave({state: {bellRinging, magnetron
       <image xlinkHref={imgs[doorOpen][magnetronRunning]} width={520} height={348}/>
 
       <rect className="microwaveButtonHelper" x={START_X0} y={START_Y0} width={BUTTON_WIDTH} height={BUTTON_HEIGHT} 
-        onMouseDown={() => raiseUIEvent({name: "startMouseDown"})}
-        onMouseUp={() => raiseUIEvent({name: "startMouseUp"})}
+        onMouseDown={() => raiseUIEvent({name: "startButton", param: true})}
+        onMouseUp={() => raiseUIEvent({name: "startButton", param: false})}
       />
       <rect className="microwaveButtonHelper" x={STOP_X0} y={STOP_Y0} width={BUTTON_WIDTH} height={BUTTON_HEIGHT} 
-        onMouseDown={() => raiseUIEvent({name: "stopMouseDown"})}
-        onMouseUp={() => raiseUIEvent({name: "stopMouseUp"})}
+        onMouseDown={() => raiseUIEvent({name: "stopButton", param: true})}
+        onMouseUp={() => raiseUIEvent({name: "stopButton", param: false})}
       />
       <rect className="microwaveButtonHelper" x={INCTIME_X0} y={INCTIME_Y0} width={BUTTON_WIDTH} height={BUTTON_HEIGHT} 
-        onMouseDown={() => raiseUIEvent({name: "incTimeMouseDown"})}
-        onMouseUp={() => raiseUIEvent({name: "incTimeMouseUp"})}
+        onMouseDown={() => raiseUIEvent({name: "incTimeButton", param: true})}
+        onMouseUp={() => raiseUIEvent({name: "incTimeButton", param: true})}
       />
       <rect className="microwaveDoorHelper"
         x={DOOR_X0} y={DOOR_Y0} width={DOOR_WIDTH} height={DOOR_HEIGHT}
-        onMouseDown={() => raiseUIEvent({name: "doorMouseDown"})}
-        onMouseUp={() => raiseUIEvent({name: "doorMouseUp"})}
+        onMouseDown={() => raiseUIEvent({name: "doorMouseButton", param: true})}
+        onMouseUp={() => raiseUIEvent({name: "doorMouseButton", param: false})}
       />
 
       <text x={472} y={106} textAnchor="end" fontFamily="digital-font" fontSize={24} fill="lightgreen">{timeDisplay}</text>
@@ -128,33 +123,21 @@ const microwavePlantSpec: StatechartPlantSpec<MicrowaveState> = {
     const bellRinging = state.mode.has(microwaveAbstractSyntax.label2State.get("bell")!.uid);
     const magnetronRunning = state.mode.has(microwaveAbstractSyntax.label2State.get("Magnetron on")!.uid);
     const doorOpen = state.mode.has(microwaveAbstractSyntax.label2State.get("Door opened")!.uid);
-    const startPressed = state.mode.has(microwaveAbstractSyntax.label2State.get("startPressed")!.uid);
-    const stopPressed = state.mode.has(microwaveAbstractSyntax.label2State.get("stopPressed")!.uid);
-    const incTimePressed = state.mode.has(microwaveAbstractSyntax.label2State.get("incTimePressed")!.uid);
     // let startPressed, stopPressed, incTimePressed;
     const timeDisplay = state.environment.get("timeDisplay", {kind: "state", thing: microwaveAbstractSyntax.root});
-    return {bellRinging, magnetronRunning, doorOpen, timeDisplay, startPressed, stopPressed, incTimePressed};
+    return {bellRinging, magnetronRunning, doorOpen, timeDisplay};
   },
   render: Microwave,
   uiEvents: [
-    {kind: "event", event: "doorMouseDown"},
-    {kind: "event", event: "doorMouseUp"},
-    {kind: "event", event: "startMouseDown"},
-    {kind: "event", event: "startMouseUp"},
-    {kind: "event", event: "stopMouseDown"},
-    {kind: "event", event: "stopMouseUp"},
-    {kind: "event", event: "incTimeMouseDown"},
-    {kind: "event", event: "incTimeMouseUp"},
+    {kind: "event", event: "startButton"},
+    {kind: "event", event: "stopButton"},
+    {kind: "event", event: "incTimeButton"},
+    {kind: "event", event: "doorMouseButton"},
   ],
   signals: [
     "bellRinging",
     "magnetronRunning",
     "doorOpen",
-
-    // these booleans are true for as long as the respective button is pressed (i.e., mouse button is down)
-    "startPressed",
-    "stopPressed",
-    "incTimePressed",
   ]
 }
 

@@ -4,7 +4,7 @@ import { WithSetters } from "../makePartialSetter";
 import appStyles from "../App.module.css";
 
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import { plants, UniversalPlantState } from "../plants";
+import { statebuddyPlants, UniversalPlantState } from "../plants";
 import { Plant } from "../Plant/Plant";
 import { Tooltip } from "../Components/Tooltip";
 import { RaisedEvent } from "@/statecharts/runtime_types";
@@ -25,7 +25,7 @@ export function ShowPlants({plantsState, setPlantsState, speed, coupledState, on
           ...ps,
           plants: ps.plants.with(i, {id, name: newName, type})})),
       onDelete: () => setPlantsState(ps => ({...ps, plants: ps.plants.toSpliced(i, 1)})),
-      plant: plants.find(([typeName]) => typeName === type)![1],
+      plant: statebuddyPlants[type]!.plant,
       speed,
       currentState: coupledState && coupledState[id] || null,
       onRaise,

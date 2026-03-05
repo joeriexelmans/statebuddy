@@ -6,8 +6,8 @@ import { useShortcuts } from "@/hooks/useShortcuts";
 import { Statechart } from "@/statecharts/abstract_syntax";
 import { getSimTime, getWallClkDelay, TimeMode } from "@/statecharts/time";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { lookupPlant } from "../plants";
 import { RuntimeError } from "@/statecharts/interpreter";
+import { statebuddyPlants } from "../plants";
 
 // In StateBuddy, currently, the state of our simulation is always a CoupledDEVS state of our statechart model (with a DEVS adapter around it) and a bunch of 'plants'.
 // Perhaps in the future, we could let the user arbitrarily configure this setup (anything on the spectrum from a single Statechart Atomic DEVS to many nested Coupled DEVS ...), but for now, it is what it is.
@@ -69,12 +69,13 @@ export function useSimulator(ast: Statechart|null, plantsState: PlantsState, onS
   const coupledState = currentTraceItem
     && currentTraceItem.newState
     || null;
+  
+  const plants = plantsState.plants.map(({id, type}) => [id, statebuddyPlants[type]!] as const);
 
   const cE = useMemo(() => ast && makeTracedDEVS(makeCoupledDEVS(
     {
       sc: makeTracedDEVS(sc2DEVS(ast)),
-      ...Object.fromEntries(plantsState.plants.map(({id, type: plant}) =>
-        [id, makeTracedDEVS(lookupPlant(plant)!.execution)])),
+      ...Object.fromEntries(plants.map(([id, plant]) => [id, makeTracedDEVS(plant.plant.execution)])),
     }, {
       inputs: [
         // expose all input events
@@ -83,15 +84,23 @@ export function useSimulator(ast: Statechart|null, plantsState: PlantsState, onS
           inputModelName: "sc",
           inputEvent: event,
         })),
+        ...plants.flatMap(([id, plant]) => plant.plant.uiEvents.map(uiEvent => ({
+          coupledInputEvent: uiEvent.event,
+          inputModelName: id,
+          inputEvent: uiEvent.event,
+        }))),
       ],
+      // the user-configurable part:
       model2Model: plantsState.conns,
       outputs: [
-        // expose all output events
-        ...[...ast.outputEvents].map(event => ({
-          outputModelName: "sc",
-          outputEvent: event,
-          coupledOutputEvent: event,
-        })),
+        // we don't need to expose any output events to the coupled DEVS' outputs
+
+        // // expose all output events of the statechart
+        // ...[...ast.outputEvents].map(event => ({
+        //   outputModelName: "sc",
+        //   outputEvent: event,
+        //   coupledOutputEvent: event,
+        // })),
       ],
     } as CoupledDEVSConns,
     ast.inputEvents.map(({event}) => event), // <-- every SC input becomes coupled input
