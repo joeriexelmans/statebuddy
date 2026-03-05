@@ -5,16 +5,26 @@ import CloseIcon from '@mui/icons-material/Close';
 import SwapVertIcon from '@mui/icons-material/SwapVert';
 import { Tooltip } from "../Components/Tooltip";
 
-type FindReplaceProps = {
+// the part of the state that is preserved on app restart
+export type FindReplaceState = {
   findText: string,
   replaceText: string,
-  setFindReplaceText: Dispatch<SetStateAction<[string, string]>>,
+};
+
+export const defaultFindReplaceState = {
+  findText: "",
+  replaceText: "",
+};
+
+type FindReplaceProps = {
+  state: FindReplaceState,
+  setState: Dispatch<SetStateAction<FindReplaceState>>,
   cs: VisualEditorState,
   setCS: Dispatch<(oldState: VisualEditorState) => VisualEditorState>,
   hide: () => void,
 };
 
-export function FindReplace({findText, replaceText, setFindReplaceText, cs, setCS, hide}: FindReplaceProps) {
+export function FindReplace({state: {findText, replaceText}, setState, cs, setCS, hide}: FindReplaceProps) {
   const onReplace = useCallback(() => {
     setCS(cs => {
       return {
@@ -28,7 +38,7 @@ export function FindReplace({findText, replaceText, setFindReplaceText, cs, setC
   }, [findText, replaceText, setCS]);
 
   const onSwap = useCallback(() => {
-    setFindReplaceText(([findText, replaceText]) => [replaceText, findText]);
+    setState(({findText, replaceText}) => ({replaceText: findText, findText: replaceText}));
   }, [findText, replaceText]);
 
   const onSubmit = useCallback((e: FormEvent<HTMLFormElement>) => {
@@ -45,11 +55,11 @@ export function FindReplace({findText, replaceText, setFindReplaceText, cs, setC
       <div style={{flexGrow:1, display: 'flex', flexDirection: 'column'}}>
         <input placeholder="find"
           value={findText}
-          onChange={e  => setFindReplaceText(([_, replaceText]) => [e.target.value, replaceText])} 
+          onChange={e  => setState(s => ({...s, findText: e.target.value}))}
           style={{flexGrow: 1, minWidth: 20}}/>
         <input tabIndex={0} placeholder="replace"
           value={replaceText}
-          onChange={(e => setFindReplaceText(([findText, _]) => [findText, e.target.value]))}
+          onChange={e => setState(s => ({...s, replaceText: e.target.value}))}
           style={{flexGrow: 1, minWidth: 20}}/>
       </div>
       <div style={{flex: '0 0 content'}}>

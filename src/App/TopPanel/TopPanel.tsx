@@ -82,7 +82,7 @@ function toggle(booleanSetter: Dispatch<(state: boolean) => boolean>) {
 }
 
 export const TopPanel = memo(function TopPanel(props: TopPanelProps) {
-  const {trial, trace, time, setTime, onUndo, onRedo, onCopy, onPaste, onRotate, onInit, onClear, onBack, insertMode, setInsertMode, setModal, zoom, setZoom, showKeys, setShowKeys, editHistory, showFindReplace, setShowFindReplace, displayTime, refreshDisplayTime, nextWakeup, modelName, setModelName, originalSize, compressedSize, state, showDebug, setShowDebug, properties, editorState, savedTraces, setProperties, setSavedTraces, setEditorState, startDragging} = props;
+  const {trial, trace, time, setTime, onUndo, onRedo, onCopy, onPaste, onRotate, onInit, onClear, onBack, rightMouseMode: insertMode, setInsertMode, setModal, zoom, setZoom, showKeys, setShowKeys, editHistory, showFindReplace, setShowFindReplace, displayTime, refreshDisplayTime, nextWakeup, modelName, setModelName, originalSize, compressedSize, state, showDebug, setShowDebug, properties, editorState, savedTraces, setProperties, setSavedTraces, setEditorState, startDragging} = props;
 
   const [timescale, setTimescale] = usePersistentState("timescale", 1);
   const config = trace && trace.trace[trace.idx];

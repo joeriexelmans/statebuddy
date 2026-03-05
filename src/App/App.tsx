@@ -17,7 +17,7 @@ import { useSimulator } from "./hooks/useSimulator";
 import { useUrlHashState } from "../hooks/useUrlHashState";
 import { initialEditorState } from "@/statecharts/concrete_syntax";
 import { ModalOverlay } from "./Overlays/ModalOverlay";
-import { FindReplace } from "./BottomPanel/FindReplace";
+import { defaultFindReplaceState, FindReplace, FindReplaceState } from "./BottomPanel/FindReplace";
 import { useCustomMemo } from "@/hooks/useCustomMemo";
 import { defaultPlotState, Plot, PlotState } from "./BottomPanel/Plot";
 import { prepareTraces } from "./SideBar/prepare_trace";
@@ -46,12 +46,12 @@ export type AppState = {
   showKeys: boolean,
   zoom: number,
   showFindReplace: boolean,
-  findText: string,
-  replaceText: string,
   showPlot: boolean,
   showDebug: boolean,
   sidePanelWidth: number,
-} & ToolSelectState & PlotState & SideBarState & BottomPanelState & DebugState;
+  findReplace: FindReplaceState,
+  mouseMap: ToolSelectState,
+} & PlotState & SideBarState & BottomPanelState & DebugState;
 
 // valid URL hashes contain:
 export type UrlState = {
@@ -63,12 +63,11 @@ export const defaultAppState: AppState = {
   showKeys: true,
   zoom: 1,
   showFindReplace: false,
-  findText: "",
-  replaceText: "",
   showPlot: false,
   showDebug: false,
   sidePanelWidth: 400,
-  ...defaultToolSelectState,
+  findReplace: defaultFindReplaceState,
+  mouseMap: defaultToolSelectState,
   ...defaultSideBarState,
   ...defaultPlotState,
   ...defaultBottomPanelState,
@@ -112,7 +111,12 @@ export function App() {
 
   const [appState, setAppState] = useState<AppState>(defaultAppState);
 
-  const editorStuff = useEditor(editHistory?.current || null, setEditHistory, appState);
+  const editorStuff = useEditor(
+    editHistory?.current || null,
+    setEditHistory,
+    appState.mouseMap,
+    appState.zoom,
+  );
 
   useEffect(() => {
     // useful when bookmarking the page: model name is in the title (that's basically the only reason we have a model name)
@@ -186,23 +190,6 @@ export function App() {
   
   const setters = makeAllSetters(setAppState, Object.keys(appState) as (keyof AppState)[]);
 
-  const setFindReplaceText = useCallback((callback: SetStateAction<[string, string]>) => {
-    setAppState(appState => {
-      let findText, replaceText;
-      if (typeof callback === 'function') {
-        [findText, replaceText] = callback([appState.findText, appState.replaceText]);
-      }
-      else {
-        [findText, replaceText] = callback;
-      }
-      return {
-        ...appState,
-        findText,
-        replaceText,
-      }
-    })
-  }, [setAppState]);
-
   const syntaxErrors = parsed && parsed[1] || [];
   const currentRuntimeError = simulator.trace?.runtimeError;
   const runtimeErrors = currentRuntimeError
@@ -251,6 +238,24 @@ export function App() {
         {/* left-to-right: main -> sidebar */}
         <div className={styles.stackHorizontal} style={{flexGrow:1, overflow: "auto"}}>
 
+          {/* Left: sidebar */}
+          <div style={{
+            flex: '0 0 content',
+            overflowY: "auto",
+            overflowX: "auto",
+            flexBasis: appState.sidePanelWidth,
+            maxWidth: '75vw',
+            minWidth: 20,
+
+            // maxWidth: `max(min(${appState.sidePanelWidth}px, 75vw), 100px)`,
+          }}>
+            <div className={styles.stackVertical} style={{height:'100%'}}>
+              <SideBar {...{...appState, refRightSideBar, ast, preparedTraces, ...simulator, ...setters, checkProperty}} />
+            </div>
+          </div>
+
+
+
           {/* top-to-bottom: top bar, editor */}
           <div className={styles.stackVertical} style={{flexGrow:1, overflow: "hidden"}}>
             {/* Top bar */}
@@ -258,24 +263,25 @@ export function App() {
               className={styles.shadowBelow}
               style={{flex: '0 0 content'}}
             >
-              {editHistory && editorState && editorStuff && <TopPanel
-                {...{
-                  ...editorStuff,
-                  setModal,
-                  editHistory,
-                  ...simulator,
-                  ...setters,
-                  ...appState,
-                  editorState,
-                  setEditorState,
-                  displayTime,
-                  refreshDisplayTime,
-                  trial,
-                  originalSize,
-                  compressedSize,
-                  state,
-                }}
-              />}
+              {editHistory && editorState && editorStuff &&
+                <TopPanel
+                  {...{
+                    ...editorStuff,
+                    setModal,
+                    editHistory,
+                    ...simulator,
+                    ...setters,
+                    ...appState,
+                    editorState,
+                    setEditorState,
+                    displayTime,
+                    refreshDisplayTime,
+                    trial,
+                    originalSize,
+                    compressedSize,
+                    state,
+                  }}
+                />}
             </div>
             {/* Editor */}
             <div style={{flexGrow: 1, overflow: "auto"}}>
@@ -289,7 +295,7 @@ export function App() {
                     highlightTransitions,
                     setModal,
                     ...appState,
-                    findText: appState.showFindReplace ? appState.findText : "",
+                    findText: appState.showFindReplace ? appState.findReplace.findText : "",
                     ...editorStuff,
                   }}/>
                 </DebugContext>}
@@ -312,8 +318,8 @@ export function App() {
             {editorState && appState.showFindReplace &&
               <BelowEditor>
                 <FindReplace
-                  {...appState}
-                  setFindReplaceText={setFindReplaceText}
+                  state={appState.findReplace}
+                  setState={setters.setFindReplace}
                   cs={editorState}
                   setCS={setEditorState}
                   hide={() => setters.setShowFindReplace(false)}/>

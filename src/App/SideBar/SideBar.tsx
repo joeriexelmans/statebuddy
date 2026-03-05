@@ -338,7 +338,7 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
               <Tooltip tooltip='duration' align='left'>
                 <div style={{display:'inline-block', width: 22, fontSize: 9, textAlign: 'center'}}>{(Math.floor(savedTrace[1].lastSimTime/1000))}s</div>
               </Tooltip>
-              <Tooltip tooltip='number of steps' align='left'>
+              <Tooltip tooltip='number of input events' align='left'>
                 <div style={{display:'inline-block', width: 22, fontSize: 9, textAlign: 'center'}}>({savedTrace[1].trace.length})</div>
               </Tooltip>
               <Tooltip tooltip='does not have to be unique, can be empty...' align='left' fullWidth={true} showWhen='focus'>

@@ -1,10 +1,10 @@
-import { ChangeEvent, Dispatch, ReactElement, SetStateAction, useState } from "react"
+import { ChangeEvent, Dispatch, ReactElement, SetStateAction, useRef, useState } from "react"
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import CloseIcon from '@mui/icons-material/Close';
 import HelpIcon from '@mui/icons-material/Help';
 import CheckIcon from '@mui/icons-material/Check';
 import { detectConnections } from "@/statecharts/detect_connections";
-import { VisualEditor, VisualEditorState } from "../VisualEditor/VisualEditor";
+import { Selection, VisualEditor, VisualEditorState } from "../VisualEditor/VisualEditor";
 import { Tooltip } from "../Components/Tooltip";
 import { count } from "@/util/util";
 import { prettyNumber } from "@/util/pretty";
@@ -12,6 +12,7 @@ import styles from "../App.module.css";
 import { buf2base64, deflateBuffer, str2buf } from "@/compression/deflate";
 import { useShortcuts } from "@/hooks/useShortcuts";
 import { SavedTraces } from "../SideBar/SideBar";
+import { ToolSelectState } from "../TopPanel/ToolSelect";
 
 // The "file open"-dialog is a bit hacked together, but hopefully usable at the moment.
 // Properties and traces are reusable for models that have the same plant.
@@ -107,27 +108,42 @@ function Traces({traces, toImport, setToImport}: {traces: SavedTraces, toImport:
             onChange={e => setToImport(toImport => toImport.with(j, e.target.checked))}
           />
           {name !== "" && name || "(untitled)"}
-          &nbsp;<div style={{display: 'inline-block', color: 'var(--inactive-fg-color)'}}>({trace.length} events)</div>
+          &nbsp;<div style={{display: 'inline-block', color: 'var(--inactive-fg-color)'}}>({trace.trace.length} events)</div>
         </label>
       </div>)}
     </ul>
   </div>;
 }
 
+const disableMouse: ToolSelectState = {
+  leftMouseMode: "nothing",
+  middleMouseMode: "nothing",
+  rightMouseMode: "nothing",
+}
+
 function ModelPreview({concreteSyntax}: {concreteSyntax: VisualEditorState}) {
+  const refSVG = useRef(null);
   return <div style={{width: 192, overflow: "auto", height: 120, display: 'inline-block', verticalAlign: 'top'}}>
     <div style={{pointerEvents: 'none'}}>
       <VisualEditor state={concreteSyntax}
         commitState={() => {}}
-        replaceState={() => {}}
         conns={detectConnections(concreteSyntax)}
         findText=""
         highlightActive={new Set()}
         highlightTransitions={[]}
         setModal={() => {}}
         zoom={0.1}
-        insertMode="and"
         syntaxErrors={[]}
+        mouseMap={disableMouse}
+        onCopy={() => {}}
+        onPaste={() => {}}
+        onCut={() => {}}
+        deleteSelection={() => {}}
+        dragging={false}
+        onMouseDown={() => {}}
+        refSVG={refSVG}
+        renderSelection={new Selection()}
+        selectingState={null}
         />
     </div>
   </div>;

@@ -7,7 +7,7 @@ import { useShortcuts } from "@/hooks/useShortcuts";
 import { Tooltip } from "../Components/Tooltip";
 import { TwoStateButton } from "../Components/TwoStateButton";
 import HighlightAltSharpIcon from '@mui/icons-material/HighlightAltSharp';
-import { Setters } from "../makePartialSetter";
+import { makeAllSetters, makePartialSetter, Setters, WithSetters } from "../makePartialSetter";
 import { MouseIcon } from "./MouseIcon";
 
 export type ToolMode = "select" | "and" | "or" | "pseudo" | "shallow" | "deep" | "transition" | "text" | "nothing";
@@ -26,7 +26,7 @@ const insertModes: [ToolMode, string, ReactElement, ReactElement][] = [
 export type ToolSelectState = {
   leftMouseMode: ToolMode,   // <-- the tool that is activated by left mouse button
   middleMouseMode: ToolMode, // <-- the tool that is activated by middle mouse button
-  insertMode: ToolMode,      // <-- the tool that is activated by right mouse button (should be renamed to 'rightMouseMode' but that would break compatibility with existing StateBuddy models)
+  rightMouseMode: ToolMode,      // <-- the tool that is activated by right mouse button
 };
 
 export type ToolSelectSetters = Setters<ToolSelectState>;
@@ -34,17 +34,26 @@ export type ToolSelectSetters = Setters<ToolSelectState>;
 export const defaultToolSelectState: ToolSelectState = {
   leftMouseMode: 'select',
   middleMouseMode: 'nothing',
-  insertMode: 'and',
+  rightMouseMode: 'and',
 };
 
-export const ToolSelect = memo(function InsertModes({showKeys, insertMode, setInsertMode, leftMouseMode, setLeftMouseMode, middleMouseMode, setMiddleMouseMode}: {showKeys: boolean} & ToolSelectState & ToolSelectSetters) {
+export type ToolSelectProps = WithSetters<{
+  mouseMap: ToolSelectState,
+}> & {
+  showKeys: boolean,
+}
+
+export const ToolSelect = memo(function ToolSelect({mouseMap, setMouseMap, showKeys}: ToolSelectProps) {
+  const {leftMouseMode, middleMouseMode, rightMouseMode} = mouseMap;
+  const {setLeftMouseMode, setMiddleMouseMode, setRightMouseMode} = makeAllSetters(setMouseMap, Object.keys(mouseMap) as (keyof ToolSelectState)[]);
+
   useShortcuts([
-    {keys: ["a"], action: () => setInsertMode("and")},
-    {keys: ["o"], action: () => setInsertMode("or")},
-    {keys: ["p"], action: () => setInsertMode("pseudo")},
-    {keys: ["t"], action: () => setInsertMode("transition")},
-    {keys: ["x"], action: () => setInsertMode("text")},
-    {keys: ["h"], action: () => setInsertMode(mode => mode === "shallow" ? "deep" : "shallow")},
+    {keys: ["a"], action: () => setRightMouseMode("and")},
+    {keys: ["o"], action: () => setRightMouseMode("or")},
+    {keys: ["p"], action: () => setRightMouseMode("pseudo")},
+    {keys: ["t"], action: () => setRightMouseMode("transition")},
+    {keys: ["x"], action: () => setRightMouseMode("text")},
+    {keys: ["h"], action: () => setRightMouseMode(mode => mode === "shallow" ? "deep" : "shallow")},
   ]);
 
   const KeyInfo = showKeys ? KeyInfoVisible : KeyInfoHidden;
@@ -57,27 +66,31 @@ export const ToolSelect = memo(function InsertModes({showKeys, insertMode, setIn
       if (middleMouseMode === m) {
         mappedTo.push("middle");
       }
-      if (insertMode === m) {
+      if (rightMouseMode === m) {
         mappedTo.push("right");
       }
       const extraToolTip = mappedTo.length > 0 ? `\nmapped to: ${mappedTo.join('+')} mouse button` : "";
       return <KeyInfo key={m} keyInfo={keyInfo}>
         <Tooltip tooltip={hint + extraToolTip}>
           <TwoStateButton
-            active={insertMode===m || leftMouseMode===m || middleMouseMode === m}
+            active={rightMouseMode===m || leftMouseMode===m || middleMouseMode === m}
             onMouseUp={e => {
               if (e.button === 0)
                 setLeftMouseMode(oldMode => oldMode === m ? "nothing" : m);
               else if (e.button === 1)
                 setMiddleMouseMode(oldMode => oldMode === m ? "nothing" : m);
               else if (e.button === 2)
-                setInsertMode(oldMode => oldMode === m ? "nothing" : m);
+                setRightMouseMode(oldMode => oldMode === m ? "nothing" : m);
             }}
             onContextMenu={e => {e.preventDefault()}}
           >
             {buttonTxt}
             <div style={{position:'absolute', bottom: -12, right: -6, fontSize: 16, zIndex: 1}}>
-              <MouseIcon left={leftMouseMode === m}  right={insertMode === m} middle={middleMouseMode === m}/>
+              <MouseIcon
+                left={leftMouseMode === m}
+                middle={middleMouseMode === m}
+                right={rightMouseMode === m}
+              />
             </div>
           </TwoStateButton>
         </Tooltip>

@@ -44,6 +44,16 @@ Performance
 
 TODO
 
+- before release v2:
+    - include MQTT-over-websocket support
+    - port microwave and traffic light
+    - fix regressions:
+        - auto-scroll broken
+
+    - execution trace React component:
+        - ability to select any item (don't auto-forward on zero-duration timeouts)
+        - record every RTC step if there are multiple
+
 - bugs
     (*) editing SC <-> Plant connections at runtime doesn't seem to work
     (*) runtime errors coming from plant are mistakenly shown as runtime errors on statechart

@@ -69,7 +69,7 @@ export function sc2DEVS(ast: Statechart): DEVSComponent<Statechart2DEVSState> {
         outputQueue: [], // <-- we immediately output our output events
       }];
     },
-    // Small mismatch here: A Statechart will only handle one input event at a time, but DEVS supports a bag of inputs. We just handle all the inputs sequentially (one RTC step per input event).
+    // Small mismatch here: A Statechart will only handle one input event at a time, but DEVS supports a bag of inputs. We just handle all the inputs sequentially (one RTC step per input event). So an extTransition can actually consist of more than one RTC step.
     extTransition: (simtime: number, c: Statechart2DEVSState, bagOfInputs: RaisedEvent[]) => {
       const [microsteps, tracer] = newTracer();
       let bigstep = c.bigstep as BigStep;

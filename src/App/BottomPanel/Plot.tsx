@@ -2,8 +2,6 @@ import plotStyles from "./Plot.module.css";
 import { SVGAttributes, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Setters } from "../makePartialSetter";
 import { PreparedTraces } from "../SideBar/prepare_trace";
-import { Tooltip } from "../Components/Tooltip";
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 
 export type PlotState = {
   visiblePlots: {[name: string]: boolean},
@@ -130,7 +128,7 @@ export function Plot({traces, displayTime, endOfTime, nextWakeup, visiblePlots, 
 
   return <>
     {atLeastOnePlot &&
-      <svg style={{height: height+18}} ref={refSVG} viewBox={`0 0 ${width} ${height+18}`} {...rest}>
+      <svg style={{height: height+18, backgroundColor: 'var(--background-color)'}} ref={refSVG} viewBox={`0 0 ${width} ${height+18}`} {...rest}>
         <line x1={currentTimeSvgX} x2={currentTimeSvgX} y1={0} y2={height+4} stroke="grey" strokeWidth={6} />
         {xAxis}
         {paths}

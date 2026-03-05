@@ -3,7 +3,7 @@ import { addV2D, area, isEntirelyWithin, normalizeRect, Rect2D, roundLine2D, rou
 import { getBBoxInSvgCoords } from "@/util/svg_helper";
 import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useState } from "react";
 import { MIN_ROUNTANGLE_SIZE } from "../../parameters";
-import { ToolMode } from "../../TopPanel/ToolSelect";
+import { ToolMode, ToolSelectState } from "../../TopPanel/ToolSelect";
 import { Selecting, SelectingState } from "../Selection";
 import { Parts, Selection, VisualEditorState } from "../VisualEditor";
 import { useShortcuts } from "@/hooks/useShortcuts";
@@ -111,9 +111,7 @@ function drag(state: VisualEditorState, pointerDelta: Vec2D) {
 export function useMouse(
   dragging: Vec2D|null, setDragging: Dispatch<SetStateAction<Vec2D|null>>,
   selectingState: SelectingState, setSelectingState: Dispatch<SetStateAction<SelectingState>>,
-  leftMouseMode: ToolMode,
-  middleMouseMode: ToolMode,
-  insertMode: ToolMode,
+  {leftMouseMode, middleMouseMode, rightMouseMode}: ToolSelectState,
   zoom: number,
   refSVG: {current: SVGSVGElement|null},
   selection: Selection,
@@ -290,9 +288,9 @@ export function useMouse(
       modeToAction(middleMouseMode, e);
     }
     else if (e.button === 2) {
-      modeToAction(insertMode, e);
+      modeToAction(rightMouseMode, e);
     }
-  }, [insertMode, leftMouseMode, modeToAction]);
+  }, [rightMouseMode, leftMouseMode, modeToAction]);
 
   const [cursorPos, setCursorPos] = useState<Vec2D>({x:0,y:0});
 

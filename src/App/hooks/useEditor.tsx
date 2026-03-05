@@ -10,7 +10,12 @@ import { mergeSelections, useMouse } from "../VisualEditor/hooks/useMouse";
 import { Selecting, SelectingState } from "../VisualEditor/Selection";
 import { ToolSelectState } from "../TopPanel/ToolSelect";
 
-export function useEditor(state: VisualEditorState|null, setEditHistory: Dispatch<SetStateAction<EditHistory|null>>, {leftMouseMode, middleMouseMode, insertMode, zoom}: ToolSelectState & {zoom: number}) {
+export function useEditor(
+  state: VisualEditorState|null,
+  setEditHistory: Dispatch<SetStateAction<EditHistory|null>>,
+  mouseMap: ToolSelectState,
+  zoom: number,
+) {
   const {appName} = useTrial();
   useEffect(() => {
     console.info(`Welcome to ${appName}!`);
@@ -153,7 +158,7 @@ export function useEditor(state: VisualEditorState|null, setEditHistory: Dispatc
   const {onMouseDown, newSelection, cursorPos} = useMouse(
     dragging, setDragging,
     selectingState, setSelectingState,
-    leftMouseMode, middleMouseMode, insertMode,
+    mouseMap,
     zoom, refSVG, stateOrDefaultState.selection,
     commitState, replaceState);
 

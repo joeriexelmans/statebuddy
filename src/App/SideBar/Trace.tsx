@@ -59,13 +59,15 @@ type TraceProps = WithSetters<{
 
 // An 'output step' is when a Statechart performs an intTransition immediately after handling an input event (extTransition), with the purpose of only outputting some events.
 // If a Statechart makes an output step, we render that step slightly differently (we hide the timer icon), so it becomes a bit clearer that in the world of Statecharts, the output step was caused by (or even stronger: is part of) the previous step.
+// This heuristic (hopefully) works for our Statechart and also for plants that are implemented as a Statechart.
 function isOutputStepHeuristic(trace: DEVSTrace<Statechart2DEVSState>) {
   const itemState = trace.at(-1)!;
   const prevItemState = trace.at(-2);
-  const prevScheduledOutputs = prevItemState?.newState.outputQueue;
+  const prevScheduledOutputs = prevItemState?.newState.outputQueue; // <-- could also be undefined if newState does not have property 'outputQueue'...
   const curOutputs = itemState.kind === "intTransition" && itemState.outputEvents;
   const isOutputStep = jsonDeepEqual(prevScheduledOutputs, curOutputs) // the scheduled outputs of previous SC step are equal to the current outputs
-    && prevItemState?.simtime === itemState.simtime; // time didn't change
+    && prevItemState?.simtime === itemState.simtime // <-- time didn't change
+    && itemState.newState.outputQueue?.length === 0; // <-- our current output queue is empty (because we outputted all of our outputs)
   return isOutputStep;
 }
 

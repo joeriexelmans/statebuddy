@@ -1,25 +1,24 @@
-import { Dispatch, memo, MouseEvent, MouseEventHandler, ReactElement, RefObject, SetStateAction, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { Dispatch, memo, MouseEventHandler, ReactElement, RefObject, SetStateAction, useCallback, useContext, useEffect } from "react";
 
 import { Mode } from "@/statecharts/runtime_types";
 import { arraysEqual, mapsEqual, objectsEqual, setsEqual } from "@/util/util";
 import { ArrowPart, ConcreteSyntax, Diamond, RectSide, Rountangle, Text } from "../../statecharts/concrete_syntax";
 import { Connections } from "../../statecharts/detect_connections";
 import { TraceableError } from "../../statecharts/parser";
-import { ArcDirection, arcDirection, Vec2D } from "../../util/geometry";
-import { ToolMode, ToolSelectState } from "../TopPanel/ToolSelect";
+import { ArcDirection, arcDirection } from "../../util/geometry";
+import { ToolSelectState } from "../TopPanel/ToolSelect";
+import { EDITOR_HEIGHT, EDITOR_WIDTH } from "../parameters";
 import { ArrowSVG } from "./ArrowSVG";
 import { DiamondSVG } from "./DiamondSVG";
+import { Grid } from "./Grid";
 import { HistorySVG } from "./HistorySVG";
 import { RountangleSVG } from "./RountangleSVG";
-import { TextSVG } from "./TextSVG";
-import { CopyPasteCallbacks, useCopyPaste } from "./hooks/useCopyPaste";
-import { mergeSelections, useMouse } from "./hooks/useMouse";
-import { Grid } from "./Grid";
-import { DebugContext } from "./context/DebugContext";
-import { EDITOR_HEIGHT, EDITOR_WIDTH } from "../parameters";
-import styles from "./VisualEditor.module.css";
-import "./VisualEditor.css";
 import { Selecting, SelectingState } from "./Selection";
+import { TextSVG } from "./TextSVG";
+import "./VisualEditor.css";
+import styles from "./VisualEditor.module.css";
+import { DebugContext } from "./context/DebugContext";
+import { CopyPasteCallbacks } from "./hooks/useCopyPaste";
 
 export type VisualEditorState = ConcreteSyntax & {
   nextID: number;
@@ -72,7 +71,8 @@ type VisualEditorProps = {
   selectingState: SelectingState;
   dragging: boolean;
   onMouseDown: MouseEventHandler<SVGSVGElement>;
-} & ToolSelectState & CopyPasteCallbacks;
+  mouseMap: ToolSelectState;
+} & CopyPasteCallbacks;
 
 const viewBox = `0 0 ${EDITOR_WIDTH} ${EDITOR_HEIGHT}`;
 
@@ -172,7 +172,6 @@ export const VisualEditor = memo(function VisualEditor({state, commitState, conn
   const size = EDITOR_WIDTH*zoom;
 
   const debugContext = useContext(DebugContext);
-
 
   return <svg width={size} height={size}
       className={styles.svgCanvas
