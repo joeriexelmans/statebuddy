@@ -85,7 +85,11 @@ export function Trace({trace, setTrace, setTime, ast, showMicroSteps, setShowMic
           console.log({ratio: entry.intersectionRatio});
           if (true) {
             // el.scrollIntoView({block: "end", behavior: "smooth"});
-            el.scrollIntoView({block: "nearest", behavior: "smooth"});
+            el.scrollIntoView({
+              block: "nearest",
+              behavior: "smooth",
+              container: "nearest", // <-- only scroll the innermost scrollable view
+            });
           }
           obs.disconnect();
         }).observe(el);
