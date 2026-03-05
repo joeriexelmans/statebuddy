@@ -79,9 +79,18 @@ export function Trace({trace, setTrace, setTime, ast, showMicroSteps, setShowMic
   useEffect(() => {
     // hack: give ourselves some time to update the DOM before scrolling the possibly new element into view:
     const timeout = setTimeout(() => {
-      document.getElementById(`traceItem-${trace.idx}`)?.scrollIntoView({block: "end", behavior: "smooth"});
+      const el = document.querySelector(`#traceItem-${trace.idx}`);
+      if (el) {
+        new IntersectionObserver(([entry], obs) => {
+          console.log({ratio: entry.intersectionRatio});
+          if (true) {
+            // el.scrollIntoView({block: "end", behavior: "smooth"});
+            el.scrollIntoView({block: "nearest", behavior: "smooth"});
+          }
+          obs.disconnect();
+        }).observe(el);
+      }
     }, 50);
-
     return () => {
       clearTimeout(timeout);
     }
