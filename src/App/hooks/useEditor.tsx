@@ -155,7 +155,7 @@ export function useEditor(
   // even though the VisualEditor component is not rendered unless we have a valid application state (which we don't while we are still loading the state from the URL asynchronously), hooks cannot be called conditionally, so we need *some* state to pass to them.
   const stateOrDefaultState = state || emptyEditorState;
 
-  const {onMouseDown, newSelection, cursorPos} = useMouse(
+  const {onMouseDown,  newSelection, cursorPos} = useMouse(
     dragging, setDragging,
     selectingState, setSelectingState,
     mouseMap,

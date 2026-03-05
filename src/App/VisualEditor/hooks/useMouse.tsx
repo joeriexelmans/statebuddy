@@ -4,7 +4,7 @@ import { getBBoxInSvgCoords } from "@/util/svg_helper";
 import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useState } from "react";
 import { MIN_ROUNTANGLE_SIZE } from "../../parameters";
 import { ToolMode, ToolSelectState } from "../../TopPanel/ToolSelect";
-import { Selecting, SelectingState } from "../Selection";
+import { SelectingState } from "../Selection";
 import { Parts, Selection, VisualEditorState } from "../VisualEditor";
 import { useShortcuts } from "@/hooks/useShortcuts";
 import styles from "../VisualEditor.module.css";
@@ -269,13 +269,18 @@ export function useMouse(
   }, [getCurrentPointer, commitState]);
 
   const modeToAction = (mode: ToolMode, e: React.MouseEvent<SVGSVGElement, MouseEvent>) => {
+    console.log(e);
     if (mode === "nothing") {
       return;
     }
     else if (mode === "select") {
+      e.preventDefault();
+      e.stopPropagation();
       startSelect(e);
     }
     else {
+      e.preventDefault();
+      e.stopPropagation();
       startInsert(e, mode);
     }
   }
@@ -400,7 +405,7 @@ export function useMouse(
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseup", onMouseUp);
     };
-  }, [selectingState, dragging]);
+  }, [onMouseUp, onMouseMove]);
 
   return {onMouseDown, newSelection, dragging, setDragging, cursorPos};
 }

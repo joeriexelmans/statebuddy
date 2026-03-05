@@ -177,8 +177,13 @@ export const VisualEditor = memo(function VisualEditor({state, commitState, conn
       className={styles.svgCanvas
         + ' ' + (highlightActive.has("root") ? styles.active : "")
         + ' ' + (dragging ? styles.dragging : "")}
-      onMouseDown={onMouseDown}
-      onContextMenu={e => e.preventDefault()}
+
+      // Prevent onMouseDown from firing twice upon right click:
+      onMouseDown={e => e.button !== 2 && onMouseDown(e)}
+
+      // We prefer to handle right click with onContextMenu, because then we can cancel the context menu if the right mouse button is mapped to a tool:
+      onContextMenu={onMouseDown}
+      
       ref={refSVG}
       onCopy={onCopy}
       onPaste={onPaste}

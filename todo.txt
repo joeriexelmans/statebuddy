@@ -49,6 +49,7 @@ TODO
     - port microwave and traffic light
     - fix regressions:
         - auto-scroll broken
+        - highlight search results broken
 
     - execution trace React component:
         - ability to select any item (don't auto-forward on zero-duration timeouts)

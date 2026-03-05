@@ -343,10 +343,13 @@ export function App() {
               cursor: 'col-resize',
             }}
             onMouseDown={e => {
-              setResizing(true);
-              e.preventDefault();
-              e.stopPropagation();
-            }}></div>
+              if (e.button === 0) {
+                setResizing(true);
+                e.preventDefault();
+                e.stopPropagation();
+              }
+            }}
+            />
           </div>
 
           {/* Right: sidebar */}
