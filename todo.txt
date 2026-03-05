@@ -50,13 +50,14 @@ TODO
     - fix regressions:
         - highlight search results broken
         - mouseup event sometimes missed in VisualEditor
+        - catch and display runtime errors in trace
 
     - nice to haves:
         - Pattern Matching event parameters, e.g.,:
             startButton(true)
           instead of:
             startButton(x) [x]
-
+    
 - bugs
     (*) editing SC <-> Plant connections at runtime doesn't seem to work
     (*) runtime errors coming from plant are mistakenly shown as runtime errors on statechart
