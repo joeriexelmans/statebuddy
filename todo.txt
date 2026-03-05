@@ -51,10 +51,17 @@ TODO
         - auto-scroll broken
         - highlight search results broken
         - mouseup event sometimes missed in VisualEditor
+        - 
 
     - execution trace React component:
         - ability to select any item (don't auto-forward on zero-duration timeouts)
         - record every RTC step if there are multiple
+
+    - nice to haves:
+        - Pattern Matching event parameters, e.g.,:
+            startButton(true)
+          instead of:
+            startButton(x) [x]
 
 - bugs
     (*) editing SC <-> Plant connections at runtime doesn't seem to work

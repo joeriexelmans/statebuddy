@@ -15,7 +15,6 @@ export type PreparedTraces = { [name: string]: PropertyTrace };
 
 // Given a coupled DEVS execution trace, turn it into a bunch of signals that our MTL property checker understands.
 export function prepareTraces(ast: Statechart, plantsState: PlantsState, trace: DEVSTrace<CoupledState>): PreparedTraces {  
-  console.log({trace});
   const result = {} as {[key: string]: PropertyTrace};
 
   for (const signal of [

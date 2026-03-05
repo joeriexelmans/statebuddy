@@ -407,7 +407,7 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
         }}>
           <div ref={refRightSideBar}>
             {ast && trace &&
-              <Trace {...{trace, setTrace, setTime, ast, showMicroSteps, setShowMicroSteps, showTransitions, showPlantTrace,
+              <Trace {...{trace, setTrace, setTime, ast, showMicroSteps, setShowMicroSteps, showTransitions, showPlantTrace, autoScroll,
                 plantsState,
                 propertyTrace: propertyResults && propertyResults[activeProperty] && propertyResults[activeProperty][0] || []}}
               />

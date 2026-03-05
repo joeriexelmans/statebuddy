@@ -5,7 +5,7 @@ import { Statechart2DEVSState } from "@/devs/sc2devs";
 import { DEVSTrace, DEVSTraceItem, DEVSTraceItemExtTransition, DEVSTraceItemInit, DEVSTraceItemIntTransition } from "@/devs/trace";
 import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
 import FlareIcon from '@mui/icons-material/Flare';
-import { Dispatch, PropsWithChildren, SetStateAction } from "react";
+import { Dispatch, PropsWithChildren, SetStateAction, useEffect } from "react";
 import { Statechart, stateDescription, Transition } from "../../statecharts/abstract_syntax";
 import { TimeMode } from "../../statecharts/time";
 import { formatTime, jsonDeepEqual, memoizeOne } from "../../util/util";
@@ -52,6 +52,7 @@ type TraceProps = WithSetters<{
   // // just some switches
   showTransitions: boolean,
   showPlantTrace: boolean,
+  autoScroll: boolean,
 
   // result of checking a property is a trace of booleans which we display in the trace
   propertyTrace: PropertyTrace | null,
@@ -74,8 +75,19 @@ function isOutputStepHeuristic(trace: DEVSTrace<Statechart2DEVSState>) {
 
 // Things are a bit funny here. We want to render the execution history of our Statechart, but we have a Coupled DEVS trace containing all the steps made by both the Statechart and the plant(s). We offer the user to hide steps made by the plant(s).
 export function Trace({trace, setTrace, setTime, ast, showMicroSteps, setShowMicroSteps, showTransitions, showPlantTrace, propertyTrace, plantsState}: TraceProps) {
+
+  useEffect(() => {
+    // hack: give ourselves some time to update the DOM before scrolling the possibly new element into view:
+    const timeout = setTimeout(() => {
+      document.getElementById(`traceItem-${trace.idx}`)?.scrollIntoView({block: "end", behavior: "smooth"});
+    }, 50);
+
+    return () => {
+      clearTimeout(timeout);
+    }
+  }, [trace.idx]);
+
   let j=0;
-  console.log({trace});
   return <div>
     {trace.trace.map((item, i) => {
       const prevItem = trace.trace[i-1];
@@ -93,6 +105,7 @@ export function Trace({trace, setTrace, setTime, ast, showMicroSteps, setShowMic
       }
 
       return <div
+          id={`traceItem-${i}`}
           className={styles.traceItem
                     + ' ' + ((trace.idx === i) ? styles.active : "")
                     + ' ' + (isPlantStep ? styles.plantStep : "")}

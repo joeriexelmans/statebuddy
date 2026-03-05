@@ -2,7 +2,7 @@ import styles from "./App.module.css";
 
 import "./App.css";
 
-import { PropsWithChildren, ReactElement, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { PropsWithChildren, ReactElement, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { connectionsEqual, detectConnections, reducedConcreteSyntaxEqual } from "@/statecharts/detect_connections";
 import { parseStatechart } from "../statecharts/parser";
@@ -175,17 +175,18 @@ export function App() {
   // const [_, plant, plantCS] = plants.find(([pn, p]) => pn === plantName)!;
 
   const refRightSideBar = useRef<HTMLDivElement>(null);
-  const scrollDownSidebar = useCallback(() => {
-    if (autoScroll && refRightSideBar.current) {
-      const el = refRightSideBar.current;
-      // hack: we want to scroll to the new element, but we have to wait until it is rendered...
-      setTimeout(() => {
-        el.scrollIntoView({block: "end", behavior: "smooth"});
-      }, 50);
-    }
-  }, [refRightSideBar.current, autoScroll]);
 
-  const simulator = useSimulator(ast, appState.plantsState, scrollDownSidebar);
+  // const scrollDownSidebar = useCallback(() => {
+  //   if (autoScroll && refRightSideBar.current) {
+  //     const el = refRightSideBar.current;
+  //     // hack: we want to scroll to the new element, but we have to wait until it is rendered...
+  //     setTimeout(() => {
+  //       el.scrollIntoView({block: "end", behavior: "smooth"});
+  //     }, 50);
+  //   }
+  // }, [refRightSideBar.current, autoScroll]);
+
+  const simulator = useSimulator(ast, appState.plantsState);
   const {displayTime, refreshDisplayTime} = useDisplayTime(simulator.time);
   
   const setters = makeAllSetters(setAppState, Object.keys(appState) as (keyof AppState)[]);

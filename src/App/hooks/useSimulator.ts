@@ -56,7 +56,7 @@ function infinityIfUndefined(simtime: number | null | undefined) {
   else return simtime;
 }
 
-export function useSimulator(ast: Statechart|null, plantsState: PlantsState, onStep: () => void) {
+export function useSimulator(ast: Statechart|null, plantsState: PlantsState) {
   const [time, setTime] = useState<TimeMode>({kind: "paused", simtime: 0});
 
   // trace is 'null' when there is no ongoing execution
@@ -93,14 +93,13 @@ export function useSimulator(ast: Statechart|null, plantsState: PlantsState, onS
       // the user-configurable part:
       model2Model: plantsState.conns,
       outputs: [
-        // we don't need to expose any output events to the coupled DEVS' outputs
-
-        // // expose all output events of the statechart
-        // ...[...ast.outputEvents].map(event => ({
-        //   outputModelName: "sc",
-        //   outputEvent: event,
-        //   coupledOutputEvent: event,
-        // })),
+        // Expose all output events of the statechart as outputs of the Coupled DEVS
+        // The MTL property checker and the Plot-component will treat these output events as signals.
+        ...[...ast.outputEvents].map(event => ({
+          outputModelName: "sc",
+          outputEvent: event,
+          coupledOutputEvent: event,
+        })),
       ],
     } as CoupledDEVSConns,
     ast.inputEvents.map(({event}) => event), // <-- every SC input becomes coupled input
@@ -118,10 +117,10 @@ export function useSimulator(ast: Statechart|null, plantsState: PlantsState, onS
   const onInit = useCallback(() => {
     if (cE === null) return;
     const trace = cE.initial();
-    setTrace({
+    setTrace(makeImminentTransitions({
       trace,
       idx: 0,
-    });
+    }));
     setTime(time => {
       if (time.kind === "paused") {
         return {...time, simtime: 0};
@@ -130,8 +129,7 @@ export function useSimulator(ast: Statechart|null, plantsState: PlantsState, onS
         return {...time, since: {simtime: 0, wallclktime: performance.now()}};
       }
     });
-    onStep();
-  }, [cE, onStep]);
+  }, [cE]);
 
   const onClear = useCallback(() => {
     setTrace(null);
@@ -150,12 +148,38 @@ export function useSimulator(ast: Statechart|null, plantsState: PlantsState, onS
         trace!.trace.slice(0, trace!.idx + 1) as DEVSTrace<CoupledState>,
         [{name: inputEvent, param}],
       );
-      setTrace({
+      setTrace(makeImminentTransitions({
         trace: newTrace,
         idx: newTrace.length-1, // <-- last (= new) item becomes active
-      });
+      }));
+      // setTrace(({
+      //   trace: newTrace,
+      //   idx: newTrace.length-1, // <-- last (= new) item becomes active
+      // }));
     };
   }, [cE, currentTraceItem, time]);
+
+  const makeImminentTransitions = (trace: StateBuddyTraceState) => {
+    let i=0;
+    while (true) {
+      if (i > 1000) {
+        throw new Error("too many steps - probably an infinite loop :(");
+      }
+      const simtime = trace.trace[trace.idx].simtime;
+      const nextWakeup = cE!.timeAdvance(trace.trace);
+      if (nextWakeup > simtime) {
+        return trace;
+      }
+      else {
+        const [_, newTrace] = cE!.intTransition(trace.trace)
+        trace = {
+          trace: newTrace,
+          idx: trace.idx + 1,
+        }
+      }
+      i++;
+    }
+  };
 
   const makeNextTimedTransition = useCallback(() => {
     if (trace && currentTraceItem !== null && cE !== null) {

@@ -322,42 +322,45 @@ compressed: ${prettyNumber(compressedSize)} bytes (${Math.round(compressedSize/o
       {/* time, next */}
       <Toolbar style={{columnGap:'1em'}}>
         <Tooltip tooltip="current simulated time">
-          <label htmlFor="input-time"><AccessTimeIcon fontSize="small"/></label>
-          <div style={{
-            position: 'absolute',
-            marginTop: -4,
-            marginLeft: 17,
-            height: 4,
-            borderWidth: 0,
-            borderBottomLeftRadius: 4,
-            borderBottomRightRadius: 4,
-            backgroundColor: catchingUp
-              ? 'var(--firing-transition-color)'
-              : 'var(--accent-border-color)',
-            width: Math.min(progress, 1)*56,
-            }}
-            title={catchingUp
-              ? "running behind schedule! (maybe slow down a bit so i can catch up?)"
-              : "are we there yet?"}
-            />
-          <input id="input-time"
-            disabled={!config}
-            value={formattedDisplayTime}
-            readOnly={true}
-            style={{width:56, cursor: 'not-allowed'}}
-            />
+          <label>
+            <AccessTimeIcon fontSize="small"/>
+            <div style={{
+              position: 'absolute',
+              marginTop: -4,
+              marginLeft: 17,
+              height: 4,
+              borderWidth: 0,
+              borderBottomLeftRadius: 4,
+              borderBottomRightRadius: 4,
+              backgroundColor: catchingUp
+                ? 'var(--firing-transition-color)'
+                : 'var(--accent-border-color)',
+              width: Math.min(progress, 1)*56,
+              }}
+              title={catchingUp
+                ? "running behind schedule! (maybe slow down a bit so i can catch up?)"
+                : "are we there yet?"}
+              />
+            <input
+              disabled={!config}
+              value={formattedDisplayTime}
+              readOnly={true}
+              style={{width:56, cursor: 'not-allowed'}}
+              />
+          </label>
         </Tooltip>
 
         <Toolbar>
           <Tooltip tooltip="next timed transition occurs at ...">
-            <label htmlFor="next-timeout"><AccessAlarmIcon fontSize="small"/></label>
-            <input
-              id="next-timeout"
-              disabled={!config}
-              value={formatTime(nextWakeup)}
-              readOnly={true}
-              style={{width:56, cursor: 'not-allowed'}}
-            />
+            <label>
+              <AccessAlarmIcon fontSize="small"/>
+              <input
+                disabled={!config}
+                value={formatTime(nextWakeup)}
+                readOnly={true}
+                style={{width:56, cursor: 'not-allowed'}}
+              />
+            </label>
           </Tooltip>
           <KeyInfo keyInfo={<kbd>Tab</kbd>}>
             <Tooltip tooltip="jump to next timed transition" align="right">
