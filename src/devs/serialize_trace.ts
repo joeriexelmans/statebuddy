@@ -1,10 +1,10 @@
+import { RaisedEvent } from "@/statecharts/runtime_types";
 import { DEVSComponent } from "./devs";
-import { DEVSTrace, makeTracedDEVS } from "./trace";
+import { DEVSTrace } from "./trace";
 
 type ExtTransitionTraceItem = {
   simtime: number;
-  eventName: string;
-  param?: any;
+  bagOfInputs: RaisedEvent[],
 }
 
 // A trace of only extTransitions.
@@ -24,8 +24,7 @@ export function saveExtTransitions<T>(trace: DEVSTrace<T>, lastSimTime: number):
     if (cur.kind === "extTransition") {
       return [...acc, {
         simtime: cur.simtime,
-        eventName: cur.eventName,
-        param: cur.param,
+        bagOfInputs: cur.bagOfInputs,
       } as ExtTransitionTraceItem];
     }
     return acc;
@@ -61,10 +60,7 @@ export function restoreTrace<T>(
     // now, we'll fire all intTransitions that must fire before the next extTransition
     trace = runUntil(tracedDEVS, trace, nextInput.simtime);
     // now we fire the extTransition
-    trace = tracedDEVS.extTransition(nextInput.simtime, trace, {
-      name: nextInput.eventName,
-      param: nextInput.param
-    });
+    trace = tracedDEVS.extTransition(nextInput.simtime, trace, nextInput.bagOfInputs);
   }
   // finally run a bit more because there may still be intTransitions that need to fire
   trace = runUntil(tracedDEVS, trace, extTrace.lastSimTime);

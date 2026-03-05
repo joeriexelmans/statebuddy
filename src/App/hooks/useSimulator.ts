@@ -124,7 +124,7 @@ export function useSimulator(ast: Statechart|null, plantsState: PlantsState, onS
       const newTrace = cE.extTransition(
         simtime,
         trace!.trace.slice(0, trace!.idx + 1) as DEVSTrace<CoupledState>,
-        {name: inputEvent, param},
+        [{name: inputEvent, param}],
       );
       setTrace({
         trace: newTrace,

@@ -1,4 +1,4 @@
-import { NormalEvent, RaisedEvent } from "@/statecharts/runtime_types";
+import { RaisedEvent } from "@/statecharts/runtime_types";
 import { DEVSComponent } from "./devs";
 
 export type Model2ModelConn = {
@@ -35,12 +35,53 @@ export function makeCoupledDEVS<T extends CoupledDEVSState<any>>(
   outputs: string[],
 ): DEVSComponent<T> {
 
-  function makeModelExtTransition(simtime: number, c: T, model: string, e: NormalEvent) {
-    // const newConfig = models[model].extTransition(simtime, c[model], e);
-    // return {
-    //   ...c,
-    //   [model]: newConfig,
-    // };
+  // Route all coupled inputs or component outputs to their input component(s)
+  // The result is a mapping from component to bag of inputs for that component.
+  const routeEvents = (bagOfEvents: RaisedEvent[], getRoutings: (e: RaisedEvent) => {inputModelName: string, inputEvent: string}[]) => {
+    const routedEvents = new Map<string, RaisedEvent[]>; // mapping from component name to bag of inputs for that component
+    for (const e of bagOfEvents) {
+      const routings = getRoutings(e);
+      for (const {inputModelName, inputEvent} of routings) {
+        routedEvents.set(inputModelName, [
+          ...(routedEvents.get(inputModelName) || []),
+          {
+            // kind: "event" as const,
+            name: inputEvent,
+            param: e.param,
+          },
+        ]);
+      }
+    }
+    return routedEvents;
+  }
+
+  const routeInputEvents = (bagOfInputs: RaisedEvent[]) => {
+    return routeEvents(bagOfInputs, (coupledInputEvent => {
+      const routings = conns.inputs.filter(conn => conn.coupledInputEvent === coupledInputEvent.name);
+      // if (routings.length === 0) {
+      //   console.debug(coupledInputEvent.name, 'goes nowhere');
+      // }
+      for (const {inputModelName, inputEvent} of routings) {
+        console.debug(`${coupledInputEvent.name} -> ${inputModelName}.${inputEvent}`);
+      }
+      return routings;
+    }));
+  };
+
+  const routeModel2ModelEvents = (outputModelName: string, bagOfOutputs: RaisedEvent[]) => {
+    return routeEvents(bagOfOutputs, (outputEvent => {
+      const routings = conns.model2Model.filter(conn =>
+        conn.outputModelName === outputModelName
+        && conn.outputEvent === outputEvent.name
+      );
+      // if (routings.length === 0) {
+      //   console.debug(`${outputModelName}.${outputEvent.name} goes nowhere`);
+      // }
+      for (const {inputModelName, inputEvent} of routings) {
+        console.debug(`${outputModelName}.${outputEvent.name} -> ${inputModelName}.${inputEvent}`);
+      }
+      return routings;
+    }));
   }
 
   return {
@@ -51,12 +92,14 @@ export function makeCoupledDEVS<T extends CoupledDEVSState<any>>(
           .map(([modelId, model]) => 
               [modelId, model.initial()])) as T;
     },
+
     timeAdvance: (c) => {
       // timeAdvance is equal to lowest of all timeAdvances
       return Object.entries(models)
         .reduce((acc, [name, {timeAdvance}]) =>
           Math.min(timeAdvance(c[name]), acc), Infinity);
     },
+
     intTransition: (c) => {
       // find earliest internal transition among all models:
       const [earliest, modelId] = Object.entries(models)
@@ -68,61 +111,46 @@ export function makeCoupledDEVS<T extends CoupledDEVSState<any>>(
           return [earliestSoFar, earliestModel];
         }, [Infinity, null] as [number, string | null]);
       if (modelId !== null) {
+        // 1. intTransition ...
         const [outputEvents, newConfig] = models[modelId].intTransition(c[modelId]);
         c = {
           ...c,
           [modelId]: newConfig,
         } as T;
+        // 2. other components can make at most one extTransition ...
+        const routedEvents = routeModel2ModelEvents(modelId, outputEvents);
+        for (const [inputModelName, bagOfInputs] of routedEvents) {
+          // output event goes to another (or the same?) model
+          // -> that model makes an extTransition immediately, as part of the current coupled intTransition.
+          c = {
+            ...c,
+            [inputModelName]: models[inputModelName].extTransition(earliest, c[inputModelName], bagOfInputs),
+          };
+        }
+        // 3. coupled outputs ...
         const coupledOutputs = [] as RaisedEvent[];
         for (const outputEvent of outputEvents) {
-          const routings2Model = conns.model2Model.filter(conn =>
-            conn.outputModelName === modelId && conn.outputEvent === outputEvent.name);
-          for (const {inputModelName, inputEvent} of routings2Model) {
-            // output event goes to another (or the same?) model
-            // -> that model makes an extTransition immediately, as part of the current coupled intTransition.
-            console.debug(`${modelId}.${outputEvent.name} -> ${inputModelName}.${inputEvent}`);
-            const toRaise = {
-                kind: "event" as const,
-                name: inputEvent,
-                param: outputEvent.param,
-            };
-            c = {
-              ...c,
-              [inputModelName]: models[inputModelName].extTransition(earliest, c[inputModelName], toRaise),
-            };
-          }
           const routings2Output = conns.outputs.filter(conn =>
               conn.outputModelName === modelId && conn.outputEvent === outputEvent.name);
           for (const {coupledOutputEvent} of routings2Output) {
-            console.debug(`${modelId}.${outputEvent.name} -> coupled ouput ${coupledOutputEvent}`);
+            console.debug(`${modelId}.${outputEvent.name} -> ${coupledOutputEvent}`);
             coupledOutputs.push({
               name: coupledOutputEvent,
               param: outputEvent.param,
             });
-          }
-          if (routings2Model.length === 0 && routings2Output.length === 0) {
-            console.debug(`${modelId}.${outputEvent.name} goes nowhere`);
           }
         }
         return [coupledOutputs, c];
       }
       throw new Error("cannot make intTransition - timeAdvance is infinity");
     },
-    extTransition: (simtime, c, e) => {
-      const routings = conns.inputs.filter(conn => conn.coupledInputEvent === e.name);
-      if (routings.length === 0) {
-        console.debug('coupled input', e.name, 'goes nowhere');
-      }
-      for (const {inputModelName, inputEvent} of routings) {
-        console.debug('coupled input', e.name, '->', `${inputModelName}.${inputEvent}`);
-        const raisedEvent: NormalEvent = {
-          kind: "event" as const,
-          name: inputEvent,
-          param: e.param,
-        };
+
+    extTransition: (simtime, c, bagOfInputs) => {
+      const routedEvents = routeInputEvents(bagOfInputs);
+      for (const [inputModelName, bagOfInputs] of routedEvents) {
         c = {
           ...c,
-          [inputModelName]: models[inputModelName].extTransition(simtime, c[inputModelName], raisedEvent),
+          [inputModelName]: models[inputModelName].extTransition(simtime, c[inputModelName], bagOfInputs),
         };
       }
       return c;

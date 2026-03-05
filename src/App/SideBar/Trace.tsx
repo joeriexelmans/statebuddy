@@ -1,25 +1,19 @@
-import { Dispatch, memo, PropsWithChildren, SetStateAction, useCallback } from "react";
-import { Statechart, stateDescription, Transition } from "../../statecharts/abstract_syntax";
-import { RaisedEvent, RT_Event } from "../../statecharts/runtime_types";
-import { arraysEqual, formatTime, jsonDeepEqual, memoizeOne } from "../../util/util";
-import { TimeMode, timeTravel } from "../../statecharts/time";
-import { Environment } from "@/statecharts/environment";
-
 import styles from "./Trace.module.css";
 
-import ReplayIcon from '@mui/icons-material/Replay';import BoltIcon from '@mui/icons-material/Bolt';
-import SubdirectoryArrowRightIcon from '@mui/icons-material/SubdirectoryArrowRight';
-import ArrowOutwardIcon from '@mui/icons-material/ArrowOutward';
-import FlareIcon from '@mui/icons-material/Flare';
+import { whoMadeTransition } from "@/devs/coupled_trace";
+import { Statechart2DEVSState } from "@/devs/sc2devs";
+import { DEVSTrace, DEVSTraceItem, DEVSTraceItemExtTransition, DEVSTraceItemInit, DEVSTraceItemIntTransition } from "@/devs/trace";
 import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
-import { Status } from "./Status";
+import FlareIcon from '@mui/icons-material/Flare';
+import { Dispatch, PropsWithChildren, SetStateAction } from "react";
+import { Statechart, stateDescription, Transition } from "../../statecharts/abstract_syntax";
+import { TimeMode } from "../../statecharts/time";
+import { formatTime, jsonDeepEqual, memoizeOne } from "../../util/util";
 import { Tooltip } from "../Components/Tooltip";
 import { CoupledState, PlantsState, StateBuddyTraceState } from "../hooks/useSimulator";
 import { WithSetters } from "../makePartialSetter";
-import { DEVSTrace, DEVSTraceItem, DEVSTraceItemExtTransition, DEVSTraceItemInit, DEVSTraceItemIntTransition } from "@/devs/trace";
 import { ShowOutputEvents } from "./ShowAST";
-import { Statechart2DEVSState } from "@/devs/sc2devs";
-import { whoMadeTransition } from "@/devs/coupled_trace";
+import { Status } from "./Status";
 
 type PropertyTrace = [number, boolean][];
 type PropertyStatus = "pending" | "satisfied" | "violated";
@@ -320,92 +314,92 @@ function DEVSStepCause({item}: {item: DEVSTraceItem<any>}) {
     </div>
   }
   else if (item.kind === "extTransition") {
-    return <div className={styles.inputEvent}>
-      <Tooltip tooltip="input event" align="left">
-        {/* <BoltIcon fontSize="small"/> */}
-        &#8600;
-        {item.eventName}
-        <EventParam param={item.param}/>
-      </Tooltip>
-    </div>;
-  }
-}
-
-
-function Step({item, isOutputStep}: {item: DEVSTraceItem<any>, isOutputStep: boolean}) {
-  const scState = item;
-  if (scState.kind === "init") {
-    return <div className={styles.inputEvent}>
-      <Tooltip tooltip="execution initialized" align="left">
-        <FlareIcon fontSize="small"/>
-      </Tooltip>
-    </div>;
-  }
-  else if (scState.kind === "intTransition") {
-    return <>
-      <div style={{width: 24}}>
-        {!isOutputStep && <div className={styles.inputEvent}>
-          <Tooltip tooltip="timer elapse" align="left">
-            <AccessAlarmIcon fontSize="small"/>
-          </Tooltip>
-          {/* todo: show which timer elapsed? */}
-        </div>}
-      </div>
-      <ShowOutputEvents outputEvents={scState.outputEvents}/>
-    </>;
-  }
-  else if (scState.kind === "extTransition") {
-    return <div className={styles.inputEvent}>
-      <Tooltip tooltip="input event" align="left">
-        {/* <BoltIcon fontSize="small"/> */}
-        &#8600;
-        {scState.eventName}
-        <EventParam param={scState.param}/>
-      </Tooltip>
-    </div>;
-  }
-}
-
-
-
-function TraceItem({item, isOutputStep, isPlantStep, whichPlantsStepped}: {item: DEVSTraceItem<CoupledState>, isOutputStep: boolean, isPlantStep: boolean, whichPlantsStepped: string[]}) {
-  if (isPlantStep) {
-    return <></>;
-  }
-  else {
-    const scState = item.newState.sc.at(-1)!;
-    if (scState.kind === "init") {
-      return <div className={styles.inputEvent}>
-        <Tooltip tooltip="execution initialized" align="left">
-          <FlareIcon fontSize="small"/>
-        </Tooltip>
-      </div>;
-    }
-    else if (scState.kind === "intTransition") {
-      return <>
-        <div style={{width: 24}}>
-          {!isOutputStep && <div className={styles.inputEvent}>
-            <Tooltip tooltip="timer elapse" align="left">
-              <AccessAlarmIcon fontSize="small"/>
-            </Tooltip>
-            {/* todo: show which timer elapsed? */}
-          </div>}
-        </div>
-        <ShowOutputEvents outputEvents={scState.outputEvents}/>
-      </>;
-    }
-    else if (scState.kind === "extTransition") {
-      return <div className={styles.inputEvent}>
+    return item.bagOfInputs.map((e, i) =>
+      <div key={i} className={styles.inputEvent}>
         <Tooltip tooltip="input event" align="left">
-          {/* <BoltIcon fontSize="small"/> */}
-          &#8600;
-          {scState.eventName}
-          <EventParam param={scState.param}/>
-        </Tooltip>
-      </div>;
-    }
+        &#8600;
+        {e.name}
+        <EventParam param={e.param}/>
+      </Tooltip>
+      </div>);
   }
 }
+
+
+// function Step({item, isOutputStep}: {item: DEVSTraceItem<any>, isOutputStep: boolean}) {
+//   const scState = item;
+//   if (scState.kind === "init") {
+//     return <div className={styles.inputEvent}>
+//       <Tooltip tooltip="execution initialized" align="left">
+//         <FlareIcon fontSize="small"/>
+//       </Tooltip>
+//     </div>;
+//   }
+//   else if (scState.kind === "intTransition") {
+//     return <>
+//       <div style={{width: 24}}>
+//         {!isOutputStep && <div className={styles.inputEvent}>
+//           <Tooltip tooltip="timer elapse" align="left">
+//             <AccessAlarmIcon fontSize="small"/>
+//           </Tooltip>
+//           {/* todo: show which timer elapsed? */}
+//         </div>}
+//       </div>
+//       <ShowOutputEvents outputEvents={scState.outputEvents}/>
+//     </>;
+//   }
+//   else if (scState.kind === "extTransition") {
+//     return <div className={styles.inputEvent}>
+//       <Tooltip tooltip="input event" align="left">
+//         {/* <BoltIcon fontSize="small"/> */}
+//         &#8600;
+//         {scState.eventName}
+//         <EventParam param={scState.param}/>
+//       </Tooltip>
+//     </div>;
+//   }
+// }
+
+
+
+// function TraceItem({item, isOutputStep, isPlantStep, whichPlantsStepped}: {item: DEVSTraceItem<CoupledState>, isOutputStep: boolean, isPlantStep: boolean, whichPlantsStepped: string[]}) {
+//   if (isPlantStep) {
+//     return <></>;
+//   }
+//   else {
+//     const scState = item.newState.sc.at(-1)!;
+//     if (scState.kind === "init") {
+//       return <div className={styles.inputEvent}>
+//         <Tooltip tooltip="execution initialized" align="left">
+//           <FlareIcon fontSize="small"/>
+//         </Tooltip>
+//       </div>;
+//     }
+//     else if (scState.kind === "intTransition") {
+//       return <>
+//         <div style={{width: 24}}>
+//           {!isOutputStep && <div className={styles.inputEvent}>
+//             <Tooltip tooltip="timer elapse" align="left">
+//               <AccessAlarmIcon fontSize="small"/>
+//             </Tooltip>
+//             {/* todo: show which timer elapsed? */}
+//           </div>}
+//         </div>
+//         <ShowOutputEvents outputEvents={scState.outputEvents}/>
+//       </>;
+//     }
+//     else if (scState.kind === "extTransition") {
+//       return <div className={styles.inputEvent}>
+//         <Tooltip tooltip="input event" align="left">
+//           {/* <BoltIcon fontSize="small"/> */}
+//           &#8600;
+//           {scState.eventName}
+//           <EventParam param={scState.param}/>
+//         </Tooltip>
+//       </div>;
+//     }
+//   }
+// }
 
 // export function Trace({trace, setTrace, ast, setTime, showPlantTrace, propertyTrace, showMicroSteps}: TraceProps) {
 //   const onMouseDown = useCallback((idx: number, timestamp: number) => {

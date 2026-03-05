@@ -10,8 +10,7 @@ export type DEVSTraceItemInit<T> = {
 export type DEVSTraceItemExtTransition<T> = {
   kind: "extTransition",
   simtime: number,
-  eventName: string,
-  param?: any,
+  bagOfInputs: RaisedEvent[],
   newState: T,
 }
 
@@ -61,16 +60,15 @@ export function makeTracedDEVS<T>(devs: DEVSComponent<T>): DEVSComponent<DEVSTra
         ]
       ];
     },
-    extTransition: (simtime: number, trace: DEVSTrace<T>, e: RaisedEvent) => {
+    extTransition: (simtime: number, trace: DEVSTrace<T>, bagOfInputs: RaisedEvent[]) => {
       const lastState = trace.at(-1)!.newState;
-      const newState = devs.extTransition(simtime, lastState, e);
+      const newState = devs.extTransition(simtime, lastState, bagOfInputs);
       return [
         ...trace,
         {
           kind: "extTransition",
           simtime,
-          eventName: e.name,
-          param: e.param,
+          bagOfInputs,
           newState,
         } as DEVSTraceItem<T>,
       ];

@@ -34,12 +34,11 @@ export function prepareTraces(ast: Statechart, plantsState: PlantsState, trace: 
     }
     // log input events...
     else if (item.kind === "extTransition") {
-      const {eventName, param} = item;
-      appendToSignal(result, `in_${eventName}`, item.simtime, param);
+      for (const {name, param} of item.bagOfInputs) {
+        appendToSignal(result, `in_${name}`, item.simtime, param);
+      }
     }
 
-    
-    
     // log plant state...
     for (const [modelId, modelTrace] of Object.entries(item.newState)) {
       const plantInstance = plantsState.plants.find(({id}) => id === modelId);

@@ -69,13 +69,20 @@ export function sc2DEVS(ast: Statechart): DEVSComponent<Statechart2DEVSState> {
         outputQueue: [], // <-- we immediately output our output events
       }];
     },
-    extTransition: (simtime: number, c: Statechart2DEVSState, e: RaisedEvent) => {
+    // Small mismatch here: A Statechart will only handle one input event at a time, but DEVS supports a bag of inputs. We just handle all the inputs sequentially (one RTC step per input event).
+    extTransition: (simtime: number, c: Statechart2DEVSState, bagOfInputs: RaisedEvent[]) => {
       const [microsteps, tracer] = newTracer();
-      const bigStep = makeBigStep({...c.bigstep, simtime}, {kind: "event", ...e}, ast, tracer);
+      let bigstep = c.bigstep as BigStep;
+      let outputs = c.outputQueue;
+      // execute one big step for each input event:
+      for (const e of bagOfInputs) {
+        bigstep = makeBigStep({...bigstep, simtime}, {kind: "event", ...e}, ast, tracer);
+        // accumulate output events from all big steps
+        outputs = [...outputs, ...bigstep.outputEvents];
+      }
       const result = {
-        bigstep: {...bigStep, microsteps},
-        // append output events to output queue:
-        outputQueue: [...c.outputQueue, ...bigStep.outputEvents],
+        bigstep: {...bigstep, microsteps},
+        outputQueue: outputs,
       };
       return result;
     },
