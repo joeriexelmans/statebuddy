@@ -402,8 +402,7 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
       <div style={{
         flexGrow:1,
         overflow:'auto',
-        minHeight: '50vh',
-        // minHeight: '75%', // <-- allows us to always scroll down the sidebar far enough such that the execution history is enough in view
+        minHeight: '33vh',
         }}>
           <div ref={refRightSideBar}>
             {ast && trace &&

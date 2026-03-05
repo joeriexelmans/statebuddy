@@ -46,16 +46,10 @@ TODO
 
 - before release v2:
     - include MQTT-over-websocket support
-    - port microwave and traffic light
+    - port microwave and traffic light examples
     - fix regressions:
-        - auto-scroll broken
         - highlight search results broken
         - mouseup event sometimes missed in VisualEditor
-        - 
-
-    - execution trace React component:
-        - ability to select any item (don't auto-forward on zero-duration timeouts)
-        - record every RTC step if there are multiple
 
     - nice to haves:
         - Pattern Matching event parameters, e.g.,:
