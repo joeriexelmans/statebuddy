@@ -109,8 +109,10 @@ function drag(state: VisualEditorState, pointerDelta: Vec2D) {
 }
 
 export function useMouse(
-  dragging: Vec2D|null, setDragging: Dispatch<SetStateAction<Vec2D|null>>,
-  selectingState: SelectingState, setSelectingState: Dispatch<SetStateAction<SelectingState>>,
+  dragging: Vec2D|null,
+  setDragging: Dispatch<SetStateAction<Vec2D|null>>,
+  selectingState: SelectingState,
+  setSelectingState: Dispatch<SetStateAction<SelectingState>>,
   {leftMouseMode, middleMouseMode, rightMouseMode}: ToolSelectState,
   zoom: number,
   refSVG: {current: SVGSVGElement|null},
@@ -130,12 +132,11 @@ export function useMouse(
     computeSelection(selectingState, refSVG, zoom),
     [selectingState, refSVG, zoom]);
 
-
   const getCurrentPointer = useCallback((e: {pageX: number, pageY: number}) => {
     const bbox = refSVG.current!.getBoundingClientRect();
     return {
-      x: (e.pageX - bbox.left)/zoom,
-      y: (e.pageY - bbox.top)/zoom,
+      x: (e.pageX - bbox.left) / zoom,
+      y: (e.pageY - bbox.top) / zoom,
     }
   }, [refSVG.current, zoom]);
 

@@ -200,7 +200,7 @@ function CoupledDEVSInitialization({item, status, plantsState, showMicroSteps, s
         <div>{componentName}</div>
         <DEVSStepCause item={componentTraceItem} />
         {componentId === "sc" && <>
-          {showMicroSteps && <MicroSteps item={componentTraceItem}/>}
+          {showMicroSteps && <MicroSteps microsteps={getMicroSteps(componentTraceItem)}/>}
           {showTransitions && <ShowFiredTransitions
             firedTransitions={getFiredTransitions(ast, componentTraceItem)} />}
         </>}
@@ -230,7 +230,7 @@ function CoupledDEVSInternalTransition({item, prevItem, status, showMicroSteps, 
       <div>{lookupName(plantsState, componentMadeIntTransition)}</div>
       {!isOutputStep && <DEVSStepCause item={blessedItem} />}
       <ShowOutputEvents outputEvents={blessedItem.outputEvents} />
-      {showMicroSteps && componentMadeIntTransition === "sc" && <MicroSteps item={blessedItem}/>}
+      {showMicroSteps && componentMadeIntTransition === "sc" && <MicroSteps microsteps={isOutputStep && ["(output from previous step)"] || getMicroSteps(blessedItem)}/>}
       {showTransitions && componentMadeIntTransition === "sc" && <ShowFiredTransitions firedTransitions={getFiredTransitions(ast, blessedItem)}/>}
     </StepColumn>
 
@@ -271,7 +271,7 @@ function DEVSExternalTransition({item, showMicroSteps, showTransitions, ast}: {
 }) {
   return <StepColumn>
     <DEVSStepCause item={item}/>
-    {showMicroSteps && <MicroSteps item={item}/>}
+    {showMicroSteps && <MicroSteps microsteps={getMicroSteps(item)}/>}
     {showTransitions && <StepColumn>
       <ShowFiredTransitions firedTransitions={getFiredTransitions(ast, item)} />
     </StepColumn>}
@@ -513,7 +513,7 @@ function EventParam(props: {param?: any}) {
 //   }
 // });
 
-function MicroSteps({item}: {item: DEVSTraceItem<Statechart2DEVSState>}) {
+function MicroSteps({microsteps}: {microsteps: string[]}) {
   return <div style={{
     paddingLeft: 4,
     paddingRight: 4,
@@ -521,7 +521,11 @@ function MicroSteps({item}: {item: DEVSTraceItem<Statechart2DEVSState>}) {
     backgroundColor: 'var(--statusbar-bg-color)', // <-- just make it stand out a bit
     borderRadius: '4px', // <-- make it look pretty
     marginTop: 4,
-  }}>{item.newState.bigstep.microsteps.map(msg => <div>{msg}</div>)}</div>;
+  }}>{microsteps.map(x => <div>{x}</div>)}</div>;
+}
+
+function getMicroSteps(item: DEVSTraceItem<Statechart2DEVSState>) {
+  return item.newState.bigstep.microsteps;
 }
 
 function ShowFiredTransitions({firedTransitions}: {firedTransitions: Transition[]}) {

@@ -48,6 +48,14 @@ export const defaultPlantsState = {
 
 const ignoreRaise = (_inputEvent: string, _param: any) => {};
 
+function infinityIfUndefined(simtime: number | null | undefined) {
+  // we cannot just return (simtime || Infinity) because simtime === 0 will become Infinity and we don't want that!
+  if (simtime === null || simtime === undefined) {
+    return Infinity;
+  }
+  else return simtime;
+}
+
 export function useSimulator(ast: Statechart|null, plantsState: PlantsState, onStep: () => void) {
   const [time, setTime] = useState<TimeMode>({kind: "paused", simtime: 0});
 
@@ -91,6 +99,13 @@ export function useSimulator(ast: Statechart|null, plantsState: PlantsState, onS
   )),
   [ast, plantsState]);
 
+  // the timeAdvance of the currently selected item in the trace
+  const nextWakeup = infinityIfUndefined(trace && cE?.timeAdvance(trace.trace.slice(0, trace.idx+1) as DEVSTrace<CoupledState>));
+  // the timeAdvance on the last item in the trace
+  const lastWakeup = infinityIfUndefined(trace && cE?.timeAdvance(trace.trace) || Infinity);
+  // the simtime of the last item in the trace
+  const endOfTime = infinityIfUndefined(trace?.trace.at(-1)?.simtime || Infinity);
+
   const onInit = useCallback(() => {
     if (cE === null) return;
     const trace = cE.initial();
@@ -133,48 +148,78 @@ export function useSimulator(ast: Statechart|null, plantsState: PlantsState, onS
     };
   }, [cE, currentTraceItem, time]);
 
+  const makeNextTimedTransition = useCallback(() => {
+    if (trace && currentTraceItem !== null && cE !== null) {
+      if (trace.idx === trace.trace.length-1) {
+        const [_outputEvents, newTrace] = cE.intTransition(trace.trace);
+        setTrace({
+          trace: newTrace,
+          idx: newTrace.length - 1,
+        });
+      }
+      else {
+        // just advance the index
+        // this is safe as long as execution is deterministic
+        setTrace({
+          trace: trace.trace,
+          idx: trace.idx+1,
+        });
+      }
+    }
+  }, [trace, currentTraceItem, cE, setTrace]);
+
+  // Sets the simulated time to exactly match the next timed transition.
+  // Note: this function does not make the next timed transition happen. You need to call `makeNextTimedTransition` for that.
+  const setTimeToNextTimedTransition = useCallback(() => {
+    if (trace && currentTraceItem !== null && cE !== null && nextWakeup !== Infinity) {
+      setTime(time => {
+        if (time.kind === "paused") {
+          return {
+            kind: "paused",
+            simtime: nextWakeup,
+          }
+        }
+        else {
+          return {
+            kind: "realtime",
+            scale: time.scale,
+            since: {
+              simtime: nextWakeup,
+              wallclktime: Math.round(performance.now()),
+            }
+          }
+        }
+      })
+    }
+  }, [nextWakeup, setTime, trace, currentTraceItem, cE]);
+
+  const onSkip = useCallback(() => {
+    setTimeToNextTimedTransition();
+    makeNextTimedTransition();
+  }, [setTimeToNextTimedTransition, makeNextTimedTransition]);
+
   // The following effect is what makes timed transitions happen in Statebuddy:
   // timer elapse events are triggered by a change of the simulated time (possibly as a scheduled JS event loop timeout)
   useEffect(() => {
     let timeout: NodeJS.Timeout | undefined;
     if (trace && currentTraceItem !== null && cE !== null) {
-      // we'll look only at the part of the trace until our currently selected item:
-      const nextTimeout = cE.timeAdvance(trace.trace.slice(0, trace.idx+1) as DEVSTrace<CoupledState>);
-
-      const makeIntTransition = () => {
-        if (trace.idx === trace.trace.length-1) {
-          const [outputEvents, newTrace] = cE.intTransition(trace.trace);
-          setTrace({
-            trace: newTrace,
-            idx: newTrace.length - 1,
-          });
-        }
-        else {
-          // just advance the index
-          // safe as long as execution is deterministic
-          setTrace({
-            ...trace,
-            idx: trace.idx+1,
-          });
-        }
-      }
-
       if (time.kind === "realtime") {
+        const nextTimeout = cE.timeAdvance(trace.trace.slice(0, trace.idx+1) as DEVSTrace<CoupledState>);
         const wallclkDelay = getWallClkDelay(time, nextTimeout, Math.round(performance.now()));
         if (wallclkDelay !== Infinity) {
-          timeout = setTimeout(makeIntTransition, wallclkDelay);
+          timeout = setTimeout(makeNextTimedTransition, wallclkDelay);
         }
       }
-      else if (time.kind === "paused") {
-        if (nextTimeout <= time.simtime) {
-          timeout = setTimeout(makeIntTransition, 0);
-        }
-      }
+      // else if (time.kind === "paused") {
+      //   if (nextTimeout <= time.simtime) {
+      //     // timeout = setTimeout(makeIntTransition, 0);
+      //   }
+      // }
     }
     return () => {
       if (timeout) clearTimeout(timeout);
     }
-  }, [cE, time, currentTraceItem]);
+  }, [cE, time, currentTraceItem, makeNextTimedTransition]);
 
   const onBack = useCallback(() => {
     if (trace !== null && trace.idx > 0) {
@@ -216,17 +261,15 @@ export function useSimulator(ast: Statechart|null, plantsState: PlantsState, onS
   }, [cE]);
 
   // timestamp of next timed transition, in simulated time
-  const nextWakeup = getNextWakeup(currentTraceItem);
-  const lastWakeup = getNextWakeup(trace?.trace.at(-1));
+  // const nextWakeup = getNextWakeup(currentTraceItem);
+  // const lastWakeup = getNextWakeup(trace?.trace.at(-1));
 
-  const endOfTime = trace?.trace.at(-1)?.simtime || Infinity;
-
-  return {trace, setTrace, onInit, onClear, onBack, onRaise, onReplayTrace, time, setTime, nextWakeup, currentTraceItem, coupledState, cE, endOfTime, lastWakeup};
+  return {trace, setTrace, onInit, onClear, onBack, onRaise, onSkip, onReplayTrace, time, setTime, nextWakeup, currentTraceItem, coupledState, cE, endOfTime, lastWakeup};
 }
 
-function getNextWakeup(item: DEVSTraceItem<CoupledState> | null | undefined) {
-  const timers = item?.newState.sc.at(-1)!.newState.bigstep.timers || [];
-  const nextTimedTransition = timers[0];
-  const nextWakeup = nextTimedTransition?.[0] || Infinity;
-  return nextWakeup;
-}
+// function getNextWakeup(item: DEVSTraceItem<CoupledState> | null | undefined) {
+//   const timers = item?.newState.sc.at(-1)!.newState.bigstep.timers || [];
+//   const nextTimedTransition = timers[0];
+//   const nextWakeup = nextTimedTransition?.[0] || Infinity;
+//   return nextWakeup;
+// }

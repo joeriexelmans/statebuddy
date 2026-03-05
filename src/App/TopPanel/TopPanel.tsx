@@ -28,7 +28,6 @@ import { Tooltip } from "../Components/Tooltip";
 import { TwoStateButton } from "../Components/TwoStateButton";
 import { About } from "../Modals/About";
 import { VisualEditorState } from "../VisualEditor/VisualEditor";
-import { TraceState } from "../hooks/useSimulator";
 import { Setters } from "../makePartialSetter";
 import { ToolSelect } from "./ToolSelect";
 import { KeyInfoHidden, KeyInfoVisible } from "./KeyInfo";
@@ -45,10 +44,11 @@ import { prettyNumber } from '../../util/pretty';
 import favicon from "../../../artwork/new-logo/favicon-minified.png";
 import { Toolbar } from './Toolbar';
 import { copySelection, pasteData } from '../VisualEditor/hooks/useCopyPaste';
+import { StateBuddyTraceState } from '../hooks/useSimulator';
 
 export type TopPanelProps = {
   trial: Trial,
-  trace: TraceState | null,
+  trace: StateBuddyTraceState | null,
   time: TimeMode,
 
   originalSize: number,
@@ -68,6 +68,7 @@ export type TopPanelProps = {
   onInit: () => void,
   onClear: () => void,
   onBack: () => void,
+  onSkip: () => void,
   setModal: Dispatch<SetStateAction<ReactElement|null>>,
   editHistory: EditHistory,
   editorState: VisualEditorState,
@@ -82,7 +83,7 @@ function toggle(booleanSetter: Dispatch<(state: boolean) => boolean>) {
 }
 
 export const TopPanel = memo(function TopPanel(props: TopPanelProps) {
-  const {trial, trace, time, setTime, onUndo, onRedo, onCopy, onPaste, onRotate, onInit, onClear, onBack, rightMouseMode: insertMode, setInsertMode, setModal, zoom, setZoom, showKeys, setShowKeys, editHistory, showFindReplace, setShowFindReplace, displayTime, refreshDisplayTime, nextWakeup, modelName, setModelName, originalSize, compressedSize, state, showDebug, setShowDebug, properties, editorState, savedTraces, setProperties, setSavedTraces, setEditorState, startDragging} = props;
+  const {trial, trace, time, setTime, onUndo, onRedo, onCopy, onPaste, onRotate, onInit, onClear, onBack, onSkip, setModal, zoom, setZoom, showKeys, setShowKeys, editHistory, showFindReplace, setShowFindReplace, displayTime, refreshDisplayTime, nextWakeup, modelName, setModelName, originalSize, compressedSize, state, showDebug, setShowDebug, properties, editorState, savedTraces, setProperties, setSavedTraces, setEditorState, startDragging} = props;
 
   const [timescale, setTimescale] = usePersistentState("timescale", 1);
   const config = trace && trace.trace[trace.idx];
@@ -102,20 +103,6 @@ export const TopPanel = memo(function TopPanel(props: TopPanelProps) {
     });
     refreshDisplayTime();
   }, [setTime, timescale, refreshDisplayTime]);
-
-  const onSkip = useCallback(() => {
-    const now = Math.round(performance.now());
-    if (nextWakeup !== Infinity) {
-      setTime(time => {
-        if (time.kind === "paused") {
-          return {kind: "paused", simtime: nextWakeup};
-        }
-        else {
-          return {kind: "realtime", scale: time.scale, since: {simtime: nextWakeup, wallclktime: now}};
-        }
-      });
-    }
-  }, [nextWakeup, setTime]);
 
   const togglePaused = useCallback(() => config && onChangePaused(time.kind !== "paused", Math.round(performance.now())), [config, time]);
 

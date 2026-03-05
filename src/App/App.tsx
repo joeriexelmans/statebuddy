@@ -238,24 +238,6 @@ export function App() {
         {/* left-to-right: main -> sidebar */}
         <div className={styles.stackHorizontal} style={{flexGrow:1, overflow: "auto"}}>
 
-          {/* Left: sidebar */}
-          <div style={{
-            flex: '0 0 content',
-            overflowY: "auto",
-            overflowX: "auto",
-            flexBasis: appState.sidePanelWidth,
-            maxWidth: '75vw',
-            minWidth: 20,
-
-            // maxWidth: `max(min(${appState.sidePanelWidth}px, 75vw), 100px)`,
-          }}>
-            <div className={styles.stackVertical} style={{height:'100%'}}>
-              <SideBar {...{...appState, refRightSideBar, ast, preparedTraces, ...simulator, ...setters, checkProperty}} />
-            </div>
-          </div>
-
-
-
           {/* top-to-bottom: top bar, editor */}
           <div className={styles.stackVertical} style={{flexGrow:1, overflow: "hidden"}}>
             {/* Top bar */}
