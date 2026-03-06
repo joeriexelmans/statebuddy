@@ -1,7 +1,8 @@
 import plotStyles from "./Plot.module.css";
-import { SVGAttributes, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { memo, SVGAttributes, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Setters } from "../makePartialSetter";
 import { PreparedTraces } from "../SideBar/prepare_trace";
+import { jsonDeepEqual } from "@/util/util";
 
 // Part of application state.
 export type PlotState = {
@@ -28,7 +29,7 @@ type PlotProperties = PlotState & Setters<PlotState> & SVGAttributes<SVGElement>
 
 const numColors = 6; // corresponds to CSS variables --plot-color-N in index.css
 
-export function Plot({traces, currentItemSimTime, endOfTime, lastWakeup, visiblePlots, setVisiblePlots, ...rest}: PlotProperties) {
+export const Plot = memo(function Plot({traces, currentItemSimTime, endOfTime, lastWakeup, visiblePlots, setVisiblePlots, ...rest}: PlotProperties) {
   const refSVG = useRef(null);
   const [width, setWidth] = useState<number>(window.innerWidth);
 
@@ -147,4 +148,6 @@ export function Plot({traces, currentItemSimTime, endOfTime, lastWakeup, visible
       {checkboxes}
     </div>
   </>;
-}
+}, (a,b) => {
+  return jsonDeepEqual(a,b);
+});

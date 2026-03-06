@@ -110,31 +110,28 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
   // if some properties change, re-evaluate them:
   useEffect(() => {
     let timeout: NodeJS.Timeout;
+    let clearResultTimeout: NodeJS.Timeout;
     if (preparedTraces) {
-      setPropertyResults(null);
+      clearResultTimeout = setTimeout(() => {
+        setPropertyResults(null);
+      }, 500);
       timeout = setTimeout(() => {
         Promise.all(properties.map((property, i) => {
           return checkProperty(property, preparedTraces);
         }))
         .then(results => {
+          clearTimeout(clearResultTimeout);
           setPropertyResults(results);
         })
       })
     }
-    return () => clearTimeout(timeout);
+    return () => {
+      clearTimeout(timeout);
+      clearTimeout(clearResultTimeout);
+    };
   }, [preparedTraces, properties]);
 
-  // whenever the ast, the plant or 'autoconnect' option changes, detect connections:
-  // useEffect(() => {
-  //   if (ast && autoConnect) {
-  //     autoDetectConns(ast, plant, setPlantConns);
-  //   }
-  // }, [ast, plant, autoConnect]);
-
   const raiseDebugEvent = useCallback((e: string, p: any) => onRaise(e,p), [onRaise]);
-  // const raiseUIEvent = useCallback((e: RaisedEvent) => onRaise("plant.ui."+e.name, e.param), [onRaise]);
-
-  // const [selectedPlant, setSelectedPlant] = useState<string>("add plant ...");
 
   const onAddPlant = (type: string) => {
     const plantToInstantiate = statebuddyPlants[type];
@@ -216,25 +213,6 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
             </select>
           </Tooltip>
           &nbsp;
-          {/* <Tooltip tooltip='the behavior of each plant is also modeled by a statechart'>
-            <button
-              disabled={plantCS === null}
-              onClick={() => {
-                if (plantCS) {
-                  deflateBuffer(str2buf(JSON.stringify({
-                    editorState: {...plantCS, nextID: 9999, selection: []},
-                    modelName: "[plant] "+plantName,
-                  })))
-                  .then(buf => {
-                    window.open("#"+buf2base64(buf), '_blank');
-                  })
-                }
-              }}
-            >
-              <OpenInNewIcon fontSize='small'/>
-              &nbsp;plant statechart
-            </button>
-          </Tooltip> */}
         </div>
         {/* Render plants */}
         <ShowPlants
@@ -250,15 +228,6 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
       <PersistentDetails state={showConnections} setState={setShowConnections}>
         <summary>connect</summary>
         {ast && <Connect ast={ast} plantsState={plantsState} setPlantsState={setPlantsState}/>}
-        {/* <Tooltip tooltip="auto-connect (name-based)" align="left">
-          <button
-            className={autoConnect?"active":""}
-            onClick={() => setAutoConnect(c => !c)}>
-            <AutoAwesomeIcon fontSize="small"/>
-          </button>
-        </Tooltip> */}
-        {/* {ast && ConnEditor(ast, plant, plantConns, setPlantConns)} */}
-        {/* <Connections conns={plantConns} setConns={setPlantConns}/> */}
       </PersistentDetails>
 
       {/* Properties */}
@@ -417,82 +386,3 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
 }, (prevProps, nextProps) => {
   return objectsEqual(prevProps, nextProps);
 });
-
-// function autoDetectConns(ast: Statechart, plant: Plant<any, any>, setPlantConns: Dispatch<SetStateAction<Conns>>) {
-//   for (const {event: a} of plant.uiEvents) {
-//     for (const {event: b} of plant.inputEvents) {
-//       if (a === b) {
-//         setPlantConns(conns => ({...conns, ['plant.ui.'+a]: ['plant', b]}));
-//         break;
-//       }
-//     }
-//     for (const {event: b} of ast.inputEvents) {
-//       if (a === b) {
-//         setPlantConns(conns => ({...conns, ['plant.ui.'+a]: ['sc', b]}));
-//       }
-//     }
-//   }
-//   for (const a of ast.outputEvents) {
-//     for (const {event: b} of plant.inputEvents) {
-//       if (a === b) {
-//         setPlantConns(conns => ({...conns, ['sc.'+a]: ['plant', b]}));
-//       }
-//     }
-//   }
-//   for (const {event: a} of plant.outputEvents) {
-//     for (const {event: b} of ast.inputEvents) {
-//       if (a === b) {
-//         setPlantConns(conns => ({...conns, ['plant.'+a]: ['sc', b]}));
-//       }
-//     }
-//   }
-// }
-
-// function ConnEditor(ast: Statechart, plant: Plant<any, any>, plantConns: Conns, setPlantConns: Dispatch<SetStateAction<Conns>>) {
-//   const plantInputs = <>{plant.inputEvents.map(e => <option key={'plant.'+e.event} value={'plant.'+e.event}>plant.{e.event}</option>)}</>
-//   const scInputs = <>{ast.inputEvents.map(e => <option key={'sc.'+e.event} value={'sc.'+e.event}>sc.{e.event}</option>)}</>;
-//   console.log({plantConns});
-//   return <>
-    
-//     {/* SC output events can go to Plant */}
-//     {[...ast.outputEvents].map(e => <div key={e} style={{width:'100%', textAlign:'right'}}>
-//       <label htmlFor={`select-dst-sc-${e}`} style={{width:'50%'}}>sc.{e}&nbsp;→&nbsp;</label>
-//       <select id={`select-dst-sc-${e}`}
-//         style={{width:'50%'}}
-//         value={plantConns['sc.'+e]?.join('.')}
-//         // @ts-ignore
-//         onChange={domEvent => setPlantConns(conns => ({...conns, [`sc.${e}`]: (domEvent.target.value === "" ? undefined : (domEvent.target.value.split('.') as [string,string]))}))}>
-//         <option key="none" value=""></option>
-//         {plantInputs}
-//       </select>
-//     </div>)}
-
-//     {/* Plant output events can go to Statechart */}
-//     {[...plant.outputEvents.map(e => <div key={e.event} style={{width:'100%', textAlign:'right'}}>
-//       <label htmlFor={`select-dst-plant-${e.event}`} style={{width:'50%'}}>plant.{e.event}&nbsp;→&nbsp;</label>
-//       <select id={`select-dst-plant-${e.event}`}
-//         style={{width:'50%'}}
-//         value={plantConns['plant.'+e.event]?.join('.')}
-//         // @ts-ignore
-//         onChange={(domEvent => setPlantConns(conns => ({...conns, [`plant.${e.event}`]: (domEvent.target.value === "" ? undefined : (domEvent.target.value.split('.') as [string,string]))})))}>
-//         <option key="none" value=""></option>
-//         {scInputs}
-//       </select>
-//     </div>)]}
-
-//     {/* Plant UI events typically go to the Plant */}
-//     {plant.uiEvents.map(e => <div key={e.event} style={{width:'100%', textAlign:'right'}}>
-//       <label htmlFor={`select-dst-plant-ui-${e.event}`} style={{width:'50%', color: 'grey'}}>ui.{e.event}&nbsp;→&nbsp;</label>
-//       <select id={`select-dst-plant-ui-${e.event}`}
-//         style={{width:'50%'}}
-//         value={plantConns['plant.ui.'+e.event]?.join('.')}
-//         // @ts-ignore
-//         onChange={domEvent => setPlantConns(conns => ({...conns, [`plant.ui.${e.event}`]: (domEvent.target.value === "" ? undefined : (domEvent.target.value.split('.') as [string,string]))}))}>
-//         <option key="none" value=""></option>
-//         {scInputs}
-//         {plantInputs}
-//       </select>
-//     </div>)}
-//   </>;
-// }
-

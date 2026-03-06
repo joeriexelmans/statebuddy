@@ -5,7 +5,7 @@ import { Model2ModelConn } from "@/devs/coupled_devs"
 import { Statechart } from "@/statecharts/abstract_syntax";
 import { PlantsState } from "../hooks/useSimulator";
 import traceStyles from "./Trace.module.css";
-import { useMemo, useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import { WithSetters } from "../makePartialSetter";
 
 import AddIcon from '@mui/icons-material/Add';
@@ -13,6 +13,7 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { DoubleClickButton } from "../Components/DoubleClickButton";
 import { Tooltip } from "../Components/Tooltip";
 import { statebuddyPlants } from "../plants";
+import { jsonDeepEqual } from "@/util/util";
 
 type ConnectProps = {
   ast: Statechart,
@@ -58,7 +59,7 @@ function Connections({conns, startIdx, componentNames, actions, bgColor}: {
   );
 }
 
-export function Connect({ast, plantsState, setPlantsState}: ConnectProps) {
+export const Connect = memo(function Connect({ast, plantsState, setPlantsState}: ConnectProps) {
   const [selectedOutput, setSelectedOutput] = useState("-1");
   const [selectedInput, setSelectedInput] = useState("-1");
   const plants = plantsState.plants.map(({id, type}) => [id, statebuddyPlants[type]!] as const);
@@ -90,30 +91,32 @@ export function Connect({ast, plantsState, setPlantsState}: ConnectProps) {
     return currIdx;
   }
   const suggestions = useMemo(() => autoConnect(allOutputs, allInputs, plantsState.conns), [allOutputs, allInputs, plantsState.conns]);
+  const deleteConnection = useCallback((i: number) => {
+    setPlantsState(ps => ({
+        ...ps,
+        conns: ps.conns.toSpliced(i, 1),
+    }));
+  }, [setPlantsState]);
+  const showDeleteButton = useCallback((i: number) => {
+    return <DoubleClickButton
+      tooltip="delete connection"
+      align="right"
+      onDoubleClick={() => deleteConnection(i)}
+    >
+      <DeleteOutlineIcon fontSize="small"/>
+    </DoubleClickButton>;
+  }, [deleteConnection]);
   return <>
     <div className={connectStyles.grid} style={{
       display: 'grid',
       gridTemplateColumns: '1fr 20px 1fr auto',
-      // columnGap: '0.5em',
       alignItems: 'center',
     }}>
       <Connections
         conns={plantsState.conns}
         componentNames={names}
         startIdx={1}
-        actions={(i: number) =>
-          <DoubleClickButton
-            tooltip="delete connection"
-            align="right"
-            onDoubleClick={() => setPlantsState(ps => ({
-              ...ps,
-              conns: ps.conns.toSpliced(i, 1),
-            }))}
-          >
-            <DeleteOutlineIcon fontSize="small"/>
-          </DoubleClickButton>
-
-        }
+        actions={showDeleteButton}
       />
       <div style={{gridColumnStart: 1, gridColumnEnd: 5, gridRow: plantsState.conns.length+1}}>
         <DoubleClickButton
@@ -128,7 +131,6 @@ export function Connect({ast, plantsState, setPlantsState}: ConnectProps) {
         </DoubleClickButton>
       </div>
       <div style={{gridColumnStart: 1, gridColumnEnd: 5, gridRow: plantsState.conns.length+2}}>
-        {/* <hr/> */}
       </div>
       <Connections
         componentNames={names}
@@ -218,20 +220,9 @@ export function Connect({ast, plantsState, setPlantsState}: ConnectProps) {
           </button>
         </Tooltip>
       </div>
-      {/* <div style={{gridColumn: '1/5', gridRow: plantsState.conns.length+suggestions.length+5}}>
-        hard-wired:
-      </div>
-      <Connections
-        actions={() => <></>}
-        componentNames={names}
-        conns={
-          []
-        }
-        bgColor="darkgreen"
-        startIdx={plantsState.conns.length+suggestions.length+6}/> */}
     </div>
   </>;
-}
+}, jsonDeepEqual);
 
 function autoConnect(allOutputs: (readonly [string, string])[], allInputs: (readonly [string, string])[], alreadyHave: Model2ModelConn[]) {
   return allOutputs.flatMap(([outputModelName, outputEvent]) =>

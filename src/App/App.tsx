@@ -173,19 +173,7 @@ export function App() {
     autoScroll,
   } = appState;
 
-  // const [_, plant, plantCS] = plants.find(([pn, p]) => pn === plantName)!;
-
   const refRightSideBar = useRef<HTMLDivElement>(null);
-
-  // const scrollDownSidebar = useCallback(() => {
-  //   if (autoScroll && refRightSideBar.current) {
-  //     const el = refRightSideBar.current;
-  //     // hack: we want to scroll to the new element, but we have to wait until it is rendered...
-  //     setTimeout(() => {
-  //       el.scrollIntoView({block: "end", behavior: "smooth"});
-  //     }, 50);
-  //   }
-  // }, [refRightSideBar.current, autoScroll]);
 
   const simulator = useSimulator(ast, appState.plantsState);
   const {displayTime, refreshDisplayTime} = useDisplayTime(simulator.time);
@@ -205,11 +193,14 @@ export function App() {
   const highlightActive = (currentBigStep && currentBigStep.mode) || new Set();
   const highlightTransitions = currentBigStep && currentBigStep.firedTransitions || [];
 
-  const preparedTraces = useMemo(() => simulator.trace && ast && prepareTraces(
-    ast,
-    appState.plantsState,
-    simulator.trace.trace,
-  ) || {}, [simulator.trace, appState.plantsState]);
+  const preparedTraces = useMemo(() => {
+    console.log('prepare traces...');
+    return simulator.trace && ast && prepareTraces(
+      ast,
+      appState.plantsState,
+      simulator.trace.trace,
+    ) || {};
+  }, [simulator.trace, appState.plantsState, ast]);
 
   // whether the user is resizing (i.e., mouse down on edge) the side panel
   const [resizing, setResizing] = useState(false);

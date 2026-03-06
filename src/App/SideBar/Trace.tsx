@@ -5,10 +5,10 @@ import { Statechart2DEVSState } from "@/devs/sc2devs";
 import { DEVSTrace, DEVSTraceItem, DEVSTraceItemExtTransition, DEVSTraceItemInit, DEVSTraceItemIntTransition } from "@/devs/trace";
 import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
 import FlareIcon from '@mui/icons-material/Flare';
-import { Dispatch, PropsWithChildren, SetStateAction, useEffect } from "react";
+import { Dispatch, memo, PropsWithChildren, SetStateAction, useEffect } from "react";
 import { Statechart, stateDescription, Transition } from "../../statecharts/abstract_syntax";
 import { TimeMode } from "../../statecharts/time";
-import { formatTime, jsonDeepEqual, memoizeOne } from "../../util/util";
+import { formatTime, jsonDeepEqual, memoizeOne, objectsEqual } from "../../util/util";
 import { Tooltip } from "../Components/Tooltip";
 import { CoupledState, PlantsState, StateBuddyTraceState } from "../hooks/useSimulator";
 import { WithSetters } from "../makePartialSetter";
@@ -74,28 +74,19 @@ function isOutputStepHeuristic(trace: DEVSTrace<Statechart2DEVSState>) {
 }
 
 // Things are a bit funny here. We want to render the execution history of our Statechart, but we have a Coupled DEVS trace containing all the steps made by both the Statechart and the plant(s). We offer the user to hide steps made by the plant(s).
-export function Trace({trace, setTrace, setTime, ast, showMicroSteps, setShowMicroSteps, showTransitions, showPlantTrace, propertyTrace, plantsState}: TraceProps) {
+export const Trace = memo(function Trace({trace, setTrace, setTime, ast, showMicroSteps, setShowMicroSteps, showTransitions, showPlantTrace, autoScroll, propertyTrace, plantsState}: TraceProps) {
 
+  // Auto-scroll when trace item changes
   useEffect(() => {
-    // hack: give ourselves some time to update the DOM before scrolling the possibly new element into view:
-    const timeout = setTimeout(() => {
+    if (autoScroll) {
+      // because effects run *after* re-render, we should find our possibly newly added trace item with the following querySelector:
       const el = document.querySelector(`#traceItem-${trace.idx}`);
-      if (el) {
-        new IntersectionObserver(([entry], obs) => {
-          if (true) {
-            // el.scrollIntoView({block: "end", behavior: "smooth"});
-            el.scrollIntoView({
-              block: "nearest",
-              behavior: "smooth",
-              container: "nearest", // <-- only scroll the innermost scrollable view - not supported in FF :(
-            });
-          }
-          obs.disconnect();
-        }).observe(el);
-      }
-    }, 50);
-    return () => {
-      clearTimeout(timeout);
+      el?.scrollIntoView({
+        block: "nearest",
+        behavior: "smooth",
+        // @ts-ignore
+        container: "nearest", // <-- only scroll the innermost scrollable view - not supported in FF :(
+      });
     }
   }, [trace.idx]);
 
@@ -150,7 +141,7 @@ export function Trace({trace, setTrace, setTime, ast, showMicroSteps, setShowMic
       </div>;
     })}
   </div>;
-}
+}, objectsEqual);
 
 function TraceItemHeader({status, simtime, hide}: {status: PropertyStatus, simtime: number, hide: boolean}) {
   return <>
@@ -182,7 +173,7 @@ type ThingsToPassOn = {
   ast: Statechart,
 }
 
-function CoupledDEVSTraceItem({item, prevItem, status, ...thingsToPassOn}: {
+const CoupledDEVSTraceItem = memo(function CoupledDEVSTraceItem({item, prevItem, status, ...thingsToPassOn}: {
   item: DEVSTraceItem<CoupledState>,
   prevItem: DEVSTraceItem<CoupledState>,
 } & ThingsToPassOn) {
@@ -196,7 +187,7 @@ function CoupledDEVSTraceItem({item, prevItem, status, ...thingsToPassOn}: {
   else if (item.kind === "extTransition") {
     return <CoupledDEVSExternalTransition item={item} prevItem={prevItem} {...commonArgs} />;
   }
-}
+}, objectsEqual); // <-- just a shallow comparison already saves us a lot of re-renders
 
 function getAbstractSyntax(componentId: string, plantsState: PlantsState, ast: Statechart) {
   if (componentId === "sc") {

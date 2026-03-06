@@ -70,13 +70,17 @@ export function useSimulator(ast: Statechart|null, plantsState: PlantsState) {
     && currentTraceItem.newState
     || null;
   
-  const plants = plantsState.plants.map(({id, type}) => [id, statebuddyPlants[type]!] as const);
+  const plantInstances = useMemo(() =>
+    plantsState.plants.map(({id, type}) => [id, statebuddyPlants[type]!] as const),
+    [plantsState]
+  );
 
   const cE = useMemo(() => ast && makeTracedDEVS(makeCoupledDEVS(
     {
       sc: makeTracedDEVS(sc2DEVS(ast)),
-      ...Object.fromEntries(plants.map(([id, plant]) => [id, makeTracedDEVS(plant.plant.execution)])),
+      ...Object.fromEntries(plantInstances.map(([id, plant]) => [id, makeTracedDEVS(plant.plant.execution)])),
     }, {
+      // hard-wired connections:
       inputs: [
         // expose all input events
         ...ast.inputEvents.map(({event}) => ({
@@ -84,14 +88,12 @@ export function useSimulator(ast: Statechart|null, plantsState: PlantsState) {
           inputModelName: "sc",
           inputEvent: event,
         })),
-        ...plants.flatMap(([id, plant]) => plant.plant.uiEvents.map(uiEvent => ({
+        ...plantInstances.flatMap(([id, plant]) => plant.plant.uiEvents.map(uiEvent => ({
           coupledInputEvent: uiEvent.event,
           inputModelName: id,
           inputEvent: uiEvent.event,
         }))),
       ],
-      // the user-configurable part:
-      model2Model: plantsState.conns,
       outputs: [
         // Expose all output events of the statechart as outputs of the Coupled DEVS
         // The MTL property checker and the Plot-component will treat these output events as signals.
@@ -101,6 +103,8 @@ export function useSimulator(ast: Statechart|null, plantsState: PlantsState) {
           coupledOutputEvent: event,
         })),
       ],
+      // the user-configurable part:
+      model2Model: plantsState.conns,
     } as CoupledDEVSConns,
     ast.inputEvents.map(({event}) => event), // <-- every SC input becomes coupled input
     [...ast.outputEvents], // <-- every SC output becomes coupled output
