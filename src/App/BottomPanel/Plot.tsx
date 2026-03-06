@@ -3,6 +3,7 @@ import { SVGAttributes, useLayoutEffect, useMemo, useRef, useState } from "react
 import { Setters } from "../makePartialSetter";
 import { PreparedTraces } from "../SideBar/prepare_trace";
 
+// Part of application state.
 export type PlotState = {
   visiblePlots: {[name: string]: boolean},
 }
@@ -12,15 +13,22 @@ export const defaultPlotState = {
 }
 
 type PlotProperties = PlotState & Setters<PlotState> & SVGAttributes<SVGElement> & {
+  // Traces to plot.
   traces: PreparedTraces,
-  displayTime: number,
+
+  // The timestamp of the currently selected item in the execution trace.
+  currentItemSimTime: number,
+
+  // The furthest point on the x-axis (time).
   endOfTime: number,
-  nextWakeup: number, // nextEventTime is the furthest we can confidently extend the signal plots into the future.
+
+  // The furthest point in the future until where we can confidently extend the signal lines.
+  lastWakeup: number,
 }
 
 const numColors = 6; // corresponds to CSS variables --plot-color-N in index.css
 
-export function Plot({traces, displayTime, endOfTime, nextWakeup, visiblePlots, setVisiblePlots, ...rest}: PlotProperties) {
+export function Plot({traces, currentItemSimTime, endOfTime, lastWakeup, visiblePlots, setVisiblePlots, ...rest}: PlotProperties) {
   const refSVG = useRef(null);
   const [width, setWidth] = useState<number>(window.innerWidth);
 
@@ -67,12 +75,12 @@ export function Plot({traces, displayTime, endOfTime, nextWakeup, visiblePlots, 
       prevY = y;
     }
     // extend signal to next wakeup (this is reasonable)
-    const lastX = Math.min(nextWakeup, endOfTime); // if nextWakeup is Infinity, draw the line to the end instead (we cannot draw a line to infinity)
+    const lastX = Math.min(lastWakeup, endOfTime); // if nextWakeup is Infinity, draw the line to the end instead (we cannot draw a line to infinity)
     path += ` L${toSVGcoords(lastX)},${prevY}`;
     return path;
   }
 
-  const currentTimeSvgX = toSVGcoords(displayTime);
+  const currentTimeSvgX = toSVGcoords(currentItemSimTime);
 
   const markerEveryXMs = Math.max(250*2**Math.ceil(Math.log2(endOfTime/1000/30/width*2000)), 250);
   const labelEveryXMarkers = 2;
@@ -129,8 +137,8 @@ export function Plot({traces, displayTime, endOfTime, nextWakeup, visiblePlots, 
   return <>
     {atLeastOnePlot &&
       <svg style={{height: height+18, backgroundColor: 'var(--background-color)'}} ref={refSVG} viewBox={`0 0 ${width} ${height+18}`} {...rest}>
-        <line x1={currentTimeSvgX} x2={currentTimeSvgX} y1={0} y2={height+4} stroke="grey" strokeWidth={6} />
         {xAxis}
+        <rect x={currentTimeSvgX-2} width={4} y={0} height={height} fill="var(--accent-border-color)" />
         {paths}
       </svg>}
       <div style={{

@@ -32,6 +32,7 @@ import { PropertyTraceTable } from "./BottomPanel/PropertyTraceTable";
 import { usePyodide } from "./hooks/usePyodide";
 import { Tooltip } from "./Components/Tooltip";
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import { getSimTime } from "@/statecharts/time";
 
 export type EditHistory = {
   current: VisualEditorState,
@@ -362,11 +363,11 @@ export function App() {
                   <HelpOutlineIcon fontSize='small'/>
                 </Tooltip>
               </summary>
-              {preparedTraces &&
+              {preparedTraces && simulator.currentTraceItem &&
                 <Plot width="100%" traces={preparedTraces}
-                  displayTime={displayTime}
-                  nextWakeup={simulator.lastWakeup}
-                  endOfTime={simulator.endOfTime}
+                  currentItemSimTime={simulator.currentTraceItem.simtime}
+                  lastWakeup={simulator.lastWakeup}
+                  endOfTime={Math.max(displayTime, simulator.endOfTime)}
                   {...appState}
                   {...setters}
                 />}

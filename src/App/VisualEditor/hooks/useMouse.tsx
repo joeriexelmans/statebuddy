@@ -270,7 +270,6 @@ export function useMouse(
   }, [getCurrentPointer, commitState]);
 
   const modeToAction = (mode: ToolMode, e: React.MouseEvent<SVGSVGElement, MouseEvent>) => {
-    console.log(e);
     if (mode === "nothing") {
       return;
     }

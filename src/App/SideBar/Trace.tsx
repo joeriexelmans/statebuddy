@@ -82,13 +82,12 @@ export function Trace({trace, setTrace, setTime, ast, showMicroSteps, setShowMic
       const el = document.querySelector(`#traceItem-${trace.idx}`);
       if (el) {
         new IntersectionObserver(([entry], obs) => {
-          console.log({ratio: entry.intersectionRatio});
           if (true) {
             // el.scrollIntoView({block: "end", behavior: "smooth"});
             el.scrollIntoView({
               block: "nearest",
               behavior: "smooth",
-              container: "nearest", // <-- only scroll the innermost scrollable view
+              container: "nearest", // <-- only scroll the innermost scrollable view - not supported in FF :(
             });
           }
           obs.disconnect();
