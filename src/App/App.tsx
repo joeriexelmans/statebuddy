@@ -279,8 +279,9 @@ export function App() {
                 <Plot width="100%"
                   prepped={preparedTraces}
                   trace={simulator.trace}
-                  visiblePlots={appState.plot.visiblePlots}
-                  setVisiblePlots={setVisiblePlots}
+                  state={appState.plot}
+                  setState={setters.setPlot}
+                  displayTime={displayTime}
                 />}
             </PersistentDetails>
           </div>

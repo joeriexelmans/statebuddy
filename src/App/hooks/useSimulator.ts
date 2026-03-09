@@ -58,15 +58,6 @@ export function useSimulator(cE: DEVSComponent<DEVSTrace<CoupledState>> | undefi
   // the timeAdvance of the currently selected item in the trace
   const nextWakeup = infinityIfUndefined(trace && cE?.timeAdvance(trace.trace.slice(0, trace.idx+1) as DEVSTrace<CoupledState>));
 
-
-  // const timeRelatedStuff = useMemo(() => currentTraceItem && {
-  //   simtime: currentTraceItem.simtime,
-  //   nextWakeup,
-  //   lastWakeup,
-  //   endOfTime,
-  // }, [trace]);
-
-
   // Simulator callbacks...
 
   const onInit = useCallback(() => {

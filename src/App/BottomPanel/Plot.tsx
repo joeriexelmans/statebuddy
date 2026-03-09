@@ -1,6 +1,6 @@
 import plotStyles from "./Plot.module.css";
 import { memo, SVGAttributes, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Setters } from "../makePartialSetter";
+import { Setters, WithSetters } from "../makePartialSetter";
 import { PreparedTraces } from "../SideBar/prepare_trace";
 import { objectsEqual } from "@/util/util";
 import { infinityIfUndefined, StateBuddyTraceState } from "../hooks/useSimulator";
@@ -14,23 +14,25 @@ export const defaultPlotState = {
   visiblePlots: {},
 }
 
-type PlotProperties = PlotState & Setters<PlotState> & SVGAttributes<SVGElement> & {
+type PlotProperties = SVGAttributes<SVGElement> & WithSetters<{
+  state: PlotState
+}> & {
   // Traces to plot.
   prepped: PreparedTraces,
   trace: StateBuddyTraceState,
+  displayTime: number,
 }
 
 const numColors = 6; // corresponds to CSS variables --plot-color-N in index.css
 
-export const Plot = memo(function Plot({prepped, trace, visiblePlots, setVisiblePlots, ...rest}: PlotProperties) {
+export const Plot = memo(function Plot({state, setState, prepped, trace, displayTime, ...rest}: PlotProperties) {
+  const {visiblePlots} = state;
   const refSVG = useRef(null);
   const [width, setWidth] = useState<number>(window.innerWidth);
 
-  // the simtime of the last item in the trace
-  const endOfTime = infinityIfUndefined(trace?.trace.at(-1)!.simtime);
+  // the furthest point on the x-axis
+  const endOfTime = Math.max(trace?.trace.at(-1)!.simtime, displayTime, 1);
 
-  // the timeAdvance on the last item in the trace
-  // const lastWakeup = infinityIfUndefined(trace && cE?.timeAdvance(trace.trace) || Infinity);
   const lastWakeup = endOfTime;
 
   const currentItemSimTime = trace.trace[trace.idx].simtime;
@@ -54,7 +56,7 @@ export const Plot = memo(function Plot({prepped, trace, visiblePlots, setVisible
 
   prepped = Object.fromEntries(Object.entries(prepped).filter(([name]) => !["true", "false"].includes(name)))
 
-  const maxTime = Math.max(endOfTime, 1);
+  const maxTime = Math.max(endOfTime, 1); // <-- prevent division by zero :-)
   const margin = 2; // if 0, the lines would overlap
   const yDiff = height / (numVisible);
 
@@ -130,7 +132,14 @@ export const Plot = memo(function Plot({prepped, trace, visiblePlots, setVisible
           || <div style={{breakAfter: 'column'}}></div>))}
           {/*             ^ doesn't yet work in Firefox :( */}
         <label key={name} htmlFor={`checkbox-trace-${name}`} style={{breakInside: 'avoid'}}>
-          <input type="checkbox" id={`checkbox-trace-${name}`} checked={visiblePlots[name]} onChange={e => setVisiblePlots(visible => ({...visible, [name]: e.target.checked}))} style={{accentColor: color}}/>
+          <input type="checkbox" id={`checkbox-trace-${name}`} checked={visiblePlots[name]} onChange={e =>
+            setState(({visiblePlots}) => ({
+              visiblePlots: {
+                ...visiblePlots,
+                [name]: e.target.checked,
+              },
+            }))}
+            style={{accentColor: color}}/>
           <span style={{color}}>{name}</span>
         </label>
       </>;
