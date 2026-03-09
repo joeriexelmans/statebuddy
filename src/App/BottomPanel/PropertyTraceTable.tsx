@@ -1,7 +1,7 @@
 import CloseIcon from '@mui/icons-material/Close';
 import TextRotateUpIcon from '@mui/icons-material/TextRotateUp';
 // import TextRotationNoneIcon from '@mui/icons-material/TextRotationNone';
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { Tooltip } from "../Components/Tooltip";
 import { TwoStateButton } from "../Components/TwoStateButton";
 import { Status } from "../SideBar/Status";
@@ -14,8 +14,17 @@ import { PlantsState } from "../hooks/useCoupledExecution";
 import { Statechart } from '@/statecharts/abstract_syntax';
 import { DEVSTrace } from '@/devs/trace';
 import { SavedTraces } from '../SideBar/Traces';
+import { objectsEqual } from '@/util/util';
 
-export function PropertyTraceTable({abstractSyntax, properties, traces, onClose, cE, plantsState, checkProperty}: {abstractSyntax: Statechart, properties: string[], traces: SavedTraces, onClose: () => void, cE: DEVSComponent<DEVSTrace<CoupledState>>, plantsState: PlantsState, checkProperty: (property: string, preparedTraces: PreparedTraces) => Promise<PropertyCheckResult>,
+export const PropertyTraceTable = memo(function PropertyTraceTable({
+  abstractSyntax,
+  properties,
+  traces,
+  onClose,
+  cE,
+  plantsState,
+  checkProperty,
+}: {abstractSyntax: Statechart, properties: string[], traces: SavedTraces, onClose: () => void, cE: DEVSComponent<DEVSTrace<CoupledState>>, plantsState: PlantsState, checkProperty: (property: string, preparedTraces: PreparedTraces) => Promise<PropertyCheckResult>,
 }) {
   const [rotateText, setRotateText] = useState(false);
 
@@ -92,4 +101,4 @@ export function PropertyTraceTable({abstractSyntax, properties, traces, onClose,
       </Tooltip>
     </div>
   </div>;
-}
+}, objectsEqual);

@@ -48,6 +48,7 @@ TODO
     - include MQTT-over-websocket support
     - port microwave and traffic light examples
     - fix regressions:
+        - file import is broken
         - highlight search results broken
         - mouseup event sometimes missed in VisualEditor
         - catch and display runtime errors in trace

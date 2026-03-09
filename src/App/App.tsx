@@ -107,8 +107,8 @@ export function App() {
   const setTraces = makePartialSetter(setSideBar, "traces");
   const setSavedTraces = makePartialSetter(setTraces, "savedTraces");
 
-  const onAboutStateBuddy = () => setModal(<About setModal={setModal} {...trial}/>);
-  const onOpen = (modelName: string) => {
+  const onAboutStateBuddy = useCallback(() => setModal(<About setModal={setModal} {...trial}/>), [trial]);
+  const onOpen = useCallback((modelName: string) => {
     editorState && setModal(<OpenFile
       onClose={() => setModal(null)}
       properties={appState.sideBar.properties}
@@ -119,12 +119,12 @@ export function App() {
       modelName={modelName}
       setProperties={setProperties}
       replaceModel={historyCallbacks.commitState}/>);
-  };
-  const onSave = (modelName: string) => {
+  }, [appState.sideBar, editorState, modelSize, historyCallbacks]);
+  const onSave = useCallback((modelName: string) => {
     downloadObjectAsJson(
       {editorState, ...appState},
       modelName.replaceAll(' ','-')+'_'+formatDateTime(new Date()).replaceAll('/','-').replaceAll(':','-').replaceAll(' ','_')+".statebuddy.json");
-  }
+  }, [editorState, appState]);
 
   const editorStuff = useMouse(appState.topPanel.mouseMap, appState.topPanel.zoom, editorState || initialEditorState, historyCallbacks);
 

@@ -5,6 +5,7 @@ import { WithSetters } from "../makePartialSetter";
 import { VisualEditorState, SerializableSelection, deserializeEditorState, serializeEditorState } from "../VisualEditor/VisualEditor.state";
 import { EditHistory } from "./useEditHistory";
 import { useDelay } from "./useDelay";
+import { useMemo } from "react";
 
 // valid URL hashes contain:
 export type UrlState = {
@@ -50,5 +51,5 @@ export function usePersistentAppState({
     }
   }, delayMs, [editHistory?.current, appState]);
 
-  return {original: originalSize, compressed: compressedSize};
+  return useMemo(() => ({original: originalSize, compressed: compressedSize}), [originalSize, compressedSize]);
 }
