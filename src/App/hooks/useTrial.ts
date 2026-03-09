@@ -29,5 +29,10 @@ export function useTrial() {
     else return 0;
   }, [whenStarted]);
 
-  return {trialStarted: Boolean(whenStarted), appName, remainingDays, startTrial} as Trial;
+  const trialStarted = Boolean(whenStarted);
+
+  return useMemo(() =>
+    ({trialStarted, appName, remainingDays, startTrial}),
+    [trialStarted, appName, remainingDays, startTrial]
+  ) as Trial;
 }

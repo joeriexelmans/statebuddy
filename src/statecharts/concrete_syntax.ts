@@ -1,6 +1,6 @@
 import { Rect2D, Vec2D, Line2D, euclideanDistance, intersectLines, isWithin, lineBBox, subtractV2D, roundRect2D, roundVec2D, roundLine2D, addV2D, scaleV2D } from "../util/geometry";
 import { ARROW_SNAP_THRESHOLD, HISTORY_RADIUS, ROUNTANGLE_RADIUS, TEXT_SNAP_THRESHOLD } from "../App/parameters";
-import {  Parts, Selection, VisualEditorState } from "../App/VisualEditor/VisualEditor";
+import {  Parts, Selection, VisualEditorState } from "../App/VisualEditor/VisualEditor.state";
 import { sides } from "@/util/geometry";
 
 export type Rountangle = {

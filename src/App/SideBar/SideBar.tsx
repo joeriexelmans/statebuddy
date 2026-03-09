@@ -1,38 +1,31 @@
 import AddIcon from '@mui/icons-material/Add';
-import CachedOutlinedIcon from '@mui/icons-material/CachedOutlined';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
-import VisibilityIcon from '@mui/icons-material/Visibility';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import TableViewIcon from '@mui/icons-material/TableView';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 
-import { Dispatch, memo, Ref, SetStateAction, useCallback, useEffect, useRef, useState } from 'react';
 import { Statechart } from '@/statecharts/abstract_syntax';
-import { ShowAST, ShowInputEvents, ShowInternalEvents, ShowOutputEvents } from './ShowAST';
-import { Plant } from '../Plant/Plant';
-import { PreparedTraces, PropertyCheckResult } from './prepare_trace';
-import { Setters, WithSetters } from '../makePartialSetter';
-import { Trace } from './Trace';
-import { statebuddyPlants } from '../plants';
-import { getSimTime, TimeMode } from '@/statecharts/time';
-import { PersistentDetails } from '../Components/PersistentDetails';
-import "./SideBar.css";
 import { objectsEqual } from '@/util/util';
-import { RaisedEvent } from '@/statecharts/runtime_types';
-import { DoubleClickButton } from '../Components/DoubleClickButton';
-import { Tooltip } from '../Components/Tooltip';
-import { MoveUpDown } from '../Components/MoveUpDown';
-
+import { memo, useCallback, useEffect, useState } from 'react';
 import styles from "../App.module.css";
-import { Status } from './Status';
+import { DoubleClickButton } from '../Components/DoubleClickButton';
+import { MoveUpDown } from '../Components/MoveUpDown';
+import { PersistentDetails } from '../Components/PersistentDetails';
+import { Tooltip } from '../Components/Tooltip';
 import { TwoStateButton } from '../Components/TwoStateButton';
-import { ExtTransitionTrace, saveExtTransitions } from '@/devs/serialize_trace';
-import { CoupledState, defaultPlantsState, PlantsState, StateBuddyTraceState } from '../hooks/useSimulator';
-import { ShowPlants } from './ShowPlants';
+import { defaultPlantsState, PlantsState } from "../hooks/useCoupledExecution";
+import { CoupledState, SimulatorStuff } from '../hooks/useSimulator';
+import { makeAllSetters, WithSetters } from '../makePartialSetter';
+import { statebuddyPlants } from '../plants';
 import { Connect } from './Connect';
-
-export type SavedTraces = [string, ExtTransitionTrace][];
+import { PreparedTraces, PropertyCheckResult } from './prepare_trace';
+import { ShowAST, ShowInputEvents, ShowInternalEvents, ShowOutputEvents } from './ShowAST';
+import { ShowPlants } from './ShowPlants';
+import "./SideBar.css";
+import { Status } from './Status';
+import { Trace } from './Trace';
+import { defaultTracesState, Traces, TracesState } from './Traces';
+import { initialize } from '@/statecharts/interpreter';
 
 export type SideBarState = {
   showStateTree: boolean,
@@ -48,14 +41,11 @@ export type SideBarState = {
   plantsState: PlantsState,
   properties: string[],
   activeProperty: number,
-  savedTraces: SavedTraces,
-  showMicroSteps: boolean,
-  showTransitions: boolean,
-  autoScroll: boolean,
-  showPlantTrace: boolean,
+
+  traces: TracesState,
 };
 
-export const defaultSideBarState = {
+export const defaultSideBarState: SideBarState = {
   showStateTree: false,
   showInputEvents: true,
   showInternalEvents: true,
@@ -69,51 +59,43 @@ export const defaultSideBarState = {
   plantsState: defaultPlantsState,
   properties: [],
   activeProperty: 0,
-  savedTraces: [],
-  autoScroll: false,
-  showMicroSteps: false,
-  showTransitions: false,
-  showPlantTrace: false,
+
+  traces: defaultTracesState,
 };
 
-type SideBarProps = SideBarState & WithSetters<{
-  trace: StateBuddyTraceState|null,
-  time: TimeMode,
+type SideBarProps = WithSetters<{
+  state: SideBarState;
 }> & {
-  refRightSideBar: Ref<HTMLDivElement>,
-  ast: Statechart | null,
-  coupledState: CoupledState|null,
-  onRaise: (inputEvent: string, param: any) => void,
-  onReplayTrace: (extTrace: ExtTransitionTrace) => void,
-  preparedTraces: PreparedTraces | null,
+  simulator: SimulatorStuff,
+  abstractSyntax?: Statechart,
+  coupledState?: CoupledState,
+  preparedTraces?: PreparedTraces,
   checkProperty: (property: string, preparedTraces: PreparedTraces) => Promise<PropertyCheckResult>,
-} & Setters<SideBarState>;
+};
 
 export const SideBar = memo(function SideBar(props: SideBarProps) {
+  const {abstractSyntax, preparedTraces, checkProperty, coupledState, state, setState, simulator} = props;
 
-  const {showExecutionTrace, showConnections, showPlantTrace, showProperties, activeProperty, autoScroll, plantsState, setPlantsState, properties, savedTraces, refRightSideBar, ast, setSavedTraces, trace, setTrace, setProperties, setShowPlantTrace, setActiveProperty, setShowProperties, setAutoScroll, time, onReplayTrace, onRaise, setTime, setShowConnections, setShowExecutionTrace, showPlant, setShowPlant, showOutputEvents, setShowOutputEvents, setShowInternalEvents, showInternalEvents, setShowInputEvents, setShowStateTree, showInputEvents, showStateTree, preparedTraces, showTable, setShowTable, showMicroSteps, setShowMicroSteps, checkProperty, showTransitions, setShowTransitions, coupledState} = props;
+  const {trace, setTrace, time, setTime, simulatorCallbacks: {onRaise, onReplayTrace}} = simulator;
 
-  const [propertyResults, setPropertyResults] = useState<PropertyCheckResult[] | null>(null);
+  const {showExecutionTrace, showConnections, showProperties, activeProperty, plantsState, properties, showPlant, showOutputEvents,  showInternalEvents, showInputEvents, showStateTree,showTable, traces} = state;
+
+  const {setPlantsState, setActiveProperty, setShowProperties, setShowConnections, setShowExecutionTrace, setShowOutputEvents, setShowInternalEvents, setProperties, setShowInputEvents, setShowPlant, setShowStateTree, setShowTable, setTraces} = makeAllSetters(setState, Object.keys(state) as (keyof SideBarState)[]);
+
+  const tracesSetters = makeAllSetters(setTraces, Object.keys(traces) as (keyof TracesState)[]);
+
+  const [propertyResults, setPropertyResults] = useState<PropertyCheckResult[] | undefined>(undefined);
 
   const speed = time.kind === "paused" ? 0 : time.scale;
-
-  const onSaveTrace = useCallback(() => {
-    if (trace) {
-      const extTrace = saveExtTransitions(trace.trace, getSimTime(time, performance.now()));
-      setSavedTraces(savedTraces => [
-        ...savedTraces, 
-        ["", extTrace] as const,
-      ])
-    }
-  }, [trace, setSavedTraces]);
 
   // if some properties change, re-evaluate them:
   useEffect(() => {
     let timeout: NodeJS.Timeout;
     let clearResultTimeout: NodeJS.Timeout;
     if (preparedTraces) {
+      // very often we recompute the same property on a trace that is one item longer, resulting in largely the same trace.
       clearResultTimeout = setTimeout(() => {
-        setPropertyResults(null);
+        setPropertyResults(undefined);
       }, 500);
       timeout = setTimeout(() => {
         Promise.all(properties.map((property, i) => {
@@ -160,18 +142,18 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
       <PersistentDetails state={showStateTree} setState={setShowStateTree}>
         <summary>state tree</summary>
         <ul>
-          {ast && <ShowAST {...{...ast, trace, highlightActive: new Set()}}/>}
+          {abstractSyntax && <ShowAST {...{...abstractSyntax, trace, highlightActive: new Set()}}/>}
         </ul>
       </PersistentDetails>
 
       {/* Input events */}
       <PersistentDetails state={showInputEvents} setState={setShowInputEvents}>
         <summary>input events</summary>
-        {ast && <div style={{columnWidth: 160}}>
+        {abstractSyntax && <div style={{columnWidth: 160}}>
           <ShowInputEvents
-            inputEvents={ast.inputEvents}
+            inputEvents={abstractSyntax.inputEvents}
             onRaise={raiseDebugEvent}
-            disabled={trace===null || trace.runtimeError!==undefined}
+            disabled={trace===undefined || trace.runtimeError!==undefined}
           />
         </div>}
       </PersistentDetails>
@@ -184,16 +166,16 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
             <HelpOutlineIcon fontSize='small'/>
           </Tooltip>
         </summary>
-        {ast && <div style={{columnWidth: 160}}>
-          <ShowInternalEvents internalEvents={ast.internalEvents}/>
+        {abstractSyntax && <div style={{columnWidth: 160}}>
+          <ShowInternalEvents internalEvents={abstractSyntax.internalEvents}/>
         </div>}
       </PersistentDetails>
 
       {/* Output events */}
       <PersistentDetails state={showOutputEvents} setState={setShowOutputEvents}>
         <summary>output events</summary>
-        {ast && <div style={{columnWidth: 160}}>
-          <ShowOutputEvents outputEvents={[...ast.outputEvents].toSorted((a,b) => a.localeCompare(b)).map(e => ({name: e}))}/>
+        {abstractSyntax && <div style={{columnWidth: 160}}>
+          <ShowOutputEvents outputEvents={[...abstractSyntax.outputEvents].toSorted((a,b) => a.localeCompare(b)).map(e => ({name: e}))}/>
         </div>}
       </PersistentDetails>
 
@@ -201,9 +183,9 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
       <PersistentDetails state={showPlant} setState={setShowPlant}>
         <summary>plant(s)</summary>
         <div className={styles.toolbar}>
-          <Tooltip tooltip={trace!==null?"clear the current execution to add plant":""} align='left'>
+          <Tooltip tooltip={trace!==undefined?"clear the current execution to add plant":""} align='left'>
             <select
-              disabled={trace!==null}
+              disabled={trace!==undefined}
               value="add plant..."
               onChange={e => onAddPlant(e.target.value)}>
               <option>add plant...</option>
@@ -215,19 +197,23 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
           &nbsp;
         </div>
         {/* Render plants */}
-        <ShowPlants
+        {<ShowPlants
           plantsState={plantsState}
           setPlantsState={setPlantsState}
           speed={speed}
           coupledState={coupledState}
           onRaise={(e) => raiseDebugEvent(e.name, e.param)}
-        />
+        />}
       </PersistentDetails>
 
       {/* Connect */}
       <PersistentDetails state={showConnections} setState={setShowConnections}>
         <summary>connect</summary>
-        {ast && <Connect ast={ast} plantsState={plantsState} setPlantsState={setPlantsState}/>}
+        {abstractSyntax && <Connect
+          abstractSyntax={abstractSyntax}
+          plantsState={plantsState}
+          setPlantsState={setPlantsState}
+          />}
       </PersistentDetails>
 
       {/* Properties */}
@@ -281,7 +267,7 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
             <AddIcon fontSize="small"/> add property
           </button>
           <Tooltip tooltip="show table view">
-            <TwoStateButton active={showTable} onClick={() => setShowTable(s => !s)} disabled={savedTraces.length === 0 || properties.length === 0}>
+            <TwoStateButton active={showTable} onClick={() => setShowTable(s => !s)} disabled={traces.savedTraces.length === 0 || properties.length === 0}>
               <TableViewIcon fontSize='small'/>
               Table
             </TwoStateButton>
@@ -295,74 +281,11 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
       {/* Traces */}
       <details open={showExecutionTrace} onToggle={e => setShowExecutionTrace(e.newState === "open")}>
         <summary>execution traces</summary>
-        <div>
-          {savedTraces.map((savedTrace, i) =>
-            <div key={i} className={styles.toolbar} style={{alignItems: 'center'}}>
-              <Tooltip tooltip="replay trace" align="left">
-                <button
-                  onClick={() => onReplayTrace(savedTrace[1])}>
-                  <CachedOutlinedIcon fontSize="small"/>
-                </button>
-              </Tooltip>
-              <Tooltip tooltip='duration' align='left'>
-                <div style={{display:'inline-block', width: 22, fontSize: 9, textAlign: 'center'}}>{(Math.floor(savedTrace[1].lastSimTime/1000))}s</div>
-              </Tooltip>
-              <Tooltip tooltip='number of input events' align='left'>
-                <div style={{display:'inline-block', width: 22, fontSize: 9, textAlign: 'center'}}>({savedTrace[1].trace.length})</div>
-              </Tooltip>
-              <Tooltip tooltip='does not have to be unique, can be empty...' align='left' fullWidth={true} showWhen='focus'>
-                <input
-                  placeholder="description"
-                  type="text"
-                  value={savedTrace[0]}
-                  style={{flexGrow: 1}}
-                  size={1}
-                  className={styles.description}
-                  onChange={e => setSavedTraces(savedTraces => savedTraces.toSpliced(i, 1, [e.target.value, savedTraces[i][1]]))}/>
-              </Tooltip>
-              <MoveUpDown i={i} ls={savedTraces} setter={setSavedTraces}/>
-              <DoubleClickButton
-                tooltip="forget this trace"
-                onDoubleClick={() => setSavedTraces(savedTraces => savedTraces.toSpliced(i, 1))}
-                align="right">
-                  <DeleteOutlineIcon fontSize="small"/>
-              </DoubleClickButton>
-            </div>
-          )}
-        </div>
-        <div className={styles.toolbar} style={{justifyContent: 'space-around', gap: '1em'}}>
-          <Tooltip tooltip="plant steps are steps where only the state of a plant changed" align="left">
-            <label>
-              <input type="checkbox"
-              checked={showPlantTrace}
-              onChange={e => setShowPlantTrace(e.target.checked)}/>
-              show plant steps
-            </label>
-          </Tooltip>
-          <label>
-            <input type="checkbox"
-              checked={showMicroSteps}
-              onChange={e => setShowMicroSteps(e.target.checked)}/>
-              show microsteps
-          </label>
-          <label>
-            <input type="checkbox"
-              checked={showTransitions}
-              onChange={e => setShowTransitions(e.target.checked)}/>
-              show transitions
-          </label>
-          <Tooltip tooltip="scroll down upon new events" align="left">
-            <input id="checkbox-autoscroll" type="checkbox" checked={autoScroll} onChange={e => setAutoScroll(e.target.checked)}/>
-            <label htmlFor="checkbox-autoscroll">auto-scroll</label>
-          </Tooltip>
-          <button
-            disabled={trace === null}
-            onClick={() => onSaveTrace()}
-            style={{marginLeft: 'auto', flexGrow: 1}}
-            >
-            <SaveOutlinedIcon fontSize="small"/> save trace
-          </button>
-        </div>
+        <Traces {...traces} {...tracesSetters}
+          time={time}
+          trace={trace}
+          onReplayTrace={onReplayTrace}
+        />
       </details>
     </div>
 
@@ -373,13 +296,19 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
         overflow:'auto',
         minHeight: '33vh',
         }}>
-          <div ref={refRightSideBar}>
-            {ast && trace &&
-              <Trace {...{trace, setTrace, setTime, ast, showMicroSteps, setShowMicroSteps, showTransitions, showPlantTrace, autoScroll,
-                plantsState,
-                propertyTrace: propertyResults && propertyResults[activeProperty] && propertyResults[activeProperty][0] || []}}
-              />
-            }
+          <div>
+            {abstractSyntax && trace &&
+              <Trace
+                ast={abstractSyntax}
+                setTime={setTime}
+                currentTrace={trace}
+                // @ts-ignore
+                setCurrentTrace={setTrace}
+                traces={traces}
+                setTraces={setTraces}
+                plantsState={plantsState}
+                propertyTrace={propertyResults?.[activeProperty]?.[0] || []}
+              />}
           </div>
       </div>}
   </>;

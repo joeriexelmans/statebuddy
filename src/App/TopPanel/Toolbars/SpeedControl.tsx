@@ -1,15 +1,15 @@
 import { setRealtime, TimeMode } from "@/statecharts/time";
 import { Dispatch, memo, SetStateAction, useCallback } from "react";
-import { KeyInfoHidden, KeyInfoVisible } from "./KeyInfo";
+import { KeyInfoHidden, KeyInfoVisible } from "../KeyInfo";
 
 import { useShortcuts } from "@/hooks/useShortcuts";
 import { stepDown, stepUp } from "@/util/steps";
-import { Tooltip } from "../Components/Tooltip";
+import { Tooltip } from "../../Components/Tooltip";
 
 import AssistWalkerIcon from '@mui/icons-material/AssistWalker';
 import DirectionsRunIcon from '@mui/icons-material/DirectionsRun';
-import { EnterText } from "../Components/EnterText";
-import { TIMESCALE_MAX, TIMESCALE_MIN, TIMESCALE_STEPS } from "../parameters";
+import { EnterText } from "../../Components/EnterText";
+import { TIMESCALE_MAX, TIMESCALE_MIN, TIMESCALE_STEPS } from "../../parameters";
 
 export const SpeedControl = memo(function SpeedControl({showKeys, timescale, setTimescale, setTime}: {showKeys: boolean, timescale: number, setTimescale: Dispatch<SetStateAction<number>>, setTime: Dispatch<SetStateAction<TimeMode>>}) {
 

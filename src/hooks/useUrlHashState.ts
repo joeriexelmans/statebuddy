@@ -1,11 +1,11 @@
 import { buf2base64, deflateBuffer, inflateJSON, str2buf } from "@/compression/deflate";
-import { useCallback, useEffect, useLayoutEffect, useState } from "react";
+import { Dispatch, SetStateAction, useCallback, useLayoutEffect, useState } from "react";
 
 // persist state in URL hash
-export function useUrlHashState<T>(recoverCallback: (recoveredState: (T|null)) => void) {
+export function useUrlHashState<T>(recoverCallback: (recoveredState: (T|undefined)) => void) {
   const [originalSize, setOriginalSize] = useState(0);
   const [compressedSize, setCompressedSize] = useState(0);
-  const [state, setState] = useState<T|null>(null);
+  const [state, setState] = useState<T|undefined>(undefined);
 
   const recover = useCallback(async (compressedState: string) => {
     try {
@@ -14,7 +14,7 @@ export function useUrlHashState<T>(recoverCallback: (recoveredState: (T|null)) =
     }
     catch (e: any) {
       console.warn(`failed to recover state!`, e);
-      recoverCallback(null);
+      recoverCallback(undefined);
     }
   }, [recoverCallback]);
 

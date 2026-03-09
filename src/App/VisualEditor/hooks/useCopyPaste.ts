@@ -1,8 +1,8 @@
-import { Arrow, Diamond, Rountangle, Text, History, allRectParts, allArrowParts, allTextParts, allHistoryParts, ConcreteSyntax, shapesBBox, entirelySelectedShapes } from "@/statecharts/concrete_syntax";
-import { ClipboardEvent, Dispatch, SetStateAction, useCallback } from "react";
-import { Selection, VisualEditorState } from "../VisualEditor";
-import { addV2D, area, centerOf, subtractV2D, Vec2D } from "@/util/geometry";
 import { useShortcuts } from "@/hooks/useShortcuts";
+import { allArrowParts, allHistoryParts, allRectParts, allTextParts, Arrow, ConcreteSyntax, Diamond, entirelySelectedShapes, History, Rountangle, shapesBBox, Text } from "@/statecharts/concrete_syntax";
+import { addV2D, area, centerOf, subtractV2D, Vec2D } from "@/util/geometry";
+import { ClipboardEvent, Dispatch, useCallback } from "react";
+import { Selection, VisualEditorState } from "../VisualEditor.state";
 
 export type CopyPasteCallbacks = {
   onCopy: () => void;

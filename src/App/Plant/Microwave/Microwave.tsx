@@ -14,7 +14,7 @@ import { memo, useEffect } from "react";
 import "./Microwave.css";
 import { useAudioContext } from "../../../hooks/useAudioContext";
 import { makeStatechartPlant, PlantRenderProps, StatechartPlantSpec } from "../Plant";
-import { detectConnections } from "@/statecharts/detect_connections";
+import { computeTopology } from "@/statecharts/detect_topology";
 import { parseStatechart } from "@/statecharts/parser";
 
 import microwaveJSON from "./model.json";
@@ -24,7 +24,7 @@ import { dummyTracer } from "@/statecharts/tracer";
 
 export const microwaveConcreteSyntax = microwaveJSON as ConcreteSyntax;
 
-export const [microwaveAbstractSyntax, microwaveErrors] = parseStatechart(microwaveConcreteSyntax, detectConnections(microwaveConcreteSyntax));
+export const [microwaveAbstractSyntax, microwaveErrors] = parseStatechart(microwaveConcreteSyntax, computeTopology(microwaveConcreteSyntax));
 
 if (microwaveErrors.length > 0) {
   console.error({microwaveErrors});

@@ -2,7 +2,8 @@ import plotStyles from "./Plot.module.css";
 import { memo, SVGAttributes, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Setters } from "../makePartialSetter";
 import { PreparedTraces } from "../SideBar/prepare_trace";
-import { jsonDeepEqual } from "@/util/util";
+import { objectsEqual } from "@/util/util";
+import { infinityIfUndefined, StateBuddyTraceState } from "../hooks/useSimulator";
 
 // Part of application state.
 export type PlotState = {
@@ -15,26 +16,27 @@ export const defaultPlotState = {
 
 type PlotProperties = PlotState & Setters<PlotState> & SVGAttributes<SVGElement> & {
   // Traces to plot.
-  traces: PreparedTraces,
-
-  // The timestamp of the currently selected item in the execution trace.
-  currentItemSimTime: number,
-
-  // The furthest point on the x-axis (time).
-  endOfTime: number,
-
-  // The furthest point in the future until where we can confidently extend the signal lines.
-  lastWakeup: number,
+  prepped: PreparedTraces,
+  trace: StateBuddyTraceState,
 }
 
 const numColors = 6; // corresponds to CSS variables --plot-color-N in index.css
 
-export const Plot = memo(function Plot({traces, currentItemSimTime, endOfTime, lastWakeup, visiblePlots, setVisiblePlots, ...rest}: PlotProperties) {
+export const Plot = memo(function Plot({prepped, trace, visiblePlots, setVisiblePlots, ...rest}: PlotProperties) {
   const refSVG = useRef(null);
   const [width, setWidth] = useState<number>(window.innerWidth);
 
-  const atLeastOnePlot = Object.entries(visiblePlots).some(([key, val]) => val === true && Object.hasOwn(traces, key));
-  const traceNames = useMemo(() => Object.keys(traces).filter(name => !["true", "false"].includes(name)), [traces]);
+  // the simtime of the last item in the trace
+  const endOfTime = infinityIfUndefined(trace?.trace.at(-1)!.simtime);
+
+  // the timeAdvance on the last item in the trace
+  // const lastWakeup = infinityIfUndefined(trace && cE?.timeAdvance(trace.trace) || Infinity);
+  const lastWakeup = endOfTime;
+
+  const currentItemSimTime = trace.trace[trace.idx].simtime;
+
+  const atLeastOnePlot = Object.entries(visiblePlots).some(([key, val]) => val === true && Object.hasOwn(prepped, key));
+  const traceNames = useMemo(() => Object.keys(prepped).filter(name => !["true", "false"].includes(name)), [prepped]);
 
   useLayoutEffect(() => {
     if (refSVG.current) {
@@ -47,10 +49,10 @@ export const Plot = memo(function Plot({traces, currentItemSimTime, endOfTime, l
     }    
   }, [refSVG.current]);
 
-  const numVisible = Object.entries(visiblePlots).reduce((n, [name, visible]) => (visible && Object.hasOwn(traces, name)) ? n + 1 : n, 0);
+  const numVisible = Object.entries(visiblePlots).reduce((n, [name, visible]) => (visible && Object.hasOwn(prepped, name)) ? n + 1 : n, 0);
   const height = 20*numVisible;
 
-  traces = Object.fromEntries(Object.entries(traces).filter(([name]) => !["true", "false"].includes(name)))
+  prepped = Object.fromEntries(Object.entries(prepped).filter(([name]) => !["true", "false"].includes(name)))
 
   const maxTime = Math.max(endOfTime, 1);
   const margin = 2; // if 0, the lines would overlap
@@ -63,7 +65,7 @@ export const Plot = memo(function Plot({traces, currentItemSimTime, endOfTime, l
   function renderSignal(name: string, i: number) {
     let path = "";
     let prevY;
-    for (const [time, value] of traces[name]) {
+    for (const [time, value] of prepped[name]) {
       const x = toSVGcoords(time);
       const y = (value ? margin : (yDiff-margin)) + yDiff*(i);
       if (prevY) {
@@ -148,6 +150,4 @@ export const Plot = memo(function Plot({traces, currentItemSimTime, endOfTime, l
       {checkboxes}
     </div>
   </>;
-}, (a,b) => {
-  return jsonDeepEqual(a,b);
-});
+}, objectsEqual);

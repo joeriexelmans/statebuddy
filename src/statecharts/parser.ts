@@ -1,7 +1,7 @@
 import {  ConcreteState, HistoryState, OrState, UnstableState, Statechart, stateDescription, Transition, computeArena } from "./abstract_syntax";
 import { Action, EventTrigger, Expression, ParsedText } from "./label_ast";
 import { parse as parseLabel, SyntaxError } from "./label_parser";
-import { Connections, ReducedConcreteSyntax } from "./detect_connections";
+import { Topology, ReducedConcreteSyntax } from "./detect_topology";
 import { memoize } from "@/util/util";
 
 export type TraceableError = {
@@ -30,7 +30,7 @@ function addEvent(events: EventTrigger[], e: EventTrigger, textUid: string) {
   }
 }
 
-export function parseStatechart(concreteSyntax: ReducedConcreteSyntax, conns: Connections): [Statechart, TraceableError[]] {
+export function parseStatechart(concreteSyntax: ReducedConcreteSyntax, conns: Topology): [Statechart, TraceableError[]] {
   const errors: TraceableError[] = [];
 
   // implicitly, the root is always an Or-state

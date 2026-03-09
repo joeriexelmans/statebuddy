@@ -1,4 +1,5 @@
-import { CoupledState, PlantsState } from "../hooks/useSimulator";
+import { CoupledState } from "../hooks/useSimulator";
+import { PlantsState } from "../hooks/useCoupledExecution";
 import { DEVSTrace } from "@/devs/trace";
 import { Statechart } from "@/statecharts/abstract_syntax";
 import { statebuddyPlants } from "../plants";

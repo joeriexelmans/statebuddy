@@ -1,6 +1,6 @@
 import { useAudioContext } from "@/hooks/useAudioContext";
 import { ConcreteSyntax } from "@/statecharts/concrete_syntax";
-import { detectConnections } from "@/statecharts/detect_connections";
+import { computeTopology } from "@/statecharts/detect_topology";
 import { parseStatechart } from "@/statecharts/parser";
 import { RT_Statechart } from "@/statecharts/runtime_types";
 import { memo, useEffect } from "react";
@@ -17,7 +17,7 @@ import { Scope } from "@/statecharts/environment";
 
 export const dwatchConcreteSyntax = dwatchJSON as ConcreteSyntax;
 
-export const [dwatchAbstractSyntax, dwatchErrors] = parseStatechart(dwatchConcreteSyntax, detectConnections(dwatchConcreteSyntax));
+export const [dwatchAbstractSyntax, dwatchErrors] = parseStatechart(dwatchConcreteSyntax, computeTopology(dwatchConcreteSyntax));
 
 
 if (dwatchErrors.length > 0) {

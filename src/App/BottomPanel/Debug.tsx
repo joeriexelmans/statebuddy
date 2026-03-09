@@ -16,10 +16,10 @@ export const defaultDebugState: DebugState = {
 }
 
 type DebugProps = DebugState & Setters<DebugState> & {
-  hide: () => void,
+  onHide: () => void,
 };
 
-export function DebugPanel({showBBox, showGrid, showCells, hide, ...setters}: DebugProps) {
+export function DebugPanel({showBBox, showGrid, showCells, onHide: hide, ...setters}: DebugProps) {
   return <div className="toolbar" style={{display: 'flex'}}>
     <div className="toolbarGroup">
       <Tooltip tooltip='The entire canvas is conceptually partitioned into a grid of equally sized cells.' align='left' above>

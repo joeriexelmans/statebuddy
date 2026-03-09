@@ -1,4 +1,4 @@
-export async function inflateJSON<T>(compressedState: string): Promise<T | null> {
+export async function inflateJSON<T>(compressedState: string): Promise<T> {
   const inflated = await inflateString(compressedState);
 
   let recoveredState;

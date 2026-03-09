@@ -10,7 +10,7 @@ import { preload } from "react-dom";
 import trafficLightJSON from "./model.json";
 import { parseStatechart } from "@/statecharts/parser";
 import { ConcreteSyntax } from "@/statecharts/concrete_syntax";
-import { detectConnections } from "@/statecharts/detect_connections";
+import { computeTopology } from "@/statecharts/detect_topology";
 import { makeStatechartPlant, PlantRenderProps, StatechartPlantSpec } from "../Plant";
 import { RT_Statechart } from "@/statecharts/runtime_types";
 import { useAudioContext } from "@/hooks/useAudioContext";
@@ -20,7 +20,7 @@ import { dummyTracer } from "@/statecharts/tracer";
 
 export const trafficLightConcreteSyntax = trafficLightJSON as ConcreteSyntax;
 
-export const [trafficLightAbstractSyntax, trafficLightErrors] = parseStatechart(trafficLightConcreteSyntax, detectConnections(trafficLightConcreteSyntax));
+export const [trafficLightAbstractSyntax, trafficLightErrors] = parseStatechart(trafficLightConcreteSyntax, computeTopology(trafficLightConcreteSyntax));
 
 if (trafficLightErrors.length > 0) {
   console.error({trafficLightErrors});

@@ -1,12 +1,12 @@
 import { ZOOM_STEPS, ZOOM_MAX, ZOOM_MIN } from "@/App/parameters";
 import { Dispatch, memo, SetStateAction } from "react";
-import { KeyInfoHidden, KeyInfoVisible } from "./KeyInfo";
+import { KeyInfoHidden, KeyInfoVisible } from "../KeyInfo";
 
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import ZoomOutIcon from '@mui/icons-material/ZoomOut';
 import { useShortcuts } from "@/hooks/useShortcuts";
-import { Tooltip } from "../Components/Tooltip";
-import { EnterText } from "../Components/EnterText";
+import { Tooltip } from "../../Components/Tooltip";
+import { EnterText } from "../../Components/EnterText";
 import { stepDown, stepUp } from "@/util/steps";
 
 const shortcutZoomIn = <><kbd>Ctrl</kbd>+<kbd>+</kbd></>;

@@ -5,9 +5,16 @@ import { Trial } from "../hooks/useTrial";
 
 export function Greeter(props: {trial: Trial}) {
   const [showGreeting, setShowGreeting] = useState(true);
+
   useEffect(() => {
     setTimeout(() => setShowGreeting(false), 2000);
-  });
+
+    console.info(`Welcome to ${props.trial.appName}!`);
+    return () => {
+      console.info("Goodbye!");
+    }
+  }, []);
+
   return <>
     {showGreeting &&
       <div className="greeter" style={{textAlign:'center'}} onClick={() => setShowGreeting(false)}>

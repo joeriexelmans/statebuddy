@@ -2,25 +2,16 @@ import { Dispatch } from "react";
 import { TraceableError } from "../../statecharts/parser";
 
 import { PersistentDetails } from "../Components/PersistentDetails";
-import { AppState } from "../App";
-import { VisualEditorState } from "../VisualEditor/VisualEditor";
-import { Setters } from "../makePartialSetter";
 
 import gitRev from "@/git-rev.txt";
 import { Tooltip } from "../Components/Tooltip";
 import { Stats } from "./Stats";
-import { Statechart } from "@/statecharts/abstract_syntax";
+import { Statechart, stateDescription } from "@/statecharts/abstract_syntax";
 
 import appStyles from "../App.module.css";
-import styles from "./BottomPanel.module.css";
-
-export type BottomPanelState = {
-  errorsExpanded: boolean,
-}
-
-export const defaultBottomPanelState = {
-  errorsExpanded: false,
-}
+import { VisualEditorState } from "../VisualEditor/VisualEditor.state";
+import { BottomPanelState } from "./BottomPanel.state";
+import { makePartialSetter, WithSetters } from "../makePartialSetter";
 
 const statusStrings = {
   "notLoaded": "not loaded",
@@ -28,7 +19,17 @@ const statusStrings = {
   "loaded": "ready",
 }
 
-export function BottomPanel(props: {errors: TraceableError[], setEditorState: Dispatch<(state: VisualEditorState) => VisualEditorState>, ast: Statechart, pyodideStatus: "notLoaded" | "loading" | "loaded"} & AppState & Setters<AppState>) {
+type BottomPanelProps = WithSetters<{
+  state: BottomPanelState,
+}> & {
+  errors: TraceableError[],
+  abstractSyntax: Statechart,
+  pyodideStatus: "notLoaded" | "loading" | "loaded",
+}
+
+export function BottomPanel(props: BottomPanelProps) {
+  const {errorsExpanded} = props.state;
+  const setErrorsExpanded = makePartialSetter(props.setState, "errorsExpanded");
 
   return <div className="bottom">
     <div className={appStyles.stackHorizontal
@@ -37,7 +38,7 @@ export function BottomPanel(props: {errors: TraceableError[], setEditorState: Di
             + ' ' + (props.pyodideStatus === "loading" ? appStyles.pyodideLoading : "")
             )}>
       <div style={{flexGrow:1}}>
-      <PersistentDetails state={props.errorsExpanded} setState={props.setErrorsExpanded}>
+      <PersistentDetails state={errorsExpanded} setState={setErrorsExpanded}>
           <summary>{props.errors.length} errors</summary>
           <div style={{maxHeight: '20vh', overflow: 'auto'}}>
           {props.errors.map(({message, shapeUid})=>
@@ -48,7 +49,7 @@ export function BottomPanel(props: {errors: TraceableError[], setEditorState: Di
         </PersistentDetails>
       </div>
       <div style={{display: 'flex', alignItems: 'center'}}>
-        <Stats ast={props.ast}/>
+        <Stats abstractSyntax={props.abstractSyntax}/>
         &nbsp;|&nbsp;
         <Tooltip tooltip="MTL properties are checked with a Python library, which runs in your browser via Pyodide. Pyodide is slow to start and currently blocks the main thread, which is a known issue." above>
           Pyodide: <span style={{

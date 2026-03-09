@@ -3,11 +3,11 @@ import { useMemo } from "react"
 import { getStats } from "@/statecharts/stats";
 
 type StatsProps = {
-  ast: Statechart,
+  abstractSyntax: Statechart,
 }
 
-export function Stats({ast}: StatsProps) {
-  const stats = useMemo(() => getStats(ast), [ast]);
+export function Stats({abstractSyntax}: StatsProps) {
+  const stats = useMemo(() => getStats(abstractSyntax), [abstractSyntax]);
 
   return <>
     {stats.numAndStates} AND-states,

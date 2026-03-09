@@ -1,10 +1,10 @@
 import { area, isEntirelyWithin, Rect2D, Vec2D } from "@/util/geometry";
-import { Arrow, ConcreteSyntax, Diamond, getArrowFatBBox, getArrowFatBBoxes, getHistoryFatBBox, getRectFatBBox, getTextFatBBox, Rountangle } from "./concrete_syntax";
+import { Arrow, ConcreteSyntax, Diamond, getArrowFatBBox, getArrowFatBBoxes, getRectFatBBox, getTextFatBBox, Rountangle } from "./concrete_syntax";
 import { findNearestArrow, findNearestHistory, findNearestSide, findRountangle, RectSide } from "./concrete_syntax";
 import { arraysEqual, jsonDeepEqual, mapsEqual, memoizeOne } from "@/util/util";
 import { GRID_CELL_SIZE, HISTORY_RADIUS } from "@/App/parameters";
 
-export type Connections = {
+export type Topology = {
   arrow2SideMap: Map<string,[{ uid: string; part: RectSide; } | undefined, { uid: string; part: RectSide; } | undefined]>,
   side2ArrowMap: Map<string, ["start"|"end", string][]>,
   text2ArrowMap: Map<string,string>,
@@ -16,7 +16,7 @@ export type Connections = {
   insidenessMap: Map<string, string>;
 }
 
-export function connectionsEqual(a: Connections, b: Connections) {
+export function topologiesEqual(a: Topology, b: Topology) {
   return mapsEqual(a.arrow2SideMap, b.arrow2SideMap, jsonDeepEqual)
     && mapsEqual(a.side2ArrowMap, b.side2ArrowMap, (a,b)=>arraysEqual(a,b,jsonDeepEqual))
     && mapsEqual(a.text2ArrowMap, b.text2ArrowMap)
@@ -101,6 +101,7 @@ const detectArrow2Side = memoizeOne(function detectArrow2Side([concreteSyntax, u
   return equal
 });
 
+// For every text label, which arrow or rountangle does it belong to?
 export const detectTextConnections = memoizeOne(function detectTextConnections([concreteSyntax, uniformGrid]: [ConcreteSyntax, any]) {
   const text2ArrowMap = new Map<string,string>();
   const arrow2TextMap = new Map<string,string[]>();
@@ -141,17 +142,13 @@ export const detectTextConnections = memoizeOne(function detectTextConnections([
   return equal;
 });
 
-const fakeRoot = {
-  uid: "root",
-  topLeft: {x: -Infinity, y: -Infinity},
-  size: {x: Infinity, y: Infinity},
-}
-
+// !!PRE-CONDITION!! concreteSyntax.rountangles is sorted from big to small surface area.
+// Detect state hierarchy.
 export const detectRountangleInsideness = memoizeOne(function detectRountangleInsideness([concreteSyntax, uniformGrid]: [ConcreteSyntax, any]) {
-  const insidenessMap = new Map<string, string>();
-  console.time("rectangle <-> rectangle")
+  const insidenessMap = new Map<string, string>(); // maps child -> parent
+  // console.time("rectangle <-> rectangle")
   function findParent(geom: Rect2D): string {
-    // seems faster if we build an array than if we work with the generator object:
+    // seems faster if we build an array than if we work with a generator object:
     const parentCandidates = collect<Rountangle>([uniformGrid.cell2Rountangles], getCells(geom));
     // iterate in reverse:
     for (const candidate of parentCandidates) {
@@ -162,7 +159,6 @@ export const detectRountangleInsideness = memoizeOne(function detectRountangleIn
     }
     return "root";
   }
-  // IMPORTANT ASSUMPTION: state.rountangles is sorted from big to small surface area:
   for (const rt of concreteSyntax.rountangles) {
     const parent = findParent(rt);
     insidenessMap.set(rt.uid, parent);
@@ -175,7 +171,7 @@ export const detectRountangleInsideness = memoizeOne(function detectRountangleIn
     const parent = findParent({topLeft: h.topLeft, size: {x: HISTORY_RADIUS*2, y: HISTORY_RADIUS*2}});
     insidenessMap.set(h.uid, parent);
   }
-  console.timeEnd("rectangle <-> rectangle");
+  // console.timeEnd("rectangle <-> rectangle");
   return insidenessMap;
 }, ([a],[b]) => {
   let equal = true;
@@ -187,7 +183,7 @@ export const detectRountangleInsideness = memoizeOne(function detectRountangleIn
 
 // This function does the heavy lifting of parsing the concrete syntax:
 // It detects insideness and connectedness relations based on the geometries of the shapes.
-export function detectConnections(concreteSyntax: ConcreteSyntax): Connections {
+export function computeTopology(concreteSyntax: ConcreteSyntax): Topology {
   console.time('detect connections');
 
   // we use 'Uniform Grid' (spatial hashing) approach for efficient collision detection
@@ -222,6 +218,7 @@ export function detectConnections(concreteSyntax: ConcreteSyntax): Connections {
   };
 }
 
+// Subset of information of concrete syntax.
 export type ReducedConcreteSyntax = {
     rountangles: {
       kind: "and" | "or",

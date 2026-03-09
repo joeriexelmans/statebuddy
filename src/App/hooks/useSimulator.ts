@@ -1,13 +1,12 @@
-import { CoupledDEVSConns, makeCoupledDEVS, Model2ModelConn } from "@/devs/coupled_devs";
-import { sc2DEVS, Statechart2DEVSState } from "@/devs/sc2devs";
+import { Statechart2DEVSState } from "@/devs/sc2devs";
 import { ExtTransitionTrace, restoreTrace } from "@/devs/serialize_trace";
-import { DEVSTrace, DEVSTraceItem, makeTracedDEVS } from "@/devs/trace";
+import { DEVSTrace, DEVSTraceItem } from "@/devs/trace";
 import { useShortcuts } from "@/hooks/useShortcuts";
-import { Statechart } from "@/statecharts/abstract_syntax";
 import { getSimTime, getWallClkDelay, TimeMode } from "@/statecharts/time";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { RuntimeError } from "@/statecharts/interpreter";
-import { statebuddyPlants } from "../plants";
+import { DEVSComponent } from "@/devs/devs";
+import { WithSetters } from "../makePartialSetter";
 
 // In StateBuddy, currently, the state of our simulation is always a CoupledDEVS state of our statechart model (with a DEVS adapter around it) and a bunch of 'plants'.
 // Perhaps in the future, we could let the user arbitrarily configure this setup (anything on the spectrum from a single Statechart Atomic DEVS to many nested Coupled DEVS ...), but for now, it is what it is.
@@ -25,101 +24,53 @@ export type StateBuddyTraceState = {
   runtimeError?: RuntimeError, // <-- certain runtime errors (e.g., non-determinism) are caught and rendered as the last item in the trace
 };
 
-// For every plant the user instantiates, we keep the following kind of entry:
-export type PlantInstance = {
-  id: string, // <-- every plant instance gets a unique immutable ID
-  name: string, // <-- a human-readable and editable name for the plant
-  type: string, // <-- the plant type ("digital watch", "traffic light", "microwave", ...)
+export type SimulatorCallbacks = {
+  onInit: () => void;
+  onClear: () => void;
+  onBack: () => void;
+  onRaise: (_inputEvent: string, _param: any) => void;
+  onSkip: () => void;
+  onReplayTrace: (extTrace: ExtTransitionTrace) => void;
 }
 
-// Statebuddy's application state wrt. plants:
-// JSON-serializable.
-export type PlantsState = {
-  plants: PlantInstance[],
-  nextPlantID: number,
-  conns: Model2ModelConn[], // <-- the user can configure the connections between the different components (meaning: the statechart model and the plant(s))
-}
+export type SimulatorStuff = WithSetters<{
+  // simulator volatile state
+  time: TimeMode;
+  trace?: StateBuddyTraceState;
+}> & {
+  // derived from state (shorthand)
+  currentTraceItem?: DEVSTraceItem<CoupledState>;
+  nextWakeup?: number;
 
-export const defaultPlantsState = {
-  plants: [],
-  nextPlantID: 0,
-  conns: [],
+  // 'reducers'
+  simulatorCallbacks: SimulatorCallbacks;
 };
 
-const ignoreRaise = (_inputEvent: string, _param: any) => {};
-
-function infinityIfUndefined(simtime: number | null | undefined) {
-  // we cannot just return (simtime || Infinity) because simtime === 0 will become Infinity and we don't want that!
-  if (simtime === null || simtime === undefined) {
-    return Infinity;
-  }
-  else return simtime;
-}
-
-export function useSimulator(ast: Statechart|null, plantsState: PlantsState) {
+export function useSimulator(cE: DEVSComponent<DEVSTrace<CoupledState>> | undefined): SimulatorStuff {
+  // time mode of the simulator
   const [time, setTime] = useState<TimeMode>({kind: "paused", simtime: 0});
-
   // trace is 'null' when there is no ongoing execution
-  const [trace, setTrace] = useState<StateBuddyTraceState|null>(null);
+  const [trace, setTrace] = useState<StateBuddyTraceState|undefined>(undefined);
 
   // The currently active item in the execution trace, if there is one
   const currentTraceItem = trace && trace.trace[trace.idx];
-
-  // The current coupled state, if there is one
-  const coupledState = currentTraceItem
-    && currentTraceItem.newState
-    || null;
   
-  const plantInstances = useMemo(() =>
-    plantsState.plants.map(({id, type}) => [id, statebuddyPlants[type]!] as const),
-    [plantsState]
-  );
-
-  const cE = useMemo(() => ast && makeTracedDEVS(makeCoupledDEVS(
-    {
-      sc: makeTracedDEVS(sc2DEVS(ast)),
-      ...Object.fromEntries(plantInstances.map(([id, plant]) => [id, makeTracedDEVS(plant.plant.execution)])),
-    }, {
-      // hard-wired connections:
-      inputs: [
-        // expose all input events
-        ...ast.inputEvents.map(({event}) => ({
-          coupledInputEvent: event,
-          inputModelName: "sc",
-          inputEvent: event,
-        })),
-        ...plantInstances.flatMap(([id, plant]) => plant.plant.uiEvents.map(uiEvent => ({
-          coupledInputEvent: uiEvent.event,
-          inputModelName: id,
-          inputEvent: uiEvent.event,
-        }))),
-      ],
-      outputs: [
-        // Expose all output events of the statechart as outputs of the Coupled DEVS
-        // The MTL property checker and the Plot-component will treat these output events as signals.
-        ...[...ast.outputEvents].map(event => ({
-          outputModelName: "sc",
-          outputEvent: event,
-          coupledOutputEvent: event,
-        })),
-      ],
-      // the user-configurable part:
-      model2Model: plantsState.conns,
-    } as CoupledDEVSConns,
-    ast.inputEvents.map(({event}) => event), // <-- every SC input becomes coupled input
-    [...ast.outputEvents], // <-- every SC output becomes coupled output
-  )),
-  [ast, plantsState]);
-
   // the timeAdvance of the currently selected item in the trace
   const nextWakeup = infinityIfUndefined(trace && cE?.timeAdvance(trace.trace.slice(0, trace.idx+1) as DEVSTrace<CoupledState>));
-  // the timeAdvance on the last item in the trace
-  const lastWakeup = infinityIfUndefined(trace && cE?.timeAdvance(trace.trace) || Infinity);
-  // the simtime of the last item in the trace
-  const endOfTime = infinityIfUndefined(trace?.trace.at(-1)?.simtime || Infinity);
+
+
+  // const timeRelatedStuff = useMemo(() => currentTraceItem && {
+  //   simtime: currentTraceItem.simtime,
+  //   nextWakeup,
+  //   lastWakeup,
+  //   endOfTime,
+  // }, [trace]);
+
+
+  // Simulator callbacks...
 
   const onInit = useCallback(() => {
-    if (cE === null) return;
+    if (cE === undefined) return;
     const trace = cE.initial();
     setTrace(makeImminentTransitions({
       trace,
@@ -136,13 +87,13 @@ export function useSimulator(ast: Statechart|null, plantsState: PlantsState) {
   }, [cE]);
 
   const onClear = useCallback(() => {
-    setTrace(null);
+    setTrace(undefined);
     setTime({kind: "paused", simtime: 0});
   }, [setTrace, setTime]);
 
   // raise input event at current point in simulated time (depends on 'time'), producing a new runtime configuration (or a runtime error)
   const onRaise = useMemo(() => {
-    if (cE === null || currentTraceItem === null) {
+    if (cE === undefined || currentTraceItem === undefined) {
       return ignoreRaise; // this speeds up rendering of components that depend on onRaise if the model is being edited while there is no ongoing trace
     }
     else return (inputEvent: string, param: any) => {
@@ -186,7 +137,7 @@ export function useSimulator(ast: Statechart|null, plantsState: PlantsState) {
   };
 
   const makeNextTimedTransition = useCallback(() => {
-    if (trace && currentTraceItem !== null && cE !== null) {
+    if (trace && currentTraceItem && cE) {
       if (trace.idx === trace.trace.length-1) {
         const [_outputEvents, newTrace] = cE.intTransition(trace.trace);
         setTrace({
@@ -239,7 +190,7 @@ export function useSimulator(ast: Statechart|null, plantsState: PlantsState) {
   // timer elapse events are triggered by a change of the simulated time (possibly as a scheduled JS event loop timeout)
   useEffect(() => {
     let timeout: NodeJS.Timeout | undefined;
-    if (trace && currentTraceItem !== null && cE !== null) {
+    if (trace && currentTraceItem && cE) {
       if (time.kind === "realtime") {
         const nextTimeout = cE.timeAdvance(trace.trace.slice(0, trace.idx+1) as DEVSTrace<CoupledState>);
         const wallclkDelay = getWallClkDelay(time, nextTimeout, Math.round(performance.now()));
@@ -247,11 +198,6 @@ export function useSimulator(ast: Statechart|null, plantsState: PlantsState) {
           timeout = setTimeout(makeNextTimedTransition, wallclkDelay);
         }
       }
-      // else if (time.kind === "paused") {
-      //   if (nextTimeout <= time.simtime) {
-      //     // timeout = setTimeout(makeIntTransition, 0);
-      //   }
-      // }
     }
     return () => {
       if (timeout) clearTimeout(timeout);
@@ -259,7 +205,7 @@ export function useSimulator(ast: Statechart|null, plantsState: PlantsState) {
   }, [cE, time, currentTraceItem, makeNextTimedTransition]);
 
   const onBack = useCallback(() => {
-    if (trace !== null && trace.idx > 0) {
+    if (trace !== undefined && trace.idx > 0) {
       setTime({
         kind: "paused",
         simtime: trace.trace[trace.idx-1].simtime,
@@ -272,7 +218,7 @@ export function useSimulator(ast: Statechart|null, plantsState: PlantsState) {
   }, [trace, trace?.idx, setTime, setTrace]);
 
   const onNext = useCallback(() => {
-    if (trace !== null && trace.idx < trace.trace.length -1) {
+    if (trace !== undefined && trace.idx < trace.trace.length -1) {
       setTime({
         kind: "paused",
         simtime: trace.trace[trace.idx+1].simtime,
@@ -297,16 +243,38 @@ export function useSimulator(ast: Statechart|null, plantsState: PlantsState) {
     }
   }, [cE]);
 
-  // timestamp of next timed transition, in simulated time
-  // const nextWakeup = getNextWakeup(currentTraceItem);
-  // const lastWakeup = getNextWakeup(trace?.trace.at(-1));
+  const simulatorCallbacks = useMemo(() => ({
+    onInit, onClear, onBack, onRaise, onSkip, onReplayTrace,
+  }), [onInit, onClear, onBack, onRaise, onSkip, onReplayTrace]);
 
-  return {trace, setTrace, onInit, onClear, onBack, onRaise, onSkip, onReplayTrace, time, setTime, nextWakeup, currentTraceItem, coupledState, cE, endOfTime, lastWakeup};
+  const simulator = useMemo(() => {
+    return {
+      // state
+      trace,
+      setTrace,
+      time,
+      setTime,
+
+      // derived from state (shorthand)
+      currentTraceItem,
+      nextWakeup,
+
+      // 'reducers'
+      simulatorCallbacks,
+    };
+  }, [cE, time, trace]);
+
+  return simulator;
 }
 
-// function getNextWakeup(item: DEVSTraceItem<CoupledState> | null | undefined) {
-//   const timers = item?.newState.sc.at(-1)!.newState.bigstep.timers || [];
-//   const nextTimedTransition = timers[0];
-//   const nextWakeup = nextTimedTransition?.[0] || Infinity;
-//   return nextWakeup;
-// }
+// helpers ....
+
+const ignoreRaise = (_inputEvent: string, _param: any) => {};
+
+export function infinityIfUndefined(simtime: number | null | undefined) {
+  // we cannot just return (simtime || Infinity) because simtime === 0 will become Infinity and we don't want that!
+  if (simtime === null || simtime === undefined) {
+    return Infinity;
+  }
+  else return simtime;
+}

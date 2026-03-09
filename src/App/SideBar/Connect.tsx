@@ -3,7 +3,7 @@ import connectStyles from "./Connect.module.css";
 
 import { Model2ModelConn } from "@/devs/coupled_devs"
 import { Statechart } from "@/statecharts/abstract_syntax";
-import { PlantsState } from "../hooks/useSimulator";
+import { PlantsState } from "../hooks/useCoupledExecution";
 import traceStyles from "./Trace.module.css";
 import { memo, useCallback, useMemo, useState } from "react";
 import { WithSetters } from "../makePartialSetter";
@@ -13,10 +13,10 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { DoubleClickButton } from "../Components/DoubleClickButton";
 import { Tooltip } from "../Components/Tooltip";
 import { statebuddyPlants } from "../plants";
-import { jsonDeepEqual } from "@/util/util";
+import { jsonDeepEqual, objectsEqual } from "@/util/util";
 
 type ConnectProps = {
-  ast: Statechart,
+  abstractSyntax: Statechart,
 } & WithSetters<{
   plantsState: PlantsState,
 }>;
@@ -59,7 +59,7 @@ function Connections({conns, startIdx, componentNames, actions, bgColor}: {
   );
 }
 
-export const Connect = memo(function Connect({ast, plantsState, setPlantsState}: ConnectProps) {
+export const Connect = memo(function Connect({abstractSyntax, plantsState, setPlantsState}: ConnectProps) {
   const [selectedOutput, setSelectedOutput] = useState("-1");
   const [selectedInput, setSelectedInput] = useState("-1");
   const plants = plantsState.plants.map(({id, type}) => [id, statebuddyPlants[type]!] as const);
@@ -68,14 +68,14 @@ export const Connect = memo(function Connect({ast, plantsState, setPlantsState}:
     ...plantsState.plants.map(({id, name}) => [id, name]),
   ]);
   const allOutputs = [
-    ...[...ast.outputEvents].map(eventName =>
+    ...[...abstractSyntax.outputEvents].map(eventName =>
         ['sc', eventName] as const),
     ...plants.flatMap(([plantId, plant]) =>
         plant.plant.execution.outputs.map(eventName =>
           [plantId, eventName] as const)),
   ];
   const allInputs = [
-    ...ast.inputEvents.map(({event}) =>
+    ...abstractSyntax.inputEvents.map(({event}) =>
         ['sc', event] as const),
     ...plants.flatMap(([plantId, plant]) =>
         plant.plant.execution.inputs.map(eventName =>
@@ -222,7 +222,7 @@ export const Connect = memo(function Connect({ast, plantsState, setPlantsState}:
       </div>
     </div>
   </>;
-}, jsonDeepEqual);
+}, objectsEqual);
 
 function autoConnect(allOutputs: (readonly [string, string])[], allInputs: (readonly [string, string])[], alreadyHave: Model2ModelConn[]) {
   return allOutputs.flatMap(([outputModelName, outputEvent]) =>

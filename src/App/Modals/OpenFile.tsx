@@ -3,16 +3,18 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import CloseIcon from '@mui/icons-material/Close';
 import HelpIcon from '@mui/icons-material/Help';
 import CheckIcon from '@mui/icons-material/Check';
-import { detectConnections } from "@/statecharts/detect_connections";
-import { Selection, VisualEditor, VisualEditorState } from "../VisualEditor/VisualEditor";
+import { computeTopology } from "@/statecharts/detect_topology";
+import { VisualEditor } from "../VisualEditor/VisualEditor";
 import { Tooltip } from "../Components/Tooltip";
 import { count } from "@/util/util";
 import { prettyNumber } from "@/util/pretty";
 import styles from "../App.module.css";
 import { buf2base64, deflateBuffer, str2buf } from "@/compression/deflate";
 import { useShortcuts } from "@/hooks/useShortcuts";
-import { SavedTraces } from "../SideBar/SideBar";
-import { ToolSelectState } from "../TopPanel/ToolSelect";
+import { ToolSelectState } from "../TopPanel/Toolbars/ToolSelect";
+import { SavedTraces } from "../SideBar/Traces";
+import { Selection, VisualEditorState } from "../VisualEditor/VisualEditor.state";
+import { CopyPasteCallbacks } from "../VisualEditor/hooks/useCopyPaste";
 
 // The "file open"-dialog is a bit hacked together, but hopefully usable at the moment.
 // Properties and traces are reusable for models that have the same plant.
@@ -121,35 +123,45 @@ const disableMouse: ToolSelectState = {
   rightMouseMode: "nothing",
 }
 
+const disableCopyPaste: CopyPasteCallbacks = {
+  onCopy: () => {},
+  onPaste: () => {},
+  onCut: () => {},
+  deleteSelection: () => {},
+}
+
 function ModelPreview({concreteSyntax}: {concreteSyntax: VisualEditorState}) {
   const refSVG = useRef(null);
   return <div style={{width: 192, overflow: "auto", height: 120, display: 'inline-block', verticalAlign: 'top'}}>
     <div style={{pointerEvents: 'none'}}>
-      <VisualEditor state={concreteSyntax}
-        commitState={() => {}}
-        conns={detectConnections(concreteSyntax)}
+      <VisualEditor
+        state={concreteSyntax}
+        setState={() => {}}
+        topology={computeTopology(concreteSyntax)}
         findText=""
         highlightActive={new Set()}
         highlightTransitions={[]}
-        setModal={() => {}}
-        zoom={0.1}
+        editorStuff={{
+          refSVG,
+          copyPasteCallbacks: disableCopyPaste,
+          cursorPos: {x: 0, y: 0},
+          dragging: null,
+          newSelection: new Selection(),
+          renderSelection: new Selection(),
+          onMouseDown: () => {},
+          selectingState: null,
+          setDragging: () => {},
+        }}
         syntaxErrors={[]}
         mouseMap={disableMouse}
-        onCopy={() => {}}
-        onPaste={() => {}}
-        onCut={() => {}}
-        deleteSelection={() => {}}
-        dragging={false}
-        onMouseDown={() => {}}
-        refSVG={refSVG}
-        renderSelection={new Selection()}
-        selectingState={null}
+        setModal={() => {}}
+        zoom={10} // <-- percent
         />
     </div>
   </div>;
 }
 
-export function OpenFile({onClose, properties, traces, editorState, bytes, modelName, replaceModel, setProperties, setTraces}: {onClose: () => void, properties: string[], traces: SavedTraces, editorState: VisualEditorState, bytes: number, modelName: string, replaceModel: Dispatch<(oldState: VisualEditorState) => VisualEditorState>, setProperties: Dispatch<SetStateAction<string[]>>, setTraces: Dispatch<SetStateAction<SavedTraces>>}) {
+export function OpenFile({onClose, properties, savedTraces: traces, editorState, bytes, modelName, replaceModel, setProperties, setSavedTraces: setTraces}: {onClose: () => void, properties: string[], savedTraces: SavedTraces, editorState: VisualEditorState, bytes: number, modelName: string, replaceModel: Dispatch<(oldState: VisualEditorState) => VisualEditorState>, setProperties: Dispatch<SetStateAction<string[]>>, setSavedTraces: Dispatch<SetStateAction<SavedTraces>>}) {
 
   useShortcuts([
     {keys: ["Escape"], action: onClose},

@@ -1,80 +1,68 @@
-import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import gitRev from "@/git-rev.txt";
 import FindInPageOutlinedIcon from '@mui/icons-material/FindInPageOutlined';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
-import gitRev from "@/git-rev.txt";
 
-import { usePersistentState } from "@/hooks/usePersistentState";
 import { useShortcuts } from "@/hooks/useShortcuts";
-import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
-import CachedIcon from '@mui/icons-material/Cached';
-import InfoOutlineIcon from '@mui/icons-material/InfoOutline';
-import KeyboardIcon from '@mui/icons-material/Keyboard';
-import PauseIcon from '@mui/icons-material/Pause';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import SkipNextIcon from '@mui/icons-material/SkipNext';
-import StopIcon from '@mui/icons-material/Stop';
 import BugReportIcon from '@mui/icons-material/BugReport';
-import SaveAltIcon from '@mui/icons-material/SaveAlt';
-import FileOpenTwoToneIcon from '@mui/icons-material/FileOpenTwoTone';
-import UploadFileIcon from '@mui/icons-material/UploadFile';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import ContentPasteIcon from '@mui/icons-material/ContentPaste';
+import InfoOutlineIcon from '@mui/icons-material/InfoOutline';
+import KeyboardIcon from '@mui/icons-material/Keyboard';
+import SaveAltIcon from '@mui/icons-material/SaveAlt';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
 
-import { Dispatch, memo, ReactElement, SetStateAction, useCallback, useMemo } from "react";
-import { setPaused, setRealtime, TimeMode } from "../../statecharts/time";
-import { formatDateTime, formatTime } from "../../util/util";
-import { AppState, EditHistory } from "../App";
+import { Vec2D } from '@/util/geometry';
+import { Dispatch, memo, useCallback } from "react";
+import { prettyNumber } from '../../util/pretty';
+import styles from "../App.module.css";
 import { Tooltip } from "../Components/Tooltip";
 import { TwoStateButton } from "../Components/TwoStateButton";
-import { About } from "../Modals/About";
-import { VisualEditorState } from "../VisualEditor/VisualEditor";
-import { Setters } from "../makePartialSetter";
-import { ToolSelect } from "./ToolSelect";
-import { KeyInfoHidden, KeyInfoVisible } from "./KeyInfo";
-import { RotateButtons } from "./RotateButtons";
-import { SpeedControl } from "./SpeedControl";
-import { UndoRedoButtons } from "./UndoRedoButtons";
-import { ZoomButtons } from "./ZoomButtons";
+import { SavedTraces } from '../SideBar/Traces';
+import { copySelection, pasteData } from '../VisualEditor/hooks/useCopyPaste';
+import { rotateSelection } from '../VisualEditor/transformations/rotate';
+import { EditHistory, EditHistoryCallbacks } from '../hooks/useEditHistory';
+import { ModelSize } from '../hooks/usePersistentAppState';
+import { SimulatorStuff } from '../hooks/useSimulator';
 import { Trial } from '../hooks/useTrial';
 import { useUpdater } from '../hooks/useUpdater';
-import { downloadObjectAsJson } from '@/util/download_json';
-import styles from "../App.module.css";
-import { OpenFile } from '../Modals/OpenFile';
-import { prettyNumber } from '../../util/pretty';
-import favicon from "../../../artwork/new-logo/favicon-minified.png";
+import { makeAllSetters, WithSetters } from "../makePartialSetter";
+import { KeyInfoHidden, KeyInfoVisible } from "./KeyInfo";
 import { Toolbar } from './Toolbar';
-import { copySelection, pasteData } from '../VisualEditor/hooks/useCopyPaste';
-import { StateBuddyTraceState } from '../hooks/useSimulator';
+import { Execution } from './Toolbars/Execution';
+import { RotateButtons } from "./Toolbars/RotateButtons";
+import { ToolSelect } from "./Toolbars/ToolSelect";
+import { UndoRedoButtons } from "./Toolbars/UndoRedoButtons";
+import { ZoomButtons } from "./Toolbars/ZoomButtons";
+import { VisualEditorState } from "../VisualEditor/VisualEditor.state";
+import { TopPanelState } from "./TopPanel.state";
 
-export type TopPanelProps = {
-  trial: Trial,
-  trace: StateBuddyTraceState | null,
-  time: TimeMode,
+export type TopPanelProps = WithSetters<{
+  topPanel: TopPanelState,
+}> & {
+  editorState: VisualEditorState,
 
-  originalSize: number,
-  compressedSize: number,
-  state: any,
+  historyCallbacks: EditHistoryCallbacks,
 
+  // editing
+  startDragging: (where: Vec2D) => void,
+  editHistory: EditHistory,
+
+  // execution
+  simulator: SimulatorStuff,
+
+  // not necessarily equal to the simulated time of the most recent execution step, because with realtime simulation, the time *appears* to evolve continuously (which is just a special effect btw)
   displayTime: number,
   refreshDisplayTime: () => void,
-  nextWakeup: number,
 
-  setTime: Dispatch<SetStateAction<TimeMode>>,
-  onUndo: () => void,
-  onRedo: () => void,
-  onCopy: () => void,
-  onPaste: () => void,
-  onRotate: (direction: "ccw"|"cw") => void,
-  onInit: () => void,
-  onClear: () => void,
-  onBack: () => void,
-  onSkip: () => void,
-  setModal: Dispatch<SetStateAction<ReactElement|null>>,
-  editHistory: EditHistory,
-  editorState: VisualEditorState,
-  setEditorState: Dispatch<(oldState: VisualEditorState) => VisualEditorState>,
-  startDragging: () => void,
-} & AppState & Setters<AppState>
+  // saving / downloading
+  modelSize: ModelSize,
+
+  trial: Trial,
+
+  onAboutStateBuddy: () => void,
+  onOpen: (modelName: string) => void,
+  onSave: (modelName: string) => void,
+};
 
 const ShortCutShowKeys = <kbd>~</kbd>;
 
@@ -83,74 +71,41 @@ function toggle(booleanSetter: Dispatch<(state: boolean) => boolean>) {
 }
 
 export const TopPanel = memo(function TopPanel(props: TopPanelProps) {
-  const {trial, trace, time, setTime, onUndo, onRedo, onCopy, onPaste, onRotate, onInit, onClear, onBack, onSkip, setModal, zoom, setZoom, showKeys, setShowKeys, editHistory, showFindReplace, setShowFindReplace, displayTime, refreshDisplayTime, nextWakeup, modelName, setModelName, originalSize, compressedSize, state, showDebug, setShowDebug, properties, editorState, savedTraces, setProperties, setSavedTraces, setEditorState, startDragging} = props;
+  const {trial, editHistory, displayTime, refreshDisplayTime, modelSize, editorState, startDragging, simulator, topPanel, setTopPanel,
+    onAboutStateBuddy, onOpen, onSave, historyCallbacks,
+  } = props;
 
-  const [timescale, setTimescale] = usePersistentState("timescale", 1);
-  const config = trace && trace.trace[trace.idx];
-  const formattedDisplayTime = useMemo(() => formatTime(displayTime), [displayTime]);
-  const lastSimTime = config?.simtime || 0;
+  const {modelName, showDebug, showFindReplace, showKeys, zoom} = topPanel;
+  const {setModelName, setShowDebug, setShowFindReplace, setShowKeys, setZoom, setMouseMap} = makeAllSetters(setTopPanel, Object.keys(topPanel) as (keyof TopPanelState)[]);
+
+  const {currentTraceItem, simulatorCallbacks} = simulator;
 
   const updateAvailable = useUpdater();
-
-  const onChangePaused = useCallback((paused: boolean, wallclktime: number) => {
-    setTime(time => {
-      if (paused) {
-        return setPaused(time, wallclktime);
-      }
-      else {
-        return setRealtime(time, timescale, wallclktime);
-      }
-    });
-    refreshDisplayTime();
-  }, [setTime, timescale, refreshDisplayTime]);
-
-  const togglePaused = useCallback(() => config && onChangePaused(time.kind !== "paused", Math.round(performance.now())), [config, time]);
-
-  const onOpen = () => {
-    setModal(<OpenFile
-      onClose={() => setModal(null)}
-      properties={properties}
-      traces={savedTraces}
-      editorState={editorState}
-      bytes={originalSize}
-      modelName={modelName}
-      setProperties={setProperties}
-      setTraces={setSavedTraces}
-      replaceModel={setEditorState}/>);
-  };
-
-  const onSave = () => {
-    downloadObjectAsJson(state, modelName.replaceAll(' ','-')+'_'+formatDateTime(new Date()).replaceAll('/','-').replaceAll(':','-').replaceAll(' ','_')+".statebuddy.json");
-  };
 
   useShortcuts([
     {keys: ["`"], action: toggle(setShowKeys)},
     {keys: ["Shift", "~"], action: toggle(setShowKeys)},
-    {keys: ["Ctrl", "o"], action: onOpen},
-    {keys: ["Ctrl", "s"], action: onSave},
+    {keys: ["Ctrl", "o"], action: () => onOpen(modelName)},
+    {keys: ["Ctrl", "s"], action: () => onSave(modelName)},
     {keys: ["Ctrl", "Shift", "F"], action: toggle(setShowFindReplace)},
-    {keys: ["i"], action: onInit},
-    {keys: ["c"], action: onClear},
-    {keys: ["Backspace"], action: onBack},
-    {keys: [" "], action: togglePaused},
+    {keys: ["i"], action: simulatorCallbacks.onInit},
+    {keys: ["c"], action: simulatorCallbacks.onClear},
+    {keys: ["Backspace"], action: simulatorCallbacks.onBack},
   ]);
 
   useShortcuts([
-    {keys: ["Tab"], action: config && onSkip || onInit},
-    {keys: ["Shift", "Tab"], action: onBack},
+    {keys: ["Tab"], action: currentTraceItem && simulatorCallbacks.onSkip || simulatorCallbacks.onInit},
+    {keys: ["Shift", "Tab"], action: simulatorCallbacks.onBack},
   ], false); // <-- these shortcuts even steal keyboard events when focused on textboxes (because there is no need to Tab between inputs)
 
   const KeyInfo = showKeys ? KeyInfoVisible : KeyInfoHidden;
-
-  const progress = (displayTime-lastSimTime)/(nextWakeup-lastSimTime);
-  const catchingUp = progress > 1;
 
   return <Toolbar style={{columnGap: '1em'}}>
     {/* shortcuts / about */}
     <Toolbar>
       <Tooltip tooltip={updateAvailable ? `${trial.appName} update available!
 Refresh the page to get the latest version.` : `about ${trial.appName}`} align="left" showWhen={updateAvailable ? "always" : "hover"}>
-        <button onClick={() => setModal(<About setModal={setModal} {...trial}/>)}
+        <button onClick={onAboutStateBuddy}
           style={{verticalAlign: 'bottom'}}>
           <InfoOutlineIcon fontSize='small'/>
         </button>
@@ -172,13 +127,13 @@ Refresh the page to get the latest version.` : `about ${trial.appName}`} align="
     <Toolbar>
       <KeyInfo keyInfo={<><kbd>Ctrl</kbd>+<kbd>O</kbd></>}>
         <Tooltip tooltip='import file(s)...'>
-          <button onClick={onOpen}>
+          <button onClick={() => onOpen(modelName)}>
             <UploadFileIcon fontSize='small'/>
           </button>
         </Tooltip>
       </KeyInfo>
-      <Tooltip tooltip={`model size: ${prettyNumber(originalSize)} bytes
-compressed: ${prettyNumber(compressedSize)} bytes (${Math.round(compressedSize/originalSize*100)}%)`} align='left'>
+      <Tooltip tooltip={`model size: ${prettyNumber(modelSize.original)} bytes
+compressed: ${prettyNumber(modelSize.compressed)} bytes (${Math.round(modelSize.compressed/modelSize.original*100)}%)`} align='left'>
         <input
           type="text"
           placeholder='model name'
@@ -190,7 +145,7 @@ compressed: ${prettyNumber(compressedSize)} bytes (${Math.round(compressedSize/o
       </Tooltip>
       <KeyInfo keyInfo={<><kbd>Ctrl</kbd>+<kbd>S</kbd></>}>
         <Tooltip tooltip='export as JSON'>
-          <button onClick={onSave}>
+          <button onClick={() => onSave(modelName)}>
             <SaveAltIcon fontSize='small'/>
           </button>
         </Tooltip>
@@ -204,7 +159,12 @@ compressed: ${prettyNumber(compressedSize)} bytes (${Math.round(compressedSize/o
 
     {/* undo / redo */}
     <Toolbar>
-      <UndoRedoButtons showKeys={showKeys} onUndo={onUndo} onRedo={onRedo} historyLength={editHistory.history.length} futureLength={editHistory.future.length}/>
+      <UndoRedoButtons
+        showKeys={showKeys}
+        historyCallbacks={historyCallbacks}
+        historyLength={editHistory.history.length}
+        futureLength={editHistory.future.length}
+      />
     </Toolbar>
 
     {/* copy / paste */}
@@ -227,7 +187,11 @@ compressed: ${prettyNumber(compressedSize)} bytes (${Math.round(compressedSize/o
           <button
             onClick={() => {
               navigator.clipboard.readText().then((text) => {
-                pasteData(text, {x: 500, y: 100}, setEditorState, startDragging);
+                const where = {x: 500, y: 100};
+                pasteData(text, // <-- data to decode
+                  where, // <-- where on the canvas
+                  historyCallbacks.commitState, // <-- create new entry in edit history
+                  () => startDragging(where)); // <-- pasted shapes follow mouse
               });
             }}
           >
@@ -239,12 +203,22 @@ compressed: ${prettyNumber(compressedSize)} bytes (${Math.round(compressedSize/o
 
     {/* insert rountangle / arrow / ... */}
     <Toolbar>
-      <ToolSelect {...props}/>
+      <ToolSelect
+        mouseMap={topPanel.mouseMap}
+        setMouseMap={setMouseMap}
+        showKeys={topPanel.showKeys}
+      />
     </Toolbar>
 
     {/* rotate */}
     <Toolbar>
-      <RotateButtons selection={editHistory.current.selection} onRotate={onRotate}/>
+      <RotateButtons
+        disabled={editorState.selection.size === 0}
+        onRotate={useCallback((direction: "ccw"|"cw") =>
+          historyCallbacks.commitState(editorState =>
+            rotateSelection(editorState, direction)),
+          [historyCallbacks.commitState])}
+      />
     </Toolbar>
 
     {/* find, replace */}
@@ -270,109 +244,11 @@ compressed: ${prettyNumber(compressedSize)} bytes (${Math.round(compressedSize/o
     </Toolbar>
 
     {/* execution */}
-    <Toolbar style={{columnGap: '1em'}}>
-
-      {/* init / clear */}
-      <Toolbar>
-        <KeyInfo keyInfo={<kbd>I</kbd>}>
-          <Tooltip tooltip="(re)initialize simulation">
-            <button onClick={onInit} ><PlayArrowIcon fontSize="small"/>
-              <CachedIcon fontSize="small"/>
-            </button>
-          </Tooltip>
-        </KeyInfo>
-        <KeyInfo keyInfo={<kbd>C</kbd>}>
-          <Tooltip tooltip="clear the simulation">
-            <button onClick={onClear} disabled={!config}>
-              <StopIcon fontSize="small"/>
-            </button>
-          </Tooltip>
-        </KeyInfo>
-      </Toolbar>
-        
-      {/* pause / real time */}
-      <Toolbar>
-        <KeyInfo keyInfo={<><kbd>Space</kbd> toggles</>}>
-          <Tooltip tooltip="pause simulation">
-            <TwoStateButton
-              active={config !== null && time.kind==="paused"}
-              disabled={config === null}
-              onClick={togglePaused}
-            >
-              <PauseIcon fontSize="small"/>
-            </TwoStateButton>
-          </Tooltip>
-          <Tooltip tooltip="run simulation in real time">
-            <TwoStateButton
-              active={config !== null && time.kind==="realtime"}
-              disabled={config === null}
-              onClick={togglePaused}
-            >
-              <PlayArrowIcon fontSize="small"/>
-            </TwoStateButton>
-          </Tooltip>
-        </KeyInfo>
-      </Toolbar>
-
-      {/* speed */}
-      <Toolbar>
-        <SpeedControl setTime={setTime} timescale={timescale} setTimescale={setTimescale} showKeys={showKeys} />
-      </Toolbar>
-
-      {/* time, next */}
-      <Toolbar style={{columnGap:'1em'}}>
-        <Tooltip tooltip="current simulated time">
-          <label>
-            <AccessTimeIcon fontSize="small"/>
-            <div style={{
-              position: 'absolute',
-              marginTop: -4,
-              marginLeft: 17,
-              height: 4,
-              borderWidth: 0,
-              borderBottomLeftRadius: 4,
-              borderBottomRightRadius: 4,
-              backgroundColor: catchingUp
-                ? 'var(--firing-transition-color)'
-                : 'var(--accent-border-color)',
-              width: Math.min(progress, 1)*56,
-              }}
-              title={catchingUp
-                ? "running behind schedule! (maybe slow down a bit so i can catch up?)"
-                : "are we there yet?"}
-              />
-            <input
-              disabled={!config}
-              value={formattedDisplayTime}
-              readOnly={true}
-              style={{width:56, cursor: 'not-allowed'}}
-              />
-          </label>
-        </Tooltip>
-
-        <Toolbar>
-          <Tooltip tooltip="next timed transition occurs at ...">
-            <label>
-              <AccessAlarmIcon fontSize="small"/>
-              <input
-                disabled={!config}
-                value={formatTime(nextWakeup)}
-                readOnly={true}
-                style={{width:56, cursor: 'not-allowed'}}
-              />
-            </label>
-          </Tooltip>
-          <KeyInfo keyInfo={<kbd>Tab</kbd>}>
-            <Tooltip tooltip="jump to next timed transition" align="right">
-              <button
-                disabled={nextWakeup === Infinity}
-                onClick={onSkip}>
-                <SkipNextIcon fontSize="small"/>
-              </button>
-            </Tooltip>
-          </KeyInfo>
-        </Toolbar>
-      </Toolbar>
-    </Toolbar>
+    <Execution
+      simulator={simulator}
+      showKeys={showKeys}
+      displayTime={displayTime}
+      refreshDisplayTime={refreshDisplayTime}
+    />
   </Toolbar>;
 });

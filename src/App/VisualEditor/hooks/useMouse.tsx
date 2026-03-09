@@ -1,150 +1,94 @@
 import { allArrowParts, allHistoryParts, allRectParts, allTextParts, rountangleMinSize } from "@/statecharts/concrete_syntax";
 import { addV2D, area, isEntirelyWithin, normalizeRect, Rect2D, roundLine2D, roundRect2D, roundVec2D, scaleV2D, subtractV2D, transformLine, transformRect, Vec2D } from "@/util/geometry";
 import { getBBoxInSvgCoords } from "@/util/svg_helper";
-import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useState } from "react";
+import { Dispatch, RefObject, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MIN_ROUNTANGLE_SIZE } from "../../parameters";
-import { ToolMode, ToolSelectState } from "../../TopPanel/ToolSelect";
+import { ToolMode, ToolSelectState } from "../../TopPanel/Toolbars/ToolSelect";
 import { SelectingState } from "../Selection";
-import { Parts, Selection, VisualEditorState } from "../VisualEditor";
 import { useShortcuts } from "@/hooks/useShortcuts";
 import styles from "../VisualEditor.module.css";
+import { CopyPasteCallbacks, useCopyPaste } from "./useCopyPaste";
+import { VisualEditorState, Parts } from "../VisualEditor.state";
+import { Selection } from "../VisualEditor.state";
+import { EditHistoryCallbacks } from "@/App/hooks/useEditHistory";
 
-export function mergeSelections(a: Selection, b: Selection) {
-  const result = new Selection(a);
-  for (const [uid, parts] of b.entries()) {
-    result.set(uid, (result.get(uid) || new Set()).union(parts));
-  }
-  return result;
-}
+export type EditorStuff = {
+  onMouseDown: (e: React.MouseEvent<SVGSVGElement, MouseEvent>) => void;
+  dragging: Vec2D | null;
+  setDragging: Dispatch<SetStateAction<Vec2D | null>>;
+  cursorPos: Vec2D;
+  refSVG: RefObject<SVGSVGElement | null>;
+  copyPasteCallbacks: CopyPasteCallbacks;
 
-// get list of parts of shapes that are within the selecting-rectangle
-function computeSelection(ss: SelectingState, refSVG: {current: SVGSVGElement | null}, zoom: number): Selection {
-  if (ss) {
-    // complete selection
-    const normalizedSS = normalizeRect(ss);
-    const shapes = Array.from(refSVG.current?.querySelectorAll("rect, line, circle, text") || []) as SVGGraphicsElement[];
-    // Note: the same UID may be represented by multiple 'shapes'. Every 'shape' can represent any number of 'parts'.
-    const shapesInSelection = shapes.filter(el => {
-      const bbox = getBBoxInSvgCoords(el, refSVG.current!);
-      const scaledBBox = {
-        topLeft: scaleV2D(bbox.topLeft, 1/zoom),
-        size: scaleV2D(bbox.size, 1/zoom),
-      }
-      return isEntirelyWithin(scaledBBox, normalizedSS);
-    }).filter(el => !el.classList.contains(styles.corner));
-
-    const selection: Selection = new Selection();
-    for (const shape of shapesInSelection) {
-      const uid = shape.dataset.uid;
-      if (uid) {
-        const parts = new Parts(shape.dataset.parts?.split(' ') || []);
-        for (const part of parts) {
-          selection.set(uid, (selection.get(uid) as Parts || new Parts()).add(part));
-        }
-      }
-    }
-    return selection;
-  }
-  return new Selection();
-}
-
-function drag(state: VisualEditorState, pointerDelta: Vec2D) {
-  const getParts = (uid: string) => {
-      return state.selection.get(uid) || new Parts();
-  }
-  return {
-    ...state,
-    rountangles: state.rountangles.map(r => {
-      const selectedParts = getParts(r.uid);
-      if (selectedParts.size === 0) {
-        return r;
-      }
-      return {
-        ...r,
-        ...roundRect2D(transformRect(r, selectedParts, pointerDelta)),
-      };
-    })
-    .toSorted((a,b) => area(b) - area(a)), // sort: smaller rountangles are drawn on top
-    diamonds: state.diamonds.map(d => {
-      const selectedParts = getParts(d.uid);
-      if (selectedParts.size === 0) {
-        return d;
-      }
-      return {
-        ...d,
-        ...roundRect2D(transformRect(d, selectedParts, pointerDelta)),
-      };
-    }),
-    history: state.history.map(h => {
-      const selectedParts = getParts(h.uid);
-      if (selectedParts.size === 0) {
-        return h;
-      }
-      return {
-        ...h,
-        topLeft: roundVec2D(addV2D(h.topLeft, pointerDelta)),
-      }
-    }),
-    arrows: state.arrows.map(a => {
-      const selectedParts = getParts(a.uid);
-      if (selectedParts.size === 0) {
-        return a;
-      }
-      return {
-        ...a,
-        ...roundLine2D(transformLine(a, selectedParts, pointerDelta)),
-      }
-    }),
-    texts: state.texts.map(t => {
-      const selectedParts = getParts(t.uid);
-      if (selectedParts.size === 0) {
-        return t;
-      }
-      return {
-        ...t,
-        topLeft: roundVec2D(addV2D(t.topLeft, pointerDelta)),
-      }
-    }).toSorted((a,b) => a.topLeft.y - b.topLeft.y),
-  };
-}
+  newSelection: Selection;
+  selectingState: SelectingState;
+  renderSelection: Selection,
+};
 
 export function useMouse(
-  dragging: Vec2D|null,
-  setDragging: Dispatch<SetStateAction<Vec2D|null>>,
-  selectingState: SelectingState,
-  setSelectingState: Dispatch<SetStateAction<SelectingState>>,
-  {leftMouseMode, middleMouseMode, rightMouseMode}: ToolSelectState,
+  mouseMap: ToolSelectState,
   zoom: number,
-  refSVG: {current: SVGSVGElement|null},
-  selection: Selection,
-  commitState: Dispatch<(v: VisualEditorState) => VisualEditorState>,
-  replaceState: Dispatch<(v: VisualEditorState) => VisualEditorState>)
-{
+  
+  // set of currently selected shapes
+  // selection: Selection,
+  state: VisualEditorState,
+  
+  historyCallbacks: EditHistoryCallbacks,
+) {
+  // Not null while the user is making a selection (rendered as a transparent dashed-border blue box).
+  const [selectingState, setSelectingState] = useState<SelectingState>(null);
+  
+  // Whether a bunch of selected shapes are being dragged with the mouse cursor.
+  // if not dragging: null
+  // if dragging: position of cursor at last mouse event
+  const [dragging, setDragging] = useState<Vec2D|null>(null);
+  
+  // The last known cursor position (via the most recent mouse event).
+  // Needed for pasting from clipboard (insert shapes under cursor).
+  const [cursorPos, setCursorPos] = useState<Vec2D>({x:0,y:0});
+  
+  // We keep a ref to the SVG element in order to transform mouse event coordinates to SVG coordinates.
+  const refSVG = useRef<SVGSVGElement>(null);
+  
+  const {commitState, replaceState} = historyCallbacks;
+  
+  // The set of selected shapes is part of the editor state (and its history)
+  // This callback creates a new entry in edit history with the updated selection.
   const commitSelection = useCallback((cb: (oldSelection: Selection) => Selection) => {
     commitState(oldState => ({...oldState, selection: cb(oldState.selection)}));
   },[commitState]);
-
+  
+  // This callback overwrites the last entry in edit history with the updated selection.
   const replaceSelection = useCallback((cb: (oldSelection: Selection) => Selection) =>
     replaceState(oldState => ({...oldState, selection: cb(oldState.selection)})),[replaceState]);
-
-  // selection being made
+  
+  // The shapes being currently selected.
+  // The shapes in this selection are also rendered as selected. But we keep them seperate in case the user decides to cancel the making of the new selection.
   const newSelection: Selection = useMemo(() =>
     computeSelection(selectingState, refSVG, zoom),
-    [selectingState, refSVG, zoom]);
-
+  [selectingState, refSVG, zoom]);
+  
+  // Helper to convert mouse event coordinates to SVG coordinates.
   const getCurrentPointer = useCallback((e: {pageX: number, pageY: number}) => {
-    const bbox = refSVG.current!.getBoundingClientRect();
-    return {
-      x: (e.pageX - bbox.left) / zoom,
-      y: (e.pageY - bbox.top) / zoom,
+    if (refSVG.current) {
+      const bbox = refSVG.current.getBoundingClientRect();
+      return {
+        x: (e.pageX - bbox.left) / zoom,
+        y: (e.pageY - bbox.top) / zoom,
+      }
+    }
+    else {
+      return {x: 0, y: 0};
     }
   }, [refSVG.current, zoom]);
-
+  
+  
   const startSelect = useCallback((e: React.MouseEvent<SVGSVGElement, MouseEvent>) => {
     const currentPointer = getCurrentPointer(e);
     let toGrow: Selection;
+    // Shift or Ctrl key down: grow existing selection.
     if (e.getModifierState("Shift") || e.getModifierState("Control")) {
-      toGrow = selection;
+      toGrow = state.selection;
     }
     else {
       toGrow = new Selection();
@@ -164,7 +108,7 @@ export function useMouse(
     const parts = new Parts(e.target?.dataset.parts?.split(' ').filter((p:string) => p!=="") || []);
     if (uid && parts.size > 0) {
       // mouse hovers over a shape or part of a shape
-      const allPartsInSelection = parts.difference(selection.get(uid) || new Set()).size === 0;
+      const allPartsInSelection = parts.difference(state.selection.get(uid) || new Set()).size === 0;
       if (!allPartsInSelection) {
         // existing selection does not (entirely) cover the part
         // @ts-ignore: classList property unknown to TypeScript
@@ -194,8 +138,8 @@ export function useMouse(
       // mouse is not on any shape
       startMakingSelection();
     }
-  }, [getCurrentPointer, commitSelection, selection]);
-
+  }, [getCurrentPointer, commitSelection, state.selection]);
+  
   const startInsert = useCallback((e: React.MouseEvent<SVGSVGElement, MouseEvent>, mode: ToolMode) => {
     const currentPointer = getCurrentPointer(e);
     // ignore selection, right mouse button always inserts
@@ -265,12 +209,14 @@ export function useMouse(
       }
       throw new Error("unreachable, mode=" + mode); // shut up typescript
     });
+    // The user can still resize/move the inserted shape as long as the insert mouse button is kept pressed:
     setDragging(currentPointer);
     return;
   }, [getCurrentPointer, commitState]);
-
-  const modeToAction = (mode: ToolMode, e: React.MouseEvent<SVGSVGElement, MouseEvent>) => {
+  
+  const modeToAction = useCallback((mode: ToolMode, e: React.MouseEvent<SVGSVGElement, MouseEvent>) => {
     if (mode === "nothing") {
+      // In this case, we very consciously don't preventDefault so the browser's context menu can still be accessed with right mouse button if no tool is mapped to that button -> useful for debugging!
       return;
     }
     else if (mode === "select") {
@@ -283,22 +229,20 @@ export function useMouse(
       e.stopPropagation();
       startInsert(e, mode);
     }
-  }
-
+  }, [startSelect, startInsert]);
+  
   const onMouseDown = useCallback((e: React.MouseEvent<SVGSVGElement, MouseEvent>) => {
     if (e.button === 0) {
-      modeToAction(leftMouseMode, e);
+      modeToAction(mouseMap.leftMouseMode, e);
     }
     else if (e.button === 1) {
-      modeToAction(middleMouseMode, e);
+      modeToAction(mouseMap.middleMouseMode, e);
     }
     else if (e.button === 2) {
-      modeToAction(rightMouseMode, e);
+      modeToAction(mouseMap.rightMouseMode, e);
     }
-  }, [rightMouseMode, leftMouseMode, modeToAction]);
-
-  const [cursorPos, setCursorPos] = useState<Vec2D>({x:0,y:0});
-
+  }, [modeToAction, mouseMap]);
+  
   const onMouseMove = useCallback((e: {pageX: number, pageY: number}) => {
     const currentPointer = getCurrentPointer(e);
     setCursorPos(currentPointer);
@@ -324,13 +268,13 @@ export function useMouse(
       }
       return ss;
     });
-  }, [replaceState, getCurrentPointer, selectingState, setSelectingState, selection, dragging, setDragging]);
-
+  }, [replaceState, getCurrentPointer, selectingState, setSelectingState, state.selection, dragging, setDragging]);
+  
   const onMouseUp = useCallback((e: {target: any, pageX: number, pageY: number}) => {
     if (dragging) {
       // we were moving / resizing
       setDragging(null);
-
+      
       // do not persist sizes smaller than 40x40
       replaceState(state => {
         return {
@@ -369,7 +313,7 @@ export function useMouse(
     }
     setSelectingState(null); // no longer making a selection
   }, [replaceState, replaceSelection, dragging, selectingState, setSelectingState, refSVG.current]);
-
+  
   const onSelectAll = useCallback(() => {
     setDragging(null);
     commitState(state => ({
@@ -383,29 +327,153 @@ export function useMouse(
       ]),
     }));
   }, [commitState, setDragging]);
-
+  
   const convertSelection = useCallback((kind: "or"|"and") => {
     commitState(state => ({
       ...state,
       rountangles: state.rountangles.map(r => state.selection.has(r.uid) ? ({...r, kind}) : r),
     }));
   }, [commitState]);
+  
+  
+  
+  const renderSelection = useMemo(() => mergeSelections(state.selection, newSelection), [state.selection, newSelection]);
+  
+  // copy/paste depends on 'useMouse' (it updates the 'dragging' state on paste)
+  const copyPasteCallbacks = useCopyPaste(
+    state,
+    commitState,
+    renderSelection,
+    () => setDragging(cursorPos), // <-- upon pasting, the pasted shapes follow the mouse cursor until the user clicks at the desired position.
+    cursorPos);
+    
+    useShortcuts([
+      {keys: ["o"], action: useCallback(() => convertSelection("or"), [convertSelection])},
+      {keys: ["a"], action: useCallback(() => convertSelection("and"), [convertSelection])},
+      {keys: ["Ctrl", "a"], action: onSelectAll},
+    ]);
+    
+    useEffect(() => {
+      // mousemove and mouseup are registered on the window object (i.e., globally) so they keep working when pointer is outside of browser window.
+      // mousedown will be registered on the SVG element.
+      window.addEventListener("mouseup", onMouseUp);
+      window.addEventListener("mousemove", onMouseMove);
+      return () => {
+        window.removeEventListener("mousemove", onMouseMove);
+        window.removeEventListener("mouseup", onMouseUp);
+      };
+    }, [onMouseUp, onMouseMove]);
+    
+    return {
+      onMouseDown,
+      dragging,
+      setDragging,
+      cursorPos,
+      refSVG,
+      copyPasteCallbacks,
 
-  useShortcuts([
-    {keys: ["o"], action: useCallback(() => convertSelection("or"), [convertSelection])},
-    {keys: ["a"], action: useCallback(() => convertSelection("and"), [convertSelection])},
-    {keys: ["Ctrl", "a"], action: onSelectAll},
-  ]);
-
-  useEffect(() => {
-    // mousemove and mouseup are global event handlers so they keep working when pointer is outside of browser window
-    window.addEventListener("mouseup", onMouseUp);
-    window.addEventListener("mousemove", onMouseMove);
-    return () => {
-      window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("mouseup", onMouseUp);
+      newSelection,
+      selectingState,
+      renderSelection,
     };
-  }, [onMouseUp, onMouseMove]);
-
-  return {onMouseDown, newSelection, dragging, setDragging, cursorPos};
-}
+  }
+  
+  
+  export function mergeSelections(a: Selection, b: Selection) {
+    const result = new Selection(a);
+    for (const [uid, parts] of b.entries()) {
+      result.set(uid, (result.get(uid) || new Set()).union(parts));
+    }
+    return result;
+  }
+  
+  // get list of parts of shapes that are within the selecting-rectangle
+  function computeSelection(ss: SelectingState, refSVG: {current: SVGSVGElement | null}, zoom: number): Selection {
+    if (ss) {
+      // complete selection
+      const normalizedSS = normalizeRect(ss);
+      const shapes = Array.from(refSVG.current?.querySelectorAll("rect, line, circle, text") || []) as SVGGraphicsElement[];
+      // Note: the same UID may be represented by multiple 'shapes'. Every 'shape' can represent any number of 'parts'.
+      const shapesInSelection = shapes.filter(el => {
+        const bbox = getBBoxInSvgCoords(el, refSVG.current!);
+        const scaledBBox = {
+          topLeft: scaleV2D(bbox.topLeft, 1/zoom),
+          size: scaleV2D(bbox.size, 1/zoom),
+        }
+        return isEntirelyWithin(scaledBBox, normalizedSS);
+      }).filter(el => !el.classList.contains(styles.corner));
+      
+      const selection: Selection = new Selection();
+      for (const shape of shapesInSelection) {
+        const uid = shape.dataset.uid;
+        if (uid) {
+          const parts = new Parts(shape.dataset.parts?.split(' ') || []);
+          for (const part of parts) {
+            selection.set(uid, (selection.get(uid) as Parts || new Parts()).add(part));
+          }
+        }
+      }
+      return selection;
+    }
+    return new Selection();
+  }
+  
+  function drag(state: VisualEditorState, pointerDelta: Vec2D) {
+    const getParts = (uid: string) => {
+      return state.selection.get(uid) || new Parts();
+    }
+    return {
+      ...state,
+      rountangles: state.rountangles.map(r => {
+        const selectedParts = getParts(r.uid);
+        if (selectedParts.size === 0) {
+          return r;
+        }
+        return {
+          ...r,
+          ...roundRect2D(transformRect(r, selectedParts, pointerDelta)),
+        };
+      })
+      .toSorted((a,b) => area(b) - area(a)), // sort: smaller rountangles are drawn on top
+      diamonds: state.diamonds.map(d => {
+        const selectedParts = getParts(d.uid);
+        if (selectedParts.size === 0) {
+          return d;
+        }
+        return {
+          ...d,
+          ...roundRect2D(transformRect(d, selectedParts, pointerDelta)),
+        };
+      }),
+      history: state.history.map(h => {
+        const selectedParts = getParts(h.uid);
+        if (selectedParts.size === 0) {
+          return h;
+        }
+        return {
+          ...h,
+          topLeft: roundVec2D(addV2D(h.topLeft, pointerDelta)),
+        }
+      }),
+      arrows: state.arrows.map(a => {
+        const selectedParts = getParts(a.uid);
+        if (selectedParts.size === 0) {
+          return a;
+        }
+        return {
+          ...a,
+          ...roundLine2D(transformLine(a, selectedParts, pointerDelta)),
+        }
+      }),
+      texts: state.texts.map(t => {
+        const selectedParts = getParts(t.uid);
+        if (selectedParts.size === 0) {
+          return t;
+        }
+        return {
+          ...t,
+          topLeft: roundVec2D(addV2D(t.topLeft, pointerDelta)),
+        }
+      }).toSorted((a,b) => a.topLeft.y - b.topLeft.y),
+    };
+  }

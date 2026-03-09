@@ -1,14 +1,14 @@
 import { Dispatch, memo, ReactElement, SetStateAction, useCallback, useEffect } from "react";
-import { KeyInfoHidden, KeyInfoVisible } from "./KeyInfo";
-import { HistoryIcon, PseudoStateIcon, RountangleIcon } from "./Icons";
+import { KeyInfoHidden, KeyInfoVisible } from "../KeyInfo";
+import { HistoryIcon, PseudoStateIcon, RountangleIcon } from "../Icons";
 
 import TrendingFlatIcon from '@mui/icons-material/TrendingFlat';
 import { useShortcuts } from "@/hooks/useShortcuts";
-import { Tooltip } from "../Components/Tooltip";
-import { TwoStateButton } from "../Components/TwoStateButton";
+import { Tooltip } from "../../Components/Tooltip";
+import { TwoStateButton } from "../../Components/TwoStateButton";
 import HighlightAltSharpIcon from '@mui/icons-material/HighlightAltSharp';
-import { makeAllSetters, makePartialSetter, Setters, WithSetters } from "../makePartialSetter";
-import { MouseIcon } from "./MouseIcon";
+import { makeAllSetters, makePartialSetter, Setters, WithSetters } from "../../makePartialSetter";
+import { MouseIcon } from "../MouseIcon";
 
 export type ToolMode = "select" | "and" | "or" | "pseudo" | "shallow" | "deep" | "transition" | "text" | "nothing";
 

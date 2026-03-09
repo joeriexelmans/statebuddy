@@ -1,6 +1,6 @@
 import { getPropertyChecker, initPyodide } from "@/mtl-checker/mtl";
 import { PyodideAPI } from "pyodide";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { PreparedTraces, PropertyCheckResult } from "../SideBar/prepare_trace";
 
 export function usePyodide() {
@@ -11,7 +11,7 @@ export function usePyodide() {
     promise: Promise<PyodideAPI>,
   }>({status: "notLoaded"});
 
-  const withPyodide = (callback: (pyodide: PyodideAPI) => void) => {
+  const withPyodide = useCallback((callback: (pyodide: PyodideAPI) => void) => {
     setState(state => {
       if (state.status === "notLoaded") {
         const promise = initPyodide();
@@ -27,13 +27,13 @@ export function usePyodide() {
         return state; // no change
       }
     })
-  }
+  }, [setState]);
 
-  const checkProperty = (property: string, preparedTraces: PreparedTraces) => {
-    return new Promise<PropertyCheckResult>((resolve, reject) => {
+  const checkProperty = useCallback((property: string, preparedTraces: PreparedTraces) => {
+    return new Promise<PropertyCheckResult>((resolve) => {
       withPyodide(pyodide => resolve(getPropertyChecker(pyodide)(property, preparedTraces)));
     })
-  };
+  }, [withPyodide]);
 
   return {
     status: state.status,

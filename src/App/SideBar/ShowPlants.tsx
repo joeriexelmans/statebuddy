@@ -1,5 +1,6 @@
 import { DoubleClickButton } from "../Components/DoubleClickButton";
-import { CoupledState, PlantsState } from "../hooks/useSimulator";
+import { CoupledState } from "../hooks/useSimulator";
+import { PlantsState } from "../hooks/useCoupledExecution";
 import { WithSetters } from "../makePartialSetter";
 import appStyles from "../App.module.css";
 
@@ -14,11 +15,12 @@ type ShowPlantsProps = WithSetters<{
   plantsState: PlantsState,
 }> & {
   speed: number;
-  coupledState: CoupledState|null,
+  coupledState?: CoupledState,
   onRaise: (event: RaisedEvent) => void,
 };
 
 export function ShowPlants({plantsState, setPlantsState, speed, coupledState, onRaise}: ShowPlantsProps) {
+  console.log({coupledState});
   return plantsState.plants.map(({id, name, type}, i) =>
     <ShowPlant key={id} {...{i, id, name, type,
       onNameChange: (newName: string) => setPlantsState(ps => ({
@@ -27,7 +29,7 @@ export function ShowPlants({plantsState, setPlantsState, speed, coupledState, on
       onDelete: () => setPlantsState(ps => ({...ps, plants: ps.plants.toSpliced(i, 1)})),
       plant: statebuddyPlants[type]!.plant,
       speed,
-      currentState: coupledState && coupledState[id] || null,
+      currentState: coupledState && coupledState[id],
       onRaise,
     }}/>);
 }
@@ -40,9 +42,10 @@ export function ShowPlant({id, name, type, onDelete, onNameChange, plant, speed,
   onNameChange: (newName: string) => void,
   plant: Plant<any, UniversalPlantState>,
   speed: number,
-  currentState: DEVSTrace<any> | null,
+  currentState?: DEVSTrace<any>,
   onRaise: (event: RaisedEvent) => void,
 }) {
+  console.log(currentState);
   const state = plant.cleanupState(currentState?.at(-1)?.newState || plant.execution.initial());
   return <div key={id}>
     <div className={appStyles.toolbar}>
