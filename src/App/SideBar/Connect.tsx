@@ -106,6 +106,9 @@ export const Connect = memo(function Connect({abstractSyntax, plantsState, setPl
       <DeleteOutlineIcon fontSize="small"/>
     </DoubleClickButton>;
   }, [deleteConnection]);
+  // cannot connect component to itself (against the rules of DEVS):
+  const endpointMissing = selectedInput === "-1" || selectedOutput === "-1";
+  const attemptingSelfConnect = !endpointMissing && allInputs[Number(selectedInput)][0] === allOutputs[Number(selectedOutput)][0];
   return <>
     <div className={connectStyles.grid} style={{
       display: 'grid',
@@ -173,8 +176,24 @@ export const Connect = memo(function Connect({abstractSyntax, plantsState, setPl
             </option>)}
         </select>
       </div>
+
+      {/* very shitty way of making the background pink */}
+      {attemptingSelfConnect &&
+        <div style={{gridColumn: '1 / 5', gridRow: plantsState.conns.length+suggestions.length+4, backgroundColor: 'var(--error-bg-color)', height: '1.8em', zIndex: -1}}/>}
       <div style={{gridColumn: 2, gridRow: plantsState.conns.length+suggestions.length+4, textAlign: 'center'}}>
-        &rarr;
+        {attemptingSelfConnect &&
+          <Tooltip tooltip={<>
+            Cannot connect component to itself.
+            Theory on <a href="https://link.springer.com/content/pdf/10.1007/978-3-030-43946-0_5.pdf">Coupled DEVS</a>, page 136: &quot;A model should not influence itself&quot;.
+          </>} showWhen="always" error>
+            <span style={{fontWeight: "bold", color: 'var(--error-color)'}}>
+            &rarr;
+            </span>
+          </Tooltip>
+          ||
+          <>&rarr;</>
+        }
+        
       </div>
       <div style={{gridColumn: 3, gridRow: plantsState.conns.length+suggestions.length+4}}>
         <select
@@ -196,7 +215,7 @@ export const Connect = memo(function Connect({abstractSyntax, plantsState, setPl
       <div style={{gridColumn: 4, gridRow: plantsState.conns.length+suggestions.length+4}}>
         <Tooltip tooltip="add connection" align="right">
           <button
-            disabled={selectedInput === "-1" || selectedOutput === "-1"}
+            disabled={endpointMissing || attemptingSelfConnect}
             onClick={() => {
               const [fromComponent, fromOutputEvent] = allOutputs[Number(selectedOutput)];
               const [toComponent, toInputEvent] = allInputs[Number(selectedInput)];

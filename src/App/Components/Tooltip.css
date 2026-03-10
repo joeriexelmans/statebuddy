@@ -106,13 +106,13 @@
 }
 .blurOnHover:hover *
 {
-  background-color: color-mix(in srgb, grey 30%, var(--tooltip-bg-color));
-  color: color-mix(in srgb, grey 30%, var(--tooltip-fg-color));
+  /* background-color: color-mix(in srgb, grey 30%, var(--tooltip-bg-color)); */
+  /* color: color-mix(in srgb, grey 30%, var(--tooltip-fg-color)); */
 
   /* tooltips should never obstruct the view */
   /* this really only applies to tooltips that remain visible for as long as an input element is focused */
-  opacity: 0.25;
-  filter: blur(0.75px);
+  /* opacity: 0.25; */
+  /* filter: blur(0.75px); */
 }
 .tooltipArrow {
   clip-path: polygon(50% 0%, 0% 100%, 100% 100%);

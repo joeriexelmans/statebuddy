@@ -37,7 +37,7 @@ type TraceProps = WithSetters<{
 }
 
 // Things are a bit funny here. We want to render the execution history of our Statechart, but we have a Coupled DEVS trace containing all the steps made by both the Statechart and the plant(s). We offer the user to hide steps made by the plant(s).
-export const Trace = memo(function Trace({
+export const CoupledTrace = memo(function CoupledTrace({
   currentTrace, setCurrentTrace,
   setTime,
   ast,
@@ -51,6 +51,8 @@ export const Trace = memo(function Trace({
   propertyTrace,
   plantsState,
 }: TraceProps) {
+
+  console.log({currentTrace});
 
   // Auto-scroll when trace item changes
   useEffect(() => {
@@ -82,6 +84,8 @@ export const Trace = memo(function Trace({
       if (satisfied !== null && satisfied !== undefined) {
         propertyStatus = (satisfied ? "satisfied" : "violated");
       }
+
+      console.log('rendering', i);
 
       return <div
           id={`traceItem-${i}`}

@@ -2,6 +2,8 @@ import CloseIcon from '@mui/icons-material/Close';
 import { Tooltip } from "../Components/Tooltip";
 import { Setters } from "../makePartialSetter";
 import { GRID_CELL_SIZE } from '../parameters';
+import { useState } from 'react';
+import { DoubleClickButton } from '../Components/DoubleClickButton';
 
 export type DebugState = {
   showBBox: boolean,
@@ -20,6 +22,10 @@ type DebugProps = DebugState & Setters<DebugState> & {
 };
 
 export function DebugPanel({showBBox, showGrid, showCells, onHide: hide, ...setters}: DebugProps) {
+  const [crash, setCrash] = useState(false);
+  if (crash) {
+    throw new Error("Crashed!");
+  }
   return <div className="toolbar" style={{display: 'flex'}}>
     <div className="toolbarGroup">
       <Tooltip tooltip='The entire canvas is conceptually partitioned into a grid of equally sized cells.' align='left' above>
@@ -67,17 +73,27 @@ export function DebugPanel({showBBox, showGrid, showCells, onHide: hide, ...sett
         </label>
       </Tooltip>
     </div>
-    <div style={{flexGrow:1}}/>
-    <div className="toolbarGroup" style={{flex: '0 0 content'}}>
-        <Tooltip tooltip="hide" above={true}>
-          <button
-              type="button" // <-- prevent form submission on click
-              onClick={hide}
-              style={{width: 50}}
-              >
-            <CloseIcon fontSize="small"/>
-          </button>
-        </Tooltip>
+
+    {/* spacer */}
+    <div style={{width:50}}/>
+
+    <div className="toolbarGroup">
+      <DoubleClickButton onDoubleClick={() => setCrash(true)} tooltip="crash the application" above>CRASH!</DoubleClickButton>
     </div>
+
+    {/* spacer */}
+    <div style={{flexGrow:1}}/>
+
+    <div className="toolbarGroup" style={{flex: '0 0 content'}}>
+      <Tooltip tooltip="hide" above={true}>
+        <button
+            type="button" // <-- prevent form submission on click
+            onClick={hide}
+            style={{width: 50}}
+            >
+          <CloseIcon fontSize="small"/>
+        </button>
+      </Tooltip>
+  </div>
   </div>;
 }

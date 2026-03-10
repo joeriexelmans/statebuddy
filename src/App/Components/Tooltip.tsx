@@ -1,9 +1,9 @@
-import { HTMLAttributes, PropsWithChildren, useState } from "react";
+import { HTMLAttributes, PropsWithChildren, ReactNode, useState } from "react";
 
 import "./Tooltip.css";
 
 type TooltipProps = {
-  tooltip: string | undefined,
+  tooltip?: string | ReactNode,
   align?: 'center' | 'left' | 'right';
   fullWidth?: boolean,
   error?: boolean,
@@ -19,7 +19,9 @@ export function Tooltip({tooltip, children, align, fullWidth, error, above, show
                             + (error ? " error" : "")
                             + (above ? " above" : "")
                             + (showWhen === undefined ? " onhover" : " on"+showWhen)}
-                style={style}>
+                style={style}
+                onMouseEnter={() => setHidden(false)}
+              >
     {children}
     {!hidden && tooltip && <div className="blurOnHover" onClick={() => setHidden(true)}>
       <div className={"tooltipArrow"}/>

@@ -8,11 +8,27 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App/App";
+import { ErrorBoundary } from "react-error-boundary";
+import { ModalOverlay } from "./App/Overlays/ModalOverlay";
+import deadStatebuddy from "../artwork/new-logo/dead-statebuddy-optimized.svg";
 
 const elem = document.getElementById("root")!;
 const app = (
+  // I disabled strict mode because the double rendering is annoying to debug.
+
   // <StrictMode>
+  <ErrorBoundary fallback={
+    // I'm (ab)using ModalOverlay here to render something centered on the page.
+    <ModalOverlay
+      modal={<div style={{width: 300}}>
+        <img src={deadStatebuddy} width="100%" />
+        <h1>StateBuddy crashed! :(</h1>
+      </div>}
+      setModal={() => {}}>
+    </ModalOverlay>
+  }>
     <App />
+  </ErrorBoundary>
   // </StrictMode>
 );
 

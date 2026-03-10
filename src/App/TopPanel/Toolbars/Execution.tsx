@@ -126,7 +126,7 @@ export function Execution({simulator, showKeys, refreshDisplayTime, displayTime}
       </Tooltip>
 
       <Toolbar>
-        <Tooltip tooltip="next timed transition occurs at ...">
+        <Tooltip tooltip="next timed transition at ...">
           <label>
             <AccessAlarmIcon fontSize="small"/>
             <input
