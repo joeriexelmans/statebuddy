@@ -1,11 +1,15 @@
 import styles from "./App.module.css";
 
-import { PropsWithChildren, ReactElement, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { PropsWithChildren, ReactElement, useCallback, useMemo, useState } from "react";
 
 import { useDisplayTime } from "@/hooks/useDisplayTime";
+import { useResizeable } from "@/hooks/useResizeable";
+import { initialEditorState } from "@/statecharts/concrete_syntax";
+import { RuntimeError } from "@/statecharts/interpreter";
+import { TraceableError } from "@/statecharts/parser";
+import { downloadObjectAsJson } from "@/util/download_json";
 import { formatDateTime } from "@/util/util";
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
-import { usePersistentAppState } from "./hooks/usePersistentAppState";
 import { AppState, defaultAppState } from "./App.state";
 import { BottomPanel } from "./BottomPanel/BottomPanel";
 import { DebugPanel, DebugState } from "./BottomPanel/Debug";
@@ -16,26 +20,23 @@ import { PropertyTraceTable } from "./BottomPanel/PropertyTraceTable";
 import { PersistentDetails } from "./Components/PersistentDetails";
 import { Tooltip } from "./Components/Tooltip";
 import { useCoupledExecution } from "./hooks/useCoupledExecution";
+import { useDelay } from "./hooks/useDelay";
 import { EditHistory, useEditHistory } from "./hooks/useEditHistory";
 import { useParser } from "./hooks/useParser";
+import { usePersistentAppState } from "./hooks/usePersistentAppState";
 import { usePyodide } from "./hooks/usePyodide";
 import { useSimulator } from "./hooks/useSimulator";
 import { useTrial } from "./hooks/useTrial";
 import { makeAllSetters, makePartialSetter } from "./makePartialSetter";
+import { About } from "./Modals/About";
 import { OpenFile } from "./Modals/OpenFile";
 import { ModalOverlay } from "./Overlays/ModalOverlay";
 import { prepareTraces } from "./SideBar/prepare_trace";
-import { SideBar, SideBarState } from "./SideBar/SideBar";
+import { SideBar } from "./SideBar/SideBar";
 import { TopPanel } from "./TopPanel/TopPanel";
 import { DebugContext } from "./VisualEditor/context/DebugContext";
-import { VisualEditor } from "./VisualEditor/VisualEditor";
-import { useResizeable } from "@/hooks/useResizeable";
-import { useDelay } from "./hooks/useDelay";
-import { About } from "./Modals/About";
-import { downloadObjectAsJson } from "@/util/download_json";
 import { useMouse } from "./VisualEditor/hooks/useMouse";
-import { initialEditorState } from "@/statecharts/concrete_syntax";
-import { SavedTraces } from "./SideBar/Traces";
+import { VisualEditor } from "./VisualEditor/VisualEditor";
 
 export function App() {
   // The entire persisted application state (minus the visual editor state)
@@ -72,18 +73,9 @@ export function App() {
   const simulator = useSimulator(coupledExecution);
   const {displayTime, refreshDisplayTime} = useDisplayTime(simulator.time);
   
-
-  const currentRuntimeError = simulator.trace?.runtimeError;
-  const runtimeErrors = currentRuntimeError
-    && currentRuntimeError.highlight.map(uid => ({
-        message: currentRuntimeError.message,
-        shapeUid: uid,
-      }))
-    || [];
-  const allErrors = [...syntaxErrors, ...runtimeErrors];
-  const currentBigStep = simulator.currentTraceItem?.newState.sc.at(-1)?.newState.bigstep;
-  const highlightActive = (currentBigStep && currentBigStep.mode) || new Set();
-  const highlightTransitions = currentBigStep && currentBigStep.firedTransitions || [];
+  const allErrors = useMemo(
+    () => [...syntaxErrors, ...simulator.runtimeErrors],
+    [syntaxErrors, simulator.runtimeErrors]);
 
   const preparedTraces = useMemo(() => {
     return simulator.trace && abstractSyntax && prepareTraces(
@@ -129,9 +121,6 @@ export function App() {
   const editorStuff = useMouse(appState.topPanel.mouseMap, appState.topPanel.zoom, editorState || initialEditorState, historyCallbacks);
 
   const debugSetters = makeAllSetters(setters.setDebug, Object.keys(appState.debug) as (keyof DebugState)[]);
-
-  const setVisiblePlots = makePartialSetter(setters.setPlot, "visiblePlots");
-
 
   return <div className={styles.App} style={{cursor: sideBarResizing ? 'col-resize' : undefined}}>
     <ModalOverlay modal={modal} setModal={setModal}>
@@ -182,9 +171,9 @@ export function App() {
                     findText={appState.findReplace.findText}
                     zoom={appState.topPanel.zoom}
                     mouseMap={appState.topPanel.mouseMap}
-                    highlightActive={highlightActive}
-                    highlightTransitions={highlightTransitions}
-                    syntaxErrors={syntaxErrors}
+                    highlightActive={simulator.highlightActive}
+                    highlightTransitions={simulator.highlightTransitions}
+                    syntaxErrors={allErrors}
                     setModal={setModal}
                   />
                 </DebugContext>}

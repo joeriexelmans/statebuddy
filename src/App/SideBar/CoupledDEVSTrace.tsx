@@ -1,7 +1,7 @@
 import styles from "./Trace.module.css";
 
 import { whoMadeTransition } from "@/devs/coupled_trace";
-import { Statechart2DEVSState } from "@/devs/sc2devs";
+import { SC2DEVSState } from "@/devs/sc2devs";
 import { DEVSTrace, DEVSTraceItem, DEVSTraceItemExtTransition, DEVSTraceItemInit, DEVSTraceItemIntTransition } from "@/devs/trace";
 import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
 import FlareIcon from '@mui/icons-material/Flare';
@@ -17,6 +17,7 @@ import { ShowOutputEvents } from "./ShowAST";
 import { Status } from "./Status";
 import { statebuddyPlants } from "../plants";
 import { TracesState } from "./Traces";
+import { RuntimeError } from "@/statecharts/interpreter";
 
 
 type PropertyTrace = [number, boolean][];
@@ -120,10 +121,6 @@ export const CoupledDEVSTrace = memo(function CoupledDEVSTrace({
         </div>
       </div>;
     })}
-    {currentTrace.runtimeError &&
-      <div>
-        {currentTrace.runtimeError.message}
-      </div>}
   </div>;
 }, objectsEqual);
 
@@ -203,10 +200,22 @@ function getAbstractSyntax(componentId: string, plantsState: PlantsState, ast: S
   }
 }
 
+function ShowRuntimeError({error}: {error: RuntimeError}) {
+  return <>
+    <span style={{
+      backgroundColor: 'var(--error-bg-color',
+      color: 'var(--error-color)',
+    }}>
+      {error.message}
+    </span>
+  </>;
+}
+
 function CoupledDEVSInitialization({item, status, plantsState, showMicroSteps, showTransitions, ast}: {
   item: DEVSTraceItemInit<CoupledState>,
 } & ThingsToPassOn) {
   // just show the initialization of every component:
+  const error = getRuntimeError(item);
   return <>
     <TraceItemHeader hide={false} simtime={0} status={status} />
     {Object.entries(item.newState).map(([componentId, componentTrace]) => {
@@ -218,6 +227,7 @@ function CoupledDEVSInitialization({item, status, plantsState, showMicroSteps, s
         <div>{componentDisplayName}</div>
         <DEVSStepCause item={componentTraceItem} />
         {<>
+          {error && <ShowRuntimeError error={error} />}
           {showMicroSteps && <MicroSteps microsteps={getMicroSteps(componentTraceItem)}/>}
           {abstractSyntax && showTransitions && <ShowFiredTransitions
             firedTransitions={getFiredTransitions(abstractSyntax, componentTraceItem)} />}
@@ -239,6 +249,7 @@ function CoupledDEVSInternalTransition({item, prevItem, status, showMicroSteps, 
   const blessedAs = getAbstractSyntax(componentMadeIntTransition, plantsState, ast);
 
   const isOutputStep = isOutputStepHeuristic(blessedTrace);
+  const error = getRuntimeError(blessedItem);
 
   return <>
     {/* header */}
@@ -248,6 +259,7 @@ function CoupledDEVSInternalTransition({item, prevItem, status, showMicroSteps, 
     <Column>
       <div>{lookupName(plantsState, componentMadeIntTransition)}</div>
       {!isOutputStep && <DEVSStepCause item={blessedItem} />}
+      {error && <ShowRuntimeError error={error} />}
       <ShowOutputEvents outputEvents={blessedItem.outputEvents} />
       {showMicroSteps && <MicroSteps microsteps={isOutputStep && ["(output from previous step)"] || getMicroSteps(blessedItem)}/>}
       {blessedAs && showTransitions && <ShowFiredTransitions firedTransitions={getFiredTransitions(blessedAs, blessedItem)}/>}
@@ -289,8 +301,10 @@ function DEVSExternalTransition({item, showMicroSteps, showTransitions, abstract
   showTransitions: boolean,
   abstractSyntax: Statechart,
 }) {
+  const error = getRuntimeError(item);
   return <Column>
     <DEVSStepCause item={item}/>
+    {error && <ShowRuntimeError error={error} />}
     {showMicroSteps && <MicroSteps microsteps={getMicroSteps(item)}/>}
     {showTransitions && <Column>
       <ShowFiredTransitions firedTransitions={getFiredTransitions(abstractSyntax, item)} />
@@ -417,6 +431,13 @@ function getMicroSteps(item: DEVSTraceItem<any>) {
   }
 }
 
+function getRuntimeError(item: DEVSTraceItem<any>): (RuntimeError | undefined) {
+  const e = item.newState;
+  if (e instanceof RuntimeError) {
+    return e;
+  }
+}
+
 const allTransitions = memoizeOne(function allTransitions(ast: Statechart) {
   const alreadyHave = new Set<string>();
   return [...ast.transitions.values().flatMap(ts => {
@@ -424,9 +445,9 @@ const allTransitions = memoizeOne(function allTransitions(ast: Statechart) {
   })];
 }, (a,b) => a === b);
 
-function getFiredTransitions(ast: Statechart, item: DEVSTraceItem<Statechart2DEVSState>) {
+function getFiredTransitions(ast: Statechart, item: DEVSTraceItem<SC2DEVSState>) {
   const all = allTransitions(ast);
-  const result = all.filter(t => item.newState.bigstep.firedTransitions.includes(t.uid));
+  const result = all.filter(t => item.newState.bigstep?.firedTransitions.includes(t.uid));
   return result;
 }
 
@@ -465,7 +486,7 @@ function ShowTransition({transition}: {transition: Transition}) {
 // An 'output step' is when a Statechart performs an intTransition immediately after handling an input event (extTransition), with the purpose of only outputting some events.
 // If a Statechart makes an output step, we render that step slightly differently (we hide the timer icon), so it becomes a bit clearer that in the world of Statecharts, the output step was caused by (or even stronger: is part of) the previous step.
 // This heuristic (hopefully) works for our Statechart and also for plants that are implemented as a Statechart.
-function isOutputStepHeuristic(trace: DEVSTrace<Statechart2DEVSState>) {
+function isOutputStepHeuristic(trace: DEVSTrace<SC2DEVSState>) {
   const itemState = trace.at(-1)!;
   const prevItemState = trace.at(-2);
   const prevScheduledOutputs = prevItemState?.newState.outputQueue; // <-- could also be undefined if newState does not have property 'outputQueue'...

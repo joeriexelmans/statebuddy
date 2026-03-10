@@ -1,10 +1,10 @@
 import { DEVSComponent } from "@/devs/devs";
-import { Statechart2DEVSState } from "@/devs/sc2devs";
+import { SC2DEVSState } from "@/devs/sc2devs";
 import { DEVSTrace } from "@/devs/trace";
 
 type CoupledStatechartState = {
   // there's always the design model:
-  sc: DEVSComponent<Statechart2DEVSState>;
+  sc: DEVSComponent<SC2DEVSState>;
 } & {
   // and the plants
   [plantName: string]: any;

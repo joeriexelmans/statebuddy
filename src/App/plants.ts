@@ -3,13 +3,13 @@ import { digitalWatchPlant, dwatchAbstractSyntax, dwatchConcreteSyntax } from ".
 import { microwaveAbstractSyntax, microwaveConcreteSyntax, microwavePlant } from "./Plant/Microwave/Microwave";
 import { Plant } from "./Plant/Plant";
 import { trafficLightAbstractSyntax, trafficLightConcreteSyntax, trafficLightPlant } from "./Plant/TrafficLight/TrafficLight";
-import { Statechart2DEVSState } from "@/devs/sc2devs";
+import { SC2DEVSState } from "@/devs/sc2devs";
 import { Statechart } from "@/statecharts/abstract_syntax";
 
 export type UniversalPlantState = {[property: string]: boolean|number};
 
 // A plant that is implemented as a Statechart
-type StatechartPlant = Plant<Statechart2DEVSState, UniversalPlantState>;
+type StatechartPlant = Plant<SC2DEVSState, UniversalPlantState>;
 
 export type ScPlantSpec = {
   plant: StatechartPlant,

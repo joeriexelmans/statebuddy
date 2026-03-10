@@ -2,7 +2,7 @@ import { Statechart } from "./abstract_syntax";
 import { makeBigStep, initialize } from "./interpreter";
 import { Tracer } from "./tracer";
 import { BigStep, NormalEvent, RaisedEvent } from "./runtime_types";
-import { Statechart2DEVSState } from "@/devs/sc2devs";
+import { SC2DEVSState } from "@/devs/sc2devs";
 
 // An abstract interface for timed reactive discrete event systems somewhat similar but not equal to DEVS (https://en.wikipedia.org/wiki/DEVS).
 // Differences from DEVS:

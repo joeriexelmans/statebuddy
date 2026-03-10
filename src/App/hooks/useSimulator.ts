@@ -1,4 +1,4 @@
-import { Statechart2DEVSState } from "@/devs/sc2devs";
+import { SC2DEVSState } from "@/devs/sc2devs";
 import { ExtTransitionTrace, restoreTrace } from "@/devs/serialize_trace";
 import { DEVSTrace, DEVSTraceItem } from "@/devs/trace";
 import { useShortcuts } from "@/hooks/useShortcuts";
@@ -7,11 +7,13 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { RuntimeError } from "@/statecharts/interpreter";
 import { DEVSComponent } from "@/devs/devs";
 import { WithSetters } from "../makePartialSetter";
+import { TraceableError } from "@/statecharts/parser";
+import { Mode } from "@/statecharts/runtime_types";
 
 // In StateBuddy, currently, the state of our simulation is always a CoupledDEVS state of our statechart model (with a DEVS adapter around it) and a bunch of 'plants'.
 // Perhaps in the future, we could let the user arbitrarily configure this setup (anything on the spectrum from a single Statechart Atomic DEVS to many nested Coupled DEVS ...), but for now, it is what it is.
 export type CoupledState = {
-  sc: DEVSTrace<Statechart2DEVSState>, // <-- there's always our Statechart execution state ...
+  sc: DEVSTrace<SC2DEVSState>, // <-- there's always our Statechart execution state ...
 } & {
   // ... and a bunch (0..*) of plants:
   [plantName: string]: DEVSTrace<any>, // <-- plant state is a black box?
@@ -21,7 +23,6 @@ export type CoupledState = {
 export type StateBuddyTraceState = {
   trace: DEVSTrace<CoupledState>, // <-- the execution trace
   idx: number, // <-- currently selected trace item
-  runtimeError?: RuntimeError, // <-- certain runtime errors (e.g., non-determinism) are caught and rendered as the last item in the trace
 };
 
 export type SimulatorCallbacks = {
@@ -41,6 +42,9 @@ export type SimulatorStuff = WithSetters<{
   // derived from state (shorthand)
   currentTraceItem?: DEVSTraceItem<CoupledState>;
   nextWakeup?: number;
+  runtimeErrors: TraceableError[],
+  highlightActive: Mode, // <-- active states
+  highlightTransitions: string[], // <-- fired transitions
 
   // 'reducers'
   simulatorCallbacks: SimulatorCallbacks;
@@ -58,15 +62,41 @@ export function useSimulator(cE: DEVSComponent<DEVSTrace<CoupledState>> | undefi
   // the timeAdvance of the currently selected item in the trace
   const nextWakeup = infinityIfUndefined(trace && cE?.timeAdvance(trace.trace.slice(0, trace.idx+1) as DEVSTrace<CoupledState>));
 
+  const currentSC = currentTraceItem?.newState.sc.at(-1)!.newState;
+
+  const {runtimeErrors, highlightActive, highlightTransitions} = useMemo(() => {
+    if (currentSC instanceof RuntimeError) {
+      const runtimeErrors = currentSC.highlight.map(shapeUid => ({
+        shapeUid,
+        message: currentSC.message,
+      } as TraceableError));
+      return {
+        runtimeErrors,
+        highlightActive: new Set as Mode,
+        highlightTransitions: [] as string[],
+      };
+    }
+    else {
+      const currentBigStep = currentSC?.bigstep;
+      const highlightActive = (currentBigStep && currentBigStep.mode) || new Set<string>();
+      const highlightTransitions = currentBigStep && currentBigStep.firedTransitions || [];
+      return {
+        runtimeErrors: [] as TraceableError[],
+        highlightActive,
+        highlightTransitions,
+      };
+    };
+  }, [currentSC]);
+
   // Simulator callbacks...
 
   const onInit = useCallback(() => {
     if (cE === undefined) return;
-    setTrace(catchRuntimeError(_ =>
+    setTrace(_ =>
       makeImminentTransitions({
         trace: cE.initial(),
         idx: 0,
-      })));
+      }));
     setTime(time => {
       if (time.kind === "paused") {
         return {...time, simtime: 0};
@@ -84,7 +114,7 @@ export function useSimulator(cE: DEVSComponent<DEVSTrace<CoupledState>> | undefi
 
   // raise input event at current point in simulated time (depends on 'time'), producing a new runtime configuration (or a runtime error)
   const onRaise = useCallback((inputEvent: string, param: any) => {
-    setTrace(catchRuntimeError(trace => {
+    setTrace(trace => {
       if (trace) {
         const simtime = getSimTime(time, Math.round(performance.now()));
         const newTrace = cE!.extTransition(
@@ -97,7 +127,7 @@ export function useSimulator(cE: DEVSComponent<DEVSTrace<CoupledState>> | undefi
           idx: newTrace.length-1, // <-- last (= new) item becomes active
         });
       }
-    }));
+    });
   }, [setTrace, cE, time]);
 
   const makeImminentTransitions = (trace: StateBuddyTraceState) => {
@@ -123,10 +153,13 @@ export function useSimulator(cE: DEVSComponent<DEVSTrace<CoupledState>> | undefi
   };
 
   const makeNextTimedTransition = useCallback(() => {
-    setTrace(catchRuntimeError(trace => {
+    setTrace(trace => {
       if (trace) {
         // we're at the end of the trace -> make intTransition
         if (trace.idx === trace.trace.length-1) {
+          if (cE!.timeAdvance(trace.trace) === Infinity) {
+            return trace; // cannot make intTransition
+          }
           const [_outputEvents, newTrace] = cE!.intTransition(trace.trace);
           return {
             trace: newTrace,
@@ -142,12 +175,12 @@ export function useSimulator(cE: DEVSComponent<DEVSTrace<CoupledState>> | undefi
           }
         }
       }
-    }));
+    });
   }, [cE, setTrace]);
 
   // Sets the simulated time to exactly match the next timed transition.
   // Note: this function does not make the next timed transition happen. You need to call `makeNextTimedTransition` for that.
-  const setTimeToNextTimedTransition = useCallback(() => {
+  const jumpTimeToNextTimedTransition = useCallback(() => {
     if (trace && currentTraceItem !== null && cE !== null && nextWakeup !== Infinity) {
       setTime(time => {
         if (time.kind === "paused") {
@@ -170,10 +203,11 @@ export function useSimulator(cE: DEVSComponent<DEVSTrace<CoupledState>> | undefi
     }
   }, [nextWakeup, setTime, trace, currentTraceItem, cE]);
 
+  // when user pressed Tab
   const onSkip = useCallback(() => {
-    setTimeToNextTimedTransition();
     makeNextTimedTransition();
-  }, [setTimeToNextTimedTransition, makeNextTimedTransition]);
+    jumpTimeToNextTimedTransition();
+  }, [jumpTimeToNextTimedTransition, makeNextTimedTransition]);
 
   // The following effect is what makes timed transitions happen in Statebuddy:
   // timer elapse events are triggered by a change of the simulated time (possibly as a scheduled JS event loop timeout)
@@ -226,13 +260,13 @@ export function useSimulator(cE: DEVSComponent<DEVSTrace<CoupledState>> | undefi
 
   const onReplayTrace = useCallback((extTrace: ExtTransitionTrace) => {
     if (cE) {
-      setTrace(catchRuntimeError(_ => {
+      setTrace(_ => {
         const trace = restoreTrace(extTrace, cE);
         return {
           trace,
           idx: trace.length-1,
         };
-      }));
+      });
       setTime({kind: "paused", simtime: extTrace.lastSimTime});
     }
   }, [cE]);
@@ -252,6 +286,9 @@ export function useSimulator(cE: DEVSComponent<DEVSTrace<CoupledState>> | undefi
       // derived from state (shorthand)
       currentTraceItem,
       nextWakeup,
+      runtimeErrors,
+      highlightActive,
+      highlightTransitions,
 
       // 'reducers'
       simulatorCallbacks,
@@ -263,29 +300,9 @@ export function useSimulator(cE: DEVSComponent<DEVSTrace<CoupledState>> | undefi
 
 // helpers ....
 
-
-const catchRuntimeError = (doSomething: (trace?: StateBuddyTraceState) => StateBuddyTraceState | undefined) => (trace?: StateBuddyTraceState) => {
-  try {
-    return doSomething(trace);
-  } catch (e) {
-    if (e instanceof RuntimeError) {
-      // Just return the old trace with the runtime error attached.
-      // The runtime error will be rendered as the last execution step in the trace.
-      return {
-        trace: trace?.trace || [],
-        idx: trace!.idx || 0,
-        runtimeError: e,
-      };
-    }
-    else throw e; // <-- none of my business!
-  }
-};
-
-const ignoreRaise = (_inputEvent: string, _param: any) => {};
-
-export function infinityIfUndefined(simtime: number | null | undefined) {
+export function infinityIfUndefined(simtime: number | null | undefined | false) {
   // we cannot just return (simtime || Infinity) because simtime === 0 will become Infinity and we don't want that!
-  if (simtime === null || simtime === undefined) {
+  if (simtime === null || simtime === undefined || simtime === false) {
     return Infinity;
   }
   else return simtime;

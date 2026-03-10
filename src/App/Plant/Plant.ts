@@ -3,7 +3,7 @@ import { Statechart } from "@/statecharts/abstract_syntax";
 import { EventTrigger } from "@/statecharts/label_ast";
 import { BigStep, RaisedEvent } from "@/statecharts/runtime_types";
 import { DEVSComponent } from "@/devs/devs";
-import { sc2DEVS, Statechart2DEVSState } from "@/devs/sc2devs";
+import { sc2DEVS, SC2DEVSState } from "@/devs/sc2devs";
 
 export type PlantRenderProps<CleanStateType> = {
   state: CleanStateType,
@@ -69,13 +69,13 @@ export type StatechartPlantSpec<CleanStateType> = {
   signals: string[],
 }
 
-export function makeStatechartPlant<CleanStateType>({uiEvents, ast, cleanupState, render, signals}: StatechartPlantSpec<CleanStateType>): Plant<Statechart2DEVSState, CleanStateType> {
+export function makeStatechartPlant<CleanStateType>({uiEvents, ast, cleanupState, render, signals}: StatechartPlantSpec<CleanStateType>): Plant<SC2DEVSState, CleanStateType> {
   return {
     uiEvents,
     // inputEvents: ast.inputEvents,
     // outputEvents: [...ast.outputEvents].map(e => ({kind: "event" as const, event: e})),
     execution: sc2DEVS(ast),
-    cleanupState: (state: Statechart2DEVSState) => {
+    cleanupState: (state: SC2DEVSState) => {
       return cleanupState(state.bigstep);
     },
     render,

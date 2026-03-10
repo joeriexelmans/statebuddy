@@ -1,25 +1,25 @@
+import { RuntimeError } from "@/statecharts/interpreter";
 import { DEVSComponent } from "./devs";
 import { RaisedEvent } from "@/statecharts/runtime_types";
 
-export type DEVSTraceItemInit<T> = {
-  kind: "init",
-  simtime: 0,
+type Common<T> = {
+  simtime: number,
   newState: T,
 }
+
+export type DEVSTraceItemInit<T> = {
+  kind: "init",
+} & Common<T>
 
 export type DEVSTraceItemExtTransition<T> = {
   kind: "extTransition",
-  simtime: number,
   bagOfInputs: RaisedEvent[],
-  newState: T,
-}
+} & Common<T>
 
 export type DEVSTraceItemIntTransition<T> = {
   kind: "intTransition",
-  simtime: number,
   outputEvents: RaisedEvent[], // <-- empty if `result.ok` is false
-  newState: T,
-}
+} & Common<T>
 
 export type DEVSTraceItem<T> = DEVSTraceItemInit<T> | DEVSTraceItemExtTransition<T> | DEVSTraceItemIntTransition<T>;
 
@@ -77,36 +77,3 @@ export function makeTracedDEVS<T>(devs: DEVSComponent<T>): DEVSComponent<DEVSTra
     outputs: devs.outputs,
   }
 }
-
-// function expectNonFaultyTrace<T>(trace: DEVSTrace<T>): T {
-//   const lastItem = trace.at(-1)!;
-//   if (lastItem.result.ok) {
-//     const lastState = lastItem.result.newState;
-//     return lastState;
-//   }
-//   else {
-//     throw new Error("trace contains an error");
-//   }
-// }
-
-// function catchRuntimeError<T>(possiblyFailingCallback: () => T): DEVSStepResult<T> {
-//   try {
-//     const newState = possiblyFailingCallback();
-//     return {
-//       ok: true,
-//       newState,
-//     };
-//   }
-//   catch (error) {
-//     if (error instanceof RuntimeError) {
-//       return {
-//         ok: false,
-//         error,
-//       };
-//     }
-//     else {
-//       // all other errors are just passed through
-//       throw error;
-//     }
-//   }
-// }
