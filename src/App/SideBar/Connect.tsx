@@ -14,6 +14,7 @@ import { DoubleClickButton } from "../Components/DoubleClickButton";
 import { Tooltip } from "../Components/Tooltip";
 import { statebuddyPlants } from "../plants";
 import { jsonDeepEqual, objectsEqual } from "@/util/util";
+import { usePersistentState } from "@/hooks/usePersistentState";
 
 type ConnectProps = {
   abstractSyntax: Statechart,
@@ -60,8 +61,8 @@ function Connections({conns, startIdx, componentNames, actions, bgColor}: {
 }
 
 export const Connect = memo(function Connect({abstractSyntax, plantsState, setPlantsState}: ConnectProps) {
-  const [selectedOutput, setSelectedOutput] = useState("-1");
-  const [selectedInput, setSelectedInput] = useState("-1");
+  const [selectedOutput, setSelectedOutput] = usePersistentState("connect.selectedOutput", "-1");
+  const [selectedInput, setSelectedInput] = usePersistentState("connect.selectedInput", "-1");
   const plants = plantsState.plants.map(({id, type}) => [id, statebuddyPlants[type]!] as const);
   const names = Object.fromEntries([
     ['sc', ''],
@@ -106,9 +107,11 @@ export const Connect = memo(function Connect({abstractSyntax, plantsState, setPl
       <DeleteOutlineIcon fontSize="small"/>
     </DoubleClickButton>;
   }, [deleteConnection]);
+
   // cannot connect component to itself (against the rules of DEVS):
-  const endpointMissing = selectedInput === "-1" || selectedOutput === "-1";
+  const endpointMissing = allInputs[Number(selectedInput)] === undefined || allOutputs[Number(selectedOutput)] === undefined;
   const attemptingSelfConnect = !endpointMissing && allInputs[Number(selectedInput)][0] === allOutputs[Number(selectedOutput)][0];
+
   return <>
     <div className={connectStyles.grid} style={{
       display: 'grid',
@@ -177,9 +180,10 @@ export const Connect = memo(function Connect({abstractSyntax, plantsState, setPl
         </select>
       </div>
 
-      {/* very shitty way of making the background pink */}
+      {/* very shitty way of making the background pink if there's an error */}
       {attemptingSelfConnect &&
         <div style={{gridColumn: '1 / 5', gridRow: plantsState.conns.length+suggestions.length+4, backgroundColor: 'var(--error-bg-color)', height: '1.8em', zIndex: -1}}/>}
+
       <div style={{gridColumn: 2, gridRow: plantsState.conns.length+suggestions.length+4, textAlign: 'center'}}>
         {attemptingSelfConnect &&
           <Tooltip tooltip={<>
@@ -193,8 +197,8 @@ export const Connect = memo(function Connect({abstractSyntax, plantsState, setPl
           ||
           <>&rarr;</>
         }
-        
       </div>
+
       <div style={{gridColumn: 3, gridRow: plantsState.conns.length+suggestions.length+4}}>
         <select
           className={traceStyles.inputEvent}

@@ -23,7 +23,7 @@ import { ShowAST, ShowInputEvents, ShowInternalEvents, ShowOutputEvents } from '
 import { ShowPlants } from './ShowPlants';
 import "./SideBar.css";
 import { Status } from './Status';
-import { CoupledTrace } from './Trace';
+import { CoupledDEVSTrace } from './CoupledDEVSTrace';
 import { defaultTracesState, Traces, TracesState } from './Traces';
 import { initialize } from '@/statecharts/interpreter';
 
@@ -298,7 +298,7 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
         }}>
           <div>
             {abstractSyntax && trace &&
-              <CoupledTrace
+              <CoupledDEVSTrace
                 ast={abstractSyntax}
                 setTime={setTime}
                 currentTrace={trace}

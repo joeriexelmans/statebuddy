@@ -23,7 +23,7 @@ export type DEVSTraceItemIntTransition<T> = {
 
 export type DEVSTraceItem<T> = DEVSTraceItemInit<T> | DEVSTraceItemExtTransition<T> | DEVSTraceItemIntTransition<T>;
 
-export type DEVSTrace<T> = [DEVSTraceItem<T>, ...DEVSTraceItem<T>[]]; // <-- always at least one item
+export type DEVSTrace<T> = DEVSTraceItem<T>[]; // <-- always at least one item
 
 // Transforms a DEVS component with state-type T into a DEVS component with state-type DEVSTract<T>.
 // The behavior remains exactly the same, except that runtime errors are caught and appended to the end of the trace.

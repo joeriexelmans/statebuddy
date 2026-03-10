@@ -97,12 +97,12 @@ export const Plot = memo(function Plot({state, setState, prepped, trace, display
 
   const xAxis = marks.map((m,i) => {
     const x = i*(markerEveryXMs)/maxTime*width;
-    return <>
+    return <g key={m}>
       <line x1={x} x2={x} y1={0} y2={height+2} stroke="var(--separator-color)"/>
       {i%labelEveryXMarkers===0 &&
         <text x={x} y={height+16} textAnchor="middle" style={{fill: 'var(--text-color)'}}>{m/1000}</text>
       }
-      </>;
+      </g>;
   });
 
   const paths = (() => {
@@ -110,7 +110,7 @@ export const Plot = memo(function Plot({state, setState, prepped, trace, display
     return traceNames.map(name => {
       if (visiblePlots[name]) {
         const color = `var(--plot-color-${i%numColors})`;
-        return <path d={renderSignal(name, i++)} className={plotStyles.plotLine} style={{stroke: color}} />;
+        return <path key={name} d={renderSignal(name, i++)} className={plotStyles.plotLine} style={{stroke: color}} />;
       }
       else {
         return <></>;
@@ -126,7 +126,7 @@ export const Plot = memo(function Plot({state, setState, prepped, trace, display
         : 'var(--text-color)';
       const prevPrefix = traceNames[j-1]?.split('_')[0];
       const curPrefix = name.split('_')[0];
-      return <>
+      return <span key={name}>
         {(prevPrefix && ((prevPrefix === curPrefix)
           && <br/>
           || <div style={{breakAfter: 'column'}}></div>))}
@@ -142,7 +142,7 @@ export const Plot = memo(function Plot({state, setState, prepped, trace, display
             style={{accentColor: color}}/>
           <span style={{color}}>{name}</span>
         </label>
-      </>;
+      </span>;
     });
   })();
 

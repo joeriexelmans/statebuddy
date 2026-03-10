@@ -37,7 +37,7 @@ type TraceProps = WithSetters<{
 }
 
 // Things are a bit funny here. We want to render the execution history of our Statechart, but we have a Coupled DEVS trace containing all the steps made by both the Statechart and the plant(s). We offer the user to hide steps made by the plant(s).
-export const CoupledTrace = memo(function CoupledTrace({
+export const CoupledDEVSTrace = memo(function CoupledDEVSTrace({
   currentTrace, setCurrentTrace,
   setTime,
   ast,
@@ -85,9 +85,8 @@ export const CoupledTrace = memo(function CoupledTrace({
         propertyStatus = (satisfied ? "satisfied" : "violated");
       }
 
-      console.log('rendering', i);
-
       return <div
+          key={i}
           id={`traceItem-${i}`}
           className={styles.traceItem
                     + ' ' + ((currentTrace.idx === i) ? styles.active : "")
@@ -121,6 +120,10 @@ export const CoupledTrace = memo(function CoupledTrace({
         </div>
       </div>;
     })}
+    {currentTrace.runtimeError &&
+      <div>
+        {currentTrace.runtimeError.message}
+      </div>}
   </div>;
 }, objectsEqual);
 
@@ -261,7 +264,7 @@ function CoupledDEVSInternalTransition({item, prevItem, status, showMicroSteps, 
         return <></>;
       }
       const abstractSyntax = getAbstractSyntax(componentId, plantsState, ast);
-      return <Column>
+      return <Column key={componentId}>
         <div>{lookupName(plantsState, componentId)}</div>
         <DEVSExternalTransition
           item={componentTrace.at(-1)!}

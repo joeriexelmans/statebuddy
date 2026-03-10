@@ -62,11 +62,11 @@ export function useSimulator(cE: DEVSComponent<DEVSTrace<CoupledState>> | undefi
 
   const onInit = useCallback(() => {
     if (cE === undefined) return;
-    const trace = cE.initial();
-    setTrace(makeImminentTransitions({
-      trace,
-      idx: 0,
-    }));
+    setTrace(catchRuntimeError(_ =>
+      makeImminentTransitions({
+        trace: cE.initial(),
+        idx: 0,
+      })));
     setTime(time => {
       if (time.kind === "paused") {
         return {...time, simtime: 0};
@@ -83,27 +83,22 @@ export function useSimulator(cE: DEVSComponent<DEVSTrace<CoupledState>> | undefi
   }, [setTrace, setTime]);
 
   // raise input event at current point in simulated time (depends on 'time'), producing a new runtime configuration (or a runtime error)
-  const onRaise = useMemo(() => {
-    if (cE === undefined || currentTraceItem === undefined) {
-      return ignoreRaise; // this speeds up rendering of components that depend on onRaise if the model is being edited while there is no ongoing trace
-    }
-    else return (inputEvent: string, param: any) => {
-      const simtime = getSimTime(time, Math.round(performance.now()));
-      const newTrace = cE.extTransition(
-        simtime,
-        trace!.trace.slice(0, trace!.idx + 1) as DEVSTrace<CoupledState>,
-        [{name: inputEvent, param}],
-      );
-      setTrace(makeImminentTransitions({
-        trace: newTrace,
-        idx: newTrace.length-1, // <-- last (= new) item becomes active
-      }));
-      // setTrace(({
-      //   trace: newTrace,
-      //   idx: newTrace.length-1, // <-- last (= new) item becomes active
-      // }));
-    };
-  }, [cE, currentTraceItem, time]);
+  const onRaise = useCallback((inputEvent: string, param: any) => {
+    setTrace(catchRuntimeError(trace => {
+      if (trace) {
+        const simtime = getSimTime(time, Math.round(performance.now()));
+        const newTrace = cE!.extTransition(
+          simtime,
+          trace.trace.slice(0, trace.idx + 1) as DEVSTrace<CoupledState>,
+          [{name: inputEvent, param}],
+        );
+        return makeImminentTransitions({
+          trace: newTrace,
+          idx: newTrace.length-1, // <-- last (= new) item becomes active
+        });
+      }
+    }));
+  }, [setTrace, cE, time]);
 
   const makeImminentTransitions = (trace: StateBuddyTraceState) => {
     let i=0;
@@ -128,24 +123,27 @@ export function useSimulator(cE: DEVSComponent<DEVSTrace<CoupledState>> | undefi
   };
 
   const makeNextTimedTransition = useCallback(() => {
-    if (trace && currentTraceItem && cE) {
-      if (trace.idx === trace.trace.length-1) {
-        const [_outputEvents, newTrace] = cE.intTransition(trace.trace);
-        setTrace({
-          trace: newTrace,
-          idx: newTrace.length - 1,
-        });
+    setTrace(catchRuntimeError(trace => {
+      if (trace) {
+        // we're at the end of the trace -> make intTransition
+        if (trace.idx === trace.trace.length-1) {
+          const [_outputEvents, newTrace] = cE!.intTransition(trace.trace);
+          return {
+            trace: newTrace,
+            idx: newTrace.length - 1,
+          };
+        }
+        else {
+          // just advance the index
+          // this is safe as long as execution is deterministic
+          return {
+            trace: trace.trace,
+            idx: trace.idx+1,
+          }
+        }
       }
-      else {
-        // just advance the index
-        // this is safe as long as execution is deterministic
-        setTrace({
-          trace: trace.trace,
-          idx: trace.idx+1,
-        });
-      }
-    }
-  }, [trace, currentTraceItem, cE, setTrace]);
+    }));
+  }, [cE, setTrace]);
 
   // Sets the simulated time to exactly match the next timed transition.
   // Note: this function does not make the next timed transition happen. You need to call `makeNextTimedTransition` for that.
@@ -228,8 +226,13 @@ export function useSimulator(cE: DEVSComponent<DEVSTrace<CoupledState>> | undefi
 
   const onReplayTrace = useCallback((extTrace: ExtTransitionTrace) => {
     if (cE) {
-      const trace = restoreTrace(extTrace, cE);
-      setTrace({trace, idx: trace.length-1});
+      setTrace(catchRuntimeError(_ => {
+        const trace = restoreTrace(extTrace, cE);
+        return {
+          trace,
+          idx: trace.length-1,
+        };
+      }));
       setTime({kind: "paused", simtime: extTrace.lastSimTime});
     }
   }, [cE]);
@@ -259,6 +262,24 @@ export function useSimulator(cE: DEVSComponent<DEVSTrace<CoupledState>> | undefi
 }
 
 // helpers ....
+
+
+const catchRuntimeError = (doSomething: (trace?: StateBuddyTraceState) => StateBuddyTraceState | undefined) => (trace?: StateBuddyTraceState) => {
+  try {
+    return doSomething(trace);
+  } catch (e) {
+    if (e instanceof RuntimeError) {
+      // Just return the old trace with the runtime error attached.
+      // The runtime error will be rendered as the last execution step in the trace.
+      return {
+        trace: trace?.trace || [],
+        idx: trace!.idx || 0,
+        runtimeError: e,
+      };
+    }
+    else throw e; // <-- none of my business!
+  }
+};
 
 const ignoreRaise = (_inputEvent: string, _param: any) => {};
 
