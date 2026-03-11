@@ -153,7 +153,7 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
           <ShowInputEvents
             inputEvents={abstractSyntax.inputEvents}
             onRaise={raiseDebugEvent}
-            disabled={trace===undefined || trace.runtimeError!==undefined}
+            disabled={trace===undefined}
           />
         </div>}
       </PersistentDetails>
@@ -281,11 +281,11 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
       {/* Traces */}
       <details open={showExecutionTrace} onToggle={e => setShowExecutionTrace(e.newState === "open")}>
         <summary>execution traces</summary>
-        <Traces {...traces} {...tracesSetters}
+        {showExecutionTrace && <Traces {...traces} {...tracesSetters}
           time={time}
           trace={trace}
           onReplayTrace={onReplayTrace}
-        />
+        />}
       </details>
     </div>
 

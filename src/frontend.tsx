@@ -29,7 +29,7 @@ const app = (
         `}</style>
         <img src={deadStatebuddy} width="100%" />
         <h1>StateBuddy crashed! :(</h1>
-        <h3>... and went to <a href="https://static1.squarespace.com/static/50e08e65e4b0c2f4976972df/t/588a2e70725e25b6981e64d1/1485450864394/Chiang+Hell+Is+the+Absence+of+God.pdf">heaven.</a></h3>
+        <h3>... and went to <a href="https://static1.squarespace.com/static/50e08e65e4b0c2f4976972df/t/588a2e70725e25b6981e64d1/1485450864394/Chiang+Hell+Is+the+Absence+of+God.pdf">heaven</a>.</h3>
       </div>}
       setModal={() => {}}>
     </ModalOverlay>

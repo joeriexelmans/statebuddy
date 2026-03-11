@@ -233,12 +233,10 @@ export function App() {
           <div style={{
             flex: '0 0 content',
             overflowY: "auto",
-            overflowX: "auto",
+            overflowX: "hidden",
             flexBasis: appState.sidePanelWidth,
             maxWidth: '75vw',
             minWidth: 20,
-
-            // maxWidth: `max(min(${appState.sidePanelWidth}px, 75vw), 100px)`,
           }}>
             <div className={styles.stackVertical} style={{height:'100%'}}>
               <SideBar
@@ -264,7 +262,7 @@ export function App() {
                   <HelpOutlineIcon fontSize='small'/>
                 </Tooltip>
               </summary>
-              {preparedTraces && simulator.trace &&
+              {preparedTraces && simulator.trace && appState.showPlot &&
                 <Plot width="100%"
                   prepped={preparedTraces}
                   trace={simulator.trace}

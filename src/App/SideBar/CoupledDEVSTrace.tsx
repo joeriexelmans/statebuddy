@@ -205,6 +205,9 @@ function ShowRuntimeError({error}: {error: RuntimeError}) {
     <span style={{
       backgroundColor: 'var(--error-bg-color',
       color: 'var(--error-color)',
+      borderRadius: '4px', // <-- make it look pretty
+      paddingLeft: 4,
+      paddingRight: 4,
     }}>
       {error.message}
     </span>
