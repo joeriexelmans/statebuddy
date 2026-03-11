@@ -20,7 +20,6 @@ type ShowPlantsProps = WithSetters<{
 };
 
 export function ShowPlants({plantsState, setPlantsState, speed, coupledState, onRaise}: ShowPlantsProps) {
-  console.log({coupledState});
   return plantsState.plants.map(({id, name, type}, i) =>
     <ShowPlant key={id} {...{i, id, name, type,
       onNameChange: (newName: string) => setPlantsState(ps => ({
@@ -45,7 +44,6 @@ export function ShowPlant({id, name, type, onDelete, onNameChange, plant, speed,
   currentState?: DEVSTrace<any>,
   onRaise: (event: RaisedEvent) => void,
 }) {
-  console.log(currentState);
   const state = plant.cleanupState(currentState?.at(-1)?.newState || plant.execution.initial());
   return <div key={id}>
     <div className={appStyles.toolbar}>

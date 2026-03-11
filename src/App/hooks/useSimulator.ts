@@ -8,7 +8,7 @@ import { RuntimeError } from "@/statecharts/interpreter";
 import { DEVSComponent } from "@/devs/devs";
 import { WithSetters } from "../makePartialSetter";
 import { TraceableError } from "@/statecharts/parser";
-import { Mode } from "@/statecharts/runtime_types";
+import { Mode, RaisedEvent } from "@/statecharts/runtime_types";
 
 // In StateBuddy, currently, the state of our simulation is always a CoupledDEVS state of our statechart model (with a DEVS adapter around it) and a bunch of 'plants'.
 // Perhaps in the future, we could let the user arbitrarily configure this setup (anything on the spectrum from a single Statechart Atomic DEVS to many nested Coupled DEVS ...), but for now, it is what it is.
@@ -29,9 +29,12 @@ export type SimulatorCallbacks = {
   onInit: () => void;
   onClear: () => void;
   onBack: () => void;
-  onRaise: (_inputEvent: string, _param: any) => void;
+  onRaise: (bagOfInputs: RaisedEvent[]) => void;
   onSkip: () => void;
   onReplayTrace: (extTrace: ExtTransitionTrace) => void;
+
+  addOutputListener: (l: OutputListener) => void;
+  rmOutputListener: (l: OutputListener) => void;
 }
 
 export type SimulatorStuff = WithSetters<{
@@ -50,11 +53,30 @@ export type SimulatorStuff = WithSetters<{
   simulatorCallbacks: SimulatorCallbacks;
 };
 
+type OutputListener = (bagOfOutputs: RaisedEvent[]) => void;
+
 export function useSimulator(cE: DEVSComponent<DEVSTrace<CoupledState>> | undefined): SimulatorStuff {
   // time mode of the simulator
   const [time, setTime] = useState<TimeMode>({kind: "paused", simtime: 0});
   // trace is 'null' when there is no ongoing execution
   const [trace, setTrace] = useState<StateBuddyTraceState|undefined>(undefined);
+
+  const [outputListeners, setOutputListeners] = useState<OutputListener[]>([]);
+
+
+  const addOutputListener = useCallback((l: OutputListener) => {
+    setOutputListeners(ls => [...ls, l]);
+  }, [setOutputListeners]);
+
+  const rmOutputListener = useCallback((l: OutputListener) => {
+    setOutputListeners(ls => ls.filter(ll => ll !== l));
+  }, [setOutputListeners]);
+
+  const notifyListeners = useCallback((bagOfOutputs: RaisedEvent[]) => {
+    outputListeners.forEach(l => {
+      l(bagOfOutputs);
+    });
+  }, [outputListeners]);
 
   // The currently active item in the execution trace, if there is one
   const currentTraceItem = trace && trace.trace[trace.idx];
@@ -90,6 +112,30 @@ export function useSimulator(cE: DEVSComponent<DEVSTrace<CoupledState>> | undefi
 
   // Simulator callbacks...
 
+  // keep making intTransitions as long as they don't advance the simtime
+  const makeImminentTransitions = useCallback((trace: StateBuddyTraceState) => {
+    let i=0;
+    while (true) {
+      if (i > 1000) {
+        throw new Error("too many steps - probably an infinite loop :(");
+      }
+      const simtime = trace.trace[trace.idx].simtime;
+      const nextWakeup = cE!.timeAdvance(trace.trace);
+      if (nextWakeup > simtime) {
+        return trace;
+      }
+      else {
+        const [outputEvents, newTrace] = cE!.intTransition(trace.trace);
+        notifyListeners(outputEvents);
+        trace = {
+          trace: newTrace,
+          idx: trace.idx + 1,
+        }
+      }
+      i++;
+    }
+  }, [cE, notifyListeners]);
+
   const onInit = useCallback(() => {
     if (cE === undefined) return;
     setTrace(_ =>
@@ -105,7 +151,7 @@ export function useSimulator(cE: DEVSComponent<DEVSTrace<CoupledState>> | undefi
         return {...time, since: {simtime: 0, wallclktime: performance.now()}};
       }
     });
-  }, [cE]);
+  }, [cE, makeImminentTransitions]);
 
   const onClear = useCallback(() => {
     setTrace(undefined);
@@ -113,14 +159,15 @@ export function useSimulator(cE: DEVSComponent<DEVSTrace<CoupledState>> | undefi
   }, [setTrace, setTime]);
 
   // raise input event at current point in simulated time (depends on 'time'), producing a new runtime configuration (or a runtime error)
-  const onRaise = useCallback((inputEvent: string, param: any) => {
+  const onRaise = useCallback((bagOfInputs: RaisedEvent[]) => {
+    if (cE === undefined) return;
     setTrace(trace => {
       if (trace) {
         const simtime = getSimTime(time, Math.round(performance.now()));
-        const newTrace = cE!.extTransition(
+        const newTrace = cE.extTransition(
           simtime,
           trace.trace.slice(0, trace.idx + 1) as DEVSTrace<CoupledState>,
-          [{name: inputEvent, param}],
+          bagOfInputs,
         );
         return makeImminentTransitions({
           trace: newTrace,
@@ -128,30 +175,11 @@ export function useSimulator(cE: DEVSComponent<DEVSTrace<CoupledState>> | undefi
         });
       }
     });
-  }, [setTrace, cE, time]);
+  }, [setTrace, cE, time, makeImminentTransitions]);
 
-  const makeImminentTransitions = (trace: StateBuddyTraceState) => {
-    let i=0;
-    while (true) {
-      if (i > 1000) {
-        throw new Error("too many steps - probably an infinite loop :(");
-      }
-      const simtime = trace.trace[trace.idx].simtime;
-      const nextWakeup = cE!.timeAdvance(trace.trace);
-      if (nextWakeup > simtime) {
-        return trace;
-      }
-      else {
-        const [_, newTrace] = cE!.intTransition(trace.trace)
-        trace = {
-          trace: newTrace,
-          idx: trace.idx + 1,
-        }
-      }
-      i++;
-    }
-  };
+  const giveMeSimTime = useCallback(() => time, [time]);
 
+  // make next intTransition
   const makeNextTimedTransition = useCallback(() => {
     setTrace(trace => {
       if (trace) {
@@ -160,7 +188,8 @@ export function useSimulator(cE: DEVSComponent<DEVSTrace<CoupledState>> | undefi
           if (cE!.timeAdvance(trace.trace) === Infinity) {
             return trace; // cannot make intTransition
           }
-          const [_outputEvents, newTrace] = cE!.intTransition(trace.trace);
+          const [outputEvents, newTrace] = cE!.intTransition(trace.trace);
+          notifyListeners(outputEvents);
           return {
             trace: newTrace,
             idx: newTrace.length - 1,
@@ -176,7 +205,7 @@ export function useSimulator(cE: DEVSComponent<DEVSTrace<CoupledState>> | undefi
         }
       }
     });
-  }, [cE, setTrace]);
+  }, [cE, setTrace, notifyListeners]);
 
   // Sets the simulated time to exactly match the next timed transition.
   // Note: this function does not make the next timed transition happen. You need to call `makeNextTimedTransition` for that.
@@ -271,12 +300,9 @@ export function useSimulator(cE: DEVSComponent<DEVSTrace<CoupledState>> | undefi
     }
   }, [cE]);
 
-  const simulatorCallbacks = useMemo(() => ({
-    onInit, onClear, onBack, onRaise, onSkip, onReplayTrace,
-  }), [onInit, onClear, onBack, onRaise, onSkip, onReplayTrace]);
+  // const simulatorCallbacks = useMemo(() => (), [cE, time, trace, outputListeners]);
 
-  const simulator = useMemo(() => {
-    return {
+  const simulator = useMemo(() => ({
       // state
       trace,
       setTrace,
@@ -291,9 +317,11 @@ export function useSimulator(cE: DEVSComponent<DEVSTrace<CoupledState>> | undefi
       highlightTransitions,
 
       // 'reducers'
-      simulatorCallbacks,
-    };
-  }, [cE, time, trace]);
+      simulatorCallbacks: {
+        onInit, onClear, onBack, onRaise, onSkip, onReplayTrace, addOutputListener, rmOutputListener,
+        giveMeSimTime,
+      },
+  }), [cE, time, trace, outputListeners]);
 
   return simulator;
 }

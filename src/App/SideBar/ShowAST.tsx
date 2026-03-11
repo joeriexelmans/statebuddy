@@ -57,7 +57,7 @@ export const ShowAST = memo(function ShowASTx(props: {root: ConcreteState | Unst
 });
 
 
-export const ShowInputEvents = memo(function ShowInputEvents({inputEvents, onRaise, disabled}: {inputEvents: EventTrigger[], onRaise: (e: string, p: any) => void, disabled: boolean}) {
+export const ShowInputEvents = memo(function ShowInputEvents({inputEvents, onRaise, disabled}: {inputEvents: EventTrigger[], onRaise: (eventName: string, param: any) => void, disabled: boolean}) {
   const raiseHandlers = inputEvents.map(({event}) => {
     return () => {
       // @ts-ignore

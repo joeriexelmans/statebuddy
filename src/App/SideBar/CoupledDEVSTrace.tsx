@@ -53,8 +53,8 @@ export const CoupledDEVSTrace = memo(function CoupledDEVSTrace({
   plantsState,
 }: TraceProps) {
 
-  console.log({currentTrace});
-
+  // console.log({currentTrace});
+  
   // Auto-scroll when trace item changes
   useEffect(() => {
     if (autoScroll) {
@@ -272,11 +272,11 @@ function CoupledDEVSInternalTransition({item, prevItem, status, showMicroSteps, 
     {Object.entries(item.newState).map(([componentId, componentTrace]) => {
       if (componentId === componentMadeIntTransition) {
         // we've already rendered this one
-        return <></>;
+        return <div key={componentId}/>;
       }
       if (prevItem.newState[componentId] === componentTrace) {
         // component did not step
-        return <></>;
+        return <div key={componentId}/>;
       }
       const abstractSyntax = getAbstractSyntax(componentId, plantsState, ast);
       return <Column key={componentId}>
@@ -369,51 +369,6 @@ function EventParam(props: {param?: any}) {
   return <>{props.param !== undefined && <>({JSON.stringify(props.param)})</>}</>;
 }
 
-// export const RTHistoryItem = memo(function RTHistoryItem({ast, idx, item, prevItem, isPlantStep, active, onMouseDown, propertyStatus, microsteps}: {idx: number, ast: Statechart, item: TraceItem, prevItem?: TraceItem, isPlantStep: boolean, active: boolean, onMouseDown: (idx: number, timestamp: number) => void, propertyStatus: PropertyStatus, microsteps: boolean}) {
-//   if (item.kind === "bigstep") {
-//     const outputEvents = isPlantStep ? item.state.plant.outputEvents : item.state.sc.outputEvents;
-//     return <div
-//       className={styles.traceItem + ' ' + (active ? styles.active : "") + ' ' + (isPlantStep ? styles.plantStep : "")}
-//       onMouseDown={useCallback(() => onMouseDown(idx, item.simtime), [idx, item.simtime])}>
-//       <div>
-//         <Status status={propertyStatus}/>
-//         &emsp;
-//         <Tooltip tooltip="simulated time">{formatTime(item.simtime)}</Tooltip>
-//         &emsp;
-//         <RTCause cause={isPlantStep ? item.state.plant.inputEvent : item.state.sc.inputEvent}/>
-//         {outputEvents.length>0 &&
-//           <div style={{display: 'inline-block'}}>&nbsp;&#x2192;&nbsp;
-//           {outputEvents.map((e:RaisedEvent) => <span className={styles.outputEvent}>{e.name}<RTEventParam param={e.param}/></span>)}
-//           </div>}
-//       </div>
-//       {/* {!isPlantStep &&
-//         <ShowFiredTransitions firedTransitions={
-//           [...ast.transitions.values().flatMap(t => t.filter(t => item.state.sc.firedTransitions.includes(t.uid)))]}/>
-//       } */}
-//       <ShowEnvironment environment={item.state.sc.environment}/>
-//       {microsteps && <MicroSteps msgs={item.msgs} />}
-//     </div>;
-//   }
-//   else {
-//     // error item
-//     return <div
-//       className={styles.traceItem
-//          + ' ' + styles.runtimeError
-//          + ' ' + (active ? styles.active : "")}
-//       onMouseDown={useCallback(() => onMouseDown(idx, item.simtime), [idx, item.simtime])}>
-//       <div>
-//         {formatTime(item.simtime)}
-//         &emsp;
-//         <div className={styles.inputEvent}><ShowCause cause={item.cause}/></div>
-//       </div>
-//       <div>
-//         {item.error.message}
-//       </div>
-//       {microsteps && <MicroSteps msgs={item.msgs} />}
-//     </div>;
-//   }
-// });
-
 function MicroSteps({microsteps}: {microsteps: string[]}) {
   return <div style={{
     paddingLeft: 4,
@@ -450,7 +405,11 @@ const allTransitions = memoizeOne(function allTransitions(ast: Statechart) {
 
 function getFiredTransitions(ast: Statechart, item: DEVSTraceItem<SC2DEVSState>) {
   const all = allTransitions(ast);
-  const result = all.filter(t => item.newState.bigstep?.firedTransitions.includes(t.uid));
+  const newState = item.newState;
+  if (newState instanceof RuntimeError) {
+    return [];
+  }
+  const result = all.filter(t => newState.bigstep?.firedTransitions.includes(t.uid));
   return result;
 }
 
@@ -485,17 +444,21 @@ function ShowTransition({transition}: {transition: Transition}) {
 //   }</div>;
 // }
 
-
 // An 'output step' is when a Statechart performs an intTransition immediately after handling an input event (extTransition), with the purpose of only outputting some events.
 // If a Statechart makes an output step, we render that step slightly differently (we hide the timer icon), so it becomes a bit clearer that in the world of Statecharts, the output step was caused by (or even stronger: is part of) the previous step.
 // This heuristic (hopefully) works for our Statechart and also for plants that are implemented as a Statechart.
 function isOutputStepHeuristic(trace: DEVSTrace<SC2DEVSState>) {
   const itemState = trace.at(-1)!;
   const prevItemState = trace.at(-2);
-  const prevScheduledOutputs = prevItemState?.newState.outputQueue; // <-- could also be undefined if newState does not have property 'outputQueue'...
+  const prevState = prevItemState?.newState;
+  const newState = itemState.newState;
+  if (prevState instanceof RuntimeError || newState instanceof RuntimeError) {
+    return false;
+  }
+  const prevScheduledOutputs = prevState?.outputQueue; // <-- could also be undefined if newState does not have property 'outputQueue'...
   const curOutputs = itemState.kind === "intTransition" && itemState.outputEvents;
   const isOutputStep = jsonDeepEqual(prevScheduledOutputs, curOutputs) // the scheduled outputs of previous SC step are equal to the current outputs
     && prevItemState?.simtime === itemState.simtime // <-- time didn't change
-    && itemState.newState.outputQueue?.length === 0; // <-- our current output queue is empty (because we outputted all of our outputs)
+    && newState.outputQueue?.length === 0; // <-- our current output queue is empty (because we outputted all of our outputs)
   return isOutputStep;
 }

@@ -6,6 +6,7 @@ import { VisualEditorState, SerializableSelection, deserializeEditorState, seria
 import { EditHistory } from "./useEditHistory";
 import { useDelay } from "./useDelay";
 import { useMemo } from "react";
+import { deepAssign } from "@/util/util";
 
 // valid URL hashes contain:
 export type UrlState = {
@@ -33,7 +34,7 @@ export function usePersistentAppState({
       else {
         // recover state
         const { editorState, ...appState } = recoveredState;
-        setAppState(() => Object.assign({}, defaultAppState, appState));
+        setAppState(() => deepAssign({}, defaultAppState, appState));
         setEditHistory(() => ({ current: deserializeEditorState(editorState), history: [], future: [] }));
       }
     }

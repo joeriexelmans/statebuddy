@@ -80,6 +80,39 @@ export function jsonDeepEqual(a: any, b: any) {
   return false;
 }
 
+// another ChatGPT-authored function
+export function deepAssign(target: any, ...sources: any[]) {
+  if (target == null) {
+    throw new TypeError("Cannot convert undefined or null to object");
+  }
+
+  const isObject = (obj: any) =>
+    obj && typeof obj === "object" && !Array.isArray(obj);
+
+  for (const source of sources) {
+    if (source == null) continue;
+
+    for (const key of Object.keys(source)) {
+      const srcVal = source[key];
+      const tgtVal = target[key];
+
+      if (isObject(srcVal) && isObject(tgtVal)) {
+        deepAssign(tgtVal, srcVal);
+      } else if (Array.isArray(srcVal)) {
+        target[key] = srcVal.map((v) =>
+          typeof v === "object" && v !== null ? deepAssign({}, v) : v
+        );
+      } else if (isObject(srcVal)) {
+        target[key] = deepAssign({}, srcVal);
+      } else {
+        target[key] = srcVal;
+      }
+    }
+  }
+
+  return target;
+}
+
 // compare arrays by value
 export function arraysEqual<T>(a: T[], b: T[], cmp: (a: T, b: T) => boolean = (a,b)=>a===b): boolean {
   if (a === b)
@@ -147,4 +180,11 @@ export function withGrow<T>(arr: T[], i: number, value: T, fill: T) {
     arr = [...arr, ...new Array(i - arr.length + 1).map(_ => fill)];
   }
   return arr.with(i, value);
+}
+
+
+export function generateRandomHexString(bitsOfInformation: number) {
+  return [...crypto.getRandomValues(new Uint8Array(Math.floor(bitsOfInformation/8)))]
+    .map(b => b.toString(16).padStart(2, "0"))
+    .join("");
 }

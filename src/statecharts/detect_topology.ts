@@ -184,7 +184,7 @@ export const detectRountangleInsideness = memoizeOne(function detectRountangleIn
 // This function does the heavy lifting of parsing the concrete syntax:
 // It detects insideness and connectedness relations based on the geometries of the shapes.
 export function computeTopology(concreteSyntax: ConcreteSyntax): Topology {
-  console.time('detect connections');
+  // console.time('detect connections');
 
   // we use 'Uniform Grid' (spatial hashing) approach for efficient collision detection
   // we build a map of grid cell -> shapes overlapping with that cell to find possible shapes that a shape is colliding with
@@ -203,7 +203,7 @@ export function computeTopology(concreteSyntax: ConcreteSyntax): Topology {
   const {text2ArrowMap, arrow2TextMap, text2RountangleMap, rountangle2TextMap} = detectTextConnections([concreteSyntax, uniformGrid]);
   const insidenessMap = detectRountangleInsideness([concreteSyntax, uniformGrid]);
 
-  console.timeEnd('detect connections');
+  // console.timeEnd('detect connections');
 
   return {
     arrow2SideMap,

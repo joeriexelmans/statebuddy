@@ -103,7 +103,7 @@ export function App() {
   const onOpen = useCallback((modelName: string) => {
     editorState && setModal(<OpenFile
       onClose={() => setModal(null)}
-      properties={appState.sideBar.properties}
+      properties={appState.sideBar.propertyEditor}
       savedTraces={appState.sideBar.traces.savedTraces}
       setSavedTraces={setSavedTraces}
       editorState={editorState}
@@ -181,11 +181,11 @@ export function App() {
             
             {/* Stuff that shows below editor but next to sidebar */}
             <Greeter trial={trial}/>
-            {appState.sideBar.showTable && appState.sideBar.properties.length > 0 && appState.sideBar.traces.savedTraces.length > 0 && coupledExecution && abstractSyntax &&
+            {appState.sideBar.showTable && appState.sideBar.propertyEditor.length > 0 && appState.sideBar.traces.savedTraces.length > 0 && coupledExecution && abstractSyntax &&
               <BelowEditor>
                 <PropertyTraceTable
                   abstractSyntax={abstractSyntax}
-                  properties={appState.sideBar.properties}
+                  properties={appState.sideBar.propertyEditor}
                   traces={appState.sideBar.traces.savedTraces}
                   onClose={hidePropertyTable}
                   checkProperty={pyodide.checkProperty}

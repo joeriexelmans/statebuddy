@@ -1,31 +1,24 @@
-import AddIcon from '@mui/icons-material/Add';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
-import TableViewIcon from '@mui/icons-material/TableView';
-import VisibilityIcon from '@mui/icons-material/Visibility';
 
 import { Statechart } from '@/statecharts/abstract_syntax';
 import { objectsEqual } from '@/util/util';
-import { memo, useCallback, useEffect, useState } from 'react';
+import { memo, useCallback, useState } from 'react';
 import styles from "../App.module.css";
-import { DoubleClickButton } from '../Components/DoubleClickButton';
-import { MoveUpDown } from '../Components/MoveUpDown';
 import { PersistentDetails } from '../Components/PersistentDetails';
 import { Tooltip } from '../Components/Tooltip';
-import { TwoStateButton } from '../Components/TwoStateButton';
 import { defaultPlantsState, PlantsState } from "../hooks/useCoupledExecution";
 import { CoupledState, SimulatorStuff } from '../hooks/useSimulator';
 import { makeAllSetters, WithSetters } from '../makePartialSetter';
 import { statebuddyPlants } from '../plants';
 import { Connect } from './Connect';
+import { CoupledDEVSTrace } from './CoupledDEVSTrace';
 import { PreparedTraces, PropertyCheckResult } from './prepare_trace';
+import { defaultPropertyEditorState, PropertyEditor, PropertyEditorState } from './PropertyEditor';
 import { ShowAST, ShowInputEvents, ShowInternalEvents, ShowOutputEvents } from './ShowAST';
 import { ShowPlants } from './ShowPlants';
 import "./SideBar.css";
-import { Status } from './Status';
-import { CoupledDEVSTrace } from './CoupledDEVSTrace';
 import { defaultTracesState, Traces, TracesState } from './Traces';
-import { initialize } from '@/statecharts/interpreter';
+import { defaultMQTTState, MQTT, MQTTState } from './MQTT';
 
 export type SideBarState = {
   showStateTree: boolean,
@@ -36,13 +29,12 @@ export type SideBarState = {
   showConnections: boolean,
   showProperties: boolean,
   showExecutionTrace: boolean,
-  showTable: boolean,
+  showMQTT: boolean,
 
   plantsState: PlantsState,
-  properties: string[],
-  activeProperty: number,
-
+  propertyEditor: PropertyEditorState,
   traces: TracesState,
+  mqtt: MQTTState,
 };
 
 export const defaultSideBarState: SideBarState = {
@@ -54,13 +46,12 @@ export const defaultSideBarState: SideBarState = {
   showConnections: false,
   showProperties: false,
   showExecutionTrace: true,
-  showTable: false,
+  showMQTT: false,
 
   plantsState: defaultPlantsState,
-  properties: [],
-  activeProperty: 0,
-
+  propertyEditor: defaultPropertyEditorState,
   traces: defaultTracesState,
+  mqtt: defaultMQTTState,
 };
 
 type SideBarProps = WithSetters<{
@@ -78,42 +69,16 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
 
   const {trace, setTrace, time, setTime, simulatorCallbacks: {onRaise, onReplayTrace}} = simulator;
 
-  const {showExecutionTrace, showConnections, showProperties, activeProperty, plantsState, properties, showPlant, showOutputEvents,  showInternalEvents, showInputEvents, showStateTree,showTable, traces} = state;
+  const {showExecutionTrace, showConnections, showProperties, plantsState, propertyEditor, showPlant, showOutputEvents,  showInternalEvents, showInputEvents, showStateTree, traces, showMQTT} = state;
 
-  const {setPlantsState, setActiveProperty, setShowProperties, setShowConnections, setShowExecutionTrace, setShowOutputEvents, setShowInternalEvents, setProperties, setShowInputEvents, setShowPlant, setShowStateTree, setShowTable, setTraces} = makeAllSetters(setState, Object.keys(state) as (keyof SideBarState)[]);
+  const {setPlantsState, setShowProperties, setShowConnections, setShowExecutionTrace, setShowOutputEvents, setShowInternalEvents, setPropertyEditor, setShowInputEvents, setShowPlant, setShowStateTree, setTraces, setShowMQTT, setMqtt} = makeAllSetters(setState, Object.keys(state) as (keyof SideBarState)[]);
 
   const tracesSetters = makeAllSetters(setTraces, Object.keys(traces) as (keyof TracesState)[]);
 
-  const [propertyResults, setPropertyResults] = useState<PropertyCheckResult[] | undefined>(undefined);
 
   const speed = time.kind === "paused" ? 0 : time.scale;
 
-  // if some properties change, re-evaluate them:
-  useEffect(() => {
-    let timeout: NodeJS.Timeout;
-    let clearResultTimeout: NodeJS.Timeout;
-    if (preparedTraces) {
-      // very often we recompute the same property on a trace that is one item longer, resulting in largely the same trace.
-      clearResultTimeout = setTimeout(() => {
-        setPropertyResults(undefined);
-      }, 500);
-      timeout = setTimeout(() => {
-        Promise.all(properties.map((property, i) => {
-          return checkProperty(property, preparedTraces);
-        }))
-        .then(results => {
-          clearTimeout(clearResultTimeout);
-          setPropertyResults(results);
-        })
-      })
-    }
-    return () => {
-      clearTimeout(timeout);
-      clearTimeout(clearResultTimeout);
-    };
-  }, [preparedTraces, properties]);
-
-  const raiseDebugEvent = useCallback((e: string, p: any) => onRaise(e,p), [onRaise]);
+  const raiseDebugEvent = useCallback((name: string, param: any) => onRaise([{name,param}]), [onRaise]);
 
   const onAddPlant = (type: string) => {
     const plantToInstantiate = statebuddyPlants[type];
@@ -132,6 +97,8 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
       }));
     }
   };
+
+  const [propertyResults, setPropertyResults] = useState<PropertyCheckResult[] | undefined>(undefined);
 
   return <>
     <div
@@ -216,66 +183,28 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
           />}
       </PersistentDetails>
 
+      {/* MQTT */}
+      <PersistentDetails state={showMQTT} setState={setShowMQTT}>
+        <summary>MQTT</summary>
+        <MQTT
+          state={state.mqtt}
+          setState={setMqtt}
+          simulator={simulator}
+        />
+      </PersistentDetails>
+
       {/* Properties */}
       <details open={showProperties} onToggle={e => setShowProperties(e.newState === "open")}>
         <summary>properties</summary>
-        {properties.map((property, i) => {
-          const result = propertyResults && propertyResults[i];
-          let violated = null, propertyError = null;
-          if (result) {
-            violated = result[0] && result[0].length > 0 && !result[0][0][1];
-            propertyError = result[1];
-          }
-          return <div style={{display: 'flex'}} key={i} className={styles.toolbar}>
-            <div>
-              <Status status={(violated === null) ? "pending" : (violated ? "violated" : "satisfied")} />
-              <Tooltip tooltip="see in trace (below)" align="left">
-                <TwoStateButton active={activeProperty === i} onClick={() => setActiveProperty(i)}>
-                  <VisibilityIcon fontSize="small"/>
-                </TwoStateButton>
-              </Tooltip>
-            </div>
-            <Tooltip
-              // tooltip={propertyError || plant && "available signals:\n"+plant.signals.map(s => "• "+s).join('\n')}
-              tooltip=""
-              align='left'
-              fullWidth={true}
-              error={Boolean(propertyError)}
-              showWhen='focus'
-              >
-              <input
-                className={propertyError && "error" || ""}
-                type="text"
-                style={{flexGrow: 1}}
-                value={property}
-                size={1}
-                onChange={e => setProperties(properties => properties.toSpliced(i, 1, e.target.value))} 
-                placeholder='write MTL property...'
-              />
-            </Tooltip>
-            <MoveUpDown i={i} ls={properties} setter={setProperties}/>
-            <DoubleClickButton
-              tooltip="delete this property"
-              onDoubleClick={() => setProperties(properties => properties.toSpliced(i, 1))}
-              align="right">
-              <DeleteOutlineIcon fontSize="small"/>
-            </DoubleClickButton>
-          </div>;
-        })}
-        <div className={styles.toolbar}>
-          <button onClick={() => setProperties(properties => [...properties, ""])} style={{flexGrow:1}}>
-            <AddIcon fontSize="small"/> add property
-          </button>
-          <Tooltip tooltip="show table view">
-            <TwoStateButton active={showTable} onClick={() => setShowTable(s => !s)} disabled={traces.savedTraces.length === 0 || properties.length === 0}>
-              <TableViewIcon fontSize='small'/>
-              Table
-            </TwoStateButton>
-          </Tooltip>
-          <Tooltip tooltip='see MTL examples' align='right'>
-            <button onClick={() => window.open("https://github.com/mvcisback/py-metric-temporal-logic/blob/ceb2567ef90f3bd5d7a8d607806a9d2e7021639e/README.md#string-based-api", "_blank")?.focus()}><HelpOutlineIcon fontSize='small'/> help</button>
-          </Tooltip>
-        </div>
+        <PropertyEditor
+          state={propertyEditor}
+          setState={setPropertyEditor}
+          propertyResults={propertyResults}
+          setPropertyResults={setPropertyResults}
+          checkProperty={checkProperty}
+          preparedTraces={preparedTraces}
+          enableTable={traces.savedTraces.length === 0 || propertyEditor.properties.length === 0}
+        />
       </details>
 
       {/* Traces */}
@@ -307,7 +236,7 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
                 traces={traces}
                 setTraces={setTraces}
                 plantsState={plantsState}
-                propertyTrace={propertyResults?.[activeProperty]?.[0] || []}
+                propertyTrace={propertyResults?.[propertyEditor.activeProperty]?.[0] || []}
               />}
           </div>
       </div>}
