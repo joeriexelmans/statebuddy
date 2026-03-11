@@ -4,6 +4,7 @@ import { EventTrigger } from "@/statecharts/label_ast";
 import { BigStep, RaisedEvent } from "@/statecharts/runtime_types";
 import { DEVSComponent } from "@/devs/devs";
 import { sc2DEVS, SC2DEVSState } from "@/devs/sc2devs";
+import { RuntimeError } from "@/statecharts/interpreter";
 
 export type PlantRenderProps<CleanStateType> = {
   state: CleanStateType,
@@ -29,38 +30,6 @@ export type Plant<StateType, CleanStateType> = {
   render: (props: PlantRenderProps<CleanStateType>) => ReactNode;
 }
 
-// // Automatically connect Statechart and Plant inputs/outputs if their event names match.
-// export function autoConnect(ast: Statechart, scName: string, plant: Plant<any, any>, plantName: string) {
-//   const outputs = {
-//     [scName]: {},
-//     [plantName]: {},
-//   }
-//   for (const o of ast.outputEvents) {
-//     const plantInputEvent = plant.inputEvents.find(e => e.event === o)
-//     if (plantInputEvent) {
-//       // @ts-ignore
-//       outputs[scName][o] = {kind: "model", model: plantName, eventName: plantInputEvent.event};
-//     }
-//   }
-//   for (const o of plant.outputEvents) {
-//     const scInputEvent = ast.inputEvents.find(e => e.event === o.event);
-//     if (scInputEvent) {
-//       // @ts-ignore
-//       outputs[plantName][o.event] = {kind: "model", model: scName, eventName: scInputEvent.event};
-//     }
-//   }
-//   return outputs;
-// }
-
-// export function exposePlantInputs(plant: Plant<any, any>, plantName: string, tfm = (s: string) => s) {
-//   const inputs = {};
-//   for (const i of plant.inputEvents) {
-//     // @ts-ignore
-//     inputs[tfm(i.event)] = {kind: "model", model: plantName, eventName: i.event};
-//   }
-//   return inputs
-// }
-
 export type StatechartPlantSpec<CleanStateType> = {
   uiEvents: EventTrigger[],
   ast: Statechart,
@@ -76,16 +45,15 @@ export function makeStatechartPlant<CleanStateType>({uiEvents, ast, cleanupState
     // outputEvents: [...ast.outputEvents].map(e => ({kind: "event" as const, event: e})),
     execution: sc2DEVS(ast),
     cleanupState: (state: SC2DEVSState) => {
+      if (state instanceof RuntimeError) {
+        const e = new Error("unexpected runtime error in plant: " + state.message);
+        // @ts-ignore
+        e.runtimeError = state; // <-- attach the error so we can see what went wrong.
+        throw e; // <-- crash StateBuddy
+      }
       return cleanupState(state.bigstep);
     },
     render,
     signals,
   }
 }
-
-// export function comparePlantRenderProps(oldProps: PlantRenderProps<RT_Statechart>, newProps: PlantRenderProps<RT_Statechart>) {
-//   return setsEqual(oldProps.state.mode, newProps.state.mode)
-//     && oldProps.state.environment === newProps.state.environment // <-- could optimize this further
-//     && oldProps.speed === newProps.speed
-//     && oldProps.raiseUIEvent === newProps.raiseUIEvent
-// }
