@@ -236,6 +236,7 @@ function CoupledDEVSInitialization({item, status, plantsState, showMicroSteps, s
           {showMicroSteps && <MicroSteps microsteps={getMicroSteps(componentTraceItem)}/>}
           {abstractSyntax && showTransitions && <ShowFiredTransitions
             firedTransitions={getFiredTransitions(abstractSyntax, componentTraceItem)} />}
+          <ShowEnvironment item={componentTraceItem} />
         </>}
       </Column>;
     })}
@@ -269,6 +270,7 @@ function CoupledDEVSInternalTransition({item, prevItem, status, showMicroSteps, 
       <ShowOutputEvents outputEvents={blessedItem.outputEvents} />
       {showMicroSteps && <MicroSteps microsteps={isOutputStep && ["(output from previous step)"] || getMicroSteps(blessedItem)}/>}
       {blessedAs && showTransitions && <ShowFiredTransitions firedTransitions={getFiredTransitions(blessedAs, blessedItem)}/>}
+      <ShowEnvironment item={blessedItem} />
     </Column>
 
     {/* then we show the components that made an extTransition */}
@@ -309,6 +311,7 @@ function DEVSExternalTransitions({components, plantsState, showMicroSteps, showT
       {abstractSyntax && showTransitions && <Column>
         <ShowFiredTransitions firedTransitions={getFiredTransitions(abstractSyntax, item)} />
       </Column>}
+      <ShowEnvironment item={item}/>
     </Column>;
   });
 }
@@ -384,6 +387,19 @@ function getMicroSteps(item: DEVSTraceItem<any>) {
   else {
     return [];
   }
+}
+
+function ShowEnvironment({item}: {item: DEVSTraceItem<any>}) {
+  if (item.newState.bigstep) {
+    return [...item.newState.bigstep.environment.entries()].map(([name, value]) => {
+      return <div
+        style={{display: name.startsWith('_') ? 'none':undefined}}
+        key={name}>
+          {name} = {value}
+      </div>
+    })
+  }
+  else return <></>;
 }
 
 function getRuntimeError(item: DEVSTraceItem<any>): (RuntimeError | undefined) {
