@@ -55,9 +55,16 @@ TODO
 
     - nice to haves:
         - Pattern Matching event parameters, e.g.,:
-            startButton(true)
-          instead of:
-            startButton(x) [x]
+
+            doorOpen(True) // trigger only enabled if event parameter is True
+            move({x,y}) // trigger only enabled if event parameter can be destructured into 'x' and 'y'
+
+            also support 'pattern matching' in actions:
+                entry / {x,y} = {x: True, y: 42}  // will assign x = True and y = 42
+            with a small caveat:
+                entry / {x,y: 99} = {x: True, y: 42}  // runtime exception because '42' cannot be matched with '99'.
+            but we can use this to write assertions:
+                entry / True = x  // crash if x is not equal to True.
     
 - bugs
     (*) editing SC <-> Plant connections at runtime doesn't seem to work
