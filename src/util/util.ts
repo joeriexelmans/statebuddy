@@ -103,7 +103,7 @@ export function myPureDeepAssign(target: any, source: any) {
         // types are compatible -> merge element-wise
         const merged = Object.assign({}, target); // shallow copy target
         for (const [srcKey, srcVal] of Object.entries(source)) {
-          merged[srcKey] = myPureDeepAssign(target[srcKey], source[srcKey]);
+          merged[srcKey] = myPureDeepAssign(target[srcKey], srcVal);
         }
         return merged;
       }

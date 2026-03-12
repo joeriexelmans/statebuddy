@@ -10,7 +10,7 @@ export function useShortcuts(spec: {keys: string[], action: () => void}[], ignor
           // @ts-ignore
           if (e.target?.tagName === "INPUT") {
             // @ts-ignore
-            if (e.target?.type === "text") {
+            if (e.target?.type === "text" || e.target?.type === "password") {
               return;
             }
           }
