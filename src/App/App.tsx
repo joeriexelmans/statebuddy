@@ -95,15 +95,18 @@ export function App() {
 
   const pyodide = usePyodide();
 
-  const hidePropertyTable = useCallback(() => setters.setSideBar(sb => ({...sb, showTable: false})), [setters.setSideBar]);
-  const hideDebug = useCallback(() => setters.setTopPanel(tp => ({...tp, showDebug: false})), [setters.setTopPanel]);
-  const hideFindReplace = useCallback(() => setters.setTopPanel(tp => ({...tp, showFindReplace: false})), [setters.setTopPanel]);
+  appState.sideBar.propertyEditor.showTable
 
   const setSideBar = makePartialSetter(setAppState, "sideBar");
   const setPropertyEditor = makePartialSetter(setSideBar, "propertyEditor");
+  const setShowTable = makePartialSetter(setPropertyEditor, "showTable");
   const setProperties = makePartialSetter(setPropertyEditor, "properties");
   const setTraces = makePartialSetter(setSideBar, "traces");
   const setSavedTraces = makePartialSetter(setTraces, "savedTraces");
+
+  const hidePropertyTable = useCallback(() => setShowTable(false), [setShowTable]);
+  const hideDebug = useCallback(() => setters.setTopPanel(tp => ({...tp, showDebug: false})), [setters.setTopPanel]);
+  const hideFindReplace = useCallback(() => setters.setTopPanel(tp => ({...tp, showFindReplace: false})), [setters.setTopPanel]);
 
   const onAboutStateBuddy = useCallback(() => setModal(<About setModal={setModal} {...trial}/>), [trial]);
   const onOpen = useCallback((modelName: string) => {

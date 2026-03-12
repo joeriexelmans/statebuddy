@@ -1,8 +1,8 @@
-import mqtt, { MqttClient } from "mqtt";
+import mqtt, { IClientOptions, MqttClient } from "mqtt";
 import { useCallback, useEffect, useState } from "react";
 
 import { RaisedEvent } from "@/statecharts/runtime_types";
-import { generateRandomHexString } from "@/util/util";
+import { generateRandomHexString, myPureDeepAssign } from "@/util/util";
 import { Tooltip } from "../Components/Tooltip";
 import { useDisposable } from "../hooks/useDisposable";
 import { SimulatorStuff } from "../hooks/useSimulator";
@@ -11,6 +11,7 @@ import { Toolbar } from "../TopPanel/Toolbar";
 
 // icons
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import ContentPasteIcon from '@mui/icons-material/ContentPaste';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import { usePersistentState } from "@/hooks/usePersistentState";
@@ -18,6 +19,7 @@ import { TwoStateButton } from "../Components/TwoStateButton";
 import { StatusIndicator, StatusType } from "./Status";
 
 export type MQTTState = {
+  on: boolean;
   brokerUrl: string;
   topic: string;
   authentication: boolean;
@@ -29,6 +31,7 @@ export type MQTTState = {
 }
 
 export const defaultMQTTState: MQTTState = {
+  on: false,
   brokerUrl: "ws://localhost:9001",
   topic: generateRandomHexString(128),
   authentication: false,
@@ -47,38 +50,48 @@ type MQTTProps = WithSetters<{
 
 const us = generateRandomHexString(128);
 
-export function MQTT({state: {brokerUrl, topic, authentication, user, password, seePassword, enableCA, ca}, setState, simulator}: MQTTProps) {
+export function MQTT({state, setState, simulator}: MQTTProps) {
+  const {on, brokerUrl, topic, authentication, user, password, seePassword, enableCA, ca} = state;
   const setters = makeAllSetters(setState, Object.keys(defaultMQTTState) as (keyof MQTTState)[]);
 
   const [status, setStatus] = useState<StatusType>("pending");
+  const [error, setError] = useState("");
 
   // for convenience, we store brokers/topics that we successfully connected/subscribed to in the past in localStorage 
   const [knownBrokers, setKnownBrokers] = usePersistentState<string[]>("known-brokers", []);
   const [knownTopics, setKnownTopics] = usePersistentState<string[]>("known-topics", []);
 
   const client = useDisposable<MqttClient>(setClient => {
+    const clientId = `statebuddy-${generateRandomHexString(32)}`;
     let client: MqttClient;
     const errHandler = (err: any) => {
       console.error(brokerUrl, err);
       setStatus("nok");
+      setError(`${err.message}\n\nURL: ${brokerUrl}\n\n${user}\n${password}\n\nClient ID: ${clientId}`);
     };
     const timeout = setTimeout(() => {
-      try {
-        client = mqtt.connect(brokerUrl, {
-          username: authentication ? user : undefined,
-          password: authentication ? password : undefined,
-          ca: enableCA ? ca : undefined,
+      if (on) {
+        try {
+          const options: IClientOptions = {
+            username: authentication ? user : undefined,
+            password: authentication ? password : undefined,
+            ca: enableCA ? ca : undefined,
+            reconnectPeriod: 5000,
+            clientId,
+          };
+          console.log('connecting', JSON.stringify(options));
+          client = mqtt.connect(brokerUrl, options);
+        } catch (e) {
+          return () => {};
+        }
+        client.on("connect", () => {
+          setStatus("ok");
+          console.log('connected to', brokerUrl);
+          setKnownBrokers(known => [brokerUrl, ...known.filter(u => u !== brokerUrl)]);
         });
-      } catch (e) {
-        return () => {};
+        client.on("error", errHandler);
+        setClient(client);
       }
-      client.on("connect", () => {
-        setStatus("ok");
-        console.log('connected to', brokerUrl);
-        setKnownBrokers(known => [brokerUrl, ...known.filter(u => u !== brokerUrl)]);
-      });
-      client.on("error", errHandler);
-      setClient(client);
     }, 200);
     return () => {
       clearTimeout(timeout);
@@ -88,7 +101,7 @@ export function MQTT({state: {brokerUrl, topic, authentication, user, password, 
         client.end();
       }
     };
-  }, [brokerUrl, authentication, user, password, enableCA, ca]);
+  }, [on, brokerUrl, authentication, user, password, enableCA, ca]);
 
   const fullTopic = `${topic}`;
 
@@ -111,11 +124,16 @@ export function MQTT({state: {brokerUrl, topic, authentication, user, password, 
   }, [status, client, fullTopic]);
 
   const handler = useCallback((topic: string, message: Buffer) => {
-    console.log('received', topic, message);
+    console.log('received', topic);
     if (topic === fullTopic) {
-      const {sender, bagOfEvents} = JSON.parse(message.toString());
-      if (sender !== us) {
-        simulator.simulatorCallbacks.onRaise(bagOfEvents);
+      try {
+        const {sender, bagOfEvents} = JSON.parse(message.toString());
+        console.log('decoded:', {sender, bagOfEvents});
+        if (sender !== us) {
+          simulator.simulatorCallbacks.onRaise(bagOfEvents);
+        }
+      } catch (e) {
+        console.warn('failed to parse incoming MQTT message as event', message);
       }
     }
   }, [simulator.simulatorCallbacks.onRaise]);
@@ -153,17 +171,61 @@ export function MQTT({state: {brokerUrl, topic, authentication, user, password, 
 
   const [copied, setCopied] = useState(false);
 
-  const onCopyTopic = useCallback(() => {
-    navigator.clipboard.writeText(topic)
+  const onCopy = useCallback(() => {
+    navigator.clipboard.writeText(JSON.stringify(state, null, 2))
       .then(() => setCopied(true));
-  }, []);
+  }, [state]);
+
+  const onImport = useCallback(() => {
+    navigator.clipboard.readText().then((text) => {
+      try {
+        const newState = JSON.parse(text);
+        console.log(newState);
+        setState(state => 
+          myPureDeepAssign(
+            state,
+            myPureDeepAssign(newState, {}), // <-- ensure we're dealing with an object
+          ));
+      }
+      catch (e) {
+        console.warn("error pasting MQTT config from clipboard", e);
+      }
+    });
+  }, [])
 
   return <div>
     <Toolbar>
+      <label>
+        connect to MQTT
+        <input type="checkbox" checked={on} onChange={e => setters.setOn(e.target.checked)} />
+      </label>
+      <div style={{flexGrow: 1}}/>
+      <Toolbar>
+        <Tooltip
+          tooltip={copied ? "copied!" : "copy MQTT configuration"}
+          showWhen={copied ? "always" : "hover"}
+          align="right" >
+          <button onClick={onCopy} onMouseLeave={() => setCopied(false)}>
+            <ContentCopyIcon fontSize="small"/>
+            copy
+          </button>
+        </Tooltip>
+        <Tooltip
+          tooltip={"import MQTT configuration from clipboard"}
+          align="right" >
+          <button onClick={onImport}>
+            <ContentPasteIcon fontSize="small"/>
+            paste
+          </button>
+        </Tooltip>
+      </Toolbar>
+
+    </Toolbar>
+    <Toolbar>
       <label style={{flexGrow: 1, display: 'flex'}}>
-        broker URL
         <input
-          style={{flexGrow: 1}}
+          placeholder="broker URL"
+          style={{flexGrow: 1, width: 40}}
           value={brokerUrl}
           onChange={e => setters.setBrokerUrl(e.target.value)}
           list="known-brokers"
@@ -174,11 +236,41 @@ export function MQTT({state: {brokerUrl, topic, authentication, user, password, 
       </label>
       <Tooltip align="right" tooltip={{
         "ok": "connected",
-        "nok": "connection error",
-        "pending": "pending",
+        "nok": error,
+        "pending": "not connected",
       }[status]}>
         <StatusIndicator status={status}/>
       </Tooltip>
+    </Toolbar>
+    <Toolbar>
+      <Tooltip tooltip="enable/disable authentication with broker" align="left">
+        <label>
+          auth
+          <input type="checkbox" checked={authentication} onChange={e => setters.setAuthentication(e.target.checked)} />
+        </label>
+      </Tooltip>
+      <input style={{flexGrow: 1, width: 40}} placeholder="username" value={user} disabled={!authentication} onChange={e => setters.setUser(e.target.value)}/>
+      <Toolbar style={{flexGrow: 1}}>
+        <input style={{flexGrow: 1, width: 40}} type={seePassword ? "text" : "password"} placeholder="password" value={password} disabled={!authentication} onChange={e => setters.setPassword(e.target.value)}/>
+        <Tooltip tooltip="see password" align="right">
+          <TwoStateButton active={seePassword} onClick={() => setters.setSeePassword(p => !p)}>
+            <VisibilityIcon fontSize="small"/>
+          </TwoStateButton>
+        </Tooltip>
+      </Toolbar>
+    </Toolbar>
+    <Toolbar>
+      <label>
+        CA cert
+        <input type="checkbox" checked={enableCA} onChange={e => setters.setEnableCA(e.target.checked)} />
+      </label>
+      {enableCA && <textarea
+        style={{fontFamily: 'Roboto', flexGrow: 1, height: 60, boxSizing: 'border-box', border: '1px solid var(--separator-color)'}}
+        placeholder="paste CA cert here"
+        value={ca}
+        disabled={!enableCA}
+        onChange={e => setters.setCa(e.target.value)}
+      />}
     </Toolbar>
     <Toolbar>
       <label style={{flexGrow: 1, display: 'flex'}}>
@@ -198,43 +290,6 @@ export function MQTT({state: {brokerUrl, topic, authentication, user, password, 
           <RefreshIcon fontSize="small"/>
         </button>
       </Tooltip>
-      <Tooltip
-        tooltip={copied ? "copied!" : "copy topic"}
-        showWhen={copied ? "always" : "hover"}
-        align="right" >
-        <button onClick={onCopyTopic} onMouseLeave={() => setCopied(false)}>
-          <ContentCopyIcon fontSize="small"/>
-        </button>
-      </Tooltip>
-    </Toolbar>
-    <Toolbar>
-      <Tooltip tooltip="enable/disable authentication with broker" align="left">
-        <label>
-          auth
-          <input type="checkbox" checked={authentication} onChange={e => setters.setAuthentication(e.target.checked)} />
-        </label>
-      </Tooltip>
-      <input style={{flexGrow: 1}} placeholder="user" value={user} disabled={!authentication} onChange={e => setters.setUser(e.target.value)}/>
-      <Toolbar style={{flexGrow: 1}}>
-        <input style={{flexGrow: 1}} type={seePassword ? "text" : "password"} placeholder="password" value={password} disabled={!authentication} onChange={e => setters.setPassword(e.target.value)}/>
-        <Tooltip tooltip="see password" align="right">
-          <TwoStateButton active={seePassword} onClick={() => setters.setSeePassword(p => !p)}>
-            <VisibilityIcon fontSize="small"/>
-          </TwoStateButton>
-        </Tooltip>
-      </Toolbar>
-    </Toolbar>
-    <Toolbar>
-      <label>
-        CA cert
-        <input type="checkbox" checked={enableCA} onChange={e => setters.setEnableCA(e.target.checked)} />
-      </label>
-      <textarea
-        style={{fontFamily: 'Roboto', flexGrow: 1, height: 60, boxSizing: 'border-box', border: '1px solid var(--separator-color)'}}
-        value={ca}
-        disabled={!enableCA}
-        onChange={e => setters.setCa(e.target.value)}
-      />
     </Toolbar>
   </div>;
 }

@@ -320,6 +320,10 @@ function CoupledDEVSExternalTransition({item, prevItem, status, showMicroSteps, 
   prevItem: DEVSTraceItem<CoupledState>,
 } & ThingsToPassOn) {
   const componentMadeExtTransition = whoMadeTransition([prevItem, item], "extTransition");
+  if (!componentMadeExtTransition) {
+    // if no component responded to any of the inputs, then we don't render the item
+    return <></>;
+  }
   const blessedItem = item.newState[componentMadeExtTransition].at(-1)!;
   const blessedAs = getAbstractSyntax(componentMadeExtTransition, plantsState, ast);
   return <>

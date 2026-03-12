@@ -15,6 +15,9 @@ import StopIcon from '@mui/icons-material/Stop';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
 import SkipNextIcon from '@mui/icons-material/SkipNext';
+import FlareIcon from '@mui/icons-material/Flare';
+import ClearIcon from '@mui/icons-material/Clear';
+
 import { formatTime } from '@/util/util';
 import { usePersistentState } from '@/hooks/usePersistentState';
 import { setPaused, setRealtime } from '@/statecharts/time';
@@ -65,15 +68,15 @@ export function Execution({simulator, showKeys, refreshDisplayTime, displayTime}
     <Toolbar>
       <KeyInfo keyInfo={<kbd>I</kbd>}>
         <Tooltip tooltip="(re)initialize simulation">
-          <button onClick={simulatorCallbacks.onInit} ><PlayArrowIcon fontSize="small"/>
-            <CachedIcon fontSize="small"/>
+          <button onClick={simulatorCallbacks.onInit} >
+            <FlareIcon fontSize="small"/>
           </button>
         </Tooltip>
       </KeyInfo>
       <KeyInfo keyInfo={<kbd>C</kbd>}>
         <Tooltip tooltip="clear the simulation">
           <button onClick={simulatorCallbacks.onClear} disabled={!currentTraceItem}>
-            <StopIcon fontSize="small"/>
+            <ClearIcon fontSize="small"/>
           </button>
         </Tooltip>
       </KeyInfo>
