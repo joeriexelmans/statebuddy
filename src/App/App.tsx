@@ -42,6 +42,11 @@ export function App() {
   // The entire persisted application state (minus the visual editor state)
   const [appState, setAppState] = useState<AppState>(defaultAppState);
 
+  // @ts-ignore: useful for debugging
+  window['appState'] = appState;
+  // @ts-ignore: useful for debugging
+  window['setAppState'] = setAppState;
+
   const setters = makeAllSetters(setAppState, Object.keys(appState) as (keyof AppState)[]);
 
   // The state of the visual editor (and all previous and future states)
@@ -95,7 +100,8 @@ export function App() {
   const hideFindReplace = useCallback(() => setters.setTopPanel(tp => ({...tp, showFindReplace: false})), [setters.setTopPanel]);
 
   const setSideBar = makePartialSetter(setAppState, "sideBar");
-  const setProperties = makePartialSetter(setSideBar, "properties");
+  const setPropertyEditor = makePartialSetter(setSideBar, "propertyEditor");
+  const setProperties = makePartialSetter(setPropertyEditor, "properties");
   const setTraces = makePartialSetter(setSideBar, "traces");
   const setSavedTraces = makePartialSetter(setTraces, "savedTraces");
 
@@ -103,7 +109,7 @@ export function App() {
   const onOpen = useCallback((modelName: string) => {
     editorState && setModal(<OpenFile
       onClose={() => setModal(null)}
-      properties={appState.sideBar.propertyEditor}
+      properties={appState.sideBar.propertyEditor.properties}
       savedTraces={appState.sideBar.traces.savedTraces}
       setSavedTraces={setSavedTraces}
       editorState={editorState}
@@ -181,11 +187,11 @@ export function App() {
             
             {/* Stuff that shows below editor but next to sidebar */}
             <Greeter trial={trial}/>
-            {appState.sideBar.showTable && appState.sideBar.propertyEditor.length > 0 && appState.sideBar.traces.savedTraces.length > 0 && coupledExecution && abstractSyntax &&
+            {appState.sideBar.propertyEditor.showTable && appState.sideBar.propertyEditor.properties.length > 0 && appState.sideBar.traces.savedTraces.length > 0 && coupledExecution && abstractSyntax &&
               <BelowEditor>
                 <PropertyTraceTable
                   abstractSyntax={abstractSyntax}
-                  properties={appState.sideBar.propertyEditor}
+                  properties={appState.sideBar.propertyEditor.properties}
                   traces={appState.sideBar.traces.savedTraces}
                   onClose={hidePropertyTable}
                   checkProperty={pyodide.checkProperty}

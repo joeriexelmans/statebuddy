@@ -96,7 +96,7 @@ export const TopPanel = memo(function TopPanel(props: TopPanelProps) {
   useShortcuts([
     {keys: ["Tab"], action: currentTraceItem && simulatorCallbacks.onSkip || simulatorCallbacks.onInit},
     {keys: ["Shift", "Tab"], action: simulatorCallbacks.onBack},
-  ], false); // <-- these shortcuts even steal keyboard events when focused on textboxes (because there is no need to Tab between inputs)
+  ]);
 
   const KeyInfo = showKeys ? KeyInfoVisible : KeyInfoHidden;
 

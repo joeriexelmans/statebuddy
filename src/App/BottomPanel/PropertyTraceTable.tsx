@@ -4,7 +4,7 @@ import TextRotateUpIcon from '@mui/icons-material/TextRotateUp';
 import { memo, useEffect, useState } from "react";
 import { Tooltip } from "../Components/Tooltip";
 import { TwoStateButton } from "../Components/TwoStateButton";
-import { Status } from "../SideBar/Status";
+import { PropertyStatusIndicator, StatusType } from "../SideBar/Status";
 import { PreparedTraces, prepareTraces, PropertyCheckResult } from '../SideBar/prepare_trace';
 import styles from "@/App/App.module.css";
 import { restoreTrace } from '@/devs/serialize_trace';
@@ -28,7 +28,7 @@ export const PropertyTraceTable = memo(function PropertyTraceTable({
 }) {
   const [rotateText, setRotateText] = useState(false);
 
-  const [results, setResults] = useState<("pending"|"satisfied"|"violated")[][]|null>(null);
+  const [results, setResults] = useState<StatusType[][]|null>(null);
 
   useEffect(() => {
     setResults(() => {
@@ -43,7 +43,7 @@ export const PropertyTraceTable = memo(function PropertyTraceTable({
               setResults(results => {
                 if (results) {
                   return results?.with(i,
-                    results[i].with(j, ok ? "satisfied" : "violated"));
+                    results[i].with(j, ok ? "ok" : "nok"));
                 }
                 return null;
               });
@@ -64,7 +64,7 @@ export const PropertyTraceTable = memo(function PropertyTraceTable({
         <thead>
           <tr>
             <th style={{verticalAlign: 'bottom'}}>property</th>
-            {traces.map(([name, trace], j) => <th style={{verticalAlign: 'bottom'}}>
+            {traces.map(([name, trace], j) => <th key={j} style={{verticalAlign: 'bottom'}}>
               <div style={{writingMode: rotateText ? 'sideways-lr' : undefined}}><span className={styles.description}>{name}</span></div>
             </th>)}
           </tr>
@@ -72,8 +72,8 @@ export const PropertyTraceTable = memo(function PropertyTraceTable({
         <tbody>
           {properties.map((property, i) => <tr>
             <td>{property}</td>
-            {traces.map(([name, trace], j) => <td>
-              <Status status={results===null
+            {traces.map(([name, trace], j) => <td key={j}>
+              <PropertyStatusIndicator status={results===null
                 ? "pending"
                 : (results[i]?.[j] || "pending")}
               />

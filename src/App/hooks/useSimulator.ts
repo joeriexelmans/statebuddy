@@ -177,8 +177,6 @@ export function useSimulator(cE: DEVSComponent<DEVSTrace<CoupledState>> | undefi
     });
   }, [setTrace, cE, time, makeImminentTransitions]);
 
-  const giveMeSimTime = useCallback(() => time, [time]);
-
   // make next intTransition
   const makeNextTimedTransition = useCallback(() => {
     setTrace(trace => {
@@ -300,8 +298,6 @@ export function useSimulator(cE: DEVSComponent<DEVSTrace<CoupledState>> | undefi
     }
   }, [cE]);
 
-  // const simulatorCallbacks = useMemo(() => (), [cE, time, trace, outputListeners]);
-
   const simulator = useMemo(() => ({
       // state
       trace,
@@ -319,7 +315,6 @@ export function useSimulator(cE: DEVSComponent<DEVSTrace<CoupledState>> | undefi
       // 'reducers'
       simulatorCallbacks: {
         onInit, onClear, onBack, onRaise, onSkip, onReplayTrace, addOutputListener, rmOutputListener,
-        giveMeSimTime,
       },
   }), [cE, time, trace, outputListeners]);
 

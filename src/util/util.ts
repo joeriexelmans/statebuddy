@@ -80,37 +80,38 @@ export function jsonDeepEqual(a: any, b: any) {
   return false;
 }
 
-// another ChatGPT-authored function
-export function deepAssign(target: any, ...sources: any[]) {
-  if (target == null) {
-    throw new TypeError("Cannot convert undefined or null to object");
+const isJsObject = (obj: any) =>
+  obj && typeof obj === "object" && !Array.isArray(obj);
+
+// Similar to Object.assign, but deep (recursive).
+// Pure function (does not modify 'target' or 'source').
+export function myPureDeepAssign(target: any, source: any) {
+  if (Array.isArray(target)) {
+    if (Array.isArray(source)) {
+      // types are compatible -> merge element-wise
+      const minLength = Math.min(target.length, source.length);
+      const merged = Array(minLength);
+      for (let i=0; i<minLength; i++) {
+        merged[i] = myPureDeepAssign(target[i], source[i]);
+      }
+      return [...merged, ...target.slice(minLength), ...source.slice(minLength)];
+    }
   }
-
-  const isObject = (obj: any) =>
-    obj && typeof obj === "object" && !Array.isArray(obj);
-
-  for (const source of sources) {
-    if (source == null) continue;
-
-    for (const key of Object.keys(source)) {
-      const srcVal = source[key];
-      const tgtVal = target[key];
-
-      if (isObject(srcVal) && isObject(tgtVal)) {
-        deepAssign(tgtVal, srcVal);
-      } else if (Array.isArray(srcVal)) {
-        target[key] = srcVal.map((v) =>
-          typeof v === "object" && v !== null ? deepAssign({}, v) : v
-        );
-      } else if (isObject(srcVal)) {
-        target[key] = deepAssign({}, srcVal);
-      } else {
-        target[key] = srcVal;
+  else {
+    if (isJsObject(target)) {
+      if (isJsObject(source)) {
+        // types are compatible -> merge element-wise
+        const merged = Object.assign({}, target); // shallow copy target
+        for (const [srcKey, srcVal] of Object.entries(source)) {
+          merged[srcKey] = myPureDeepAssign(target[srcKey], source[srcKey]);
+        }
+        return merged;
       }
     }
   }
 
-  return target;
+  // catch-all (incompatible types, ...): source obliterates target
+  return source;
 }
 
 // compare arrays by value

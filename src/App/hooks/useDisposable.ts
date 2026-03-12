@@ -1,14 +1,14 @@
-import { useEffect, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
 
 export function useDisposable<T>(
-  factory: () => [T, () => void],
+  factory: (setter: Dispatch<SetStateAction<T|null>>) => () => void,
   deps: React.DependencyList
 ): T | null {
   const [value, setValue] = useState<T | null>(null);
 
   useEffect(() => {
-    const [resource, dispose] = factory();
-    setValue(resource);
+    const dispose = factory(setValue);
+    // setValue(resource);
 
     return dispose;
   }, deps);

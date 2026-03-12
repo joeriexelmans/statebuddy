@@ -14,14 +14,13 @@ import { CoupledState, StateBuddyTraceState } from "../hooks/useSimulator";
 import { PlantsState } from "../hooks/useCoupledExecution";
 import { WithSetters } from "../makePartialSetter";
 import { ShowOutputEvents } from "./ShowAST";
-import { Status } from "./Status";
+import { PropertyStatusIndicator, StatusType } from "./Status";
 import { statebuddyPlants } from "../plants";
 import { TracesState } from "./Traces";
 import { RuntimeError } from "@/statecharts/interpreter";
 
 
 type PropertyTrace = [number, boolean][];
-type PropertyStatus = "pending" | "satisfied" | "violated";
 
 type TraceProps = WithSetters<{
   currentTrace: StateBuddyTraceState,
@@ -81,9 +80,9 @@ export const CoupledDEVSTrace = memo(function CoupledDEVSTrace({
 
       let satisfied;
       [j, satisfied] = lookupPropertyStatus(item.simtime, propertyTrace || [], j);
-      let propertyStatus: PropertyStatus = "pending";
+      let propertyStatus: StatusType = "pending";
       if (satisfied !== null && satisfied !== undefined) {
-        propertyStatus = (satisfied ? "satisfied" : "violated");
+        propertyStatus = (satisfied ? "ok" : "nok");
       }
 
       return <div
@@ -144,11 +143,11 @@ function lookupPropertyStatus(simtime: number, propertyTrace: PropertyTrace, sta
   return [i, propertyTrace[i] && propertyTrace[i][1]];
 }
 
-function TraceItemHeader({status, simtime, hide}: {status: PropertyStatus, simtime: number, hide: boolean}) {
+function TraceItemHeader({status, simtime, hide}: {status: StatusType, simtime: number, hide: boolean}) {
   return <>
     {/* property check result */}
     <div style={{visibility: hide ? "hidden" : undefined}}>
-      <Status status={status}/>
+      <PropertyStatusIndicator status={status}/>
     </div>
 
     {/* timestamp */}
@@ -167,7 +166,7 @@ function lookupName(plantsState: PlantsState, plantId: string) {
 }
 
 type ThingsToPassOn = {
-  status: PropertyStatus,
+  status: StatusType,
   showMicroSteps: boolean,
   showTransitions: boolean,
   plantsState: PlantsState,

@@ -6,7 +6,7 @@ import { Tooltip } from "../Components/Tooltip";
 import { TwoStateButton } from "../Components/TwoStateButton";
 import { makeAllSetters, WithSetters } from "../makePartialSetter";
 import { PreparedTraces, PropertyCheckResult } from "./prepare_trace";
-import { Status } from "./Status";
+import { PropertyStatusIndicator } from "./Status";
 
 import styles from "../App.module.css";
 
@@ -79,7 +79,7 @@ export function PropertyEditor({state: {properties, activeProperty, showTable}, 
       }
       return <div style={{display: 'flex'}} key={i} className={styles.toolbar}>
         <div>
-          <Status status={(violated === null) ? "pending" : (violated ? "violated" : "satisfied")} />
+          <PropertyStatusIndicator status={(violated === null) ? "pending" : (violated ? "nok" : "ok")} />
           <Tooltip tooltip="see in trace (below)" align="left">
             <TwoStateButton active={activeProperty === i} onClick={() => setActiveProperty(i)}>
               <VisibilityIcon fontSize="small"/>

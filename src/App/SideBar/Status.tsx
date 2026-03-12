@@ -2,13 +2,19 @@ import { Tooltip } from "../Components/Tooltip";
 
 import traceStyles from "./Trace.module.css";
 
-export function Status({status}: {status: "satisfied" | "violated" | "pending"}) {
+export type StatusType = "ok" | "nok" | "pending";
+
+export function StatusIndicator({status}: {status: StatusType}) {
+  return <div className={traceStyles.status + ' ' + traceStyles[status]}/>;
+}
+
+export function PropertyStatusIndicator({status}: {status: StatusType}) {
   const tooltip = {
     pending: "pending...",
-    satisfied: "property satisfied",
-    violated: "property violated",
+    ok: "property satisfied",
+    nok: "property violated",
   }[status];
   return <Tooltip tooltip={tooltip} align="left" above>
-    <div className={traceStyles.status + ' ' + traceStyles[status]}/>
+    <StatusIndicator status={status}/>
   </Tooltip>;
 }
