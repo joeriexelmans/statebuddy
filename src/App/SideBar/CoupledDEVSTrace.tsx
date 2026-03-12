@@ -1,6 +1,5 @@
 import styles from "./Trace.module.css";
 
-import { whoMadeTransition } from "@/devs/coupled_trace";
 import { SC2DEVSState } from "@/devs/sc2devs";
 import { DEVSTrace, DEVSTraceItem, DEVSTraceItemExtTransition, DEVSTraceItemInit, DEVSTraceItemIntTransition } from "@/devs/trace";
 import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
@@ -18,6 +17,8 @@ import { PropertyStatusIndicator, StatusType } from "./Status";
 import { statebuddyPlants } from "../plants";
 import { TracesState } from "./Traces";
 import { RuntimeError } from "@/statecharts/interpreter";
+import { whoMadeExtTransition, whoMadeIntTransition } from "@/devs/coupled_trace";
+import NotInterestedIcon from '@mui/icons-material/NotInterested';
 
 
 type PropertyTrace = [number, boolean][];
@@ -166,7 +167,7 @@ function lookupName(plantsState: PlantsState, plantId: string) {
 }
 
 type ThingsToPassOn = {
-  status: StatusType,
+  // status: StatusType,
   showMicroSteps: boolean,
   showTransitions: boolean,
   plantsState: PlantsState,
@@ -176,6 +177,7 @@ type ThingsToPassOn = {
 const CoupledDEVSTraceItem = memo(function CoupledDEVSTraceItem({item, prevItem, status, ...thingsToPassOn}: {
   item: DEVSTraceItem<CoupledState>,
   prevItem: DEVSTraceItem<CoupledState>,
+  status: StatusType,
 } & ThingsToPassOn) {
   const commonArgs = {status, ...thingsToPassOn};
   if (item.kind === "init") {
@@ -215,6 +217,7 @@ function ShowRuntimeError({error}: {error: RuntimeError}) {
 
 function CoupledDEVSInitialization({item, status, plantsState, showMicroSteps, showTransitions, ast}: {
   item: DEVSTraceItemInit<CoupledState>,
+  status: StatusType,
 } & ThingsToPassOn) {
   // just show the initialization of every component:
   const error = getRuntimeError(item);
@@ -243,9 +246,10 @@ function CoupledDEVSInitialization({item, status, plantsState, showMicroSteps, s
 function CoupledDEVSInternalTransition({item, prevItem, status, showMicroSteps, showTransitions, plantsState, ast}: {
   item: DEVSTraceItemIntTransition<CoupledState>,
   prevItem: DEVSTraceItem<CoupledState>,
+  status: StatusType,
 } & ThingsToPassOn) {
   // one component will have made 1 intTransition, and some other components may have made 1 extTransition.
-  const componentMadeIntTransition = whoMadeTransition([prevItem, item], "intTransition");
+  const componentMadeIntTransition = whoMadeIntTransition([prevItem, item]);
   const blessedTrace = item.newState[componentMadeIntTransition];
   const blessedItem = blessedTrace.at(-1)! as DEVSTraceItemIntTransition<any>;
   const blessedAs = getAbstractSyntax(componentMadeIntTransition, plantsState, ast);
@@ -268,26 +272,19 @@ function CoupledDEVSInternalTransition({item, prevItem, status, showMicroSteps, 
     </Column>
 
     {/* then we show the components that made an extTransition */}
-    {Object.entries(item.newState).map(([componentId, componentTrace]) => {
-      if (componentId === componentMadeIntTransition) {
-        // we've already rendered this one
-        return <div key={componentId}/>;
-      }
-      if (prevItem.newState[componentId] === componentTrace) {
-        // component did not step
-        return <div key={componentId}/>;
-      }
-      const abstractSyntax = getAbstractSyntax(componentId, plantsState, ast);
-      return <Column key={componentId}>
-        <div>{lookupName(plantsState, componentId)}</div>
-        <DEVSExternalTransition
-          item={componentTrace.at(-1)!}
-          showMicroSteps={showMicroSteps}
-          showTransitions={Boolean(abstractSyntax) && showTransitions}
-          abstractSyntax={abstractSyntax!}
-        />
-      </Column>;
-    })}
+    <DEVSExternalTransitions
+      components={Object.entries(item.newState).filter(([componentId, componentTrace]) => {
+        if (componentId === componentMadeIntTransition) {
+          // we've already rendered this one
+          return false;
+        }
+        if (prevItem.newState[componentId] === componentTrace) {
+          // component did not step
+          return false;
+        }
+      })}
+      {...{ast, plantsState, showMicroSteps, showTransitions}}
+    />
   </>;
 }
 
@@ -297,49 +294,46 @@ function Column({children}: PropsWithChildren<{}>) {
   </div>;
 }
 
-function DEVSExternalTransition({item, showMicroSteps, showTransitions, abstractSyntax}: {
-  item: DEVSTraceItem<any>,
-  showMicroSteps: boolean,
-  showTransitions: boolean,
-  abstractSyntax: Statechart,
-}) {
-  const error = getRuntimeError(item);
-  return <Column>
-    <DEVSStepCause item={item}/>
-    {error && <ShowRuntimeError error={error} />}
-    {showMicroSteps && <MicroSteps microsteps={getMicroSteps(item)}/>}
-    {showTransitions && <Column>
-      <ShowFiredTransitions firedTransitions={getFiredTransitions(abstractSyntax, item)} />
-    </Column>}
-  </Column>;
+function DEVSExternalTransitions({components, plantsState, showMicroSteps, showTransitions, ast}: {
+  components: [string, DEVSTrace<any>][],
+} & ThingsToPassOn) {
+  return components.map(([componentId, componentTrace]) => {
+    const item = componentTrace.at(-1)!;
+    const abstractSyntax = getAbstractSyntax(componentId, plantsState, ast);
+    const error = getRuntimeError(item);
+    return <Column key={componentId}>
+      <div>{lookupName(plantsState, componentId)}</div>
+      <DEVSStepCause item={item}/>
+      {error && <ShowRuntimeError error={error} />}
+      {showMicroSteps && <MicroSteps microsteps={getMicroSteps(item)}/>}
+      {abstractSyntax && showTransitions && <Column>
+        <ShowFiredTransitions firedTransitions={getFiredTransitions(abstractSyntax, item)} />
+      </Column>}
+    </Column>;
+  });
 }
 
-// An internal transition step made by Coupled DEVS
-function CoupledDEVSExternalTransition({item, prevItem, status, showMicroSteps, showTransitions, plantsState, ast}: {
+function CoupledDEVSExternalTransition({item, prevItem, status, ...rest}: {
   item: DEVSTraceItemExtTransition<CoupledState>,
   prevItem: DEVSTraceItem<CoupledState>,
+  status: StatusType,
 } & ThingsToPassOn) {
-  const componentMadeExtTransition = whoMadeTransition([prevItem, item], "extTransition");
-  if (!componentMadeExtTransition) {
-    // if no component responded to any of the inputs, then we don't render the item
-    return <></>;
-  }
-  const blessedItem = item.newState[componentMadeExtTransition].at(-1)!;
-  const blessedAs = getAbstractSyntax(componentMadeExtTransition, plantsState, ast);
+  const components = whoMadeExtTransition([prevItem, item]);
+  console.log(item.bagOfInputs, components);
   return <>
     <TraceItemHeader hide={false} simtime={item.simtime} status={status} />
-    <Column>
-      <div>{lookupName(plantsState, componentMadeExtTransition)}</div>
-      <DEVSExternalTransition
-        item={blessedItem}
-        showMicroSteps={showMicroSteps}
-        showTransitions={Boolean(blessedAs) && showTransitions}
-        abstractSyntax={blessedAs!}
-      />
-    </Column>
+    {(components.length > 0)
+      ? <DEVSExternalTransitions components={components} {...rest} />
+      // if there was an extTransition, but no component made extTransition, just display the (ignored) bag of inputs:
+      : <Column>
+          <Tooltip tooltip="ignored inputs">
+            <NotInterestedIcon fontSize="small"/>
+          </Tooltip>
+          <DEVSStepCause item={item}/>
+        </Column>
+    }
   </>;
 }
-
 
 function DEVSStepCause({item}: {item: DEVSTraceItem<any>}) {
   if (item.kind === "init") {

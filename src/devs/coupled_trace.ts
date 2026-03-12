@@ -1,14 +1,17 @@
 import { CoupledDEVSState } from "./coupled_devs";
 import { DEVSTrace } from "./trace";
 
-// IF we have a trace of a coupled devs, where every component itself is being traced, then we can find out which component made an intTransition if the coupled DEVS made an intTransition.
-export function whoMadeTransition(coupledTrace: DEVSTrace<CoupledDEVSState<DEVSTrace<any>>>, kind: "intTransition" | "extTransition"): string | undefined {
+// Queries on traces of Coupled DEVS where every component itself is also being traced...
+
+
+// Assuming a Coupled DEVS made an intTransition, which (one!) component caused it?
+export function whoMadeIntTransition(coupledTrace: DEVSTrace<CoupledDEVSState<DEVSTrace<any>>>): string {
   const curItem = coupledTrace.at(-1)!;
   const prevItem = coupledTrace.at(-2)!; // <-- our trace MUST consist of at least 2 items if a transition was made...
 
-  const found = Object.entries(curItem.newState).find(([componentId, componentTrace]) => {
+  const [componentId] = Object.entries(curItem.newState).find(([componentId, componentTrace]) => {
     const lastComponentStep = componentTrace.at(-1)!;
-    if (lastComponentStep.kind !== kind) {
+    if (lastComponentStep.kind !== "intTransition") {
       // component did not make the right kind of transition
       return false;
     }
@@ -19,5 +22,30 @@ export function whoMadeTransition(coupledTrace: DEVSTrace<CoupledDEVSState<DEVST
     return true;
   })!;
 
-  return found?.[0];
+  return componentId;
+}
+
+
+// Assuming a Coupled DEVS made an extTransition, which (any amount of) components reacted?
+export function whoMadeExtTransition(coupledTrace: DEVSTrace<CoupledDEVSState<DEVSTrace<any>>>): [string, DEVSTrace<any>][] {
+  const curItem = coupledTrace.at(-1)!;
+  const prevItem = coupledTrace.at(-2)!; // <-- our trace MUST consist of at least 2 items if a transition was made...
+
+  const f = ([componentId, componentTrace]: [string, DEVSTrace<any>]) => {
+    const lastComponentStep = componentTrace.at(-1)!;
+    if (lastComponentStep.kind !== "extTransition") {
+      // component did not make the right kind of transition
+      return false;
+    }
+    if (lastComponentStep === prevItem.newState[componentId].at(-1)) {
+      // component did not step
+      return false;
+    }
+    return true;
+  }
+
+  const components = Object.entries(curItem.newState).filter(f);
+  // const rest = Object.entries(curItem.newState).filter(x => !f(x));
+
+  return components;
 }
