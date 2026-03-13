@@ -123,7 +123,6 @@ const microwavePlantSpec: StatechartPlantSpec<MicrowaveState> = {
     const bellRinging = state.mode.has(microwaveAbstractSyntax.label2State.get("bell")!.uid);
     const magnetronRunning = state.mode.has(microwaveAbstractSyntax.label2State.get("Magnetron on")!.uid);
     const doorOpen = state.mode.has(microwaveAbstractSyntax.label2State.get("Door opened")!.uid);
-    // let startPressed, stopPressed, incTimePressed;
     const timeDisplay = state.environment.get("timeDisplay", {kind: "state", thing: microwaveAbstractSyntax.root});
     return {bellRinging, magnetronRunning, doorOpen, timeDisplay};
   },

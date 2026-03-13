@@ -287,21 +287,23 @@ function matchEventToTrigger(
   }
   else if (trigger.kind === "event") {
     if (event && event.kind === "event") {
-      const [tempMsgs, tempTracer] = newTracer();
-      if (trigger.param) {
-        // assign event parameter to trigger's parameter-LHS
-        try {
-          environment = execAssignment(trigger.param, event.param, environment, {kind: "transition", thing: transition}, [transition.uid], tempTracer); // <-- todo: proper tracing?
-        }
-        catch (e) {
-          if (e instanceof RuntimeError) {
-            console.debug('failed to match event parameter', event.param, 'with label', trigger.param);
-            return [false, environment, []];
+      if (trigger.event === event.name) {
+        const [tempMsgs, tempTracer] = newTracer();
+        if (trigger.param) {
+          // assign event parameter to trigger's parameter-LHS
+          try {
+            environment = execAssignment(trigger.param, event.param, environment, {kind: "transition", thing: transition}, [transition.uid], tempTracer); // <-- todo: proper tracing?
           }
-          else throw e; // only catch RuntimeError
+          catch (e) {
+            if (e instanceof RuntimeError) {
+              console.debug('failed to match event parameter', event.param, 'with label', trigger.param);
+              return [false, environment, []];
+            }
+            else throw e; // only catch RuntimeError
+          }
         }
+        return [true, environment, tempMsgs];
       }
-      return [true, environment, tempMsgs];
     }
   }
   else if (trigger.kind === "after") {
@@ -338,10 +340,11 @@ function getEnabledTransitions(rt: RT_Microstep, sourceState: AbstractState, eve
       "inState", inState,
       {kind: "state", thing: statechart.root});
     const isEnabled = matched && evalExpr(label.guard, guardEnvironment, [transition.uid]) as boolean;
+    // console.log(label.trigger.event?.name, isEnabled);
     return [isEnabled, newEnvironment, transition, label, msgs] as const;
   });
   return enabled
-    .filter(([enabled]) => enabled)
+    .filter(([isEnabled]) => isEnabled)
     .map(([_, newEnvironment, transition, label, msgs]) => [newEnvironment, transition, label, msgs] as const);
 }
 

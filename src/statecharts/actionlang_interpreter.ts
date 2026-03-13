@@ -59,6 +59,7 @@ export function evalExpr(expr: Expression, env: Environment, uids: string[] = []
   else if (expr.kind === "dict") {
     return Object.fromEntries(Object.entries(expr.fields).map(([key,val]) => [key, evalExpr(val, env, uids)]));
   }
+  console.error('expr was', expr);
   throw new Error("should never reach here");
 }
 
@@ -81,6 +82,8 @@ export function execAssignment(
     if (!jsonDeepEqual(lhs.value, rhsValue)) {
       throw new RuntimeError(`assertion failed: ${JSON.stringify(lhs.value)} != ${JSON.stringify(rhsValue)}`, uids);
     }
+    // and it doesn't do anything
+    return env;
   }
   else if (lhs.kind === "lhsArray") {
     if (!Array.isArray(rhsValue)) {
@@ -108,5 +111,6 @@ export function execAssignment(
     }
     return env;
   }
+  console.error("lhs was", lhs);
   throw new Error("should never reach here");
 }
