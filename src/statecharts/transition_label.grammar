@@ -19,26 +19,48 @@ eventTrigger = event:identifier param:("(" lhs ")")? {
     };
 }
 
-afterTrigger = "after" _ dur:durationMs {
-	return {kind: "after", durationMs: dur};
+afterTrigger = after:KeywordAfter _ dur:durationMs {
+	return {
+        kind: "after",
+        durationMs: dur.valMs,
+        rangeAfter: after.range,
+        rangeUnit: dur.rangeUnit,
+        rangeNumber: dur.rangeNumber,
+    };
+}
+
+KeywordAfter = "after" {
+    return {
+        range: range(),
+    }
 }
 
 entryTrigger = "entry" {
-	return {kind: "entry"};
+	return {kind: "entry", range: range()};
 }
 
 exitTrigger = "exit" {
-	return {kind: "exit"};
+	return {kind: "exit" , range: range()};
 }
 
 
-durationMs = num:number _ u:timeUnit {
-	return num * (u === "s" ? 1000 : 1);
+durationMs = num:number _ u:KeywordTimeUnit {
+	return {
+        valMs: num.value * (u.unit === "s" ? 1000 : 1),
+        rangeUnit: u.range,
+        rangeNumber: num.range,
+    };
 }
 
-timeUnit = "ms" / "s" {
-	return text();
+KeywordTimeUnit = KeywordMs / KeywordS
+
+KeywordMs = "ms" {
+	return { unit: text(), range: range() };
 }
+KeywordS = "s" {
+	return { unit: text(), range: range() };
+}
+
 
 guard = expr
 
@@ -101,6 +123,7 @@ lhsRef = variable:identifier {
     return {
         kind: "lhsRef",
         variable,
+        range: range(),
     };
 }
 
@@ -108,6 +131,7 @@ lhsLiteral = literal:literal {
     return {
         kind: "lhsLiteral",
         value: literal.value,
+        range: range(),
     }
 }
 
@@ -116,7 +140,10 @@ identifier = ("_" / [a-z])+ ("_" / [a-zA-Z0-9])* {
 }
 
 number = [0-9]+ {
-	return parseInt(text());
+	return {
+        value: parseInt(text()),
+        range: range(),
+    };
 }
 
 expr = compare
@@ -227,19 +254,27 @@ fnCall = fn:ref param:nested {
 }
 
 literal = value:(number / boolean / string) {
-	return {kind: "literal", value}
+	return {kind: "literal", ...value}
 }
 
 ref = variable:identifier {
-	return {kind: "ref", variable}
+	return {kind: "ref", variable, range: range()}
 }
 
-boolean = ("True" / "False") {
-	return text() === "True";
+boolean = KeywordTrue / KeywordFalse
+
+KeywordTrue = "True" {
+    return {value: true, range: range()};
+}
+KeywordFalse = "False" {
+    return {value: false, range: range()};
 }
 
 string = '"' str:([^"]*) '"' {
-	return str.join('');
+	return {
+        value: str.join(''),
+        range: range(),
+    };
 }
 
 raise = "^" _ event:identifier param:("(" expr ")")? {
@@ -254,6 +289,7 @@ comment = "//" _ text:.* _ ('\n' / !.) {
 	return {
     	kind: "comment",
         text: text.join(''),
+        range: range(),
     };
 }
 

@@ -5,6 +5,11 @@
 
 export type ParsedText = TransitionLabel | Comment | ParserError;
 
+export type TextRange = {
+  start: number,
+  end: number,
+}
+
 export type TransitionLabel = {
   kind: "transitionLabel";
   uid: string; // uid of the text node
@@ -17,6 +22,7 @@ export type Comment = {
   kind: "comment";
   uid: string; // uid of the text node
   text: string;
+  range: TextRange;
 }
 
 export type ParserError = {
@@ -39,15 +45,19 @@ export type EventTrigger = {
 export type AfterTrigger = {
   kind: "after";
   durationMs: number;
+  rangeAfter: TextRange;
+  rangeUnit: TextRange;
+  rangeNumber: TextRange;
 }
 
 export type EntryTrigger = {
   kind: "entry";
+  range: TextRange;
 }
 export type ExitTrigger = {
   kind: "exit";
+  range: TextRange;
 }
-
 
 export type Action = Assignment | RaiseEvent;
 
@@ -62,6 +72,7 @@ export type Lhs = LhsRef | LhsDict | LhsArray | LhsLiteral;
 export type LhsRef = {
   kind: "lhsRef",
   variable: string,
+  range?: TextRange,
 }
 
 export type LhsDict = {
@@ -79,6 +90,7 @@ export type LhsArray = {
 export type LhsLiteral = {
   kind: "lhsLiteral",
   value: number | boolean | string,
+  range?: TextRange,
 }
 
 export type RaiseEvent = {
@@ -106,11 +118,13 @@ export type UnaryExpression = {
 export type VarRef = {
   kind: "ref";
   variable: string;
+  range?: TextRange,
 }
 
 export type Literal = {
   kind: "literal";
   value: number | boolean | string;
+  range?: TextRange;
 }
 
 export type FunctionCall = {
@@ -129,4 +143,43 @@ export type DictExpression = {
 export type ArrayExpression = {
   kind: "array",
   elements: Expression[],
+}
+
+export function visitExpression(expr: Expression, callback: (expr: Expression) => void) {
+  callback(expr);
+  if (expr.kind === "literal" || expr.kind === "ref" || expr.kind === "unaryExpr") {
+  }
+  else if (expr.kind === "binaryExpr") {
+    visitExpression(expr.lhs, callback);
+    visitExpression(expr.rhs, callback);
+  }
+  else if (expr.kind === "array") {
+    for (const el of expr.elements) {
+      visitExpression(el, callback);
+    }
+  }
+  else if (expr.kind === "call") {
+    visitExpression(expr.param, callback);
+  }
+  else if (expr.kind === "dict") {
+    for (const val of Object.values(expr.fields)) {
+      visitExpression(val, callback);
+    }
+  }
+}
+
+export function visitLhs(lhs: Lhs, callback: (expr: Lhs) => void) {
+  callback(lhs);
+  if (lhs.kind === "lhsLiteral" || lhs.kind === "lhsRef") {
+  }
+  else if (lhs.kind === "lhsArray") {
+    for (const el of lhs.elements) {
+      visitLhs(el, callback);
+    }
+  }
+  else if (lhs.kind === "lhsDict") {
+    for (const val of Object.values(lhs.fields)) {
+      visitLhs(val, callback);
+    }
+  }
 }

@@ -1,10 +1,21 @@
-import { Dispatch, ReactElement, SetStateAction, useState, useCallback } from "react";
+import { Dispatch, ReactElement, SetStateAction, useState, useCallback, CSSProperties } from "react";
 
 import styles from "../App.module.css";
 
-import { cachedParseLabel } from "@/statecharts/parser";
 import { useShortcuts } from "@/hooks/useShortcuts";
-import { Tooltip } from "../Components/Tooltip";
+import { syntaxHighlight } from "@/statecharts/syntax_higlight";
+import { SyntaxHighlightedText } from "../VisualEditor/SyntaxHiglightedText";
+
+const commonStyle = {
+  padding: 4,
+  fontFamily: "'Droid Sans Mono', monospace",
+  fontSize: '10pt',
+  width: 400,
+  height: 100,
+  border:'1px solid var(--separator-color)',
+  textAlign: 'left',
+  boxSizing: 'border-box',
+} as CSSProperties;
 
 export function TextDialog(props: {setModal: Dispatch<SetStateAction<ReactElement|null>>, text: string, done: (newText: string|undefined) => void}) {
   const [text, setText] = useState(props.text);
@@ -19,28 +30,38 @@ export function TextDialog(props: {setModal: Dispatch<SetStateAction<ReactElemen
       }, [props.setModal])},
   ], false);
 
-  let parseError: string | undefined;
-  try {
-    cachedParseLabel(text);
-  } catch (e) {
-    // @ts-ignore
-    parseError = e.message;
-  }
-
+  const {
+    ranges,
+    parseError,
+  } = syntaxHighlight(text);
+  
   return <div style={{padding: 20}}>
     Tip: <kbd>Shift</kbd>+<kbd>Enter</kbd> to insert new line.
     <br/>
     <br/>
-    <Tooltip tooltip={parseError} error={true} showWhen="focus">
-    <textarea
-      className={parseError ? styles.error : ""}
-      autoFocus
-      style={{fontFamily: 'Roboto', width: 400, height: 60, boxSizing: 'border-box', border:'1px solid'}}
-      onChange={e=>setText(e.target.value)}
-      value={text}
-      onFocus={e => e.target.select()}
-      />
-    </Tooltip>
+    <div style={{position: 'relative'}}>
+      <pre
+        className={parseError ? styles.error : ""}
+        style={{...commonStyle,
+          position: 'absolute',
+          pointerEvents: 'none',
+        }}>
+        <SyntaxHighlightedText text={text} ranges={ranges}/>
+      </pre>
+      <textarea
+        autoFocus
+        style={{...commonStyle,
+          position: 'relative',
+          color: 'transparent',
+          backgroundColor: 'transparent',
+          caretColor: 'black',
+        }}
+        onChange={e=>setText(e.target.value)}
+        value={text}
+        onFocus={e => e.target.select()}
+        spellCheck={false}
+        />
+    </div>
     <br/>
     <br/>
     <kbd>Enter</kbd> to confirm. <kbd>Esc</kbd> to cancel.

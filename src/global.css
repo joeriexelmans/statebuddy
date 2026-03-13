@@ -69,3 +69,8 @@ label  svg {
   /* SVGs in buttons and labels are typically icons and we want to center those vertically */
   vertical-align: middle;
 }
+
+@font-face {
+  font-family: "Droid Sans Mono";
+  src: url("./assets/DroidSansMono.ttf") format("truetype");
+}

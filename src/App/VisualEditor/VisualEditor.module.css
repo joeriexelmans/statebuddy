@@ -124,11 +124,16 @@ text.helper:hover {
 .draggableText {
   paint-order: stroke;
   fill: var(--text-color);
+  font-size: 10pt;
+  font-weight: 550;
   text-anchor: middle;
   white-space: preserve;
-
-  stroke: var(--background-color);
-  stroke-width: 2.5px;
+  /* font-family: 'Roboto Mono', monospace; */
+  /* font-family: "Inconsolata", monospace; */
+  font-family: 'Droid Sans Mono', monospace;
+  /* stroke: var(--background-color); */
+  stroke: color-mix(in srgb, var(--and-state-bg-color) 60%, var(--or-state-bg-color) 40%);
+  stroke-width: 3.5px;
 }
 .draggableText.selected {
   fill: var(--accent-border-color);
