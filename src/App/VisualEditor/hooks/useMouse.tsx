@@ -102,17 +102,13 @@ export function useMouse(
       commitSelection(_ => toGrow);
     }
     // left mouse button
-    // @ts-ignore: dataset property unknown to TypeScript
-    const uid = e.target?.dataset.uid;
-    // @ts-ignore: dataset property unknown to TypeScript
-    const parts = new Parts(e.target?.dataset.parts?.split(' ').filter((p:string) => p!=="") || []);
+    const [uid, parts, isHelper] = eventTargetToParts(e.target);
     if (uid && parts.size > 0) {
       // mouse hovers over a shape or part of a shape
       const allPartsInSelection = parts.difference(state.selection.get(uid) || new Set()).size === 0;
       if (!allPartsInSelection) {
         // existing selection does not (entirely) cover the part
-        // @ts-ignore: classList property unknown to TypeScript
-        if (e.target.classList.contains(styles.helper)) {
+        if (isHelper) {
           // it's only a helper
           // -> update selection by the part and start dragging it
           commitSelection(() => new Selection([
@@ -296,9 +292,8 @@ export function useMouse(
         // it was only a click (mouse didn't move)
         // -> select the clicked part(s)
         // (btw, this is only here to allow selecting rountangles by clicking inside them, all other shapes can be selected entirely by their 'helpers')
-        const uid = e.target?.dataset.uid;
+        const [uid, parts] = eventTargetToParts(e.target);
         if (uid) {
-          const parts = new Parts(e.target?.dataset.parts.split(' ').filter((p: string) => p!=="") || []);
           if (uid) {
             replaceSelection(oldSelection => new Selection([
               ...oldSelection,
@@ -401,13 +396,12 @@ export function useMouse(
           size: scaleV2D(bbox.size, 1/zoom),
         }
         return isEntirelyWithin(scaledBBox, normalizedSS);
-      }).filter(el => !el.classList.contains(styles.corner));
+      }).filter(el => !el.classList.contains(styles.corner)); // <-- remove corner elements because they mess up the selection
       
       const selection: Selection = new Selection();
       for (const shape of shapesInSelection) {
-        const uid = shape.dataset.uid;
+        const [uid, parts] = eventTargetToParts(shape);
         if (uid) {
-          const parts = new Parts(shape.dataset.parts?.split(' ') || []);
           for (const part of parts) {
             selection.set(uid, (selection.get(uid) as Parts || new Parts()).add(part));
           }
@@ -476,4 +470,23 @@ export function useMouse(
         }
       }).toSorted((a,b) => a.topLeft.y - b.topLeft.y),
     };
+  }
+
+  function eventTargetToParts(target: EventTarget|null) {
+    while (target) {
+      // @ts-ignore: dataset property unknown to TypeScript
+      if (target.dataset?.uid) {
+        return [
+          // @ts-ignore: dataset property unknown to TypeScript
+          target.dataset.uid as string,
+          // @ts-ignore: dataset property unknown to TypeScript
+          new Parts(target.dataset.parts?.split(' ').filter((p:string) => p!=="") || []),
+          // @ts-ignore: classList unknown
+          target.classList.contains(styles.helper) as boolean,
+        ] as const;
+      }
+      // @ts-ignore
+      target = target.parentNode;
+    }
+    return [undefined, new Parts(), false] as const;
   }

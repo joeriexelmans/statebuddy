@@ -20,12 +20,12 @@ export const errorStyle = {
   fontWeight: 'bold',
 } as CSSProperties;
 
-export const literalStyle = {
+export const refStyle = {
   color: '#008064ff',
   fill: '#008064ff',
 } as CSSProperties;
 
-export const refStyle = {
+export const literalStyle = {
   color: '#816228ff',
   fill: '#816228ff',
 } as CSSProperties;

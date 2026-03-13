@@ -1,19 +1,19 @@
 import { TextDialog } from "@/App/Modals/TextDialog";
 import {getTextFatBBox, Text} from "../../statecharts/concrete_syntax";
-import { Dispatch, memo, ReactElement, SetStateAction, SVGTextElementAttributes } from "react";
+import { Dispatch, memo, ReactElement, SetStateAction, useMemo } from "react";
 import { jsonDeepEqual } from "@/util/util";
 import { BoundingBox } from "./BoundingBox";
 
 import styles from "./VisualEditor.module.css";
 import { syntaxHighlight } from "@/statecharts/syntax_higlight";
-import { SyntaxHighlightedText } from "./SyntaxHiglightedText";
+import { SyntaxHighlightedText, TextWithLineBreaks } from "./SyntaxHiglightedText";
 
 export const TextSVG = memo(function TextSVG(props: {text: Text, selected: boolean, highlight: boolean, onEdit: (text: Text, newText: string) => void, setModal: Dispatch<SetStateAction<ReactElement|null>>, findText: string}) {
 
   const {
     ranges,
     parseError,
-  } = syntaxHighlight(props.text.text);
+  } = useMemo(() => syntaxHighlight(props.text.text), [props.text.text]);
 
   const className = styles.draggableText
     + ' ' + (props.selected ? styles.selected : "")
@@ -40,7 +40,6 @@ export const TextSVG = memo(function TextSVG(props: {text: Text, selected: boole
         className={className}
         data-uid={props.text.uid}
         data-parts="text"
-        textAnchor="middle"
       >
         <SyntaxHighlightedText
           text={props.text.text}
@@ -50,8 +49,12 @@ export const TextSVG = memo(function TextSVG(props: {text: Text, selected: boole
         />
       </text>
 
-      {/* {textNode} */}
-      <text className={styles.helper + ' ' + styles.draggableText} textAnchor="middle" data-uid={props.text.uid} data-parts="text" style={{whiteSpace: "preserve"}}>{props.text.text}</text>
+      {/* invisible (unless hovered) helper for selecting and moving the text */}
+      <text className={styles.helper + ' ' + styles.draggableText}  data-uid={props.text.uid} data-parts="text" style={{whiteSpace: "preserve"}}>
+        <TextWithLineBreaks text={props.text.text}/>
+      </text>
+
+      {/* error - only visible on hover */}
       {parseError &&
         <text className={styles.errorHover} y={-20} textAnchor="middle">
           <tspan>{parseError.message}</tspan>
