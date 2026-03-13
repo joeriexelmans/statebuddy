@@ -11,7 +11,8 @@ import { TextRange } from "@/statecharts/label_ast";
 
 const foundStyle = {
   fill: '#f00',
-  fontWeight: 1200,
+  strokeWidth: 4,
+  stroke: '#00f',
 } as CSSProperties;
 
 export const TextSVG = memo(function TextSVG(props: {text: Text, selected: boolean, highlight: boolean, onEdit: (text: Text, newText: string) => void, setModal: Dispatch<SetStateAction<ReactElement|null>>, findText: string}) {
@@ -26,10 +27,10 @@ export const TextSVG = memo(function TextSVG(props: {text: Text, selected: boole
     + ' ' + (props.highlight ? styles.highlight : "")
     + ' ' + (parseError ? styles.error : "");
 
-  const found = findOccurrences(props.text.text, props.findText);
+  const found = findOccurrences(props.text.text, props.findText).map(r => ({...r, style: foundStyle}));
 
   if (found.length > 0) {
-    ranges = found.map(r => ({...r, style: foundStyle}));
+    // ranges = found.map(r => ({...r, style: foundStyle}));
   }
 
   return <>
@@ -44,6 +45,8 @@ export const TextSVG = memo(function TextSVG(props: {text: Text, selected: boole
             }
         }} />)
       }}>
+
+      {/* our syntax-highlighted text */}
       <text
         className={className}
         data-uid={props.text.uid}
@@ -57,7 +60,22 @@ export const TextSVG = memo(function TextSVG(props: {text: Text, selected: boole
         />
       </text>
 
-      {/* invisible (unless hovered) helper for selecting and moving the text */}
+      {/* found text highlight - transparent except for the fragments that were found */}
+      {found.length > 0 && <text
+        className={className}
+        data-uid={props.text.uid}
+        data-parts="text"
+        style={{fill: 'transparent', strokeWidth: 0}}
+      >
+        <SyntaxHighlightedText
+          text={props.text.text}
+          ranges={found}
+          tspan
+          disableTooltips
+        />
+      </text>}
+
+      {/* our selection 'helper': invisible except on mouse hover (then draw thick border) */}
       <text className={styles.helper + ' ' + styles.draggableText}  data-uid={props.text.uid} data-parts="text" style={{whiteSpace: "preserve"}}>
         <TextWithLineBreaks text={props.text.text}/>
       </text>
