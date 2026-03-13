@@ -19,6 +19,7 @@ import { TracesState } from "./Traces";
 import { RuntimeError } from "@/statecharts/interpreter";
 import { whoMadeExtTransition, whoMadeIntTransition } from "@/devs/coupled_trace";
 import NotInterestedIcon from '@mui/icons-material/NotInterested';
+import { actionLangValToText } from "@/statecharts/actionlang_prettyprinter";
 
 
 type PropertyTrace = [number, boolean][];
@@ -308,9 +309,10 @@ function DEVSExternalTransitions({components, plantsState, showMicroSteps, showT
       <DEVSStepCause item={item}/>
       {error && <ShowRuntimeError error={error} />}
       {showMicroSteps && <MicroSteps microsteps={getMicroSteps(item)}/>}
-      {abstractSyntax && showTransitions && <Column>
-        <ShowFiredTransitions firedTransitions={getFiredTransitions(abstractSyntax, item)} />
-      </Column>}
+      {abstractSyntax && showTransitions &&
+        <Column>
+          <ShowFiredTransitions firedTransitions={getFiredTransitions(abstractSyntax, item)} />
+        </Column>}
       <ShowEnvironment item={item}/>
     </Column>;
   });
@@ -366,7 +368,7 @@ function DEVSStepCause({item}: {item: DEVSTraceItem<any>}) {
 }
 
 function EventParam(props: {param?: any}) {
-  return <>{props.param !== undefined && <>({JSON.stringify(props.param)})</>}</>;
+  return <>{props.param !== undefined && <>({actionLangValToText(props.param)})</>}</>;
 }
 
 function MicroSteps({microsteps}: {microsteps: string[]}) {
@@ -377,7 +379,7 @@ function MicroSteps({microsteps}: {microsteps: string[]}) {
     backgroundColor: 'var(--statusbar-bg-color)', // <-- just make it stand out a bit
     borderRadius: '4px', // <-- make it look pretty
     marginTop: 4,
-  }}>{microsteps.map(x => <div>{x}</div>)}</div>;
+  }}>{microsteps.map((x,i) => <div key={i}>{x}</div>)}</div>;
 }
 
 function getMicroSteps(item: DEVSTraceItem<any>) {
@@ -391,11 +393,11 @@ function getMicroSteps(item: DEVSTraceItem<any>) {
 
 function ShowEnvironment({item}: {item: DEVSTraceItem<any>}) {
   if (item.newState.bigstep) {
+    console.log(item.newState.bigstep.environment);
     return [...item.newState.bigstep.environment.entries()].map(([name, value]) => {
-      return <div
-        style={{display: name.startsWith('_') ? 'none':undefined}}
-        key={name}>
-          {name} = {value}
+      if (name.startsWith('_')) return <div key={name}></div>;
+      return <div key={name}>
+        {name} = {actionLangValToText(value)}
       </div>
     })
   }

@@ -60,12 +60,11 @@ type SideBarProps = WithSetters<{
   simulator: SimulatorStuff,
   abstractSyntax?: Statechart,
   coupledState?: CoupledState,
-  preparedTraces?: PreparedTraces,
-  checkProperty: (property: string, preparedTraces: PreparedTraces) => Promise<PropertyCheckResult>,
+  propertyResults?: PropertyCheckResult[],
 };
 
 export const SideBar = memo(function SideBar(props: SideBarProps) {
-  const {abstractSyntax, preparedTraces, checkProperty, coupledState, state, setState, simulator} = props;
+  const {abstractSyntax, propertyResults, coupledState, state, setState, simulator} = props;
 
   const {trace, setTrace, time, setTime, simulatorCallbacks: {onRaise, onReplayTrace}} = simulator;
 
@@ -97,8 +96,6 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
       }));
     }
   };
-
-  const [propertyResults, setPropertyResults] = useState<PropertyCheckResult[] | undefined>(undefined);
 
   return <>
     <div
@@ -200,9 +197,6 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
           state={propertyEditor}
           setState={setPropertyEditor}
           propertyResults={propertyResults}
-          setPropertyResults={setPropertyResults}
-          checkProperty={checkProperty}
-          preparedTraces={preparedTraces}
           enableTable={traces.savedTraces.length === 0 || propertyEditor.properties.length === 0}
         />
       </details>

@@ -4,6 +4,7 @@ import { Statechart } from "@/statecharts/abstract_syntax";
 import { BigStep, RaisedEvent } from "@/statecharts/runtime_types";
 import { DEVSComponent } from "./devs";
 import { initialize, makeBigStep, RuntimeError } from "@/statecharts/interpreter";
+import { newTracer } from "@/statecharts/tracer";
 
 // When we wrap a Statechart in an atomic DEVS, this is the type of its DEVS-state:
 export type SC2DEVSState = {
@@ -14,17 +15,6 @@ export type SC2DEVSState = {
   // a Statechart can output events when it responds to an input event, but this is not allowed in an extTransition in DEVS. Therefore, we store all these output events in our internal state, such that we can output them in a follow-up intTransition:
   outputQueue: RaisedEvent[],
 } | RuntimeError;
-
-// this whole tracer thing is a bit hacky, see comment above...
-const makeTracer = (indent: number, msgs: string[]) => ({
-  log: (msg: string) => msgs.push(' '.repeat(indent) + msg),
-  indent: () => makeTracer(indent + 1, msgs),
-});
-const newTracer = () => {
-  const msgs = [] as string[];
-  const tracer = makeTracer(0, msgs);
-  return [msgs, tracer] as const;
-}
 
 // Wraps a Statechart in a DEVS component
 export function sc2DEVS(ast: Statechart): DEVSComponent<SC2DEVSState> {

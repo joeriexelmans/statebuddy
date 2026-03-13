@@ -37,6 +37,7 @@ import { TopPanel } from "./TopPanel/TopPanel";
 import { DebugContext } from "./VisualEditor/context/DebugContext";
 import { useMouse } from "./VisualEditor/hooks/useMouse";
 import { VisualEditor } from "./VisualEditor/VisualEditor";
+import { usePropertyCheck } from "./hooks/usePropertyCheck";
 
 export function App() {
   // The entire persisted application state (minus the visual editor state)
@@ -94,6 +95,19 @@ export function App() {
     setters.setSidePanelWidth(width => width - e.movementX));
 
   const pyodide = usePyodide();
+
+  const propertyResults = usePropertyCheck(
+    preparedTraces,
+    appState.sideBar.propertyEditor.properties,
+    pyodide.checkProperty);
+
+  const tracesAndResults = {
+    ...preparedTraces,
+    ...Object.fromEntries((propertyResults||[]).flatMap(([result], i) => {
+      // non-error property check results are included in the traces that can be plotted:
+      return result && [["p"+i, result]] || [];
+    }))
+  }
 
   appState.sideBar.propertyEditor.showTable
 
@@ -254,8 +268,7 @@ export function App() {
                 setState={setters.setSideBar}
                 coupledState={simulator.currentTraceItem?.newState}
                 simulator={simulator}
-                preparedTraces={preparedTraces}
-                checkProperty={pyodide.checkProperty}
+                propertyResults={propertyResults}
               />
             </div>
           </div>
@@ -273,7 +286,7 @@ export function App() {
               </summary>
               {preparedTraces && simulator.trace && appState.showPlot &&
                 <Plot width="100%"
-                  prepped={preparedTraces}
+                  prepped={tracesAndResults}
                   trace={simulator.trace}
                   state={appState.plot}
                   setState={setters.setPlot}

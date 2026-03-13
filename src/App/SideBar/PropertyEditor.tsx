@@ -33,53 +33,27 @@ export const defaultPropertyEditorState = {
 
 type PropertyEditorProps = WithSetters<{
   state: PropertyEditorState;
-  propertyResults: PropertyCheckResult[] | undefined;
 }> & {
-  preparedTraces?: PreparedTraces;
-  checkProperty: (property: string, preparedTraces: PreparedTraces) => Promise<PropertyCheckResult>;
+  propertyResults: PropertyCheckResult[] | undefined;
   enableTable: boolean;
 }
 
-export function PropertyEditor({state: {properties, activeProperty, showTable}, setState, propertyResults, setPropertyResults, preparedTraces, checkProperty, enableTable}: PropertyEditorProps) {
+export function PropertyEditor({state: {properties, activeProperty, showTable}, setState, propertyResults, enableTable}: PropertyEditorProps) {
 
   const {setProperties, setActiveProperty, setShowTable} = makeAllSetters(setState, Object.keys(defaultPropertyEditorState) as (keyof PropertyEditorState)[]);
 
-  // if some properties change, re-evaluate them:
-  useEffect(() => {
-    let timeout: NodeJS.Timeout;
-    let clearResultTimeout: NodeJS.Timeout;
-    if (preparedTraces) {
-      // very often we recompute the same property on a trace that is one item longer, resulting in largely the same trace.
-      clearResultTimeout = setTimeout(() => {
-        setPropertyResults(undefined);
-      }, 500);
-      timeout = setTimeout(() => {
-        Promise.all(properties.map((property, i) => {
-          return checkProperty(property, preparedTraces);
-        }))
-        .then(results => {
-          clearTimeout(clearResultTimeout);
-          setPropertyResults(results);
-        })
-      })
-    }
-    return () => {
-      clearTimeout(timeout);
-      clearTimeout(clearResultTimeout);
-    };
-  }, [preparedTraces, properties]);
 
   return <>
     {properties.map((property, i) => {
       const result = propertyResults && propertyResults[i];
-      let violated = null, propertyError = null;
+      let violated, propertyError;
       if (result) {
         violated = result[0] && result[0].length > 0 && !result[0][0][1];
         propertyError = result[1];
       }
       return <div style={{display: 'flex'}} key={i} className={styles.toolbar}>
         <div>
-          <PropertyStatusIndicator status={(violated === null) ? "pending" : (violated ? "nok" : "ok")} />
+          <PropertyStatusIndicator status={(violated === undefined) ? "pending" : (violated ? "nok" : "ok")} />
           <Tooltip tooltip="see in trace (below)" align="left">
             <TwoStateButton active={activeProperty === i} onClick={() => setActiveProperty(i)}>
               <VisibilityIcon fontSize="small"/>

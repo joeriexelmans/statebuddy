@@ -1,9 +1,9 @@
 import plotStyles from "./Plot.module.css";
 import { memo, SVGAttributes, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Setters, WithSetters } from "../makePartialSetter";
-import { PreparedTraces } from "../SideBar/prepare_trace";
+import { WithSetters } from "../makePartialSetter";
+import { PreparedTraces, PropertyCheckResult } from "../SideBar/prepare_trace";
 import { objectsEqual } from "@/util/util";
-import { infinityIfUndefined, StateBuddyTraceState } from "../hooks/useSimulator";
+import { StateBuddyTraceState } from "../hooks/useSimulator";
 
 // Part of application state.
 export type PlotState = {

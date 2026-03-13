@@ -2,7 +2,7 @@ import BoltIcon from '@mui/icons-material/Bolt';
 import { memo, useEffect } from "react";
 import { usePersistentState } from "../../hooks/usePersistentState";
 import { ConcreteState, stateDescription, Transition, UnstableState } from "../../statecharts/abstract_syntax";
-import { Action, EventTrigger, Expression } from "../../statecharts/label_ast";
+import { Action, EventTrigger, Expression, TransitionLabel } from "../../statecharts/label_ast";
 import { KeyInfoHidden, KeyInfoVisible } from "../TopPanel/KeyInfo";
 import { useShortcuts } from '@/hooks/useShortcuts';
 import { arraysEqual, jsonDeepEqual } from '@/util/util';
@@ -12,6 +12,10 @@ import ArrowOutwardIcon from '@mui/icons-material/ArrowOutward';
 import styles from "./Trace.module.css";
 import appStyles from "../App.module.css";
 import { RaisedEvent } from '@/statecharts/runtime_types';
+import { cachedParseLabel } from '@/statecharts/parser';
+import { evalExpr } from '@/statecharts/actionlang_interpreter';
+import { FlatEnvironment } from '@/statecharts/environment';
+import { actionLangLhsToText, actionLangValToText } from '@/statecharts/actionlang_prettyprinter';
 
 export function ShowTransition(props: {transition: Transition}) {
   return <>➝ {stateDescription(props.transition.tgt)}</>;
@@ -61,18 +65,21 @@ export const ShowInputEvents = memo(function ShowInputEvents({inputEvents, onRai
   const raiseHandlers = inputEvents.map(({event}) => {
     return () => {
       // @ts-ignore
-      const param = document.getElementById(`input-${event}-param`)?.value;
-      let paramParsed;
+      const exprText = document.getElementById(`input-${event}-param`)?.value;
+      let param;
       try {
-        if (param) {
-          paramParsed = JSON.parse(param); // may throw
+        if (exprText) {
+          // funny trick to invoke our action language parser: our parser has only one entry point, so to make it parse an expression we must put that expression in a transition label...
+          const {guard: exprParsed} = cachedParseLabel(`after 1s [${exprText}]`) as TransitionLabel; // may throw
+          param = evalExpr(exprParsed, new FlatEnvironment(), []); // may throw
         }
       }
       catch (e) {
-        alert("invalid json");
+        alert("failed to parse expression - see developer tools for details");
+        console.warn(e);
         return;
       }
-      onRaise(event, paramParsed);
+      onRaise(event, param);
     };
   });
 
@@ -90,10 +97,11 @@ export const ShowInputEvents = memo(function ShowInputEvents({inputEvents, onRai
 
   const [inputParams, setInputParams] = usePersistentState<{[eventName:string]: string}>("inputParams", {});
 
-  return inputEvents.map(({event, paramName}, i) => {
-    const key = event+'/'+paramName;
+  return inputEvents.map(({event, param}, i) => {
+    const paramTxt = param && actionLangLhsToText(param) || "";
+    const key = event+'/'+paramTxt;
     const value = inputParams[key] || "";
-    const width = Math.max(value.length, (paramName||"").length)*8+10;
+    const width = Math.max(value.length, paramTxt.length)*8+10;
     const shortcut = (i+1)%10;
     const KI = (i < 10) ? KeyInfo : KeyInfoHidden;
     return <div key={key}>
@@ -109,8 +117,8 @@ export const ShowInputEvents = memo(function ShowInputEvents({inputEvents, onRai
           </button>
         </Tooltip>
       </KI>
-      {paramName &&
-        <><input id={`input-${event}-param`} style={{width, overflow: 'visible'}} placeholder={paramName} value={value} onChange={e => setInputParams(params => ({...params, [key]: e.target.value, }))}/></>
+      {param &&
+        <><input id={`input-${event}-param`} style={{width, overflow: 'visible'}} placeholder={paramTxt} value={value} onChange={e => setInputParams(params => ({...params, [key]: e.target.value, }))}/></>
       }
       &nbsp;
     </div>;
@@ -122,16 +130,16 @@ export const ShowInputEvents = memo(function ShowInputEvents({inputEvents, onRai
 });
 
 export function ShowInternalEvents(props: {internalEvents: EventTrigger[]}) {
-  return [...props.internalEvents].map(({event, paramName}) => {
-      return <div key={event}>
-        <Tooltip tooltip='internal event' align='left'>
-          <div className={styles.internalEvent}>
-            {event}
-            {paramName !== undefined && <>({paramName})</>}
-          </div>
-        </Tooltip>
-      </div>;
-    });
+  return [...props.internalEvents].map(({event, param}) => {
+    return <div key={event}>
+      <Tooltip tooltip='internal event' align='left'>
+        <div className={styles.internalEvent}>
+          {event}
+          {/* {param !== undefined && <>({param})</>} */}
+        </div>
+      </Tooltip>
+    </div>;
+  });
 }
 
 
@@ -143,7 +151,7 @@ export function ShowOutputEvents(props: {outputEvents: RaisedEvent[]}) {
             {/* <ArrowOutwardIcon fontSize="small" style={{verticalAlign: "middle"}}/> */}
             &#8599;
             {name}
-            {param !== undefined && <>({param.toString()})</>}
+            {param !== undefined && <>({actionLangValToText(param)})</>}
           </div>
         </Tooltip>
       </div>;

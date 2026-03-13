@@ -1,9 +1,10 @@
 import { AbstractState, computePath, ConcreteState, getDescendants, HistoryState, isOverlapping, OrState, StableState, Statechart, stateDescription, Transition, transitionDescription, TransitionSrcTgt } from "./abstract_syntax";
-import { evalExpr } from "./actionlang_interpreter";
+import { evalExpr, execAssignment } from "./actionlang_interpreter";
+import { actionLangValToText } from "./actionlang_prettyprinter";
 import { Environment, FlatEnvironment, Scope } from "./environment";
-import { Action, EventTrigger, TransitionLabel } from "./label_ast";
+import { Action, EventTrigger, TransitionLabel, Trigger } from "./label_ast";
 import { BigStep, RT_Event, RT_History, RT_Microstep, TimerElapseEvent, Timers } from "./runtime_types";
-import { Tracer } from "./tracer";
+import { dummyTracer, newTracer, Tracer } from "./tracer";
 
 export class RuntimeError extends Error {
   highlight: string[];
@@ -47,15 +48,16 @@ function logEventParam(param: any) {
     return '';
   }
   else {
-    return `(${param})`;
+    return `(${actionLangValToText(param)})`;
   }
 }
 
-function execAction(rt: RT_Microstep, action: Action, scope: Scope, uids: string[], trace: Tracer): RT_Microstep {
+function execAction(rt: RT_Microstep, action: Action, scope: Scope, uids: string[], tracer: Tracer): RT_Microstep {
   if (action.kind === "assignment") {
-    const rhs = evalExpr(action.rhs, rt.environment, uids);
-    const environment = rt.environment.set(action.lhs, rhs, scope);
-    trace.log(`assign ${action.lhs} = ${rhs}`);
+    const rhsValue = evalExpr(action.rhs, rt.environment, uids);
+    const environment = execAssignment(action.lhs, rhsValue, rt.environment, scope, uids, tracer);
+    // const environment = rt.environment.set(action.lhs, rhs, scope);
+    // trace.log(`assign ${action.lhs} = ${rhsValue}`);
     return {
       ...rt,
       environment,
@@ -68,7 +70,7 @@ function execAction(rt: RT_Microstep, action: Action, scope: Scope, uids: string
     };
     if (action.event.startsWith('_')) {
       // append to internal events
-      trace.log(`raise internal ${raisedEvent.name}${logEventParam(raisedEvent.param)}`);
+      tracer.log(`raise internal ${raisedEvent.name}${logEventParam(raisedEvent.param)}`);
       return {
         ...rt,
         internalEvents: [...rt.internalEvents, raisedEvent],
@@ -76,7 +78,7 @@ function execAction(rt: RT_Microstep, action: Action, scope: Scope, uids: string
     }
     else {
       // append to output events
-      trace.log(`raise output ${raisedEvent.name}${logEventParam(raisedEvent.param)}`);
+      tracer.log(`raise output ${raisedEvent.name}${logEventParam(raisedEvent.param)}`);
       return {
         ...rt,
         outputEvents: [...rt.outputEvents, raisedEvent],
@@ -269,42 +271,52 @@ function allowedToFire(arena: OrState, firedArenas: OrState[]) {
   return true;
 }
 
-function addEventParam(environment: Environment, event: RT_Event | undefined, transition: Transition, label: TransitionLabel) {
-  if (event && event.kind === "event" && event.param !== undefined) {
-    const varName = (label.trigger as EventTrigger).paramName as string;
-    if (varName) {
-      const result = environment.newVar(varName, event.param, {kind: "transition", thing: transition});
-      return result;
+// Attempt to match an (input/internal) event with a transition's trigger.
+// If matching succeeds, may update the environment by assigning (parts of) the event parameter to variable(s) in the LHS.
+// Returns tuple: [matched (yes/no), new-environment-if-matched]
+function matchEventToTrigger(
+  transition: Transition, // <-- the transition
+  trigger: Trigger, // <-- its trigger
+  event: RT_Event | undefined, // <-- input or internal event
+  environment: Environment,
+): [boolean, Environment, string[]] {
+  if (trigger.kind === "triggerless") {
+    if (event === undefined) {
+      return [true, environment, []];
     }
   }
-  return environment;
+  else if (trigger.kind === "event") {
+    if (event && event.kind === "event") {
+      const [tempMsgs, tempTracer] = newTracer();
+      if (trigger.param) {
+        // assign event parameter to trigger's parameter-LHS
+        try {
+          environment = execAssignment(trigger.param, event.param, environment, {kind: "transition", thing: transition}, [transition.uid], tempTracer); // <-- todo: proper tracing?
+        }
+        catch (e) {
+          if (e instanceof RuntimeError) {
+            console.debug('failed to match event parameter', event.param, 'with label', trigger.param);
+            return [false, environment, []];
+          }
+          else throw e; // only catch RuntimeError
+        }
+      }
+      return [true, environment, tempMsgs];
+    }
+  }
+  else if (trigger.kind === "after") {
+    if (event && event.kind === "timer") {
+      if (event.state === transition.src.uid) {
+        if (event.timeDurMs === trigger.durationMs) {
+          return [true, environment, []];
+        }
+      }
+    }
+  }
+  return [false, environment, []];
 }
 
-function getEnabledTransitions(rt: RT_Microstep, sourceState: AbstractState, event: RT_Event | undefined, statechart: Statechart): [Transition, TransitionLabel][] {
-  const outgoing = statechart.transitions.get(sourceState.uid) || [];
-  const labels = outgoing.flatMap(t =>
-    t.label
-      .filter(l => l.kind === "transitionLabel")
-      .map(l => [t,l] as [Transition, TransitionLabel]));
-
-  let triggered: [Transition, TransitionLabel][];
-  if (event !== undefined) {
-    if (event.kind === "event") {
-      // get transitions triggered by event
-      triggered = labels.filter(([_t,l]) =>
-        l.trigger.kind === "event" && l.trigger.event === event.name);
-    }
-    else {
-      // get transitions triggered by timeout
-      triggered = labels.filter(([_t,l]) =>
-        l.trigger.kind === "after" && sourceState.uid === event.state && l.trigger.durationMs === event.timeDurMs);
-    }
-  }
-  else {
-    // pseudo-state transition...
-    triggered = labels.filter(([_t,l]) => l.trigger.kind === "triggerless");
-  }
-  // eval guard...
+function getEnabledTransitions(rt: RT_Microstep, sourceState: AbstractState, event: RT_Event | undefined, statechart: Statechart) {
   const inState = (stateLabel: string) => {
     for (const [uid, state] of statechart.uid2State.entries()) {
       if (stateDescription(state) === stateLabel) {
@@ -312,11 +324,25 @@ function getEnabledTransitions(rt: RT_Microstep, sourceState: AbstractState, eve
       }
     }
   };
-  const guardEnvironment = rt.environment.set("inState", inState,
-    // we throw away the guard-environment after evaluating the guard so we don't actually pollute our environment.
-    {kind: "state", thing: statechart.root});
-  const enabled = triggered.filter(([t,l]) => evalExpr(l.guard, addEventParam(guardEnvironment, event, t, l), [t.uid]));
-  return enabled;
+
+  const outgoing = statechart.transitions.get(sourceState.uid) || [];
+  const labels = outgoing.flatMap(t =>
+    t.label
+      .filter(l => l.kind === "transitionLabel")
+      .map(l => [t,l] as [Transition, TransitionLabel]));
+  const enabled = labels.map(([transition, label]) => {
+    // 1. match event <-> trigger
+    const [matched, newEnvironment, msgs] = matchEventToTrigger(transition, label.trigger, event, rt.environment);
+    // 2. eval guard (in throw-away environment)
+    const guardEnvironment = rt.environment.set(
+      "inState", inState,
+      {kind: "state", thing: statechart.root});
+    const isEnabled = matched && evalExpr(label.guard, guardEnvironment, [transition.uid]) as boolean;
+    return [isEnabled, newEnvironment, transition, label, msgs] as const;
+  });
+  return enabled
+    .filter(([enabled]) => enabled)
+    .map(([_, newEnvironment, transition, label, msgs]) => [newEnvironment, transition, label, msgs] as const);
 }
 
 function attemptSrcState(rt: RT_Microstep, sourceState: AbstractState, event: RT_Event | undefined, statechart: Statechart, trace: Tracer): RT_Microstep | undefined {
@@ -325,13 +351,14 @@ function attemptSrcState(rt: RT_Microstep, sourceState: AbstractState, event: RT
   if (enabled.length > 0) {
     if (enabled.length > 1) {
       throw new NonDeterminismError(`Non-determinism: multiple enabled transitions.`,
-        [...enabled.map(([t]) => t.uid), sourceState.uid]);
+        [...enabled.map(([_, t]) => t.uid), sourceState.uid]);
     }
-    const [[transition, label]] = enabled; // transition to fire
+    const [[newEnvironment, transition, label, msgs]] = enabled; // transition to fire
     // fairness: every arena can only fire once per 'fair step'
     if (sourceState.kind === "pseudo" || allowedToFire(transition.arena, rt.firedArenas)) {
+      msgs.forEach(msg => trace.log(msg));
       // fire transition!
-      rt = fire(rt, transition, event, statechart.transitions, label, trace);
+      rt = fire({...rt, environment: newEnvironment}, transition, label.actions, trace);
       rt = {...rt,
         firedTransitions: [...rt.firedTransitions, transition.uid],
         firedArenas: [...rt.firedArenas, transition.arena],
@@ -411,15 +438,6 @@ function handleInternalEvents(microstep: RT_Microstep, statechart: Statechart, t
       trace.indent());
   }
   return microstep;
-  //  {
-  //   simtime: microstep.simtime,
-  //   mode: microstep.mode,
-  //   environment: microstep.environment,
-  //   history: microstep.history,
-  //   timers: microstep.timers,
-  //   outputEvents: microstep.outputEvents,
-  //   firedTransitions: microstep.firedTransitions,
-  // };
 }
 
 function resolveHistory(tgt: AbstractState, history: RT_History, trace: Tracer): Set<string> {
@@ -434,15 +452,15 @@ function resolveHistory(tgt: AbstractState, history: RT_History, trace: Tracer):
   }
 }
 
-function fire(rt: RT_Microstep, transition: Transition, event: RT_Event | undefined, ts: Map<string, Transition[]>, label: TransitionLabel, trace: Tracer): RT_Microstep {
+function fire(rt: RT_Microstep, transition: Transition, actions: Action[], trace: Tracer): RT_Microstep {
 
   trace.log(`fire ${transitionDescription(transition)}`);
 
   rt = exitChildren(rt, transition.arena, trace.indent());
 
   // transition actions
-  rt = {...rt, environment: addEventParam(rt.environment, event, transition, label)};
-  for (const action of label.actions) {
+  // rt = {...rt, environment: addEventParam(rt.environment, event, transition, label)};
+  for (const action of actions) {
     rt = execAction(rt, action, {kind: "transition", thing: transition}, [transition.uid], trace.indent());
   }
 

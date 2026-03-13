@@ -28,6 +28,9 @@ export type MQTTState = {
   seePassword: boolean;
   enableCA: boolean;
   ca: string;
+
+  inputMapping: string;
+  outputMapping: string;
 }
 
 export const defaultMQTTState: MQTTState = {
@@ -40,6 +43,9 @@ export const defaultMQTTState: MQTTState = {
   seePassword: false,
   enableCA: false,
   ca: "",
+
+  inputMapping: "",
+  outputMapping: "",
 }
 
 type MQTTProps = WithSetters<{

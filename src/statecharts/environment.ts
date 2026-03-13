@@ -12,7 +12,7 @@ export type Environment = {
   // force creation of a new variable in the current scope, even if a variable with the same name already exists in a surrounding scope
   newVar(key: string, value: any, scope: Scope): Environment;
 
-  // (over)write variable
+  // (over)write variable. creates the variable in the current scope if it doesn't exist yet.
   set(key: string, value: any, scope: Scope): Environment;
 
   // read variable

@@ -11,8 +11,12 @@ tlabel = _ trigger:trigger? _ guard:("[" _ guard _ "]")? _ actions:("/" _ action
 
 trigger = afterTrigger / entryTrigger / exitTrigger / eventTrigger
 
-eventTrigger = event:identifier param:("(" identifier ")")? {
-	return {kind: "event", event, paramName: param ? param[1] : undefined};
+eventTrigger = event:identifier param:("(" lhs ")")? {
+	return {
+        kind: "event",
+        event,
+        param: param ? param[1] : undefined,
+    };
 }
 
 afterTrigger = "after" _ dur:durationMs {
@@ -41,13 +45,73 @@ guard = expr
 actions = head:action tail:(_ ";" _ action)* _ ";"? {
 	return [head, ...tail.map(t => t[3])];
 }
+
 action = assignment / raise
 
-assignment = lhs:identifier _ "=" _ rhs:expr {
+assignment = lhs:lhs _ "=" _ rhs:expr {
 	return {kind: "assignment", lhs, rhs};
 }
 
-identifier = ("_" / [a-zA-Z0-9])+ {
+lhs = lhsEmptyDict / lhsNonemptyDict / lhsEmptyArray / lhsNonemptyArray / lhsRef / lhsLiteral
+
+lhsEmptyDict = "{" _ "}" {
+    return {
+        kind: "lhsDict",
+        fields: [],
+    };
+}
+
+lhsNonemptyDict = "{" _ head:lhsDictField tail:( _ "," _ lhsDictField)* (_ ",")? _ "}" {
+    return {
+        kind: "lhsDict",
+        fields: Object.fromEntries([
+            head,
+            ...tail.map(t => t[3]),
+        ]),
+    };
+}
+
+lhsDictField = fieldname:identifier nested_lhs:(_ ":" _ lhs)? {
+    return [
+        fieldname,
+        nested_lhs
+            ? nested_lhs[3]
+            : { kind: "lhsRef", variable: fieldname}, // <-- shorthand notation like in JS
+    ];
+}
+
+lhsEmptyArray = "[" _ "]" {
+    return {
+        kind: "lhsArray",
+        elements: [],
+    }
+}
+
+lhsNonemptyArray = "[" _ head:lhs tail:( _ "," _ lhs )* (_ ",")? _ "]" {
+    return {
+        kind: "lhsArray",
+        elements: [
+            head,
+            ...tail.map(t => t[3]),
+        ],
+    }
+}
+
+lhsRef = variable:identifier {
+    return {
+        kind: "lhsRef",
+        variable,
+    };
+}
+
+lhsLiteral = literal:literal {
+    return {
+        kind: "lhsLiteral",
+        value: literal.value,
+    }
+}
+
+identifier = ("_" / [a-z])+ ("_" / [a-zA-Z0-9])* {
 	return text();
 }
 
@@ -104,7 +168,51 @@ unary = operator:("!" / "-")? atom:atom {
     }
 }
 
-atom = fnCall / nested / literal / ref
+atom = fnCall / nested / literal / ref / rhs_empty_dict / rhsNonemptyDict / rhsEmptyArray / rhs_nonempty_array
+
+rhs_empty_dict = "{" _ "}" {
+    return {
+        kind: "dict",
+        fields: [],
+    };
+}
+
+rhsNonemptyDict = "{" _ head:rhsDictField tail:(_ "," _ rhsDictField)* (_ ",")? _ "}" {
+    return {
+        kind: "dict",
+        fields: Object.fromEntries([
+            head,
+            ...tail.map(t => t[3]),
+        ]),
+    }
+}
+
+rhsDictField = fieldname:identifier expr:(_ ":" _ expr)? {
+    return [
+        fieldname,
+        expr
+            ? expr[3]
+            : { kind: "ref", variable: fieldname },
+    ];
+}
+
+rhsEmptyArray = "[" _ "]" {
+    return {
+        kind: "array",
+        elements: [],
+    }
+}
+
+rhs_nonempty_array = "[" _ head:expr tail:(_ "," _ expr)* (_ ",")? _ "]" {
+    return {
+        kind: "array",
+        elements: [
+            head,
+            ...tail.map(t => t[3]),
+        ],
+    }
+}
+
 
 nested = "(" _ expr:expr _ ")" {
 	return expr;
@@ -126,8 +234,8 @@ ref = variable:identifier {
 	return {kind: "ref", variable}
 }
 
-boolean = ("true" / "false") {
-	return text() === "true";
+boolean = ("True" / "False") {
+	return text() === "True";
 }
 
 string = '"' str:([^"]*) '"' {

@@ -1,5 +1,5 @@
 import {  ConcreteState, HistoryState, OrState, UnstableState, Statechart, stateDescription, Transition, computeArena } from "./abstract_syntax";
-import { Action, EventTrigger, Expression, ParsedText } from "./label_ast";
+import { Action, EventTrigger, Expression, Lhs, ParsedText } from "./label_ast";
 import { parse as parseLabel, SyntaxError } from "./label_parser";
 import { Topology, ReducedConcreteSyntax } from "./detect_topology";
 import { memoize } from "@/util/util";
@@ -15,12 +15,12 @@ export const cachedParseLabel = memoize(parseLabel);
 function addEvent(events: EventTrigger[], e: EventTrigger, textUid: string) {
   const haveEvent = events.find(({event}) => event === e.event);
   if (haveEvent) {
-    if (haveEvent.paramName !== e.paramName === undefined) {
-      return [{
-          shapeUid: textUid,
-          message: "inconsistent event parameter",
-      }];
-    }
+  //   if (haveEvent.param !== e.param === undefined) {
+  //     return [{
+  //         shapeUid: textUid,
+  //         message: "inconsistent event parameter",
+  //     }];
+  //   }
     return [];
   }
   else {
@@ -375,10 +375,26 @@ function findVariables(expr: Expression): Set<string> {
   return new Set();
 }
 
+// find all variable names mentioned in Actions
 function findVariablesAction(action: Action): Set<string> {
   if (action.kind === "assignment") {
-    return new Set([action.lhs, ...findVariables(action.rhs)]);
+    return new Set([...findVariablesLhs(action.lhs), ...findVariables(action.rhs)]);
   }
   return new Set();
 }
 
+function findVariablesLhs(lhs: Lhs): Set<string> {
+  if (lhs.kind === "lhsRef") {
+    return new Set([lhs.variable]);
+  }
+  else if (lhs.kind === "lhsLiteral") {
+    return new Set();
+  }
+  else if (lhs.kind === "lhsArray") {
+    return new Set(lhs.elements.flatMap(el => [...findVariablesLhs(el)]));
+  }
+  else if (lhs.kind === "lhsDict") {
+    return new Set(Object.values(lhs.fields).flatMap(el => [...findVariablesLhs(el)]));
+  }
+  throw new Error("unreachable");
+}
