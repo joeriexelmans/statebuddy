@@ -73,7 +73,7 @@ export function execAssignment(
   tracer: Tracer,
 ): Environment {
   if (lhs.kind === "lhsRef") {
-    console.log(`assign ${lhs.variable} = ${JSON.stringify(rhsValue)}`, lhs, rhsValue);
+    // console.log(`assign ${lhs.variable} = ${JSON.stringify(rhsValue)}`, lhs, rhsValue);
     tracer.log(`assign ${lhs.variable} = ${JSON.stringify(rhsValue)}`);
     return env.set(lhs.variable, rhsValue, scope);
   }

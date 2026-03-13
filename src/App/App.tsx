@@ -191,7 +191,7 @@ export function App() {
                     setState={historyCallbacks.commitState}
                     topology={topology}
                     editorStuff={editorStuff}
-                    findText={appState.findReplace.findText}
+                    findText={appState.topPanel.showFindReplace && appState.findReplace.findText || ""}
                     zoom={appState.topPanel.zoom}
                     mouseMap={appState.topPanel.mouseMap}
                     highlightActive={simulator.highlightActive}

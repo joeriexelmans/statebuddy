@@ -1,16 +1,22 @@
 import { TextDialog } from "@/App/Modals/TextDialog";
 import {getTextFatBBox, Text} from "../../statecharts/concrete_syntax";
-import { Dispatch, memo, ReactElement, SetStateAction, useMemo } from "react";
+import { CSSProperties, Dispatch, memo, ReactElement, SetStateAction, useMemo } from "react";
 import { jsonDeepEqual } from "@/util/util";
 import { BoundingBox } from "./BoundingBox";
 
 import styles from "./VisualEditor.module.css";
 import { syntaxHighlight } from "@/statecharts/syntax_higlight";
 import { SyntaxHighlightedText, TextWithLineBreaks } from "./SyntaxHiglightedText";
+import { TextRange } from "@/statecharts/label_ast";
+
+const foundStyle = {
+  fill: '#f00',
+  fontWeight: 1200,
+} as CSSProperties;
 
 export const TextSVG = memo(function TextSVG(props: {text: Text, selected: boolean, highlight: boolean, onEdit: (text: Text, newText: string) => void, setModal: Dispatch<SetStateAction<ReactElement|null>>, findText: string}) {
 
-  const {
+  let {
     ranges,
     parseError,
   } = useMemo(() => syntaxHighlight(props.text.text), [props.text.text]);
@@ -20,9 +26,11 @@ export const TextSVG = memo(function TextSVG(props: {text: Text, selected: boole
     + ' ' + (props.highlight ? styles.highlight : "")
     + ' ' + (parseError ? styles.error : "");
 
-  const found = props.text.text.indexOf(props.findText);
-  const start = (found >= 0) ? found : -1
-  const end = (found >= 0) ? found + props.findText.length : -1;
+  const found = findOccurrences(props.text.text, props.findText);
+
+  if (found.length > 0) {
+    ranges = found.map(r => ({...r, style: foundStyle}));
+  }
 
   return <>
     <BoundingBox {...getTextFatBBox(props.text)}/>
@@ -69,3 +77,18 @@ export const TextSVG = memo(function TextSVG(props: {text: Text, selected: boole
     && prevProps.selected === newProps.selected
     && prevProps.findText === newProps.findText
 });
+
+// Author: ChatGPT
+export function findOccurrences(str: string, sub: string) {
+  const results = [] as TextRange[];
+  if (!sub) return results;
+
+  let index = 0;
+
+  while ((index = str.indexOf(sub, index)) !== -1) {
+    results.push({ start: index, end: index + sub.length });
+    index += sub.length; // move past this match
+  }
+
+  return results;
+}
