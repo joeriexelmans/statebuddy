@@ -54,7 +54,7 @@ export function TextDialog(props: {setModal: Dispatch<SetStateAction<ReactElemen
           position: 'relative',
           color: 'transparent',
           backgroundColor: 'transparent',
-          caretColor: 'black',
+          caretColor: 'var(--text-color)',
         }}
         onChange={e=>setText(e.target.value)}
         value={text}
