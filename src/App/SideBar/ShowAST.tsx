@@ -5,7 +5,7 @@ import { ConcreteState, stateDescription, Transition, UnstableState } from "../.
 import { Action, EventTrigger, Expression, TransitionLabel } from "../../statecharts/label_ast";
 import { KeyInfoHidden, KeyInfoVisible } from "../TopPanel/KeyInfo";
 import { useShortcuts } from '@/hooks/useShortcuts';
-import { arraysEqual, jsonDeepEqual } from '@/util/util';
+import { arraysEqual, jsonDeepEqual, objectsEqual } from '@/util/util';
 import { Tooltip } from '../Components/Tooltip';
 
 import ArrowOutwardIcon from '@mui/icons-material/ArrowOutward';
@@ -16,6 +16,11 @@ import { cachedParseLabel } from '@/statecharts/parser';
 import { evalExpr } from '@/statecharts/actionlang_interpreter';
 import { FlatEnvironment } from '@/statecharts/environment';
 import { actionLangLhsToText, actionLangValToText } from '@/statecharts/actionlang_prettyprinter';
+import { syntaxHighlight } from '@/statecharts/syntax_higlight';
+import { Overlay } from '../Components/Overlay';
+import { SyntaxHighlightedText } from '../VisualEditor/SyntaxHiglightedText';
+import { codeStyle } from '../Modals/TextDialog';
+import { useDetectChange } from '@/hooks/useDetectChange';
 
 export function ShowTransition(props: {transition: Transition}) {
   return <>➝ {stateDescription(props.transition.tgt)}</>;
@@ -62,6 +67,10 @@ export const ShowAST = memo(function ShowASTx(props: {root: ConcreteState | Unst
 
 
 export const ShowInputEvents = memo(function ShowInputEvents({inputEvents, onRaise, disabled}: {inputEvents: EventTrigger[], onRaise: (eventName: string, param: any) => void, disabled: boolean}) {
+  const [inputParams, setInputParams] = usePersistentState<{[eventName:string]: string}>("inputParams", {});
+
+  useDetectChange(inputParams, 'inputParams');
+
   const raiseHandlers = inputEvents.map(({event}) => {
     return () => {
       // @ts-ignore
@@ -93,40 +102,60 @@ export const ShowInputEvents = memo(function ShowInputEvents({inputEvents, onRai
     };
   }));
 
-  const KeyInfo = KeyInfoVisible; // always show keyboard shortcuts on input events, we can't expect the user to remember them
-
-  const [inputParams, setInputParams] = usePersistentState<{[eventName:string]: string}>("inputParams", {});
 
   return inputEvents.map(({event, param}, i) => {
     const paramTxt = param && actionLangLhsToText(param) || "";
     const key = event+'/'+paramTxt;
     const value = inputParams[key] || "";
-    const width = Math.max(value.length, paramTxt.length)*8+10;
+    const highlight = syntaxHighlight(`[${value}]`);
+    const ranges = highlight.ranges.map(r => ({...r, start: r.start-1, end: r.end-1})) || [];
+    const width = ((value.length || paramTxt.length) +2)+'ch';
     const shortcut = (i+1)%10;
-    const KI = (i < 10) ? KeyInfo : KeyInfoHidden;
-    return <div key={key}>
+    const KI = (i < 10) ? KeyInfoVisible : KeyInfoHidden; // <-- keyboard shortcuts on first 10 input events
+    return <div key={key} style={{pageBreakInside: 'avoid', breakInside: 'avoid-column'}}>
       <KI keyInfo={<kbd>{shortcut}</kbd>} horizontal={true}>
         <Tooltip tooltip='input event - click to raise' align='left'>
           <button
             className={styles.inputEvent}
-            disabled={disabled}
+            disabled={disabled || param && Boolean(highlight.parseError)}
             onClick={raiseHandlers[i]}>
-            {/* <BoltIcon fontSize="small"/> */}
             &#8600;
             {event}
+            {param && <>
+              &nbsp;
+              <Overlay background={value && <pre style={{...codeStyle, width, borderRadius: 6, backgroundColor: 'var(--background-color)'}}><SyntaxHighlightedText text={value} ranges={ranges}/></pre>}>
+                <input
+                  id={`input-${event}-param`}
+                  style={{
+                    ...codeStyle,
+                    width,
+                    overflow: 'visible',
+                    fontFamily: "'Droid Sans Mono', monospace",
+                    borderRadius: 6,
+                    color: value && 'transparent',
+                    backgroundColor: value && 'transparent',
+                    caretColor: 'var(--text-color)',
+                  }}
+                  placeholder={paramTxt}
+                  value={value}
+                  spellCheck={false}
+                  
+                  // onClick={e => {e.stopPropagation();}} // <-- do not escalate click on parameter text field to the parent button
+                  onChange={e => {
+                    console.log('onChange');
+                    setInputParams(params => ({...params, [key]: e.target.value, }));
+                  }}
+                />
+              </Overlay>
+            </>}
           </button>
         </Tooltip>
       </KI>
-      {param &&
-        <><input id={`input-${event}-param`} style={{width, overflow: 'visible'}} placeholder={paramTxt} value={value} onChange={e => setInputParams(params => ({...params, [key]: e.target.value, }))}/></>
-      }
-      &nbsp;
     </div>;
   })
-}, (prevProps, nextProps) => {
-  return prevProps.onRaise === nextProps.onRaise
-     && prevProps.disabled === nextProps.disabled
-     && jsonDeepEqual(prevProps.inputEvents, nextProps.inputEvents);
+}, ({inputEvents: prevInputEvents, ...prevRest}, {inputEvents: nextInputEvents, ...nextRest}) => {
+  return objectsEqual(prevRest, nextRest)
+     && jsonDeepEqual(prevInputEvents, nextInputEvents);
 });
 
 export function ShowInternalEvents(props: {internalEvents: EventTrigger[]}) {

@@ -1,18 +1,16 @@
 import { Dispatch, ReactElement, SetStateAction, useState, useCallback, CSSProperties, useMemo } from "react";
 
-import styles from "../App.module.css";
-
 import { useShortcuts } from "@/hooks/useShortcuts";
 import { syntaxHighlight } from "@/statecharts/syntax_higlight";
 import { SyntaxHighlightedText } from "../VisualEditor/SyntaxHiglightedText";
-import { SyntaxError } from "@/statecharts/label_parser";
 import { Tooltip } from "../Components/Tooltip";
+import { Overlay } from "../Components/Overlay";
 
-const commonStyle = {
+export const codeStyle = {
   padding: 4,
   fontFamily: "'Droid Sans Mono', monospace",
   fontSize: '10pt',
-  border:'1px solid var(--separator-color)',
+  border: '1px solid var(--separator-color)',
   textAlign: 'left',
   boxSizing: 'border-box',
 } as CSSProperties;
@@ -47,18 +45,14 @@ export function TextDialog(props: {setModal: Dispatch<SetStateAction<ReactElemen
       )*1.5 + 'em',
     }
   }, [text]);
-
-  const maxWidth = `max(${cssWidth}, 100%)`;
   
   return <div style={{padding: 2, display: 'flex', gap: 8, flexDirection: 'column', alignItems: 'center'}}>
 
     <p>Tip: <kbd>Shift</kbd>+<kbd>Enter</kbd> to insert new line.</p>
 
-    <div style={{position: 'relative', textAlign: 'left'}}>
+    <Overlay background={
       <pre
-        // className={parseError ? styles.error : ""}
-        style={{...commonStyle,
-          position: 'absolute',
+        style={{...codeStyle,
           pointerEvents: 'none',
           width: cssWidth,
           height: cssHeight,
@@ -66,10 +60,10 @@ export function TextDialog(props: {setModal: Dispatch<SetStateAction<ReactElemen
         }}>
         <SyntaxHighlightedText text={text} ranges={ranges}/>
       </pre>
+    }>
       <textarea
         autoFocus
-        style={{...commonStyle,
-          position: 'relative',
+        style={{...codeStyle,
           color: 'transparent',
           backgroundColor: 'transparent',
           caretColor: 'var(--text-color)',
@@ -83,7 +77,7 @@ export function TextDialog(props: {setModal: Dispatch<SetStateAction<ReactElemen
         onFocus={e => e.target.select()}
         spellCheck={false}
         />
-    </div>
+    </Overlay>
 
     <div style={{ minHeight: '3em', color: 'var(--error-color)'}}>
       {parseError && <ShowSyntaxError e={parseError}/>}
@@ -149,10 +143,10 @@ function piece2Key(piece: ExpectedPiece) {
   throw new Error("unreachable");
 }
 
-const litStyle = {...commonStyle, color: 'var(--text-color)', padding: 2};
-const clsStyle = {...commonStyle, color: 'var(--text-color)', padding: 2, backgroundColor: 'var(--separator-color'};
-const othStyle = {...commonStyle, color: 'var(--text-color)', padding: 2, backgroundColor: 'var(--separator-color'};
-const endStyle = {...commonStyle, color: 'var(--text-color)', padding: 2, backgroundColor: 'lightyellow'};
+const litStyle = {...codeStyle, color: 'var(--text-color)', padding: 2};
+const clsStyle = {...codeStyle, color: 'var(--text-color)', padding: 2, backgroundColor: 'var(--separator-color'};
+const othStyle = {...codeStyle, color: 'var(--text-color)', padding: 2, backgroundColor: 'var(--separator-color'};
+const endStyle = {...codeStyle, color: 'var(--text-color)', padding: 2, backgroundColor: 'lightyellow'};
 
 
 export function ShowExpectedPiece({piece}: {piece: ExpectedPiece}) {

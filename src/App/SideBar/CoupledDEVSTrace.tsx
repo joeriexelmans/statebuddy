@@ -270,7 +270,7 @@ function CoupledDEVSInternalTransition({item, prevItem, status, showMicroSteps, 
       <ShowOutputEvents outputEvents={blessedItem.outputEvents} />
       {showMicroSteps && <MicroSteps microsteps={isOutputStep && ["(output from previous step)"] || getMicroSteps(blessedItem)}/>}
       {blessedAs && showTransitions && <ShowFiredTransitions firedTransitions={getFiredTransitions(blessedAs, blessedItem)}/>}
-      <ShowEnvironment item={blessedItem} />
+      <ShowEnvironment item={blessedItem} prevItem={blessedTrace.at(-2)} />
       {error && <ShowRuntimeError error={error} />}
     </Column>
 
@@ -312,7 +312,7 @@ function DEVSExternalTransitions({components, plantsState, showMicroSteps, showT
         <Column>
           <ShowFiredTransitions firedTransitions={getFiredTransitions(abstractSyntax, item)} />
         </Column>}
-      <ShowEnvironment item={item}/>
+      <ShowEnvironment item={item} prevItem={componentTrace.at(-2)}/>
       {error && <ShowRuntimeError error={error} />}
     </Column>;
   });
@@ -386,10 +386,14 @@ function getMicroSteps(item: DEVSTraceItem<any>) {
   return item.newState.microsteps as string[] || [];
 }
 
-function ShowEnvironment({item}: {item: DEVSTraceItem<any>}) {
+function ShowEnvironment({item, prevItem}: {item: DEVSTraceItem<any>, prevItem?: DEVSTraceItem<any>}) {
   if (item.newState.state?.environment) {
     return [...item.newState.state.environment.entries()].map(([name, value]) => {
-      if (name.startsWith('_')) return <div key={name}></div>;
+      if ( name.startsWith('_') // <-- hide hidden variables
+        // only show changed variables:
+        || prevItem?.newState.state.environment.get(name) === value) {
+        return <div key={name}></div>;
+      }
       return <div key={name}>
         {name} = {actionLangValToText(value)}
       </div>
@@ -444,14 +448,6 @@ function ShowTransition({transition}: {transition: Transition}) {
     </span>;
   }
 }
-
-// function ShowEnvironment(props: {environment: Environment}) {
-//   return <div>{
-//     [...props.environment.entries()]
-//       .filter(([variable]) => !variable.startsWith('_'))
-//       .map(([variable,value]) => `${variable.split('.').at(-1)}=${JSON.stringify(value)}`).join(', ')
-//   }</div>;
-// }
 
 // An 'output step' is when a Statechart performs an intTransition immediately after handling an input event (extTransition), with the purpose of only outputting some events.
 // If a Statechart makes an output step, we render that step slightly differently (we hide the timer icon), so it becomes a bit clearer that in the world of Statecharts, the output step was caused by (or even stronger: is part of) the previous step.
