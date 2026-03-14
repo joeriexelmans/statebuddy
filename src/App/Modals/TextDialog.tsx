@@ -7,7 +7,7 @@ import { Tooltip } from "../Components/Tooltip";
 import { Overlay } from "../Components/Overlay";
 
 export const codeStyle = {
-  padding: 4,
+  padding: 1,
   fontFamily: "'Droid Sans Mono', monospace",
   fontSize: '10pt',
   border: '1px solid var(--separator-color)',

@@ -91,7 +91,9 @@
 }
 
 /* feel of a button press - notice we only render the button as pressed when the user is not clicking on a nested input inside the button (this should not activate the button) */
-.App button:active:not(:disabled):not(:has(input:active)) {
+.App button:active:not(:disabled):not(:has(input:active)),
+.App .buttonLike:active:not(:disabled):not(:has(input:active))
+ {
   box-shadow: inset 0 0 4 2 rgba(0, 0, 0, 0.5);
 }
 

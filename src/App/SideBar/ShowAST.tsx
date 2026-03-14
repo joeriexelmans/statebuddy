@@ -69,8 +69,6 @@ export const ShowAST = memo(function ShowASTx(props: {root: ConcreteState | Unst
 export const ShowInputEvents = memo(function ShowInputEvents({inputEvents, onRaise, disabled}: {inputEvents: EventTrigger[], onRaise: (eventName: string, param: any) => void, disabled: boolean}) {
   const [inputParams, setInputParams] = usePersistentState<{[eventName:string]: string}>("inputParams", {});
 
-  useDetectChange(inputParams, 'inputParams');
-
   const raiseHandlers = inputEvents.map(({event}) => {
     return () => {
       // @ts-ignore
@@ -109,16 +107,21 @@ export const ShowInputEvents = memo(function ShowInputEvents({inputEvents, onRai
     const value = inputParams[key] || "";
     const highlight = syntaxHighlight(`[${value}]`);
     const ranges = highlight.ranges.map(r => ({...r, start: r.start-1, end: r.end-1})) || [];
-    const width = ((value.length || paramTxt.length) +2)+'ch';
+    const width = ((value.length || paramTxt.length) +1.5)+'ch';
     const shortcut = (i+1)%10;
     const KI = (i < 10) ? KeyInfoVisible : KeyInfoHidden; // <-- keyboard shortcuts on first 10 input events
+    const disableOurselves = disabled || param && Boolean(highlight.parseError);
     return <div key={key} style={{pageBreakInside: 'avoid', breakInside: 'avoid-column'}}>
       <KI keyInfo={<kbd>{shortcut}</kbd>} horizontal={true}>
         <Tooltip tooltip='input event - click to raise' align='left'>
-          <button
-            className={styles.inputEvent}
-            disabled={disabled || param && Boolean(highlight.parseError)}
-            onClick={raiseHandlers[i]}>
+          <div
+            className={styles.inputEvent + ' ' + (!disableOurselves && appStyles.buttonLike)}
+            onClick={raiseHandlers[i]}
+            style={{
+              color: disableOurselves ? 'var(--inactive-fg-color)' : undefined,
+              cursor: 'default',
+            }}
+          >
             &#8600;
             {event}
             {param && <>
@@ -139,8 +142,6 @@ export const ShowInputEvents = memo(function ShowInputEvents({inputEvents, onRai
                   placeholder={paramTxt}
                   value={value}
                   spellCheck={false}
-                  
-                  // onClick={e => {e.stopPropagation();}} // <-- do not escalate click on parameter text field to the parent button
                   onChange={e => {
                     console.log('onChange');
                     setInputParams(params => ({...params, [key]: e.target.value, }));
@@ -148,7 +149,7 @@ export const ShowInputEvents = memo(function ShowInputEvents({inputEvents, onRai
                 />
               </Overlay>
             </>}
-          </button>
+          </div>
         </Tooltip>
       </KI>
     </div>;
