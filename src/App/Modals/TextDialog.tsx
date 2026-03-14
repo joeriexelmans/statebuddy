@@ -1,4 +1,4 @@
-import { Dispatch, ReactElement, SetStateAction, useState, useCallback, CSSProperties } from "react";
+import { Dispatch, ReactElement, SetStateAction, useState, useCallback, CSSProperties, useMemo } from "react";
 
 import styles from "../App.module.css";
 
@@ -10,7 +10,6 @@ const commonStyle = {
   padding: 4,
   fontFamily: "'Droid Sans Mono', monospace",
   fontSize: '10pt',
-  width: 400,
   height: 100,
   border:'1px solid var(--separator-color)',
   textAlign: 'left',
@@ -34,6 +33,21 @@ export function TextDialog(props: {setModal: Dispatch<SetStateAction<ReactElemen
     ranges,
     parseError,
   } = syntaxHighlight(text);
+
+  const {cssWidth, cssHeight} = useMemo(() => {
+    const lines = text.split('\n');
+    console.log({lines});
+    return {
+      cssWidth: Math.max(
+        50,
+        lines.reduce((max, cur) => Math.max(max, cur.length), 0) + 2,
+      ) + 'ch',
+      cssHeight: Math.max(
+        6,
+        lines.length + 1,
+      )*1.5 + 'em',
+    }
+  }, [text]);
   
   return <div style={{padding: 20}}>
     Tip: <kbd>Shift</kbd>+<kbd>Enter</kbd> to insert new line.
@@ -45,6 +59,9 @@ export function TextDialog(props: {setModal: Dispatch<SetStateAction<ReactElemen
         style={{...commonStyle,
           position: 'absolute',
           pointerEvents: 'none',
+          width: cssWidth,
+          height: cssHeight,
+          overflow: "hidden",
         }}>
         <SyntaxHighlightedText text={text} ranges={ranges}/>
       </pre>
@@ -55,6 +72,10 @@ export function TextDialog(props: {setModal: Dispatch<SetStateAction<ReactElemen
           color: 'transparent',
           backgroundColor: 'transparent',
           caretColor: 'var(--text-color)',
+          resize: 'none',
+          width: cssWidth,
+          height: cssHeight,
+          overflow: "hidden",
         }}
         onChange={e=>setText(e.target.value)}
         value={text}
