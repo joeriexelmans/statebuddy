@@ -133,8 +133,6 @@ text.helper:hover {
 }
 .draggableText.selected {
   fill: var(--accent-border-color);
-  /* font-weight: 600; */
-
   stroke: var(--accent-border-color);
   stroke-width: 1;
 }

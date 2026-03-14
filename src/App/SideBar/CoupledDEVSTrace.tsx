@@ -13,13 +13,14 @@ import { CoupledState, StateBuddyTraceState } from "../hooks/useSimulator";
 import { PlantsState } from "../hooks/useCoupledExecution";
 import { WithSetters } from "../makePartialSetter";
 import { ShowOutputEvents } from "./ShowAST";
-import { PropertyStatusIndicator, StatusType } from "./Status";
+import { PropertyStatusIndicator } from "./PropertyStatusIndicator";
 import { statebuddyPlants } from "../plants";
 import { TracesState } from "./Traces";
 import { RuntimeError } from "@/statecharts/interpreter";
 import { whoMadeExtTransition, whoMadeIntTransition } from "@/devs/coupled_trace";
 import NotInterestedIcon from '@mui/icons-material/NotInterested';
 import { actionLangValToText } from "@/statecharts/actionlang_prettyprinter";
+import { StatusType } from "../Components/StatusIndicator";
 
 
 type PropertyTrace = [number, boolean][];
@@ -324,7 +325,6 @@ function CoupledDEVSExternalTransition({item, prevItem, status, ...rest}: {
   status: StatusType,
 } & ThingsToPassOn) {
   const components = whoMadeExtTransition([prevItem, item]);
-  console.log(item.bagOfInputs, components);
   return <>
     <TraceItemHeader hide={false} simtime={item.simtime} status={status} />
     {(components.length > 0)

@@ -84,8 +84,11 @@ const isJsObject = (obj: any) =>
   obj && typeof obj === "object" && !Array.isArray(obj);
 
 // is this an object with only numbers as keys?
-const isArrayLikeObject = (obj: any) =>
-  Object.keys(obj).every(key => /^-?\d+$/.test(key));
+const isArrayLikeObject = (obj: any) => {
+  const keys = Object.keys(obj);
+  if (keys.length === 0) return false;
+  return keys.every(key => /^-?\d+$/.test(key));
+}
 
 const arrayLikeObjToArray = (obj: any) => {
   const result = [];

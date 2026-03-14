@@ -6,7 +6,7 @@ import { Tooltip } from "../Components/Tooltip";
 import { TwoStateButton } from "../Components/TwoStateButton";
 import { makeAllSetters, WithSetters } from "../makePartialSetter";
 import { PreparedTraces, PropertyCheckResult } from "./prepare_trace";
-import { PropertyStatusIndicator } from "./Status";
+import { PropertyStatusIndicator } from "./PropertyStatusIndicator";
 
 import styles from "../App.module.css";
 

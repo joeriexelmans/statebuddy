@@ -2,7 +2,7 @@ import { HTMLAttributes, PropsWithChildren, ReactNode, useState } from "react";
 
 import "./Tooltip.css";
 
-type TooltipProps = {
+export type TooltipProps = {
   tooltip?: string | ReactNode,
   align?: 'center' | 'left' | 'right';
   fullWidth?: boolean,

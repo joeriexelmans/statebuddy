@@ -4,7 +4,7 @@ import TextRotateUpIcon from '@mui/icons-material/TextRotateUp';
 import { memo, useEffect, useState } from "react";
 import { Tooltip } from "../Components/Tooltip";
 import { TwoStateButton } from "../Components/TwoStateButton";
-import { PropertyStatusIndicator, StatusType } from "../SideBar/Status";
+import { PropertyStatusIndicator, StatusType } from "../SideBar/PropertyStatusIndicator";
 import { PreparedTraces, prepareTraces, PropertyCheckResult } from '../SideBar/prepare_trace';
 import styles from "@/App/App.module.css";
 import { restoreTrace } from '@/devs/serialize_trace';

@@ -55,7 +55,6 @@ export function syntaxHighlight(text: string) {
     // @ts-ignore
     if (e instanceof SyntaxError) {
       parseError = e;
-      console.log({e});
       addAndCheck(errorRanges, {start: e.location.start.offset, end: e.location.end.offset, tooltip: 'parse error', style: errorStyle});
     }
     else throw e;

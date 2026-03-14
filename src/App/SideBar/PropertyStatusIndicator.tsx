@@ -1,12 +1,5 @@
+import { StatusIndicator, StatusType } from "../Components/StatusIndicator";
 import { Tooltip } from "../Components/Tooltip";
-
-import traceStyles from "./Trace.module.css";
-
-export type StatusType = "ok" | "nok" | "pending";
-
-export function StatusIndicator({status}: {status: StatusType}) {
-  return <div className={traceStyles.status + ' ' + traceStyles[status]}/>;
-}
 
 export function PropertyStatusIndicator({status}: {status: StatusType}) {
   const tooltip = {

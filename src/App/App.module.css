@@ -238,3 +238,16 @@
 .description {
   font-style: italic;
 }
+
+.App fieldset {
+  border: 1px solid var(--separator-color);
+  border-radius: 6;
+  /* border: 0; */
+  margin: 6;
+  padding: 2;
+  /* background-color: var(--statusbar-bg-color); */
+}
+
+.App legend {
+  /* background-color: var(--statusbar-bg-color); */
+}

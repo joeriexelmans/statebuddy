@@ -67,7 +67,7 @@ export const TextSVG = memo(function TextSVG(props: {text: Text, selected: boole
           className={className}
           data-uid={props.text.uid}
           data-parts="text"
-          dominant-baseline="middle"
+          dominantBaseline="middle"
         >
           <SyntaxHighlightedText
             text={props.text.text}
@@ -83,7 +83,7 @@ export const TextSVG = memo(function TextSVG(props: {text: Text, selected: boole
           data-uid={props.text.uid}
           data-parts="text"
           style={{fill: 'transparent', strokeWidth: 0}}
-          dominant-baseline="middle"
+          dominantBaseline="middle"
         >
           <SyntaxHighlightedText
             text={props.text.text}
@@ -99,7 +99,7 @@ export const TextSVG = memo(function TextSVG(props: {text: Text, selected: boole
           data-uid={props.text.uid}
           data-parts="text"
           style={{whiteSpace: "preserve"}}
-          dominant-baseline="middle"
+          dominantBaseline="middle"
         >
           <TextWithLineBreaks text={props.text.text}/>
         </text>

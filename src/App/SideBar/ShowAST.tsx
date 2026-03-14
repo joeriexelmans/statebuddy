@@ -126,12 +126,13 @@ export const ShowInputEvents = memo(function ShowInputEvents({inputEvents, onRai
             {event}
             {param && <>
               &nbsp;
-              <Overlay background={value && <pre style={{...codeStyle, width, borderRadius: 6, backgroundColor: 'var(--background-color)'}}><SyntaxHighlightedText text={value} ranges={ranges}/></pre>}>
+              <Overlay background={value && <pre style={{...codeStyle, width, borderRadius: 6, height: '2em', backgroundColor: 'var(--textbox-bg-color)'}}><SyntaxHighlightedText text={value} ranges={ranges}/></pre>}>
                 <input
                   id={`input-${event}-param`}
                   style={{
                     ...codeStyle,
                     width,
+                    height: '2em',
                     overflow: 'visible',
                     fontFamily: "'Droid Sans Mono', monospace",
                     borderRadius: 6,
@@ -148,6 +149,7 @@ export const ShowInputEvents = memo(function ShowInputEvents({inputEvents, onRai
                   }}
                 />
               </Overlay>
+              <div style={{height: 2}}/>
             </>}
           </div>
         </Tooltip>
