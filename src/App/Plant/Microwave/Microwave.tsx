@@ -104,7 +104,7 @@ export const Microwave = memo(function Microwave({state: {bellRinging, magnetron
       />
       <rect className="microwaveButtonHelper" x={INCTIME_X0} y={INCTIME_Y0} width={BUTTON_WIDTH} height={BUTTON_HEIGHT} 
         onMouseDown={() => raiseUIEvent({name: "incTimeButton", param: true})}
-        onMouseUp={() => raiseUIEvent({name: "incTimeButton", param: true})}
+        onMouseUp={() => raiseUIEvent({name: "incTimeButton", param: false})}
       />
       <rect className="microwaveDoorHelper"
         x={DOOR_X0} y={DOOR_Y0} width={DOOR_WIDTH} height={DOOR_HEIGHT}
