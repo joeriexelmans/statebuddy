@@ -5,15 +5,19 @@ import { jsonDeepEqual } from "@/util/util";
 import { BoundingBox } from "./BoundingBox";
 
 import styles from "./VisualEditor.module.css";
-import { syntaxHighlight } from "@/statecharts/syntax_higlight";
+import { RangeWithAnnotation, syntaxHighlight } from "@/statecharts/syntax_higlight";
 import { SyntaxHighlightedText, TextWithLineBreaks } from "./SyntaxHiglightedText";
 import { TextRange } from "@/statecharts/label_ast";
 
 const foundStyle = {
-  fill: '#f00',
+  fill: 'light-dark( #f00 , #f00 )',
   strokeWidth: 4,
-  stroke: '#00f',
+  stroke: 'light-dark( rgba(255, 141, 211, 1), rgba(109, 0, 100, 1))',
 } as CSSProperties;
+
+const fade = (ranges: RangeWithAnnotation[]) => {
+  return ranges.map(({style, ...r}) => ({style: ({...style, fill: `color-mix(in srgb, ${style.fill} 50%, var(--text-color) 50%)`}), ...r}));
+}
 
 export const TextSVG = memo(function TextSVG(props: {text: Text, selected: boolean, highlight: boolean, onEdit: (text: Text, newText: string) => void, setModal: Dispatch<SetStateAction<ReactElement|null>>, findText: string}) {
 
@@ -27,10 +31,12 @@ export const TextSVG = memo(function TextSVG(props: {text: Text, selected: boole
     + ' ' + (props.highlight ? styles.highlight : "")
     + ' ' + (parseError ? styles.error : "");
 
-  const found = findOccurrences(props.text.text, props.findText).map(r => ({...r, style: foundStyle}));
+  const found = findOccurrences(props.text.text, props.findText)
+    .map(r => ({...r, style: foundStyle}));
 
-  if (found.length > 0) {
-    // ranges = found.map(r => ({...r, style: foundStyle}));
+  // when searching, fade all colors so search result highlight is more visible
+  if (props.findText) {
+    ranges = fade(ranges);
   }
 
   return <>

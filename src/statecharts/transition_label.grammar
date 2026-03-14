@@ -93,12 +93,18 @@ lhsNonemptyDict = "{" _ head:lhsDictField tail:( _ "," _ lhsDictField)* (_ ",")?
     };
 }
 
-lhsDictField = fieldname:identifier nested_lhs:(_ ":" _ lhs)? {
+fieldname = name:identifier {
+    return {name, range: range()};
+}
+
+lhsDictField = fieldname:fieldname nested_lhs:(_ ":" _ lhs)? {
     return [
-        fieldname,
-        nested_lhs
-            ? nested_lhs[3]
-            : { kind: "lhsRef", variable: fieldname}, // <-- shorthand notation like in JS
+        fieldname.name,
+        nested_lhs ? nested_lhs[3]
+            : { kind: "lhsRef",
+                variable: fieldname.name,
+                range: fieldname.range,
+              }, // <-- shorthand notation like in JS
     ];
 }
 
