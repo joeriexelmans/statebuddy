@@ -74,6 +74,10 @@ export function execAssignment(
 ): Environment {
   if (lhs.kind === "lhsRef") {
     // console.log(`assign ${lhs.variable} = ${JSON.stringify(rhsValue)}`, lhs, rhsValue);
+    if (rhsValue === undefined) {
+      tracer.log('runtime error');
+      throw new RuntimeError(`missing value for '${lhs.variable}'`, uids);
+    }
     tracer.log(`assign ${lhs.variable} = ${JSON.stringify(rhsValue)}`);
     return env.set(lhs.variable, rhsValue, scope);
   }

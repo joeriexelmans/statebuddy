@@ -116,7 +116,7 @@ export const ShowInputEvents = memo(function ShowInputEvents({inputEvents, onRai
         <Tooltip tooltip='input event - click to raise' align='left'>
           <div
             className={styles.inputEvent + ' ' + (!disableOurselves && appStyles.buttonLike)}
-            onClick={raiseHandlers[i]}
+            onClick={!disableOurselves && raiseHandlers[i] || undefined}
             style={{
               color: disableOurselves ? 'var(--inactive-fg-color)' : undefined,
               cursor: 'default',
@@ -140,10 +140,10 @@ export const ShowInputEvents = memo(function ShowInputEvents({inputEvents, onRai
                     caretColor: 'var(--text-color)',
                   }}
                   placeholder={paramTxt}
-                  value={value}
                   spellCheck={false}
+                  onClick={e => e.stopPropagation()}
+                  value={value}
                   onChange={e => {
-                    console.log('onChange');
                     setInputParams(params => ({...params, [key]: e.target.value, }));
                   }}
                 />
