@@ -36,7 +36,7 @@ export const SyntaxHighlightedText = memo(function SyntaxHighlightedText({text, 
 export function TextWithLineBreaks({text}: {text: string}) {
   const pieces = text.split('\n');
   return pieces.map((piece, i) =>
-    <tspan key={i} x={i>0 ? 0 : undefined} dy={i>0 ? '1.2em' : undefined}>
+    <tspan key={i} x={i>0 ? 0 : undefined} dy={i>0 ? '1.5em' : undefined}>
       {piece}
     </tspan>);
 }
