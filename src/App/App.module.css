@@ -135,7 +135,7 @@
 }
 
 .App input[type=text].error,
-.App textarea.error {
+.App .error {
   background-color: var(--error-bg-color);
 }
 

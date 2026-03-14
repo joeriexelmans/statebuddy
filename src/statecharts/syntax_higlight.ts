@@ -44,6 +44,7 @@ function addAndCheck(ranges: TextRange[], range: TextRange | RangeWithAnnotation
   ranges.push(range);
 }
 
+
 export function syntaxHighlight(text: string) {
   let parsed: ParsedText | undefined;
   let parseError: SyntaxError | undefined;
@@ -55,7 +56,7 @@ export function syntaxHighlight(text: string) {
     if (e instanceof SyntaxError) {
       parseError = e;
       console.log({e});
-      addAndCheck(errorRanges, {start: e.location.start.offset, end: e.location.end.offset, tooltip: e.message, style: errorStyle});
+      addAndCheck(errorRanges, {start: e.location.start.offset, end: e.location.end.offset, tooltip: 'parse error', style: errorStyle});
     }
     else throw e;
   }
