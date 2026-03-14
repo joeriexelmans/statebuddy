@@ -141,11 +141,11 @@ lhsLiteral = literal:literal {
     }
 }
 
-identifier = ("_" / [a-z])+ ("_" / [a-zA-Z0-9])* {
+identifier "<ident>" = ("_" / [a-z])+ ("_" / [a-zA-Z0-9])* {
 	return text();
 }
 
-number = [0-9]+ {
+number "<integer>" = [0-9]+ {
 	return {
         value: parseInt(text()),
         range: range(),
@@ -276,7 +276,7 @@ KeywordFalse = "False" {
     return {value: false, range: range()};
 }
 
-string = '"' str:([^"]*) '"' {
+string "<string>" = '"' str:([^"]*) '"' {
 	return {
         value: str.join(''),
         range: range(),

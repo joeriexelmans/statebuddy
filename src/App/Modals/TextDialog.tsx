@@ -6,6 +6,7 @@ import { useShortcuts } from "@/hooks/useShortcuts";
 import { syntaxHighlight } from "@/statecharts/syntax_higlight";
 import { SyntaxHighlightedText } from "../VisualEditor/SyntaxHiglightedText";
 import { SyntaxError } from "@/statecharts/label_parser";
+import { Tooltip } from "../Components/Tooltip";
 
 const commonStyle = {
   padding: 4,
@@ -92,7 +93,7 @@ export function TextDialog(props: {setModal: Dispatch<SetStateAction<ReactElemen
   </div>;
 }
 
-type ExpectedPiece = ExpectedClass | ExpectedLiteral;
+type ExpectedPiece = ExpectedClass | ExpectedLiteral | ExpectedOther | ExpectedEnd;
 
 type ExpectedLiteral = {
   type: "literal",
@@ -105,16 +106,80 @@ type ExpectedClass = {
   parts: string[],
 }
 
+type ExpectedOther = {
+  type: "other",
+  description: string,
+}
+
+type ExpectedEnd = {
+  type: "end",
+}
+
 export function ShowSyntaxError({e, ...rest}: {e: {expected: ExpectedPiece[]}}) {
+  const alreadySeen = new Set<string>();
   return <div style={{display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 8}} {...rest}>
     <div>Expected:</div>
     <div style={{display: 'flex', flexDirection: 'row', gap: 8, flexWrap: "wrap", alignItems: 'center'}}>
       {e.expected
-        .filter(exp => exp.type === "literal")
-        .map(exp =>
-          <div key={exp.text} style={{...commonStyle, color: 'var(--text-color)', padding: 2}}>
-            {exp.text}
-          </div>)}
+        // remove duplicates (bug in Peggy?)
+        .filter(piece => {
+          const key = piece2Key(piece);
+          if (alreadySeen.has(key)) return false;
+          alreadySeen.add(key);
+          return true;
+        })
+        .map(piece => <ShowExpectedPiece key={piece2Key(piece)} piece={piece}/>)}
     </div>
   </div>
+}
+
+function piece2Key(piece: ExpectedPiece) {
+  if (piece.type === "literal") {
+    return "lit-" + piece.text;
+  }
+  else if (piece.type === "class") {
+    return "cls-" + piece.parts.join('-');
+  }
+  else if (piece.type === "other") {
+    return "oth-" + piece.description;
+  }
+  else if (piece.type === "end") {
+    return "end";
+  }
+  throw new Error("unreachable");
+}
+
+const litStyle = {...commonStyle, color: 'var(--text-color)', padding: 2};
+const clsStyle = {...commonStyle, color: 'var(--text-color)', padding: 2, backgroundColor: 'var(--separator-color'};
+const othStyle = {...commonStyle, color: 'var(--text-color)', padding: 2, backgroundColor: 'var(--separator-color'};
+const endStyle = {...commonStyle, color: 'var(--text-color)', padding: 2, backgroundColor: 'lightyellow'};
+
+
+export function ShowExpectedPiece({piece}: {piece: ExpectedPiece}) {
+  if (piece.type === "literal") {
+    return <Tooltip tooltip="token">
+      <div style={litStyle}>
+        {piece.text}
+      </div>
+    </Tooltip>;
+  }
+  else if (piece.type === "class") {
+    return <Tooltip tooltip="any of these">
+      <div style={clsStyle}>
+        [{piece.parts.join('')}]
+      </div>
+    </Tooltip>;
+  }
+  else if (piece.type === "other") {
+    return <div style={othStyle}>
+      {piece.description}
+    </div>;
+  }
+  else if (piece.type === "end") {
+    return <Tooltip tooltip="end of input">
+      <div style={endStyle}>
+        &lt;EOF&gt;
+      </div>
+    </Tooltip>
+  }
 }
