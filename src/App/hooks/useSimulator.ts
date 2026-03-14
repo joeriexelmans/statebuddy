@@ -87,10 +87,11 @@ export function useSimulator(cE: DEVSComponent<DEVSTrace<CoupledState>> | undefi
   const currentSC = currentTraceItem?.newState.sc.at(-1)!.newState;
 
   const {runtimeErrors, highlightActive, highlightTransitions} = useMemo(() => {
-    if (currentSC?.state instanceof RuntimeError) {
-      const runtimeErrors = currentSC.state.highlight.map(shapeUid => ({
+    const state = currentSC?.state;
+    if (state instanceof RuntimeError) {
+      const runtimeErrors = state.highlight.map(shapeUid => ({
         shapeUid,
-        message: currentSC.state.message,
+        message: state.message,
       } as TraceableError));
       return {
         runtimeErrors,
@@ -99,7 +100,7 @@ export function useSimulator(cE: DEVSComponent<DEVSTrace<CoupledState>> | undefi
       };
     }
     else {
-      const currentBigStep = currentSC?.state;
+      const currentBigStep = state;
       const highlightActive = (currentBigStep && currentBigStep.mode) || new Set<string>();
       const highlightTransitions = currentBigStep && currentBigStep.firedTransitions || [];
       return {
