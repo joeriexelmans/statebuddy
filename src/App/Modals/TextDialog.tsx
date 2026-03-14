@@ -10,7 +10,6 @@ const commonStyle = {
   padding: 4,
   fontFamily: "'Droid Sans Mono', monospace",
   fontSize: '10pt',
-  height: 100,
   border:'1px solid var(--separator-color)',
   textAlign: 'left',
   boxSizing: 'border-box',
