@@ -51,7 +51,7 @@ export function makeStatechartPlant<CleanStateType>({uiEvents, ast, cleanupState
         e.runtimeError = state; // <-- attach the error so we can see what went wrong.
         throw e; // <-- crash StateBuddy
       }
-      return cleanupState(state.bigstep);
+      return cleanupState(state.state);
     },
     render,
     signals,

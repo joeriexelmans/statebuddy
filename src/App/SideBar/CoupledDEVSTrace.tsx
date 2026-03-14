@@ -233,11 +233,11 @@ function CoupledDEVSInitialization({item, status, plantsState, showMicroSteps, s
         <div>{componentDisplayName}</div>
         <DEVSStepCause item={componentTraceItem} />
         {<>
-          {error && <ShowRuntimeError error={error} />}
           {showMicroSteps && <MicroSteps microsteps={getMicroSteps(componentTraceItem)}/>}
           {abstractSyntax && showTransitions && <ShowFiredTransitions
             firedTransitions={getFiredTransitions(abstractSyntax, componentTraceItem)} />}
           <ShowEnvironment item={componentTraceItem} />
+          {error && <ShowRuntimeError error={error} />}
         </>}
       </Column>;
     })}
@@ -267,11 +267,11 @@ function CoupledDEVSInternalTransition({item, prevItem, status, showMicroSteps, 
     <Column>
       <div>{lookupName(plantsState, componentMadeIntTransition)}</div>
       {!isOutputStep && <DEVSStepCause item={blessedItem} />}
-      {error && <ShowRuntimeError error={error} />}
       <ShowOutputEvents outputEvents={blessedItem.outputEvents} />
       {showMicroSteps && <MicroSteps microsteps={isOutputStep && ["(output from previous step)"] || getMicroSteps(blessedItem)}/>}
       {blessedAs && showTransitions && <ShowFiredTransitions firedTransitions={getFiredTransitions(blessedAs, blessedItem)}/>}
       <ShowEnvironment item={blessedItem} />
+      {error && <ShowRuntimeError error={error} />}
     </Column>
 
     {/* then we show the components that made an extTransition */}
@@ -307,13 +307,13 @@ function DEVSExternalTransitions({components, plantsState, showMicroSteps, showT
     return <Column key={componentId}>
       <div>{lookupName(plantsState, componentId)}</div>
       <DEVSStepCause item={item}/>
-      {error && <ShowRuntimeError error={error} />}
       {showMicroSteps && <MicroSteps microsteps={getMicroSteps(item)}/>}
       {abstractSyntax && showTransitions &&
         <Column>
           <ShowFiredTransitions firedTransitions={getFiredTransitions(abstractSyntax, item)} />
         </Column>}
       <ShowEnvironment item={item}/>
+      {error && <ShowRuntimeError error={error} />}
     </Column>;
   });
 }
@@ -379,22 +379,16 @@ function MicroSteps({microsteps}: {microsteps: string[]}) {
     backgroundColor: 'var(--statusbar-bg-color)', // <-- just make it stand out a bit
     borderRadius: '4px', // <-- make it look pretty
     marginTop: 4,
-  }}>{microsteps.map((x,i) => <div key={i}>{x}</div>)}</div>;
+  }}>{microsteps.map((x,i) => <div key={i} >{x}</div>)}</div>;
 }
 
 function getMicroSteps(item: DEVSTraceItem<any>) {
-  if (item.newState.bigstep) {
-    return item.newState.bigstep.microsteps as string[];
-  }
-  else {
-    return [];
-  }
+  return item.newState.microsteps as string[] || [];
 }
 
 function ShowEnvironment({item}: {item: DEVSTraceItem<any>}) {
-  if (item.newState.bigstep) {
-    console.log(item.newState.bigstep.environment);
-    return [...item.newState.bigstep.environment.entries()].map(([name, value]) => {
+  if (item.newState.state?.environment) {
+    return [...item.newState.state.environment.entries()].map(([name, value]) => {
       if (name.startsWith('_')) return <div key={name}></div>;
       return <div key={name}>
         {name} = {actionLangValToText(value)}
@@ -405,7 +399,7 @@ function ShowEnvironment({item}: {item: DEVSTraceItem<any>}) {
 }
 
 function getRuntimeError(item: DEVSTraceItem<any>): (RuntimeError | undefined) {
-  const e = item.newState;
+  const e = item.newState.state;
   if (e instanceof RuntimeError) {
     return e;
   }
@@ -420,11 +414,11 @@ const allTransitions = memoizeOne(function allTransitions(ast: Statechart) {
 
 function getFiredTransitions(ast: Statechart, item: DEVSTraceItem<SC2DEVSState>) {
   const all = allTransitions(ast);
-  const newState = item.newState;
+  const newState = item.newState.state;
   if (newState instanceof RuntimeError) {
     return [];
   }
-  const result = all.filter(t => newState.bigstep?.firedTransitions.includes(t.uid));
+  const result = all.filter(t => newState.firedTransitions.includes(t.uid));
   return result;
 }
 
@@ -467,9 +461,9 @@ function isOutputStepHeuristic(trace: DEVSTrace<SC2DEVSState>) {
   const prevItemState = trace.at(-2);
   const prevState = prevItemState?.newState;
   const newState = itemState.newState;
-  if (prevState instanceof RuntimeError || newState instanceof RuntimeError) {
-    return false;
-  }
+  // if (prevState?.state instanceof RuntimeError || newState.state instanceof RuntimeError) {
+  //   return false;
+  // }
   const prevScheduledOutputs = prevState?.outputQueue; // <-- could also be undefined if newState does not have property 'outputQueue'...
   const curOutputs = itemState.kind === "intTransition" && itemState.outputEvents;
   const isOutputStep = jsonDeepEqual(prevScheduledOutputs, curOutputs) // the scheduled outputs of previous SC step are equal to the current outputs

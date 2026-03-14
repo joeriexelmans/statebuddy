@@ -9,8 +9,8 @@ export type RangeWithAnnotation = TextRange & {
 }
 
 export const keywordStyle = {
-  color: 'light-dark( #862f9eff , #efb4ffff)',
-  fill: 'light-dark( #862f9eff , #efb4ffff)',
+  color: 'light-dark( #8800adff , #efb4ffff)',
+  fill: 'light-dark( #8800adff , #efb4ffff)',
   // fontWeight: 'bold',
 } as CSSProperties;
 
@@ -26,13 +26,13 @@ export const refStyle = {
 } as CSSProperties;
 
 export const literalStyle = {
-  color: 'light-dark( #816228ff , #fcc96bff)',
-  fill: 'light-dark( #816228ff , #fcc96bff)',
+  color: 'light-dark( #855b0eff , #fcc96bff)',
+  fill: 'light-dark( #855b0eff , #fcc96bff)',
 } as CSSProperties;
 
 export const commentStyle = {
-  color: 'light-dark( #2d7715ff , #aef597ff)',
-  fill: 'light-dark( #2d7715ff , #aef597ff)',
+  color: 'light-dark( #1f7a00ff , #aef597ff)',
+  fill: 'light-dark( #1f7a00ff , #aef597ff)',
   fontStyle: 'italic',
 } as CSSProperties;
 

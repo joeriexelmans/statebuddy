@@ -164,9 +164,11 @@ function enterChildren(rt: RT_Microstep, parent: ConcreteState, toEnter: Set<str
     else if (childToEnter.length === 0) {
       // also good, enter default child
       if (parent.initial.length === 0) {
+        trace.log("runtime error");
         throw new RuntimeError(`Missing initial state.`, [parent.uid]);
       }
       else if (parent.initial.length > 1) {
+        trace.log("runtime error");
         throw new NonDeterminismError(`Non-determinism: multiple initial states.`, [parent.uid, ...parent.initial.map(i => i[0]), parent.uid]);
       }
       const [[arrow, child]] = parent.initial;
@@ -353,6 +355,7 @@ function attemptSrcState(rt: RT_Microstep, sourceState: AbstractState, event: RT
   // trace(`state ${stateDescription(sourceState)} has ${enabled.length} enabled transitions`);
   if (enabled.length > 0) {
     if (enabled.length > 1) {
+      trace.log("runtime error");
       throw new NonDeterminismError(`Non-determinism: multiple enabled transitions.`,
         [...enabled.map(([_, t]) => t.uid), sourceState.uid]);
     }
@@ -377,6 +380,7 @@ function attemptSrcState(rt: RT_Microstep, sourceState: AbstractState, event: RT
         }
         const newRt = attemptSrcState(rt, activePseudo, undefined, statechart, trace);
         if (newRt === undefined) {
+          trace.log("runtime error");
           throw new RuntimeError("Stuck in choice-state.", [activePseudo.uid]);
         }
         rt = newRt;
