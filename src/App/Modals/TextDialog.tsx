@@ -35,7 +35,6 @@ export function TextDialog(props: {setModal: Dispatch<SetStateAction<ReactElemen
 
   const {cssWidth, cssHeight} = useMemo(() => {
     const lines = text.split('\n');
-    console.log({lines});
     return {
       cssWidth: Math.max(
         50,

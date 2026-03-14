@@ -126,17 +126,17 @@ text.helper:hover {
   fill: var(--text-color);
   font-size: 10pt;
   font-weight: 550;
-  text-anchor: middle;
+  white-space: preserve;
   font-family: 'Droid Sans Mono', monospace;
   stroke: color-mix(in srgb, var(--and-state-bg-color) 60%, var(--or-state-bg-color) 40%);
   stroke-width: 3.5px;
 }
 .draggableText.selected {
   fill: var(--accent-border-color);
-  font-weight: 600;
+  /* font-weight: 600; */
 
-  stroke: rgba(0,0,0,0);
-  stroke-width: 0;
+  stroke: var(--accent-border-color);
+  stroke-width: 1;
 }
 svg.dragging .draggableText.selected {
   fill-opacity: var(--drag-opacity);

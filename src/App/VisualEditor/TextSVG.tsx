@@ -19,6 +19,10 @@ const fade = (ranges: RangeWithAnnotation[]) => {
   return ranges.map(({style, ...r}) => ({style: ({...style, fill: `color-mix(in srgb, ${style.fill} 50%, var(--text-color) 50%)`}), ...r}));
 }
 
+// workaround for not being able to use 'em' and 'ch' CSS units in SVG transformations.
+const em = 79/4;
+const ch = 40/5;
+
 export const TextSVG = memo(function TextSVG(props: {text: Text, selected: boolean, highlight: boolean, onEdit: (text: Text, newText: string) => void, setModal: Dispatch<SetStateAction<ReactElement|null>>, findText: string}) {
 
   let {
@@ -39,6 +43,12 @@ export const TextSVG = memo(function TextSVG(props: {text: Text, selected: boole
     ranges = fade(ranges);
   }
 
+  // We left-align text labels, but we center the whole label around the middle of its bounding box.
+  const lines = props.text.text.split('\n');
+  const maxLineWidth = lines.reduce((max, cur) => Math.max(max, cur.length), 0);
+  const dx = (-maxLineWidth/2)*ch;
+  const dy = (-(lines.length-1)/2)*em;
+
   return <>
     <BoundingBox {...getTextFatBBox(props.text)}/>
     <g
@@ -51,48 +61,62 @@ export const TextSVG = memo(function TextSVG(props: {text: Text, selected: boole
             }
         }} />)
       }}>
-
-      {/* our syntax-highlighted text */}
-      <text
-        className={className}
-        data-uid={props.text.uid}
-        data-parts="text"
-      >
-        <SyntaxHighlightedText
-          text={props.text.text}
-          ranges={ranges}
-          tspan
-          disableTooltips
-        />
-      </text>
-
-      {/* found text highlight - transparent except for the fragments that were found */}
-      {found.length > 0 && <text
-        className={className}
-        data-uid={props.text.uid}
-        data-parts="text"
-        style={{fill: 'transparent', strokeWidth: 0}}
-      >
-        <SyntaxHighlightedText
-          text={props.text.text}
-          ranges={found}
-          tspan
-          disableTooltips
-        />
-      </text>}
-
-      {/* our selection 'helper': invisible except on mouse hover (then draw thick border) */}
-      <text className={styles.helper + ' ' + styles.draggableText}  data-uid={props.text.uid} data-parts="text" style={{whiteSpace: "preserve"}}>
-        <TextWithLineBreaks text={props.text.text}/>
-      </text>
-
-      {/* error - only visible on hover */}
-      {parseError &&
-        <text className={styles.errorHover} y={-20} textAnchor="middle">
-          <tspan>{parseError.message}</tspan>
+      <g transform={`translate(${dx} ${dy})`}>
+        {/* our syntax-highlighted text */}
+        <text
+          className={className}
+          data-uid={props.text.uid}
+          data-parts="text"
+          dominant-baseline="middle"
+        >
+          <SyntaxHighlightedText
+            text={props.text.text}
+            ranges={ranges}
+            tspan
+            disableTooltips
+          />
         </text>
-      }
-    </g></>;
+
+        {/* found text highlight - transparent except for the fragments that were found */}
+        {found.length > 0 && <text
+          className={className}
+          data-uid={props.text.uid}
+          data-parts="text"
+          style={{fill: 'transparent', strokeWidth: 0}}
+          dominant-baseline="middle"
+        >
+          <SyntaxHighlightedText
+            text={props.text.text}
+            ranges={found}
+            tspan
+            disableTooltips
+          />
+        </text>}
+
+        {/* our selection 'helper': invisible except on mouse hover (then draw thick border) */}
+        <text
+          className={styles.helper + ' ' + styles.draggableText}
+          data-uid={props.text.uid}
+          data-parts="text"
+          style={{whiteSpace: "preserve"}}
+          dominant-baseline="middle"
+        >
+          <TextWithLineBreaks text={props.text.text}/>
+        </text>
+
+      </g>
+
+        {/* error - only visible on hover */}
+        {parseError &&
+          <text className={styles.errorHover} y={dy-20} textAnchor="middle">
+            <tspan>{parseError.message}</tspan>
+          </text>
+        }
+
+      {/* text anchor position - useful for debugging */}
+      {props.selected && <circle cx={0} cy={0} r={1.5} fill="red" />}
+    </g>
+  </>;
 }, (prevProps, newProps) => {
   return jsonDeepEqual(prevProps.text, newProps)
     && prevProps.highlight === newProps.highlight
