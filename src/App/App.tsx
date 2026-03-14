@@ -105,7 +105,7 @@ export function App() {
     ...preparedTraces,
     ...Object.fromEntries((propertyResults||[]).flatMap(([result], i) => {
       // non-error property check results are included in the traces that can be plotted:
-      return result && [["p"+i, result]] || [];
+      return result && [["P"+i, result]] || [];
     }))
   }
 

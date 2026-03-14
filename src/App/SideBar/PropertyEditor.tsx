@@ -53,6 +53,7 @@ export function PropertyEditor({state: {properties, activeProperty, showTable}, 
       }
       return <div style={{display: 'flex'}} key={i} className={styles.toolbar}>
         <div>
+          P{i}
           <PropertyStatusIndicator status={(violated === undefined) ? "pending" : (violated ? "nok" : "ok")} />
           <Tooltip tooltip="see in trace (below)" align="left">
             <TwoStateButton active={activeProperty === i} onClick={() => setActiveProperty(i)}>
