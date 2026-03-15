@@ -50,5 +50,5 @@ export const defaultAppState: AppState = {
   },
 
   leftPanelWidth: 200,
-  rightPanelWidth: 200,
+  rightPanelWidth: 300,
 };

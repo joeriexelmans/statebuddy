@@ -1,7 +1,7 @@
 import { useResizeable } from "@/hooks/useResizeable";
 import { Dispatch, SetStateAction, useCallback } from "react";
 
-const thickness = 3;
+const thickness = 4;
 
 export function ResizeHandle({setSize, getDelta, horizontal, minSize, maxSize}: {
   setSize: Dispatch<SetStateAction<number>>,
