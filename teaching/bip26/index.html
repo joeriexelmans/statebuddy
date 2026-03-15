@@ -1,0 +1,265 @@
+<html>
+<head>
+  <title>BIP26 Statecharts Tutorial</title>
+  <style>
+    html {
+      line-height: 1.5em;
+      font-family: 'Roboto', sans-serif;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    article {
+      max-width: 80ch;
+    }
+    details code {
+      background-color: rgb(35, 78, 73);
+      color: white;
+    }
+    code {
+      font-size: 11pt;
+      background-color: #eee;
+      color: black;
+      /* font-weight: bold; */
+    }
+    .explanation {
+      border: 1px solid #eee;
+      padding: 8px;
+      background-color: antiquewhite;
+      color: black;
+    }
+    .task {
+      border: 1px solid #eee;
+      padding: 8px;
+      background-color: powderblue;
+      color: black;
+    }
+    .tip {
+      border: 1px solid #eee;
+      padding: 8px;
+      background-color: cornsilk;
+      color: black;
+    }
+    .full-width {
+      width: 100vw;
+      position: relative;
+      left: 50%;
+      right: 50%;
+      margin-left: -50vw;
+      margin-right: -50vw;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    a[target="_blank"]::after {
+      content: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAQElEQVR42qXKwQkAIAxDUUdxtO6/RBQkQZvSi8I/pL4BoGw/XPkh4XigPmsUgh0626AjRsgxHTkUThsG2T/sIlzdTsp52kSS1wAAAABJRU5ErkJggg==);
+      margin: 0 3px 0 5px;
+    }
+    .columns {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+    }
+    img {
+      max-width: 100%;
+    }
+    .solution {
+      background-color: black;
+      color: white;
+      padding: 8px;
+    }
+    .solution summary:hover {
+      background-color: #333;
+    }
+    summary {
+      font-weight: bold;
+    }
+    details {
+      margin-top: 1em;
+      margin-bottom: 1em;
+    }
+    .screenshot {
+      max-width: min(1200px, 100%);
+    }
+  </style>
+</head>
+<body>
+<article>
+
+<h1>BIP26 Statecharts Tutorial</h1>
+
+<h2>1. Microwave Adventure</h2>
+
+<h3>1.1 Introduction</h3>
+
+<p>You are hired by <b>PARASONIC</b>, a Japanse electronics multinational. You will be working at the microwave department, developing the embedded controller of their <em>latest</em> microwave oven model, the <b>PARA-9000 UltraWave</b>.</p>
+
+<h3>1.2 Running and interacting with a simulation</h3>
+
+<p>Joining the embedded controller team, you learn that they are using the Statecharts language.</p>
+
+<p>The team proudly shows you what they achieved so far:</p>
+
+<div class="full-width" >
+  <img class="screenshot" src="./statebuddy-annotated.png"/>
+
+  <a target="_blank" href="https://deemz.org/public/statebuddy/v2/#eJyNVdtu2zgQ/RWDT1vAgHWxHNtvTZosil23aaPFPhRdgJYmNlGJ1JJUYjfwv3eG1DVOgr4Y5nDm8MyZi54Y5MIqfWe5BbZ+YlrV0nK5K8Cw9bcnVoucrVnApsyq6m+4t+R0YOt5OGVHtg6DxWnKjPgJjT1azv1FEuDFDyEpnOPvadqChWdgSbR6Be0i8Bfz5TO071OWC14qmRNPPO2FwTyO/sC1Vo/DBOIVPmos1+2T4XzhkJMQgYFwvfniwplXq1NPOHoWG8fBIMc+OIkWjT0cRIfPw5No6dyiKBqFx/G8s1N+Fg52mMOceRv+dXCXtbVK/pHqGt6d16d5JIyWAy4XPcRsNtnwnQSrlZwIM/n86QxjkSQeIx5ihOEbIDc3ZyjhomEyjwYoSQ8C0urjZDb5z4Dt0F5Ja7Hw9QmXyZDSSBpVva1MHHuZKSuUWWLcxw9UNSwTFJBZoSS1EbXiXj3eFgpD73lhgHozh1suofhX5HaPYAG2wj325VeoCp65vqVj6sng49pftIaTo+MgyLdUtYENr+h/gRw37qxyoEwcGYQoRZ4XMLySyu6F3BG82O1HUU4GfOWnUiUm5XP4C46mzwENN0PKjb1EgOITL8ETJ7cPsK13jcPJZ3/JNZGlW7c0Ug0wgv4oq9peP2BV8UmLJWjNFrTkxfnN59q+GHFbcGmHhislpS/POJlbrSrQVsDYfH2ArCbvVLs0e6DNlzTtXCt6xnQL0B/d2LneKkWGu4Q/AO1A6dXpbNRcx2psanvK0XeNNWUZMveYyiW7GUhtMkRRvQau8v0g4KWQz0JGnIR8LfJELVx5cY7Xbs+7DAdyuWWJkj5AIyIORuBFSvm2gL72lkQ0FM9rq+6QQFGMNCVOdxaqcRFQe2nECzUjdZrCtGZMKE+bZ9xKB2pu+tYkSKD837oRpuFsIrZa/QD9j0Yi7NGsZ7NCZbzYK2PXqyCgPYVc96iMyLif6iYQx0X7Lq+4MY9K503PA053a2h8QZIQV+87Q8a985YbSFUlMn+09NcxP5Hsbms8sQdhBIbTEiHx6GqrcDuV3QoA/FZpc32o8LsGeS947mfPj9rlpTqM9PtTi3xkuIKiMH00LZPuCWGh9O3XdKvrmQn4kcMUu8epnrRXOz8/tL/h6jv4NxybAXvDI/Nzfu5C/ewW3uuZQTv0k6ZhXwTp1GnWuPv09sjtco+D0y/+KwgM">
+    <b style="font-size: 18pt">OPEN MODEL</b></a>
+</div>
+
+<p>The team demonstrates that they managed to make the magnetron <b>turn on</b> if the START button is pressed.</p>
+
+<p>The steps (in order) are:</p>
+
+<ol>
+  <li><img src="./initexec.png"/> Initialize execution</li>
+  <li><img src="./realtime.png"/> (un)pause (i.e., run in real-time)</li>
+  <li><img src="./startbutton.png"/>Press the START button</li>
+</ol>
+
+<p class="explanation"><b>Explanation:</b> When the START button is pressed, the input event <code>startButton</code> is sent to the Statechart with parameter <code>True</code>. (If the button is released the parameter will be <code>False</code>.) The Statechart has a transition from its initial state (OFF) to the ON-state with label <code>startButton(True)</code>. This transition is enabled whenever that input event (with parameter value <code>True</code>) is received. The transition will fire (because there are no other enabled transitions), leaving the OFF-state and entering the ON-state. When entering the ON-state, the Statechart raises the output event <code>setMagnetron</code>, and the event has a parameter <code>True</code>.</p>
+
+<h3>1.3 Editing the model to fix a mistake</h3>
+
+<p>Now the team tells you about a problem they're having: pressing the STOP button changes the active state of the Statechart to OFF (as expected), but the magnetron is not turning off!</p>
+
+<p class="task"><b>Task 1:</b> Make the magetron switch off when the STOP button is pressed.</p>
+
+<details class="solution">
+  <summary>Solution 1 (poor)</summary>
+  <img src="solutiononoffpoor.png"/>
+  <p>Although it is correct, this is a poor solution: to turn the magnetron off, we must go specifically via the OFF-state. Currently this is not a problem, but it may become one as the model grows.</p>
+</details>
+<details class="solution">
+  <summary>Solution 2 (good)</summary>
+  <img src="solutiononoff.png"/>
+  <p>This solution is better, because we cannot leave the ON-state without turning the magnetron off.</p>
+</details>
+<h3>1.4 Implementing a new feature to comply with regulations</h3>
+
+<p>Now that the START and STOP buttons are working, the boss calls you in his office, and briefs you about a much more serious problem: the company is in big trouble for not complying with <b>government safety regulations</b>.</p>
+
+<p>The safety regulations mandate the magnetron to be <b>always off</b> whenever the microwave <b>door is open</b>. Unable to bribe the government inspector, they ask you to implement it.</p>
+
+<div class="columns">
+  <p>You first verify that this is indeed a problem. Start the simulation, and start the magnetron like before, and try to open the door by clicking on it.</p>
+  <img src="clickdoor.png"/>
+</div>
+
+<div class="columns">
+  <img src="safetyregulationviolation.png">
+  <p>Yikes! This will violate the regulations for sure!</p>
+</div>
+
+<h4>1.4.1 MTL property checking</h4>
+
+<p>Before we start implementing the correct behavior, we first formally capture the safety requirement as an MTL property.</p>
+
+<p class="task">
+  <b>Task 2:</b> Write an MTL property that says "whenever the door is open, the magnetron must be off".
+</p>
+
+<div class="tip">
+  </p>See these <a href="https://github.com/mvcisback/py-metric-temporal-logic/blob/ceb2567ef90f3bd5d7a8d607806a9d2e7021639e/README.md#string-based-api">MTL examples</a> to learn about the syntax we're using.</p>
+  <p>You may assume that the following signals exist:</p>
+  <ul>
+    <li><code>microwave_doorOpen</code></li>
+    <li><code>microwave_magnetronRunning</code></li>
+  </ul>
+</div>
+
+<p>When you're done, you can add the property into StateBuddy. Click "add property":</p>
+
+<div class="full-width">
+  <img src="addproperty.png"/>
+</div>
+
+<p>And type the property into the text box:</p>
+
+<div class="full-width">
+  <img src="addproperty2.png"/>
+</div>
+
+<p>The property-indicator should turn red when the door is open and the magnetron is on.</p>
+
+<div class="full-width">
+  <img class="screenshot" src="propviolated.png"/>
+</div>
+
+<details class="solution">
+  <summary>Solution</summary>
+  There are many ways of writing this property, but probably the easiest one is:
+  <br/>
+  <code>G (microwave_doorOpen -> ~microwave_magnetronRunning)</code>
+</details>
+
+<h4>1.4.2 Implementation</h4>
+
+Now we start implementing.
+
+<p class="task">
+  <b>Task 3:</b> Whenever the microwave door is open, the magnetron must be off! Implement this behavior!
+</p>
+
+<details class="tip">
+  <summary>Tip</summary>
+  <p>This means two things:
+  <br/>
+  (1) if the magnetron is on, and the door is opened, it must switch itself off.
+  <br/>
+  (2) if the door is open, and the START-button is pressed, nothing can happen.</p>
+</p>
+</details>
+
+<details class="solution">
+  <summary>Wrong solution 1</summary>
+  <img src="wrongsolutiondoor.png"/>
+  Good: The magnetron shuts off when the door is opened.
+  <br/>
+  Bad: Can still start the magnetron after opening the door!
+</details>
+
+<details class="solution">
+  <summary>Wrong solution 2</summary>
+  <img src="wrongsolutiondoor2.png"/>
+  Good: Cannot start the magnetron after opening the door.
+  <br/>
+  Bad: The magnetron doesn't shut off when the door is opened!
+</details>
+
+<details class="tip">
+  <summary>Tip</summary>
+  <p>Use hierarchical states!</p>
+</details>
+
+
+<details class="solution">
+  <summary>Solution 1 (poor)</summary>
+  <img src="solutiondoor.png"/>
+  Good: Safe behavior.
+  <br/>
+  Meh: Duplicated transition to catch doorOpen...
+</details>
+
+
+<details class="solution">
+  <summary>Solution 2 (good)</summary>
+  <img src="solutiondoor2ugly.png"/>
+  Good: Safe behavior.
+  <br/>
+  Good: No duplication, easy to comprehend.
+  <br/>
+  <p><b>Note:</b> an AND-state with only one child can be ommitted, for an even better solution:</p>
+  <img src="solutiondoor2.png"/>
+</details>
+
+<h3>1.5 Epilogue</h3>
+
+<p>The boss pets you on the shoulder, and you feel blissful, having saved the day at PARASONIC.</p>
+
+</article>
+</body>
+</html>
+
