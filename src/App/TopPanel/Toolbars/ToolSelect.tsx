@@ -56,6 +56,30 @@ export const ToolSelect = memo(function ToolSelect({mouseMap, setMouseMap, showK
     {keys: ["h"], action: () => setRightMouseMode(mode => mode === "shallow" ? "deep" : "shallow")},
   ]);
 
+  // for power users ... disabled!
+  const mapAnythingToAnything = (e: MouseEvent, m: ToolMode) => {
+    if (e.button === 0)
+      setLeftMouseMode(oldMode => oldMode === m ? "nothing" : m);
+    else if (e.button === 1)
+      setMiddleMouseMode(oldMode => oldMode === m ? "nothing" : m);
+    else if (e.button === 2)
+      setRightMouseMode(oldMode => oldMode === m ? "nothing" : m);
+  };
+
+  // for normal people...
+  const mapConservatively = (e: MouseEvent, m: ToolMode) => {
+    if (e.button === 0 || e.button === 2) {
+      if (m !== "select") {
+        setRightMouseMode(oldMode => oldMode === m ? "nothing" : m);
+      }
+    }
+    else if (e.button === 1) {
+      if (m !== "select") {
+        setMiddleMouseMode(oldMode => oldMode === m ? "nothing" : m);
+      }
+    }
+  }
+
   const KeyInfo = showKeys ? KeyInfoVisible : KeyInfoHidden;
   return <>
     {insertModes.map(([m, hint, buttonTxt, keyInfo], i) => {
@@ -74,14 +98,7 @@ export const ToolSelect = memo(function ToolSelect({mouseMap, setMouseMap, showK
         <Tooltip tooltip={hint + extraToolTip}>
           <TwoStateButton
             active={rightMouseMode===m || leftMouseMode===m || middleMouseMode === m}
-            onMouseUp={e => {
-              if (e.button === 0)
-                setLeftMouseMode(oldMode => oldMode === m ? "nothing" : m);
-              else if (e.button === 1)
-                setMiddleMouseMode(oldMode => oldMode === m ? "nothing" : m);
-              else if (e.button === 2)
-                setRightMouseMode(oldMode => oldMode === m ? "nothing" : m);
-            }}
+            onMouseUp={e => mapConservatively(e, m)}
             onContextMenu={e => {e.preventDefault()}}
           >
             {buttonTxt}
