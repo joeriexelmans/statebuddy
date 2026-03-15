@@ -8,8 +8,8 @@ export type PropertyTrace = [number, boolean][]; // list of tuples [timestamp, t
 
 // The successful evaluation of a property is again a trace (of booleans).
 export type PropertyCheckResult =
-    [PropertyTrace, null] // <-- success
-  | [null, string]; // <-- error message
+    [PropertyTrace, undefined] // <-- success
+  | [undefined, string]; // <-- error message
 
 // Bunch of traces in a format that the property checker can deal with
 export type PreparedTraces = { [name: string]: PropertyTrace };

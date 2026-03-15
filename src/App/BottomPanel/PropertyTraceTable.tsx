@@ -4,7 +4,7 @@ import TextRotateUpIcon from '@mui/icons-material/TextRotateUp';
 import { memo, useEffect, useState } from "react";
 import { Tooltip } from "../Components/Tooltip";
 import { TwoStateButton } from "../Components/TwoStateButton";
-import { PropertyStatusIndicator, StatusType } from "../SideBar/PropertyStatusIndicator";
+import { PropertyStatusIndicator } from "../SideBar/PropertyStatusIndicator";
 import { PreparedTraces, prepareTraces, PropertyCheckResult } from '../SideBar/prepare_trace';
 import styles from "@/App/App.module.css";
 import { restoreTrace } from '@/devs/serialize_trace';
@@ -15,6 +15,7 @@ import { Statechart } from '@/statecharts/abstract_syntax';
 import { DEVSTrace } from '@/devs/trace';
 import { SavedTraces } from '../SideBar/Traces';
 import { objectsEqual } from '@/util/util';
+import { StatusType } from '../Components/StatusIndicator';
 
 export const PropertyTraceTable = memo(function PropertyTraceTable({
   abstractSyntax,
@@ -28,7 +29,7 @@ export const PropertyTraceTable = memo(function PropertyTraceTable({
 }) {
   const [rotateText, setRotateText] = useState(false);
 
-  const [results, setResults] = useState<StatusType[][]|null>(null);
+  const [results, setResults] = useState<StatusType[][]|undefined>(undefined);
 
   useEffect(() => {
     setResults(() => {
@@ -45,7 +46,7 @@ export const PropertyTraceTable = memo(function PropertyTraceTable({
                   return results?.with(i,
                     results[i].with(j, ok ? "ok" : "nok"));
                 }
-                return null;
+                return;
               });
             }
           });
@@ -73,7 +74,7 @@ export const PropertyTraceTable = memo(function PropertyTraceTable({
           {properties.map((property, i) => <tr>
             <td>{property}</td>
             {traces.map(([name, trace], j) => <td key={j}>
-              <PropertyStatusIndicator status={results===null
+              <PropertyStatusIndicator status={results===undefined
                 ? "pending"
                 : (results[i]?.[j] || "pending")}
               />

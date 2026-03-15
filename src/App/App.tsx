@@ -5,8 +5,6 @@ import { PropsWithChildren, ReactElement, useCallback, useMemo, useState } from 
 import { useDisplayTime } from "@/hooks/useDisplayTime";
 import { useResizeable } from "@/hooks/useResizeable";
 import { initialEditorState } from "@/statecharts/concrete_syntax";
-import { RuntimeError } from "@/statecharts/interpreter";
-import { TraceableError } from "@/statecharts/parser";
 import { downloadObjectAsJson } from "@/util/download_json";
 import { formatDateTime } from "@/util/util";
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
@@ -32,12 +30,16 @@ import { About } from "./Modals/About";
 import { OpenFile } from "./Modals/OpenFile";
 import { ModalOverlay } from "./Overlays/ModalOverlay";
 import { prepareTraces } from "./SideBar/prepare_trace";
-import { SideBar } from "./SideBar/SideBar";
+import { defaultSideBarState, SideBar } from "./SideBar/SideBar";
 import { TopPanel } from "./TopPanel/TopPanel";
 import { DebugContext } from "./VisualEditor/context/DebugContext";
 import { useMouse } from "./VisualEditor/hooks/useMouse";
 import { VisualEditor } from "./VisualEditor/VisualEditor";
 import { usePropertyCheck } from "./hooks/usePropertyCheck";
+import { Panel } from "./Panel/Panel";
+import { GlobalProps } from "./Panel/PanelItem";
+import { ResizeHandle } from "./Panel/ResizeHandle";
+import { SizedPanel } from "./Panel/SizedPanel";
 
 export function App() {
   // The entire persisted application state (minus the visual editor state)
@@ -91,9 +93,6 @@ export function App() {
     ) || {};
   }, [simulator.trace, appState.sideBar.plantsState, abstractSyntax]);
 
-  const [sideBarResizing, beginSideBarResize] = useResizeable(e =>
-    setters.setSidePanelWidth(width => width - e.movementX));
-
   const pyodide = usePyodide();
 
   const propertyResults = usePropertyCheck(
@@ -112,10 +111,12 @@ export function App() {
   appState.sideBar.propertyEditor.showTable
 
   const setSideBar = makePartialSetter(setAppState, "sideBar");
-  const setPropertyEditor = makePartialSetter(setSideBar, "propertyEditor");
+  const {setPlantsState, setPropertyEditor, setTraces, setMqtt} = makeAllSetters(
+    setSideBar,
+    // @ts-ignore
+    Object.keys(appState.sideBar));
   const setShowTable = makePartialSetter(setPropertyEditor, "showTable");
   const setProperties = makePartialSetter(setPropertyEditor, "properties");
-  const setTraces = makePartialSetter(setSideBar, "traces");
   const setSavedTraces = makePartialSetter(setTraces, "savedTraces");
 
   const hidePropertyTable = useCallback(() => setShowTable(false), [setShowTable]);
@@ -145,13 +146,40 @@ export function App() {
 
   const debugSetters = makeAllSetters(setters.setDebug, Object.keys(appState.debug) as (keyof DebugState)[]);
 
-  return <div className={styles.App} style={{cursor: sideBarResizing ? 'col-resize' : undefined}}>
+  
+  const globalProps: GlobalProps = {
+    abstractSyntax,
+    simulator,
+    propertyResults,
+    mqtt: appState.sideBar.mqtt,
+    plantsState: appState.sideBar.plantsState,
+    propertyEditor: appState.sideBar.propertyEditor,
+    traces: appState.sideBar.traces,
+    setMqtt,
+    setPlantsState,
+    setPropertyEditor,
+    setTraces,
+  };
+
+  return <div className={styles.App}>
     <ModalOverlay modal={modal} setModal={setModal}>
       {/* top-to-bottom: everything -> bottom panel */}
       <div className={styles.stackVertical} style={{height:'100%'}}>
 
         {/* left-to-right: main -> sidebar */}
         <div className={styles.stackHorizontal} style={{flexGrow:1, overflow: "auto"}}>
+
+          {/* Left panel */}
+          <SizedPanel width={appState.leftPanelWidth}>
+            <Panel
+              state={appState.leftPanel}
+              setState={setters.setLeftPanel}
+              globalProps={globalProps}
+            />
+          </SizedPanel>
+          <ResizeHandle
+            getDelta={e => e.movementX}
+            setSize={setters.setLeftPanelWidth}/>
 
           {/* top-to-bottom: top bar, editor */}
           <div className={styles.stackVertical} style={{flexGrow:1, overflow: "hidden"}}>
@@ -237,41 +265,31 @@ export function App() {
 
           </div>
 
-          {/* handle for resizing */}
-          <div style={{
-            flex: '0 0 content',
-          }}>
-            <div
-              style={{
-                height: '100%',
-                backgroundColor: sideBarResizing ? 'var(--tooltip-bg-color)' : 'var(--separator-color)',
-                width: 2,
-                cursor: 'col-resize',
-              }}
-              onMouseDown={beginSideBarResize}
-            />
-          </div>
-
           {/* Right: sidebar */}
-          <div style={{
-            flex: '0 0 content',
-            overflowY: "auto",
-            overflowX: "hidden",
-            flexBasis: appState.sidePanelWidth,
-            maxWidth: '75vw',
-            minWidth: 20,
-          }}>
-            <div className={styles.stackVertical} style={{height:'100%'}}>
-              <SideBar
-                abstractSyntax={abstractSyntax}
-                state={appState.sideBar}
-                setState={setters.setSideBar}
-                coupledState={simulator.currentTraceItem?.newState}
-                simulator={simulator}
-                propertyResults={propertyResults}
-              />
-            </div>
-          </div>
+          {/* <ResizeHandle
+            getDelta={e => -e.movementX}
+            setSize={setters.setSidePanelWidth}
+          />
+          <SizedPanel width={appState.sidePanelWidth}>
+            <SideBar
+              abstractSyntax={abstractSyntax}
+              state={appState.sideBar}
+              setState={setters.setSideBar}
+              simulator={simulator}
+              propertyResults={propertyResults}
+            />
+          </SizedPanel> */}
+          <ResizeHandle
+            getDelta={e => -e.movementX}
+            setSize={setters.setRightPanelWidth}
+          />
+          <SizedPanel width={appState.rightPanelWidth}>
+            <Panel
+              state={appState.rightPanel}
+              setState={setters.setRightPanel}
+              globalProps={globalProps}
+            />
+          </SizedPanel>
         </div>
 
         {/* Bottom panel */}

@@ -10,16 +10,18 @@ import { Plant } from "../Plant/Plant";
 import { Tooltip } from "../Components/Tooltip";
 import { RaisedEvent } from "@/statecharts/runtime_types";
 import { DEVSTrace } from "@/devs/trace";
+import { useCallback } from "react";
 
 type ShowPlantsProps = WithSetters<{
   plantsState: PlantsState,
 }> & {
   speed: number;
   coupledState?: CoupledState,
-  onRaise: (event: RaisedEvent) => void,
+  onRaise: (bagOfInputs: RaisedEvent[]) => void,
 };
 
 export function ShowPlants({plantsState, setPlantsState, speed, coupledState, onRaise}: ShowPlantsProps) {
+  const raiseOneEvent = useCallback((e: RaisedEvent) => onRaise([e]), [onRaise]);
   return plantsState.plants.map(({id, name, type}, i) =>
     <ShowPlant key={id} {...{i, id, name, type,
       onNameChange: (newName: string) => setPlantsState(ps => ({
@@ -29,7 +31,7 @@ export function ShowPlants({plantsState, setPlantsState, speed, coupledState, on
       plant: statebuddyPlants[type]!.plant,
       speed,
       currentState: coupledState && coupledState[id],
-      onRaise,
+      onRaise: raiseOneEvent,
     }}/>);
 }
 
@@ -42,7 +44,7 @@ export function ShowPlant({id, name, type, onDelete, onNameChange, plant, speed,
   plant: Plant<any, UniversalPlantState>,
   speed: number,
   currentState?: DEVSTrace<any>,
-  onRaise: (event: RaisedEvent) => void,
+  onRaise: (e: RaisedEvent) => void,
 }) {
   const state = plant.cleanupState(currentState?.at(-1)?.newState || plant.execution.initial());
   return <div key={id}>

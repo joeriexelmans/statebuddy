@@ -1,5 +1,5 @@
 import BoltIcon from '@mui/icons-material/Bolt';
-import { memo, useEffect } from "react";
+import { memo, useCallback, useEffect } from "react";
 import { usePersistentState } from "../../hooks/usePersistentState";
 import { ConcreteState, stateDescription, Transition, UnstableState } from "../../statecharts/abstract_syntax";
 import { Action, EventTrigger, Expression, TransitionLabel } from "../../statecharts/label_ast";
@@ -21,6 +21,7 @@ import { Overlay } from '../Components/Overlay';
 import { SyntaxHighlightedText } from '../VisualEditor/SyntaxHiglightedText';
 import { codeStyle } from '../Modals/TextDialog';
 import { useDetectChange } from '@/hooks/useDetectChange';
+import { SimulatorStuff } from '../hooks/useSimulator';
 
 export function ShowTransition(props: {transition: Transition}) {
   return <>➝ {stateDescription(props.transition.tgt)}</>;
@@ -66,8 +67,12 @@ export const ShowAST = memo(function ShowASTx(props: {root: ConcreteState | Unst
 });
 
 
-export const ShowInputEvents = memo(function ShowInputEvents({inputEvents, onRaise, disabled}: {inputEvents: EventTrigger[], onRaise: (eventName: string, param: any) => void, disabled: boolean}) {
+export const ShowInputEvents = memo(function ShowInputEvents({inputEvents, simulator}: {inputEvents: EventTrigger[], simulator: SimulatorStuff}) {
   const [inputParams, setInputParams] = usePersistentState<{[eventName:string]: string}>("inputParams", {});
+
+  const raiseOneEvent = useCallback((e: RaisedEvent) => simulator.simulatorCallbacks.onRaise([e]), [simulator.simulatorCallbacks.onRaise]);
+
+  const disabled = (simulator.trace === undefined);
 
   const raiseHandlers = inputEvents.map(({event}) => {
     return () => {
@@ -86,7 +91,7 @@ export const ShowInputEvents = memo(function ShowInputEvents({inputEvents, onRai
         console.warn(e);
         return;
       }
-      onRaise(event, param);
+      raiseOneEvent({name: event, param});
     };
   });
 

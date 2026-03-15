@@ -21,9 +21,7 @@ import { whoMadeExtTransition, whoMadeIntTransition } from "@/devs/coupled_trace
 import NotInterestedIcon from '@mui/icons-material/NotInterested';
 import { actionLangValToText } from "@/statecharts/actionlang_prettyprinter";
 import { StatusType } from "../Components/StatusIndicator";
-
-
-type PropertyTrace = [number, boolean][];
+import { PropertyTrace } from "./prepare_trace";
 
 type TraceProps = WithSetters<{
   currentTrace: StateBuddyTraceState,
@@ -35,7 +33,7 @@ type TraceProps = WithSetters<{
   ast: Statechart,
 
   // result of checking a property is a trace of booleans which we display in the trace
-  propertyTrace: PropertyTrace | null,
+  propertyTrace?: PropertyTrace,
   plantsState: PlantsState,
 }
 
