@@ -29,6 +29,7 @@ export type TracesState = {
   showPlantTrace: boolean,
 
   savedTraces: SavedTraces,
+  height: number,
 }
 
 export const defaultTracesState: TracesState = {
@@ -38,6 +39,7 @@ export const defaultTracesState: TracesState = {
   showPlantTrace: false,
 
   savedTraces: [],
+  height: 300,
 }
 
 type TracesProps = WithSetters<{
@@ -57,8 +59,8 @@ export function Traces({
   plantsState,
   activePropertyTrace,
 }: TracesProps) {
-  const {savedTraces, showMicroSteps, showPlantTrace, showTransitions, autoScroll} = state;
-  const {setSavedTraces, setAutoScroll, setShowMicroSteps, setShowPlantTrace, setShowTransitions} = makeAllSetters(setState, Object.keys(defaultTracesState) as (keyof TracesState)[]);
+  const {savedTraces, showMicroSteps, showPlantTrace, showTransitions, autoScroll, height} = state;
+  const {setSavedTraces, setAutoScroll, setShowMicroSteps, setShowPlantTrace, setShowTransitions, setHeight} = makeAllSetters(setState, Object.keys(defaultTracesState) as (keyof TracesState)[]);
   const {trace, time} = simulator;
 
   const onSaveTrace = useCallback(() => {
@@ -70,8 +72,6 @@ export function Traces({
       ])
     }
   }, [trace, setSavedTraces]);
-
-  const [height, setHeight] = useState(300);
   
   return <div style={{display: 'flex', flexGrow: 1, flexDirection: 'column'}}>
     <div>
