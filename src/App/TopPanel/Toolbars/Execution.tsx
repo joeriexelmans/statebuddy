@@ -5,14 +5,10 @@ import { Tooltip } from '@/App/Components/Tooltip';
 import { KeyInfoHidden, KeyInfoVisible } from '../KeyInfo';
 import { infinityIfUndefined, SimulatorStuff } from '@/App/hooks/useSimulator';
 import { RunPauseButtons } from './RunPauseButtons';
-import { WithSetters } from '@/App/makePartialSetter';
 import { SpeedControl } from './SpeedControl';
 
 // icons
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
-import CachedIcon from '@mui/icons-material/Cached';
-import StopIcon from '@mui/icons-material/Stop';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
 import SkipNextIcon from '@mui/icons-material/SkipNext';
 import FlareIcon from '@mui/icons-material/Flare';
@@ -67,14 +63,14 @@ export function Execution({simulator, showKeys, refreshDisplayTime, displayTime}
     {/* init / clear */}
     <Toolbar>
       <KeyInfo keyInfo={<kbd>I</kbd>}>
-        <Tooltip tooltip="(re)initialize simulation">
+        <Tooltip tooltip="(re)initialize simulation" align='left'>
           <button onClick={simulatorCallbacks.onInit} >
             <FlareIcon fontSize="small"/>
           </button>
         </Tooltip>
       </KeyInfo>
       <KeyInfo keyInfo={<kbd>C</kbd>}>
-        <Tooltip tooltip="clear the simulation">
+        <Tooltip tooltip="clear the simulation" align='left'>
           <button onClick={simulatorCallbacks.onClear} disabled={!currentTraceItem}>
             <ClearIcon fontSize="small"/>
           </button>

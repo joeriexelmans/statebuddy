@@ -183,11 +183,12 @@ export const SideBar = memo(function SideBar(props: SideBarProps) {
       {/* MQTT */}
       <PersistentDetails state={showMQTT} setState={setShowMQTT}>
         <summary>MQTT</summary>
-        <MQTT
+        {abstractSyntax && <MQTT
           state={state.mqtt}
           setState={setMqtt}
           simulator={simulator}
-        />
+          abstractSyntax={abstractSyntax}
+        />}
       </PersistentDetails>
 
       {/* Properties */}

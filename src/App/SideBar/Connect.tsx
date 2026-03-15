@@ -13,7 +13,7 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { DoubleClickButton } from "../Components/DoubleClickButton";
 import { Tooltip } from "../Components/Tooltip";
 import { statebuddyPlants } from "../plants";
-import { jsonDeepEqual, objectsEqual } from "@/util/util";
+import { objectsEqual } from "@/util/util";
 import { usePersistentState } from "@/hooks/usePersistentState";
 
 type ConnectProps = {

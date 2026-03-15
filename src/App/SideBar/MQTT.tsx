@@ -22,6 +22,9 @@ import { DoubleClickButton } from "../Components/DoubleClickButton";
 import { ClickToCopy } from "../Components/ClickToCopy";
 import { useKicker } from "@/hooks/useKicker";
 import { StatusType, StatusIndicator, FlickeringStatusIndicator } from "../Components/StatusIndicator";
+import { Statechart } from "@/statecharts/abstract_syntax";
+import { EventTrigger } from "@/statecharts/label_ast";
+import traceStyles from "./Trace.module.css";
 
 export type MQTTState = {
   on: boolean;
@@ -79,16 +82,17 @@ export const defaultMQTTState: MQTTState = {
 }
 
 type MQTTProps = WithSetters<{
-  state: MQTTState;
+  state: MQTTState; // <-- the user-configurable MQTT setup
 }> & {
-  simulator: SimulatorStuff;
+  simulator: SimulatorStuff;  // <-- needed for subscribing to output events and raising input events
+  abstractSyntax: Statechart; // <-- needed for list of in/out events
 };
 
 // const us = generateRandomHexString(128);
 
 const flickerDuration = 60; // ms
 
-export function MQTT({state, setState, simulator}: MQTTProps) {
+export function MQTT({state, setState, simulator, abstractSyntax}: MQTTProps) {
   const {on, brokerUrl, topics, baseTopic, authentication, user, password, seePassword, enableCA, ca} = state;
   const setters = makeAllSetters(setState, Object.keys(defaultMQTTState) as (keyof MQTTState)[]);
 
@@ -97,7 +101,7 @@ export function MQTT({state, setState, simulator}: MQTTProps) {
 
   // for convenience, we store brokers/topics that we successfully connected/subscribed to in the past in localStorage 
   const [knownBrokers, setKnownBrokers] = usePersistentState<string[]>("known-brokers", []);
-  const [knownTopics, setKnownTopics] = usePersistentState<string[]>("known-topics", []);
+  // const [knownTopics, setKnownTopics] = usePersistentState<string[]>("known-topics", []);
 
   // Connect to MQTT...
   const client = useDisposable<MqttClient>(setClient => {
@@ -292,11 +296,7 @@ export function MQTT({state, setState, simulator}: MQTTProps) {
           style={{flexGrow: 1}}
           value={baseTopic}
           onChange={e => setters.setBaseTopic(e.target.value)}
-          list="known-topics"
         />
-        <datalist id="known-topics">
-          {knownTopics.map(topic => <option key={topic} value={topic}/>)}
-        </datalist>
       </label>
     </Toolbar>
 
@@ -310,6 +310,7 @@ export function MQTT({state, setState, simulator}: MQTTProps) {
         baseTopic={baseTopic}
         onDelete={() => setters.setTopics(ts => ts.toSpliced(i, 1))}
         simulator={simulator}
+        abstractSyntax={abstractSyntax}
       />)}
 
     <button onClick={() => setters.setTopics(ts => [...ts, defaultTopic])}>
@@ -399,7 +400,7 @@ function ScOutEventSubscriptionView({simulator, fullTopic, client, clientStatus,
   </ClickToCopy>;
 }
 
-function TopicView({topic, setTopic, client, clientStatus, baseTopic, onDelete, simulator}: WithSetters<{topic: TopicConfig}> & {client: MqttClient|null, clientStatus: StatusType, baseTopic: string, onDelete: () => void, simulator: SimulatorStuff}) {
+function TopicView({topic, setTopic, client, clientStatus, baseTopic, onDelete, simulator, abstractSyntax}: WithSetters<{topic: TopicConfig}> & {client: MqttClient|null, clientStatus: StatusType, baseTopic: string, onDelete: () => void, simulator: SimulatorStuff, abstractSyntax: Statechart}) {
   const setters = makeAllSetters(setTopic, Object.keys(defaultTopic) as (keyof TopicConfig)[]);
   const fullPrefix = baseTopic+topic.prefix;
 
@@ -433,6 +434,7 @@ function TopicView({topic, setTopic, client, clientStatus, baseTopic, onDelete, 
             <InputMapping
               mapping={m}
               setMapping={setMapping}
+              events={abstractSyntax.inputEvents}
             />
           </Toolbar>
           <Toolbar style={{alignItems: 'start', flexGrow: 1}}>
@@ -470,6 +472,7 @@ function TopicView({topic, setTopic, client, clientStatus, baseTopic, onDelete, 
             <OutputMapping
               mapping={m}
               setMapping={setMapping}
+              events={[...abstractSyntax.outputEvents].map(e => ({event: e, kind: "event"}))}
             />
             <ScOutEventSubscriptionView
               client={client}
@@ -507,7 +510,7 @@ function TopicView({topic, setTopic, client, clientStatus, baseTopic, onDelete, 
   </fieldset>;
 }
 
-function InputMapping({mapping, setMapping}: WithSetters<{mapping: Event2MQTTMapping}>) {
+function InputMapping({mapping, setMapping, events}: WithSetters<{mapping: Event2MQTTMapping}> & {events: EventTrigger[]}) {
   return <Toolbar style={{flex: '1 1 60px', gap: 6}}>
     <input
       style={{flex: '1 1 60px', width: 60}}
@@ -516,31 +519,49 @@ function InputMapping({mapping, setMapping}: WithSetters<{mapping: Event2MQTTMap
       onChange={(e) => setMapping(m => ({...m, requestName: e.target.value}))}
     />
     →
-    <input
+    {/* <input
       style={{flex: '1 1 60px', width: 60}}
-      placeholder="input event"
+      placeholder="event"
       value={mapping.eventName}
       onChange={(e) => setMapping(m => ({...m, eventName: e.target.value}))}
-    />
+    /> */}
+    <select
+      className={traceStyles.inputEvent}
+      style={{flex: '1 1 60px', width: 60}}
+      value={mapping.eventName}
+      onChange={(e) => setMapping(m => ({...m, eventName: e.target.value}))}
+    >
+      <option value=""></option>
+      {events.map(e => <option key={e.event }value={e.event}>↘{e.event}</option>)}
+    </select>
   </Toolbar>;
 }
 
-function OutputMapping({mapping, setMapping}: WithSetters<{mapping: Event2MQTTMapping}>) {
+function OutputMapping({mapping, setMapping, events}: WithSetters<{mapping: Event2MQTTMapping}> & {events: EventTrigger[]}) {
   return <Toolbar style={{flex: '1 1 60px', gap: 6}}>
-      <input
-        style={{flex: '1 1 60px', width: 60}}
-        placeholder="output event"
-        value={mapping.eventName}
-        onChange={(e) => setMapping(m => ({...m, eventName: e.target.value}))}
-      />
-      →
-      <input
-        style={{flex: '1 1 60px', width: 60}}
-        placeholder="topic suffix"
-        value={mapping.requestName}
-        onChange={(e) => setMapping(m => ({...m, requestName: e.target.value}))}
-      />
-    </Toolbar>;
+    <select
+      className={traceStyles.outputEvent}
+      style={{flex: '1 1 60px', width: 60}}
+      value={mapping.eventName}
+      onChange={(e) => setMapping(m => ({...m, eventName: e.target.value}))}
+    >
+      <option value=""></option>
+      {events.map(e => <option key={e.event} value={e.event}>↗{e.event}</option>)}
+    </select>
+    {/* <input
+      style={{flex: '1 1 60px', width: 60}}
+      placeholder="output event"
+      value={mapping.eventName}
+      onChange={(e) => setMapping(m => ({...m, eventName: e.target.value}))}
+    /> */}
+    →
+    <input
+      style={{flex: '1 1 60px', width: 60}}
+      placeholder="topic suffix"
+      value={mapping.requestName}
+      onChange={(e) => setMapping(m => ({...m, requestName: e.target.value}))}
+    />
+  </Toolbar>;
 }
 
 function Payload({payload, setPayload, placeholder}: WithSetters<{payload: string}> & {placeholder: string}) {
@@ -550,7 +571,7 @@ function Payload({payload, setPayload, placeholder}: WithSetters<{payload: strin
       fontFamily: "'Droid Sans Mono', monospace",
       fontSize: '10pt',
       resize: 'vertical',
-      height: '2em',
+      height: (payload.split('\n').length*1.5) + 0.5 + 'em',
     }}
     placeholder={placeholder}
     value={payload}
