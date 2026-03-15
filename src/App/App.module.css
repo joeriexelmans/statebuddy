@@ -24,7 +24,7 @@
   --inactive-bg-color: light-dark(#f7f7f7, rgb(29, 29, 29));
   --inactive-fg-color: light-dark(grey, rgb(165, 165, 165));
   --button-bg-color: light-dark(#e3e8f0, rgb(44, 50, 63));
-  --textbox-bg-color: light-dark(white, rgb(36, 41, 40));
+  --textbox-bg-color: light-dark(white, rgb(37, 44, 43));
   --modal-backdrop-color: light-dark(rgba(200,200,200,0.7), rgba(23, 22, 32, 0.849));
   --status-inactive-color: light-dark(grey, grey);
   --status-ok-color: light-dark(rgb(70, 160, 70), rgb(105, 199, 105));
@@ -68,7 +68,7 @@
   color: inherit;
 }
 
-.App input {
+.App input, .App textarea {
   background-color: var(--textbox-bg-color);
   border: 1px solid var(--separator-color);
 }
@@ -189,7 +189,9 @@
 }
 /* input elements have rounded corners by default */
 .toolbar button,
-.toolbar input:not([type=checkbox]) {
+.toolbar input:not([type=checkbox]),
+.toolbar textarea
+{
   height: 26px;
 
   border-top-right-radius: var(--button-roundedness);

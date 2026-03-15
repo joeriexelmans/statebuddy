@@ -1,23 +1,24 @@
 import mqtt, { IClientOptions, MqttClient } from "mqtt";
 import { useCallback, useEffect, useState } from "react";
 
-import { RaisedEvent } from "@/statecharts/runtime_types";
-import { generateRandomHexString, myPureDeepAssign } from "@/util/util";
-import { Tooltip } from "../Components/Tooltip";
-import { useDisposable } from "../hooks/useDisposable";
-import { SimulatorStuff } from "../hooks/useSimulator";
-import { makeAllSetters, makePartialArraySetter, WithSetters } from "../makePartialSetter";
-import { Toolbar } from "../TopPanel/Toolbar";
-import { usePersistentState } from "@/hooks/usePersistentState";
-import { TwoStateButton } from "../Components/TwoStateButton";
-import { DoubleClickButton } from "../Components/DoubleClickButton";
-
 // icons
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import ContentPasteIcon from '@mui/icons-material/ContentPaste';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import AddIcon from '@mui/icons-material/Add';
+import JavascriptIcon from '@mui/icons-material/Javascript';
+
+import { RaisedEvent } from "@/statecharts/runtime_types";
+import { generateRandomHexString, myPureDeepAssign } from "@/util/util";
+import { Tooltip } from "../Components/Tooltip";
+import { useDisposable } from "../hooks/useDisposable";
+import { SimulatorStuff } from "../hooks/useSimulator";
+import { makeAllSetters, makePartialArraySetter, makePartialSetter, WithSetters } from "../makePartialSetter";
+import { Toolbar } from "../TopPanel/Toolbar";
+import { usePersistentState } from "@/hooks/usePersistentState";
+import { TwoStateButton } from "../Components/TwoStateButton";
+import { DoubleClickButton } from "../Components/DoubleClickButton";
 import { ClickToCopy } from "../Components/ClickToCopy";
 import { useKicker } from "@/hooks/useKicker";
 import { StatusType, StatusIndicator, FlickeringStatusIndicator } from "../Components/StatusIndicator";
@@ -83,8 +84,9 @@ type MQTTProps = WithSetters<{
   simulator: SimulatorStuff;
 };
 
-const us = generateRandomHexString(128);
+// const us = generateRandomHexString(128);
 
+const flickerDuration = 60; // ms
 
 export function MQTT({state, setState, simulator}: MQTTProps) {
   const {on, brokerUrl, topics, baseTopic, authentication, user, password, seePassword, enableCA, ca} = state;
@@ -92,7 +94,6 @@ export function MQTT({state, setState, simulator}: MQTTProps) {
 
   const [status, setStatus] = useState<StatusType>("pending");
   const [error, setError] = useState("");
-  const [kicked, kick] = useKicker(80);
 
   // for convenience, we store brokers/topics that we successfully connected/subscribed to in the past in localStorage 
   const [knownBrokers, setKnownBrokers] = usePersistentState<string[]>("known-brokers", []);
@@ -144,7 +145,6 @@ export function MQTT({state, setState, simulator}: MQTTProps) {
   // MQTT message handler feeds received messages into our simulation
   const handler = useCallback((recvTopic: string, message: Buffer) => {
     console.log('received', recvTopic);
-    kick();
     for (const topic of topics) {
       const fullPrefix = baseTopic + topic.prefix;
       for (const im of topic.inputMappings) {
@@ -167,17 +167,6 @@ export function MQTT({state, setState, simulator}: MQTTProps) {
         }
       }
     }
-    if (recvTopic === baseTopic) {
-      try {
-        const {sender, bagOfEvents} = JSON.parse(message.toString());
-        console.log('decoded:', {sender, bagOfEvents});
-        if (sender !== us) {
-          simulator.simulatorCallbacks.onRaise(bagOfEvents);
-        }
-      } catch (e) {
-        console.warn('failed to parse incoming MQTT message as event', message);
-      }
-    }
   }, [simulator.simulatorCallbacks.onRaise, topics]);
 
   // Register our MQTT message handler
@@ -187,45 +176,6 @@ export function MQTT({state, setState, simulator}: MQTTProps) {
       client?.off("message", handler);
     };
   }, [status, client, handler]);
-
-  // Statechart output event listener publishes MQTT messages
-  const outEventListener = useCallback((bagOfEvents: RaisedEvent[]) => {
-    if (client) {
-      for (const event of bagOfEvents) {
-        for (const topic of topics) {
-          const fullPrefix = baseTopic + topic.prefix;
-          for (const om of topic.outputMappings) {
-            if (om.eventName === event.name) {
-              const fullTopic = fullPrefix + om.requestName;
-              const fn = new Function(`return ${om.payload}`)();
-              const payload = JSON.stringify(fn(event.param));
-              console.log('publishing message\n', fullTopic, '\n', payload);
-              client.publish(fullTopic, payload);
-              kick();
-            }
-          }
-        }
-      }
-    }
-    else {
-      // console.log('not sending message (no client)');
-    }
-  }, [client, baseTopic, topics]);
-
-  // Register our output event listener
-  useEffect(() => {
-    simulator.simulatorCallbacks.addOutputListener(outEventListener);
-    return () => {
-      simulator.simulatorCallbacks.rmOutputListener(outEventListener);
-    };
-  }, [outEventListener]);
-
-  const [copied, setCopied] = useState(false);
-
-  const onCopy = useCallback(() => {
-    navigator.clipboard.writeText(JSON.stringify(state, null, 2))
-      .then(() => setCopied(true));
-  }, [state]);
 
   const onImport = useCallback(() => {
     navigator.clipboard.readText().then((text) => {
@@ -282,7 +232,7 @@ export function MQTT({state, setState, simulator}: MQTTProps) {
         "nok": error,
         "pending": "not connected to broker",
       }[status]}>
-        <FlickeringStatusIndicator big={kicked} status={status}/>
+        <StatusIndicator status={status}/>
       </Tooltip>
       <label style={{flexGrow: 1, display: 'flex'}}>
         <input
@@ -359,6 +309,7 @@ export function MQTT({state, setState, simulator}: MQTTProps) {
         clientStatus={status}
         baseTopic={baseTopic}
         onDelete={() => setters.setTopics(ts => ts.toSpliced(i, 1))}
+        simulator={simulator}
       />)}
 
     <button onClick={() => setters.setTopics(ts => [...ts, defaultTopic])}>
@@ -370,11 +321,10 @@ export function MQTT({state, setState, simulator}: MQTTProps) {
 function TopicSubscriptionView({fullTopic, client, clientStatus}: {fullTopic: string, client: MqttClient|null, clientStatus: StatusType}) {
   const [status, setStatus] = useState<StatusType>("pending");
   const [error, setError] = useState("");
-  const [kicked, kick] = useKicker(80);
+  const [kicked, kick] = useKicker(flickerDuration);
 
   // subscribe to a topic
   useEffect(() => {
-    console.log('effect');
     if (client && clientStatus === "ok") {
       client.subscribe(fullTopic, err => {
         if (err) {
@@ -402,7 +352,6 @@ function TopicSubscriptionView({fullTopic, client, clientStatus}: {fullTopic: st
     };
   }, [client, clientStatus, fullTopic]);
 
-
   return <ClickToCopy
     textToCopy={fullTopic}
     tooltip={{
@@ -416,11 +365,41 @@ function TopicSubscriptionView({fullTopic, client, clientStatus}: {fullTopic: st
   </ClickToCopy>;
 }
 
-function makeFlickeringStatusIndicator() {
+function ScOutEventSubscriptionView({simulator, fullTopic, client, clientStatus, om}: {simulator: SimulatorStuff, fullTopic: string, client: MqttClient|null, clientStatus: StatusType, om: Event2MQTTMapping}) {
+  const [kicked, kick] = useKicker(flickerDuration);
 
+  // Statechart output event listener publishes MQTT messages
+  const outEventListener = useCallback((bagOfEvents: RaisedEvent[]) => {
+    if (client && clientStatus === "ok") {
+      for (const event of bagOfEvents) {
+        if (om.eventName === event.name) {
+          const fn = new Function(`return ${om.payload}`)();
+          const payload = JSON.stringify(fn(event.param));
+          console.log('publishing message\n', fullTopic, '\n', payload);
+          client.publish(fullTopic, payload);
+          kick();
+        }
+      }
+    }
+  }, [client, clientStatus, fullTopic, om]);
+
+  useEffect(() => {
+    simulator.simulatorCallbacks.addOutputListener(outEventListener);
+    return () => {
+      simulator.simulatorCallbacks.rmOutputListener(outEventListener);
+    };
+  }, [outEventListener]);
+
+  return <ClickToCopy
+    textToCopy={fullTopic}
+    tooltip={"publishing to\n" + fullTopic + "\nclick to copy topic"}
+    align="right"
+  >
+    <FlickeringStatusIndicator big={kicked} status={clientStatus}/>
+  </ClickToCopy>;
 }
 
-function TopicView({topic, setTopic, client, clientStatus, baseTopic, onDelete}: WithSetters<{topic: TopicConfig}> & {client: MqttClient|null, clientStatus: StatusType, baseTopic: string, onDelete: () => void}) {
+function TopicView({topic, setTopic, client, clientStatus, baseTopic, onDelete, simulator}: WithSetters<{topic: TopicConfig}> & {client: MqttClient|null, clientStatus: StatusType, baseTopic: string, onDelete: () => void, simulator: SimulatorStuff}) {
   const setters = makeAllSetters(setTopic, Object.keys(defaultTopic) as (keyof TopicConfig)[]);
   const fullPrefix = baseTopic+topic.prefix;
 
@@ -438,85 +417,143 @@ function TopicView({topic, setTopic, client, clientStatus, baseTopic, onDelete}:
         <DeleteOutlineIcon fontSize="small"/>
       </DoubleClickButton>
     </legend>
-    <fieldset style={{border: 0}}>
+    <fieldset style={{border: 0, display: 'flex', flexDirection: 'column'}}>
       <legend>
         input mappings
       </legend>
-      {topic.inputMappings.map((m, i) => (<>
-        <Toolbar style={{flexGrow: 1}}>
-          <TopicSubscriptionView
-            client={client}
-            clientStatus={clientStatus}
-            fullTopic={fullPrefix + m.requestName}
-          />
-          <EditEvent2MQTTMapping
-            mapping={m}
-            setMapping={makePartialArraySetter(setters.setInputMappings, i)}
-          />
-          <DoubleClickButton
-            tooltip="delete mapping"
-            align="right"
-            onDoubleClick={() => setters.setInputMappings((m) => m.toSpliced(i, 1))}
-          >
-            <DeleteOutlineIcon fontSize="small"/>
-          </DoubleClickButton>
-        </Toolbar>
-      </>))}
-      <button onClick={() => setters.setInputMappings((m) => [...m, defaultMapping])}>
+      {topic.inputMappings.map((m, i) => {
+        const setMapping = makePartialArraySetter(setters.setInputMappings, i);
+        return <Toolbar style={{flexGrow: 1, flexWrap: 'wrap', alignItems: 'start', columnGap: 10}}>
+          <Toolbar style={{flexGrow: 1}}>
+            <TopicSubscriptionView
+              client={client}
+              clientStatus={clientStatus}
+              fullTopic={fullPrefix + m.requestName}
+            />
+            <InputMapping
+              mapping={m}
+              setMapping={setMapping}
+            />
+          </Toolbar>
+          <Toolbar style={{alignItems: 'start', flexGrow: 1}}>
+            <Payload
+              placeholder="MQTT-payload => in-event param"
+              payload={m.payload}
+              setPayload={makePartialSetter(setMapping, 'payload')}
+            />
+            <DoubleClickButton
+              tooltip="delete mapping"
+              align="left"
+              onDoubleClick={() => setters.setInputMappings((m) => m.toSpliced(i, 1))}
+            >
+              <DeleteOutlineIcon fontSize="small"/>
+            </DoubleClickButton>
+          </Toolbar>
+        </Toolbar>;
+      })}
+      <button
+        onClick={() => setters.setInputMappings((m) => [...m, defaultMapping])}
+        style={{flexGrow: 1}}>
         <AddIcon fontSize="small"/>
-        add
+        add input mapping
       </button>
     </fieldset>
-    <fieldset style={{border: 0}}>
+    <fieldset style={{border: 0, display: 'flex', flexDirection: 'column'}}>
       <legend>
         output mappings
       </legend>
-      {topic.outputMappings.map((m, i) => (
-        <Toolbar style={{flexGrow: 1}}>
-          <EditEvent2MQTTMapping
-            mapping={m}
-            setMapping={makePartialArraySetter(setters.setOutputMappings, i)}
-          />
-          <DoubleClickButton
-            tooltip="delete mapping"
-            align="right"
-            onDoubleClick={() => setters.setOutputMappings((m) => m.toSpliced(i, 1))}
-          >
-            <DeleteOutlineIcon fontSize="small"/>
-          </DoubleClickButton>
-        </Toolbar>
-      ))}
-      <button onClick={() => setters.setOutputMappings((m) => [...m, defaultMapping])}>
+      {topic.outputMappings.map((m, i) => {
+        const fullTopic = fullPrefix + m.requestName;
+        const setMapping = makePartialArraySetter(setters.setOutputMappings, i);
+        return <div style={{display: 'flex', flexWrap: 'wrap', alignItems: 'start', columnGap: 10}}>
+          <Toolbar style={{flexGrow: 1}}>
+            <OutputMapping
+              mapping={m}
+              setMapping={setMapping}
+            />
+            <ScOutEventSubscriptionView
+              client={client}
+              clientStatus={clientStatus}
+              fullTopic={fullTopic}
+              om={m}
+              simulator={simulator}
+            />
+            {/* <FlickeringStatusIndicator status="ok" big={kicked}/> */}
+          </Toolbar>
+          <Toolbar style={{alignItems: 'start', flexGrow: 1}}>
+            {/* <JavascriptIcon fontSize="small"/> */}
+            <Payload
+              placeholder="out-event param -> MQTT payload"
+              payload={m.payload}
+              setPayload={makePartialSetter(setMapping, 'payload')}
+            />
+            <DoubleClickButton
+              tooltip="delete mapping"
+              align="left"
+              onDoubleClick={() => setters.setOutputMappings((m) => m.toSpliced(i, 1))}
+            >
+              <DeleteOutlineIcon fontSize="small"/>
+            </DoubleClickButton>
+          </Toolbar>
+        </div>;
+      })}
+      <button
+        onClick={() => setters.setOutputMappings((m) => [...m, defaultMapping])}
+        style={{flexGrow: 1}}>
         <AddIcon fontSize="small"/>
-        add
+        add output mapping
       </button>
     </fieldset>
   </fieldset>;
 }
 
-function EditEvent2MQTTMapping({mapping, setMapping}: WithSetters<{mapping: Event2MQTTMapping}>) {
-  return <>
+function InputMapping({mapping, setMapping}: WithSetters<{mapping: Event2MQTTMapping}>) {
+  return <Toolbar style={{flex: '1 1 60px', gap: 6}}>
     <input
-      style={{flexGrow: 1, width: 30}}
-      placeholder="event"
-      value={mapping.eventName}
-      onChange={(e) => setMapping(m => ({...m, eventName: e.target.value}))}
-    />
-    <input
-      style={{flexGrow: 1, width: 30}}
+      style={{flex: '1 1 60px', width: 60}}
       placeholder="topic suffix"
       value={mapping.requestName}
       onChange={(e) => setMapping(m => ({...m, requestName: e.target.value}))}
     />
+    →
     <input
-      style={{
-        flexGrow: 3, width: 90,
-        fontFamily: "'Droid Sans Mono', monospace",
-        fontSize: '10pt',
-      }}
-      placeholder="payload"
-      value={mapping.payload}
-      onChange={(e) => setMapping(m => ({...m, payload: e.target.value}))}
+      style={{flex: '1 1 60px', width: 60}}
+      placeholder="input event"
+      value={mapping.eventName}
+      onChange={(e) => setMapping(m => ({...m, eventName: e.target.value}))}
     />
-  </>;
+  </Toolbar>;
+}
+
+function OutputMapping({mapping, setMapping}: WithSetters<{mapping: Event2MQTTMapping}>) {
+  return <Toolbar style={{flex: '1 1 60px', gap: 6}}>
+      <input
+        style={{flex: '1 1 60px', width: 60}}
+        placeholder="output event"
+        value={mapping.eventName}
+        onChange={(e) => setMapping(m => ({...m, eventName: e.target.value}))}
+      />
+      →
+      <input
+        style={{flex: '1 1 60px', width: 60}}
+        placeholder="topic suffix"
+        value={mapping.requestName}
+        onChange={(e) => setMapping(m => ({...m, requestName: e.target.value}))}
+      />
+    </Toolbar>;
+}
+
+function Payload({payload, setPayload, placeholder}: WithSetters<{payload: string}> & {placeholder: string}) {
+  return <textarea
+    style={{
+      flexGrow: 1,
+      fontFamily: "'Droid Sans Mono', monospace",
+      fontSize: '10pt',
+      resize: 'vertical',
+      height: '2em',
+    }}
+    placeholder={placeholder}
+    value={payload}
+    onChange={(e) => setPayload(e.target.value)}
+  />;
 }
