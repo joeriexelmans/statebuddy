@@ -1,28 +1,42 @@
-<html>
+<html lang="en">
 <head>
-  <title>BIP26 Statecharts Tutorial</title>
+  <title>BIP26 Statecharts</title>
   <style>
-    html {
-      line-height: 1.5em;
-      font-family: 'Roboto', sans-serif;
-    }
     body {
       display: flex;
       flex-direction: column;
       align-items: center;
+      line-height: 1.5em;
+      font-family: 'Roboto', sans-serif;
+      /* hyphens: auto; */
+      text-align: justify;
+    }
+    figure {
+      text-align: center;
+    }
+    figcaption {
+      font-size: 10pt;
+      /* font-weight: bold; */
+      /* font-style: italic; */
     }
     article {
       max-width: 80ch;
     }
-    details code {
+    .solution code {
       background-color: rgb(35, 78, 73);
       color: white;
     }
     code {
       font-size: 11pt;
-      background-color: #eee;
+      background-color: #d7d7d7;
       color: black;
+      border-radius: 4px;
+      padding-left: 2px;
+      padding-right: 2px;
       /* font-weight: bold; */
+    }
+    h1,h2,h3,h4 {
+      margin-top: 3em;
     }
     .explanation {
       border: 1px solid #eee;
@@ -61,6 +75,7 @@
       display: flex;
       flex-direction: row;
       align-items: center;
+      column-gap: 1em;
     }
     img {
       max-width: 100%;
@@ -75,6 +90,7 @@
     }
     summary {
       font-weight: bold;
+      cursor: pointer;
     }
     details {
       margin-top: 1em;
@@ -83,49 +99,92 @@
     .screenshot {
       max-width: min(1200px, 100%);
     }
+    table { border-collapse: collapse; }
+    table td,th { border: 1px solid black; padding: 2pt }
+    ol.requirements > li::marker {
+      content: "R" counter(list-item) ". ";
+    }
   </style>
 </head>
 <body>
 <article>
 
-<h1>BIP26 Statecharts Tutorial</h1>
+<h1>BIP26 Statecharts</h1>
 
-<h2>1. Microwave Adventure</h2>
+<h2>1. Tutorial — Microwave Adventures</h2>
 
 <h3>1.1 Introduction</h3>
 
-<p>You are hired by <b>PARASONIC</b>, a Japanse electronics multinational. You will be working at the microwave department, developing the embedded controller of their <em>latest</em> microwave oven model, the <b>PARA-9000 UltraWave</b>.</p>
+<p>You are hired by <b>PARASONIC</b>, a Japanese electronics multinational. You will be working at the microwave department, developing the embedded controller of their <em>latest</em> microwave oven model, the <b>ParaWave T-9000</b>.</p>
 
-<h3>1.2 Running and interacting with a simulation</h3>
+<div class="full-width">
+  <img src="cubicles.jpg" style="max-width: 400px"/>
+</div>
 
-<p>Joining the embedded controller team, you learn that they are using the Statecharts language.</p>
+<h3>1.2 System under study</h3>
 
-<p>The team proudly shows you what they achieved so far:</p>
+<p>Joining the embedded controller team, you learn that they are using the Statecharts language.
+  The team explains that the system consists of 2 parts: a software controller (implemented as a Statechart), and a "plant" (the microwave hardware). The plant has 3 push-buttons and a door sensor. The environment consists of a hypothetical user who may push buttons on the microwave, or open/close the microwave door. In other words, the user only interacts with the plant. The plant has sensors to detect button presses and door openings and closings, and notifies the Statechart about these via discrete events. The Statechart may talk back to the plant, also via discrete events, to make it do things.</p>
+
+<img src="system-environment.png" style="width: 100%"/>
+
+<p>The set of input / output events is of particular interest to you, because it is the Statechart's only means of communicating with the plant:</p>
+
+<div class="columns" style="align-items: start;">
+  <div>
+    <b>Input events</b> (of the Statechart)
+    <ul>
+      <li><code>startButton(pressed: bool)</code> indicates that the START-button was pressed (True) or released (False)</li>
+      <li><code>stopButton(pressed: bool)</code> indicates that the STOP-button was pressed (True) or released (False) </li>
+      <li><code>incTimeButton(pressed: bool)</code> indicates that the INCTIME-button was pressed (True) or released (False)</li>
+      <li><code>doorOpen(open: bool)</code> incidates that the state of the door (open/closed) changed</li>
+    </ul>
+  </div>
+  <div>
+    <b>Output events</b> (of the Statechart)
+    <ul>
+      <li><code>setMagnetron(on: bool)</code> to turn the magnetron (= the thing that creates the radiation) on/off</li>
+      <li><code>ringBell</code> to make the 'ping' sound (e.g., when the heating is finished)</li>
+      <li><code>setTimeDisplay(value: number)</code> sets the number shown on the display</li>
+    </ul>
+  </div>
+</div>
+
+<p class="explanation">Note that an <em>event</em> indicates a <em>change</em>: a button event will only be received when the state of the button changes. It is not a variable that you can query at all times.</p>
+
+
+<h3>1.3 Running a simulation</h3>
+
+<p>The team proudly shows you what they achieved so far: <a target="_blank" href="https://deemz.org/public/statebuddy/v2/#eJyNVdtu2zgQ/RWDT1vAgHWxHNtvTZosil23aaPFPhRdgJYmNlGJ1JJUYjfwv3eG1DVOgr4Y5nDm8MyZi54Y5MIqfWe5BbZ+YlrV0nK5K8Cw9bcnVoucrVnApsyq6m+4t+R0YOt5OGVHtg6DxWnKjPgJjT1azv1FEuDFDyEpnOPvadqChWdgSbR6Be0i8Bfz5TO071OWC14qmRNPPO2FwTyO/sC1Vo/DBOIVPmos1+2T4XzhkJMQgYFwvfniwplXq1NPOHoWG8fBIMc+OIkWjT0cRIfPw5No6dyiKBqFx/G8s1N+Fg52mMOceRv+dXCXtbVK/pHqGt6d16d5JIyWAy4XPcRsNtnwnQSrlZwIM/n86QxjkSQeIx5ihOEbIDc3ZyjhomEyjwYoSQ8C0urjZDb5z4Dt0F5Ja7Hw9QmXyZDSSBpVva1MHHuZKSuUWWLcxw9UNSwTFJBZoSS1EbXiXj3eFgpD73lhgHozh1suofhX5HaPYAG2wj325VeoCp65vqVj6sng49pftIaTo+MgyLdUtYENr+h/gRw37qxyoEwcGYQoRZ4XMLySyu6F3BG82O1HUU4GfOWnUiUm5XP4C46mzwENN0PKjb1EgOITL8ETJ7cPsK13jcPJZ3/JNZGlW7c0Ug0wgv4oq9peP2BV8UmLJWjNFrTkxfnN59q+GHFbcGmHhislpS/POJlbrSrQVsDYfH2ArCbvVLs0e6DNlzTtXCt6xnQL0B/d2LneKkWGu4Q/AO1A6dXpbNRcx2psanvK0XeNNWUZMveYyiW7GUhtMkRRvQau8v0g4KWQz0JGnIR8LfJELVx5cY7Xbs+7DAdyuWWJkj5AIyIORuBFSvm2gL72lkQ0FM9rq+6QQFGMNCVOdxaqcRFQe2nECzUjdZrCtGZMKE+bZ9xKB2pu+tYkSKD837oRpuFsIrZa/QD9j0Yi7NGsZ7NCZbzYK2PXqyCgPYVc96iMyLif6iYQx0X7Lq+4MY9K503PA053a2h8QZIQV+87Q8a985YbSFUlMn+09NcxP5Hsbms8sQdhBIbTEiHx6GqrcDuV3QoA/FZpc32o8LsGeS947mfPj9rlpTqM9PtTi3xkuIKiMH00LZPuCWGh9O3XdKvrmQn4kcMUu8epnrRXOz8/tL/h6jv4NxybAXvDI/Nzfu5C/ewW3uuZQTv0k6ZhXwTp1GnWuPv09sjtco+D0y/+KwgM">
+    <b style="font-size: 18pt">LINK TO MODEL</b></a></p>
 
 <div class="full-width" >
   <img class="screenshot" src="./statebuddy-annotated.png"/>
-
-  <a target="_blank" href="https://deemz.org/public/statebuddy/v2/#eJyNVdtu2zgQ/RWDT1vAgHWxHNtvTZosil23aaPFPhRdgJYmNlGJ1JJUYjfwv3eG1DVOgr4Y5nDm8MyZi54Y5MIqfWe5BbZ+YlrV0nK5K8Cw9bcnVoucrVnApsyq6m+4t+R0YOt5OGVHtg6DxWnKjPgJjT1azv1FEuDFDyEpnOPvadqChWdgSbR6Be0i8Bfz5TO071OWC14qmRNPPO2FwTyO/sC1Vo/DBOIVPmos1+2T4XzhkJMQgYFwvfniwplXq1NPOHoWG8fBIMc+OIkWjT0cRIfPw5No6dyiKBqFx/G8s1N+Fg52mMOceRv+dXCXtbVK/pHqGt6d16d5JIyWAy4XPcRsNtnwnQSrlZwIM/n86QxjkSQeIx5ihOEbIDc3ZyjhomEyjwYoSQ8C0urjZDb5z4Dt0F5Ja7Hw9QmXyZDSSBpVva1MHHuZKSuUWWLcxw9UNSwTFJBZoSS1EbXiXj3eFgpD73lhgHozh1suofhX5HaPYAG2wj325VeoCp65vqVj6sng49pftIaTo+MgyLdUtYENr+h/gRw37qxyoEwcGYQoRZ4XMLySyu6F3BG82O1HUU4GfOWnUiUm5XP4C46mzwENN0PKjb1EgOITL8ETJ7cPsK13jcPJZ3/JNZGlW7c0Ug0wgv4oq9peP2BV8UmLJWjNFrTkxfnN59q+GHFbcGmHhislpS/POJlbrSrQVsDYfH2ArCbvVLs0e6DNlzTtXCt6xnQL0B/d2LneKkWGu4Q/AO1A6dXpbNRcx2psanvK0XeNNWUZMveYyiW7GUhtMkRRvQau8v0g4KWQz0JGnIR8LfJELVx5cY7Xbs+7DAdyuWWJkj5AIyIORuBFSvm2gL72lkQ0FM9rq+6QQFGMNCVOdxaqcRFQe2nECzUjdZrCtGZMKE+bZ9xKB2pu+tYkSKD837oRpuFsIrZa/QD9j0Yi7NGsZ7NCZbzYK2PXqyCgPYVc96iMyLif6iYQx0X7Lq+4MY9K503PA053a2h8QZIQV+87Q8a985YbSFUlMn+09NcxP5Hsbms8sQdhBIbTEiHx6GqrcDuV3QoA/FZpc32o8LsGeS947mfPj9rlpTqM9PtTi3xkuIKiMH00LZPuCWGh9O3XdKvrmQn4kcMUu8epnrRXOz8/tL/h6jv4NxybAXvDI/Nzfu5C/ewW3uuZQTv0k6ZhXwTp1GnWuPv09sjtco+D0y/+KwgM">
-    <b style="font-size: 18pt">OPEN MODEL</b></a>
 </div>
 
-<p>The team demonstrates that they managed to make the magnetron <b>turn on</b> if the START button is pressed.</p>
 
+<p>The team demonstrates that they managed to make the magnetron <b>turn on</b> if the START-button is pressed.</p>
 <p>The steps (in order) are:</p>
-
 <ol>
   <li><img src="./initexec.png"/> Initialize execution</li>
   <li><img src="./realtime.png"/> (un)pause (i.e., run in real-time)</li>
-  <li><img src="./startbutton.png"/>Press the START button</li>
+  <li><img src="./startbutton.png"/>Press the START-button</li>
 </ol>
 
-<p class="explanation"><b>Explanation:</b> When the START button is pressed, the input event <code>startButton</code> is sent to the Statechart with parameter <code>True</code>. (If the button is released the parameter will be <code>False</code>.) The Statechart has a transition from its initial state (OFF) to the ON-state with label <code>startButton(True)</code>. This transition is enabled whenever that input event (with parameter value <code>True</code>) is received. The transition will fire (because there are no other enabled transitions), leaving the OFF-state and entering the ON-state. When entering the ON-state, the Statechart raises the output event <code>setMagnetron</code>, and the event has a parameter <code>True</code>.</p>
+<p>Try this!</p>
 
-<h3>1.3 Editing the model to fix a mistake</h3>
+<p class="explanation"><b>Explanation:</b> When the START-button is pressed, the input event <code>startButton(True)</code> is sent to the Statechart, enabling the transition from its initial state (OFF) to the ON-state with label <code>startButton(True)</code>. The transition will fire (because there are no other enabled transitions), leaving the OFF-state and entering the ON-state. When entering the ON-state, the Statechart raises the output event <code>setMagnetron</code>, and the event has a parameter <code>True</code>.</p>
 
-<p>Now the team tells you about a problem they're having: pressing the STOP button changes the active state of the Statechart to OFF (as expected), but the magnetron is not turning off!</p>
+<h3>1.4 Editing the model to fix a mistake</h3>
 
-<p class="task"><b>Task 1:</b> Make the magetron switch off when the STOP button is pressed.</p>
+<div class="columns">
+  <p>Now the team tells you about a problem they're having: pressing the STOP-button changes the active state of the Statechart to OFF (as expected), but the magnetron is not turning off!</p>
+  <img src="unhappy-worker.jpg" style="width: 150px"/>
+</div>
+
+<p class="task"><b>Task 1:</b> Make the magetron switch off when the STOP-button is pressed.</p>
+
+<p class="tip">See the </p>
 
 <details class="solution">
   <summary>Solution 1 (poor)</summary>
@@ -137,11 +196,26 @@
   <img src="solutiononoff.png"/>
   <p>This solution is better, because we cannot leave the ON-state without turning the magnetron off.</p>
 </details>
-<h3>1.4 Implementing a new feature to comply with regulations</h3>
+<h3>1.5 Implementing a new feature
 
-<p>Now that the START and STOP buttons are working, the boss calls you in his office, and briefs you about a much more serious problem: the company is in big trouble for not complying with <b>government safety regulations</b>.</p>
+</h3>
 
-<p>The safety regulations mandate the magnetron to be <b>always off</b> whenever the microwave <b>door is open</b>. Unable to bribe the government inspector, they ask you to implement it.</p>
+<div class="columns">
+  <div>
+  <p>Everyone is feeling relieved that the START- and STOP-buttons are finally working. Suddenly, your boss, <b>Mr. Tanaka</b>, calls you into his office, and briefs you about a much more serious problem: the company is in big trouble for not complying with <b>government safety regulations</b>.</p>
+<p>The safety regulations mandate the magnetron to be <b>always off</b> whenever the microwave <b>door is open</b>. Mr. Tanaka refuses to bribe the government inspector, so he is asking you to implement it.</p>
+
+  </div>
+
+  <figure>
+    <img src="mr-tanaka.jpg" style="max-width: 100px; border: 6px solid brown"/>
+    <figcaption>
+      Mr. Tanaka<br/>(your boss)
+    </figcaption>
+  </figure>
+</div>
+
+
 
 <div class="columns">
   <p>You first verify that this is indeed a problem. Start the simulation, and start the magnetron like before, and try to open the door by clicking on it.</p>
@@ -153,7 +227,15 @@
   <p>Yikes! This will violate the regulations for sure!</p>
 </div>
 
-<h4>1.4.1 MTL property checking</h4>
+<p>Now, you can save the execution trace by (1) clicking on the "save trace" button, and (2) giving the trace a name:</p>
+<div class="full-width">
+  <img src="save-trace.png"/>
+</div>
+<p>This allows you to revisit this execution trace later. For instance, you can refresh the page (F5) and your saved execution trace will still be there. If you click the "replay trace" button <img src="replay-trace.png"/>, the saved execution trace will be restored.</p>
+
+<p class="explanation">When saving a trace, only the <em>input events</em> (and the times when they occured) are saved. This is enough information to restore a full trace!</p>
+
+<h4>1.5.1 MTL property checking</h4>
 
 <p>Before we start implementing the correct behavior, we first formally capture the safety requirement as an MTL property.</p>
 
@@ -182,7 +264,7 @@
   <img src="addproperty2.png"/>
 </div>
 
-<p>The property-indicator should turn red when the door is open and the magnetron is on.</p>
+<p>The property-indicator should turn red if ever the door is open and the magnetron is on.</p>
 
 <div class="full-width">
   <img class="screenshot" src="propviolated.png"/>
@@ -190,12 +272,16 @@
 
 <details class="solution">
   <summary>Solution</summary>
-  There are many ways of writing this property, but probably the easiest one is:
+  There are many ways of writing this property, but probably the easiest ones are:
   <br/>
   <code>G (microwave_doorOpen -> ~microwave_magnetronRunning)</code>
+  <br/>
+  or
+  <br/>
+  <code>G ~(microwave_doorOpen & microwave_magnetronRunning)</code>
 </details>
 
-<h4>1.4.2 Implementation</h4>
+<h4>1.5.2 Implementation</h4>
 
 Now we start implementing.
 
@@ -255,11 +341,196 @@ Now we start implementing.
   <img src="solutiondoor2.png"/>
 </details>
 
-<h3>1.5 Epilogue</h3>
+<h3>1.6 Epilogue</h3>
 
-<p>The boss pets you on the shoulder, and you feel blissful, having saved the day at PARASONIC.</p>
+<p>The boss pats you on the shoulder, and you feel happy, having saved the day at PARASONIC. The ParaWave T-9000 turns out to be a huge commercial success.</p>
+
+
+<h2>2. Assignment — Gantry Crane Controller</h2>
+
+<h3>2.1 Introduction</h3>
+
+<p>Similar to the tutorial, you will again create a software controller for a physical plant. The plant is a gantry crane, that picks up and drops off containers.</p>
+
+<p>The crane can move horizontally ("move") and vertically ("hoist"), and it has an electromagnet that can be turned on/off to pickup/drop-off containers.</p>
+
+<img src="crane.png"/>
+
+<h3>2.2 System overview</h3>
+
+<p>Unlike the tutorial, the Statechart now interacts with <em>multiple</em> components (not a single plant):</p>
+
+<ul>
+  <li><b>Scheduler</b>: Determines in what order and where to pickup/drop-off containers</li>
+  <li><b>Crane Control</b>: Controls the motors of the crane. Given a position, the crane control can make the crane move to that position.</li>
+  <li><b>Emergency Panel</b>: A panel with two buttons: STOP and RESUME. In case of emergency, the STOP button will temporarily stop all crane movement.</li>
+</ul>
+
+<figure>
+  <img src="emergency_panel.png"/>
+  <figcaption>Emergency Panel</figcaption>
+</figure>
+
+<p>In the following figure, the in/out events received/sent by the Statechart are visible:</p>
+
+<img src="gantry-system-env.png"/>
+
+<h3>2.3 Interfaces</h3>
+
+<p>For interaction with each of the components, a fixed interface is provided. This interface is already implemented in the starting point Statechart file.</p>
+
+<h4>2.3.1 Scheduler</h4>
+<table>
+  <tr>
+    <th>In/Out</th><th>Event</th><th>Parameter Type</th><th>Meaning</th>
+  </tr>
+  <tr>
+    <td>out</td>
+    <td><code>ready</code></td>
+    <td>-</td>
+    <td>Statechart tells the scheduler that it is ready to make its next move.</td>
+  </tr>
+  <tr>
+    <td>in</td>
+    <td><code>makeMove</code></td>
+    <td><code>[number, number]</code></td>
+    <td>The scheduler tells the Statechart to start making its next move. The parameter is a tuple (array) containing the x- and y-coordinates of the target position.</td>
+  </tr>
+</table>
+
+<h4>2.3.2 Crane Control</h4>
+<table>
+  <tr>
+    <th>In/Out</th><th>Event</th><th>Parameter</th><th>Meaning</th>
+  </tr>
+  <tr>
+    <td>out</td>
+    <td><code>move</code></td>
+    <td><code>number</code></td>
+    <td>Make the crane move horizontally to given (via parameter) position.</td>
+  </tr>
+  <tr>
+    <td>out</td>
+    <td><code>hoist</code></td>
+    <td><code>number</code></td>
+    <td>Make the crane move vertically to given (via parameter) altitude.</td>
+  </tr>
+  <tr>
+    <td>out</td>
+    <td><code>freeze</code></td>
+    <td>-</td>
+    <td>If the crane is currently moving, make it stop its movement until standstill.</td>
+  </tr>
+  <tr>
+    <td>in</td>
+    <td><code>doneMove</code></td>
+    <td>-</td>
+    <td>Indicates to the Statechart that the requested move is complete.</td>
+  </tr>
+  <tr>
+    <td>in</td>
+    <td><code>doneHoist</code></td>
+    <td>-</td>
+    <td>Indicates to the Statechart that the requested hoist is complete.</td>
+  </tr>
+  <tr>
+    <td>in</td>
+    <td><code>doneFreeze</code></td>
+    <td>-</td>
+    <td>Indicates to the Statechart that the requested freeze is complete.</td>
+  </tr>
+  <tr>
+    <td>out</td>
+    <td><code>magnet</code></td>
+    <td><code>boolean</code></td>
+    <td>Turns the magnet on/off (parameter <code>True</code> = on)</td>
+  </tr>
+</table>
+
+<h4>2.3.3 Emergency Button</h4>
+<table>
+  <tr>
+    <th>In/Out</th><th>Event</th><th>Parameter</th><th>Meaning</th>
+  </tr>
+  <tr>
+    <td>in</td>
+    <td><code>beginEmergency</code></td>
+    <td>-</td>
+    <td>Indicates to the Statechart that the emergency STOP-button is pressed.</td>
+  </tr>
+  <tr>
+    <td>in</td>
+    <td><code>endEmergency</code></td>
+    <td>-</td>
+    <td>Indicates to the Statechart that the emergency RESUME-button is pressed.</td>
+  </tr>
+</table>
+
+<h3>2.4 Definitions</h3>
+
+<li id="safe-altitude"><b>Safe altitude</b>: If the crane is at a safe altitude, this means that it can move horizontally without bumping in to stacked containers, even while carrying a container. This altitude is defined as a constant in the Statechart.</li>
+
+
+<h3>2.5 Behavioral Requirements</h2>
+
+<ol start="0" class="requirements">
+  <li>Initially, you may assume the magnet is off, the crane is at a <a href="#safe-altitude">safe altitude</a>, and not moving in any direction.</li>
+  <li>Immediately at startup, the Statechart will raise the output event <code>ready</code> to indicate that it can make its first set of moves.</li>
+  <li>After raising <code>ready</code>, the Statechart remains idle, waiting for the Scheduler to instruct it with the next move.
+  <li>The next move is instructed by the Scheduler by raising the <code>makeMove</code> event. A move always consists of the following sequence:
+    <ol>
+      <li>Start moving horizontally to the horizontal target position.</li>
+      <li>When this horizontal movement is complete, the Statechart should wait 500 ms before proceeding.</li>
+      <li>Then, start moving vertically downwards to the vertical target position.</li>
+      <li>When the vertical movement has complete, again, the Statechart should wait 500 ms before proceeding.</li>
+      <li>The magnet is <em>toggled</em> (meaning: if the magnet was off, it is turned on, or if it was on, it is turned off).</li>
+      <li>Wait another 500 ms.</li>
+      <li>The crane starts moving vertically upwards, to the <a href="#safe-altitude">safe altitude</a>.</li>
+      <li>After the vertical movement has completed, we wait yet another 500 ms.</li>
+      <li>The Statechart raises the <code>ready</code> output event to indicate that it is ready for the next move.</li>
+    </ol>
+  <li>While making a move, the Statechart must ignore <code>makeMove</code> events. We can only make one move at a time!
+  </li>
+  <li>An emergency stop can always be made (whether the crane is idle or not). During an emergency stop, the crane stops responding to all input events, except those of the emergency panel.</li>
+  <li>An emergency stop consists of the following sequence:</li>
+  <ol>
+    <li>The emergency STOP-button is pressed.</li>
+    <li>In response, the Statechart immediately requests the Crane Controller to stop all movement.</li>
+    <li>After the crane has come to a standstill, the Statechart can respond to an emergency RESUME-button press.</li>
+    <li>If the RESUME-button is pressed, the Statechart waits 2 seconds before resuming normal behavior...
+      <ul>
+        <li>If in this 2-second period, the STOP-button is pressed again, the resuming is canceled, and Statechart stays in emergency mode until the RESUME-button is pressed again, starting the 2-second period again.</li>
+        <li>When the 2-second period is over, the activity that was happening when the emergency stop started, is resumed. For instance, if the crane was moving horizontally to pick up a container, it resumes this movement as if nothing happened, followed by the rest of the move (go down, toggle magnet, go up).</li>
+      </ul>
+    </li>
+  </ol>
+</ol>
+
+<h3>2.6 Examples of behavior</h2>
+
+TODO: add behavior traces...
+
+<h3>2.7 Testing your solution</h3>
+
+<h3>2.8 What is expected</h3>
+
+Try to use as many Statechart features as possible. Try to avoid duplicated behavior.
+
+<p>To give you an indication of the complexity, my own solution consists of:</p>
+<ul>
+  <li>16 AND-states</li>
+  <li>7 OR-states</li>
+  <li>0 pseudo-states</li>
+  <li>1 history states</li>
+  <li>16 transitions</li>
+</ul>
 
 </article>
+
+<footer>
+  <p>If you're having trouble, contact <a href="mailto:joeri.exelmans@uantwerpen.be">joeri.exelmans@uantwerpen.be</a>.</p>
+</footer>
+
 </body>
 </html>
 

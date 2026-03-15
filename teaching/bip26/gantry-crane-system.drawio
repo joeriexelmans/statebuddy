@@ -1,0 +1,85 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/29.0.3 Chrome/140.0.7339.249 Electron/38.7.1 Safari/537.36" version="29.0.3">
+  <diagram name="Page-1" id="mT6F8ZHxvhxaCBQVJKii">
+    <mxGraphModel dx="1319" dy="717" grid="0" gridSize="10" guides="0" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="uwGwgxH1RkBEZowBWDLU-1" value="Statechart" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="370" y="40" width="120" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="uwGwgxH1RkBEZowBWDLU-2" value="Scheduler" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="40" width="120" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="uwGwgxH1RkBEZowBWDLU-3" value="Emergency Panel" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="650" y="140" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="uwGwgxH1RkBEZowBWDLU-7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="uwGwgxH1RkBEZowBWDLU-4" target="uwGwgxH1RkBEZowBWDLU-1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="610" y="90" />
+              <mxPoint x="610" y="90" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="uwGwgxH1RkBEZowBWDLU-4" value="Crane" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="650" y="40" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="uwGwgxH1RkBEZowBWDLU-5" value="" style="endArrow=classic;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;" edge="1" parent="1" source="uwGwgxH1RkBEZowBWDLU-1" target="uwGwgxH1RkBEZowBWDLU-4">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="410" y="150" as="sourcePoint" />
+            <mxPoint x="460" y="100" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="560" y="50" />
+              <mxPoint x="560" y="50" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="uwGwgxH1RkBEZowBWDLU-8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="uwGwgxH1RkBEZowBWDLU-3" target="uwGwgxH1RkBEZowBWDLU-1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="710" y="100" as="sourcePoint" />
+            <mxPoint x="580" y="100" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="540" y="170" />
+              <mxPoint x="540" y="170" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="uwGwgxH1RkBEZowBWDLU-9" value="" style="endArrow=classic;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="240" y="69.5" as="sourcePoint" />
+            <mxPoint x="370" y="69.5" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="310" y="69.5" />
+              <mxPoint x="310" y="69.5" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="uwGwgxH1RkBEZowBWDLU-10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="370" y="169.5" as="sourcePoint" />
+            <mxPoint x="240" y="169.5" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="350" y="169.5" />
+              <mxPoint x="350" y="169.5" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="uwGwgxH1RkBEZowBWDLU-11" value="makeMove([x,y])" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="240" y="50" width="130" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="uwGwgxH1RkBEZowBWDLU-12" value="ready" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="240" y="150" width="130" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="uwGwgxH1RkBEZowBWDLU-13" value="move, hoist, magnet, stop" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="490" y="30" width="160" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="uwGwgxH1RkBEZowBWDLU-14" value="doneMove, doneHoist, doneStop" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="490" y="60" width="160" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="uwGwgxH1RkBEZowBWDLU-15" value="beginEmergency, endEmergency" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="490" y="140" width="160" height="30" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
