@@ -40,6 +40,7 @@ import { Panel } from "./Panel/Panel";
 import { GlobalProps } from "./Panel/PanelItem";
 import { ResizeHandle } from "./Panel/ResizeHandle";
 import { SizedPanel } from "./Panel/SizedPanel";
+import { WithShadow } from "./Components/WithShadow";
 
 export function App() {
   // The entire persisted application state (minus the visual editor state)
@@ -184,10 +185,7 @@ export function App() {
           {/* top-to-bottom: top bar, editor */}
           <div className={styles.stackVertical} style={{flexGrow:1, overflow: "hidden"}}>
             {/* Top bar */}
-            <div
-              className={styles.shadowBelow}
-              style={{flex: '0 0 content'}}
-            >
+            <WithShadow>
               {editHistory && editorState &&
                 <TopPanel
                   topPanel={appState.topPanel}
@@ -208,7 +206,8 @@ export function App() {
                   onOpen={onOpen}
                   onSave={onSave}
                 />}
-            </div>
+            </WithShadow>
+
             {/* Editor */}
             <div style={{flexGrow: 1, overflow: "auto"}}>
               {editorState && topology && syntaxErrors &&
@@ -279,6 +278,8 @@ export function App() {
               propertyResults={propertyResults}
             />
           </SizedPanel> */}
+
+          {/* Right panel */}
           <ResizeHandle
             getDelta={e => -e.movementX}
             setSize={setters.setRightPanelWidth}

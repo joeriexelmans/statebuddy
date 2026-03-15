@@ -1,11 +1,9 @@
-import { ReactNode, useState } from "react";
+import { ReactNode } from "react";
 import { MoveUpDown } from "../Components/MoveUpDown";
 import { PersistentDetails } from "../Components/PersistentDetails";
 import { makePartialArraySetter, makePartialSetter, WithSetters } from "../makePartialSetter"
 import { GlobalProps, PanelItem, PanelType, panelTypes } from "./PanelItem"
 import CloseIcon from '@mui/icons-material/Close';
-import { useResizeable } from "@/hooks/useResizeable";
-import { ResizeHandle } from "./ResizeHandle";
 
 export type PanelState = {
   items: ExpandablePanelItemState[],
@@ -27,12 +25,13 @@ export function Panel({state: {items}, setState, globalProps}: PanelProps) {
     }
   };
   const setItems = makePartialSetter(setState, 'items');
-  return <div style={{display: 'flex', flexDirection: 'column', flexGrow: 1, minHeight: '100%', justifyContent: 'space-between'}}>
-    <div>
+  console.log({items});
+  return <div style={{display: 'flex', flexDirection: 'column', flexGrow: 1, justifyContent: 'space-between'}}>
+    <div style={{display: 'flex', flexGrow: 1, flexDirection: 'column'}}>
       {items.map((item, i) => {
         const setItem = makePartialArraySetter(setItems, i);
         return <ExpandablePanelItem
-          key={i}
+          key={item.type} // <-- every panel type can only occur once in each panel
           state={item}
           setState={setItem}
           globalProps={globalProps}
@@ -46,8 +45,10 @@ export function Panel({state: {items}, setState, globalProps}: PanelProps) {
       })}
     </div>
     <select value={0} onChange={e => onAddPanel(e.target.value)}>
-      <option value={0}>add panel...</option>
-      {panelTypes.map(t => <option value={t}>{t}</option>)}
+      <option value={0} disabled>add panel...</option>
+      {panelTypes
+        .filter(t => !items.some(item => item.type === t))
+        .map(t => <option value={t}>{t}</option>)}
     </select>
   </div>;
 }

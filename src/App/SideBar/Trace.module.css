@@ -45,6 +45,7 @@
 
 .traceItem {
   padding: 4px;
+  /* background-color: var(--background-color); */
 }
 .traceItem:has(+.traceItem) {
   border-bottom: 1px var(--separator-color) solid;

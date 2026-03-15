@@ -253,3 +253,10 @@
 .App legend {
   /* background-color: var(--statusbar-bg-color); */
 }
+
+.App summary button {
+  visibility: hidden;
+}
+.App summary:hover button {
+  visibility: visible;
+}

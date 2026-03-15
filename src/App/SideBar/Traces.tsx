@@ -4,7 +4,7 @@ import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import FlareIcon from '@mui/icons-material/Flare';
 
 import { Tooltip } from "../Components/Tooltip";
-import { makeAllSetters, makePartialSetter, WithSetters } from "../makePartialSetter";
+import { makeAllSetters, WithSetters } from "../makePartialSetter";
 import { ExtTransitionTrace, saveExtTransitions } from '@/devs/serialize_trace';
 import appStyles from "../App.module.css";
 import { MoveUpDown } from '../Components/MoveUpDown';
@@ -17,6 +17,7 @@ import { Statechart } from '@/statecharts/abstract_syntax';
 import { PlantsState } from '../hooks/useCoupledExecution';
 import { PropertyTrace } from './prepare_trace';
 import { ResizeHandle } from '../Panel/ResizeHandle';
+import { NicelyCentered } from '../Components/NicelyCentered';
 
 export type SavedTraces = [string, ExtTransitionTrace][];
 
@@ -31,7 +32,7 @@ export type TracesState = {
 }
 
 export const defaultTracesState: TracesState = {
-  autoScroll: false,
+  autoScroll: true,
   showMicroSteps: false,
   showTransitions: false,
   showPlantTrace: false,
@@ -72,7 +73,7 @@ export function Traces({
 
   const [height, setHeight] = useState(300);
   
-  return <>
+  return <div style={{display: 'flex', flexGrow: 1, flexDirection: 'column'}}>
     <div>
       {savedTraces.map((savedTrace, i) =>
         <div key={i} className={appStyles.toolbar} style={{alignItems: 'center'}}>
@@ -108,7 +109,9 @@ export function Traces({
         </div>
       )}
     </div>
-    <div className={appStyles.toolbar + appStyles.shadowBelow} style={{justifyContent: 'space-around', columnGap: '1em'}}>
+    
+    {/* checkboxes, buttons, ... */}
+    <div className={appStyles.toolbar} style={{justifyContent: 'space-around', columnGap: '1em'}}>
       <Tooltip tooltip="plant steps are steps where only the state of a plant changed" align="left">
         <label>
           <input type="checkbox"
@@ -142,12 +145,15 @@ export function Traces({
       </button>
     </div>
 
+    
     <div style={{
-      flexGrow:1,
+      flexGrow: 1,
       overflow:'auto',
-      height: Math.max(height, 10),
+      height,
+      boxShadow: 'inset 0 10px 10px -10px rgba(0,0,0,0.4)',
       }}>
         {abstractSyntax && trace &&
+          <div>
           <CoupledDEVSTrace
             ast={abstractSyntax}
             setTime={simulator.setTime}
@@ -159,22 +165,24 @@ export function Traces({
             plantsState={plantsState}
             propertyTrace={activePropertyTrace}
           />
-          || <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', backgroundColor: 'var(--statusbar-bg-color'}}>
-            <div style={{display: 'flex', justifyContent: 'center', flexDirection: 'column', rowGap: 12}}>
-              <div>Execution trace will appear here.</div>
-              <button onClick={simulator.simulatorCallbacks.onInit}>
-                <FlareIcon fontSize='small'/>&nbsp;
-                initialize execution
-              </button>
-            </div>
           </div>
+          || <NicelyCentered style={{backgroundColor: 'var(--statusbar-bg-color)'}}>
+              <div style={{display: 'flex', justifyContent: 'center', flexDirection: 'column', rowGap: 12}}>
+                <div>Execution trace will appear here.</div>
+                <button onClick={simulator.simulatorCallbacks.onInit}>
+                  <FlareIcon fontSize='small'/>&nbsp;
+                  initialize execution
+                </button>
+              </div>
+            </NicelyCentered>
         }
     </div>
     <ResizeHandle
       getDelta={e => e.movementY}
       setSize={setHeight}
       horizontal
+      minSize={30}
     />
 
-  </>;
+  </div>;
 }
