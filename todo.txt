@@ -74,6 +74,7 @@ TODO
     (*) runtime errors during initialization do not appear in trace
 
 - maybe support:
+    - ability to turn off property checking
     - explicit order of outgoing transitions?
     - (Rust) code generator?
     - true concurrency
@@ -81,6 +82,11 @@ TODO
             2 outcomes:
                 (A) yes, concurrency is guaranteed
                 (B) no, concurrency may be there but is not guaranteed => explicit ordering required!
+        ways orthogonal regions can interact:
+            - variable read/write
+            - internal events
+            - output events ? (not if they're a "bag" (unordered))
+            - INSTATE(...)-expression
 
 - write documentation
     although ideally the tool should explain itself...
