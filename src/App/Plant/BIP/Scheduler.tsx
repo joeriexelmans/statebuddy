@@ -6,7 +6,7 @@ type ScheduledMove = {
 };
 
 type SchedulerState = {
-  next?: ScheduledMove,
+  next?: {move: ScheduledMove, when: number},
   remainingMoves: ScheduledMove[],
 }
 
@@ -23,9 +23,9 @@ const initialState: SchedulerState = {
 
 function SchedulerView({state, speed, raiseUIEvent}: PlantRenderProps<SchedulerState>) {
   return <div>
-    <div>There are {state.remainingMoves.length} remaining moves.</div>
-    <div>{state.remainingMoves.map((m, i) => <div key={i}>x: {m.x}, y: {m.y}</div>)}</div>
-    {state.next && <div>Next mode = x: {state.next.x}, y: {state.next.y}</div>}
+    <div>There are {state.remainingMoves.length+(state.next ? 1 : 0)} remaining moves.</div>
+    {/* <div>{state.remainingMoves.map((m, i) => <div key={i}>x: {m.x}, y: {m.y}</div>)}</div>
+    {state.next && <div>Next mode = x: {state.next.x}, y: {state.next.y}</div>} */}
   </div>
 }
 
@@ -34,13 +34,13 @@ export const schedulerPlant: Plant<SchedulerState, SchedulerState> = {
     initial: () => initialState,
     timeAdvance: (s) => {
       if (s.next) {
-        return 200; // ms delay for realism
+        return s.next.when; // ms delay for realism
       }
       else return Infinity;
     },
     intTransition: (s) => {
       if (s.next) {
-        const outputEvents = [{name: "makeMove", param: [s.next.x, s.next.y]}];
+        const outputEvents = [{name: "makeMove", param: [s.next.move.x, s.next.move.y]}];
         const newState = {
           remainingMoves: s.remainingMoves,
         };
@@ -52,7 +52,7 @@ export const schedulerPlant: Plant<SchedulerState, SchedulerState> = {
       const e = bagOfInputs.find(e => e.name === "ready");
       if (e && s.remainingMoves.length > 0) {
         return {
-          next: s.remainingMoves[0],
+          next: {move: s.remainingMoves[0], when: simtime + 200},
           remainingMoves: s.remainingMoves.slice(1),
         }
       }

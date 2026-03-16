@@ -8,7 +8,7 @@ const validRequests = ["move", "hoist", "freeze"] as GantryCraneRequest[];
 
 // e.g., validResponse("move") === "doneMove"
 const validResponse = (m: GantryCraneRequest) => {
-  return "done"+m[0].toUpperCase+m.slice(1);
+  return "done"+m[0].toUpperCase()+m.slice(1);
 }
 
 type GantryCraneState = {
@@ -68,7 +68,7 @@ export const gantryCranePlant: Plant<GantryCraneState, GantryCraneCleanState> = 
         const outputEvents = [{name: validResponse(s.mode)}];
         const newState = {
           ...s,
-          state: "idle" as GantryCraneMode,
+          mode: "idle" as GantryCraneMode,
           nextWakeup: Infinity,
           // we have arrived at destination:
           x: s.destX,
@@ -110,7 +110,7 @@ export const gantryCranePlant: Plant<GantryCraneState, GantryCraneCleanState> = 
       };
     },
     inputs: validRequests,
-    outputs: validRequests.map(req => validResponse(req)),
+    outputs: validRequests.map(validResponse),
   },
   cleanupState: x => ({
     ...x,
