@@ -44,6 +44,8 @@ Performance
 
 TODO
 
+- add banner to v1: "you are using old Statebuddy version"
+
 - before release v2:
     - include MQTT-over-websocket support
     - port microwave and traffic light examples
