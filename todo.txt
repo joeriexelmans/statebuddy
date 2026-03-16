@@ -42,39 +42,45 @@ Performance
     - very fast loading (especially compared to yakindu...)
 
 
-TODO
-
-- add banner to v1: "you are using old Statebuddy version"
-
-- before release v2:
-    - include MQTT-over-websocket support
-    - port microwave and traffic light examples
-    - fix regressions:
-        - file import is broken
-        - highlight search results broken
-        - mouseup event sometimes missed in VisualEditor
-        - catch and display runtime errors in trace
-
-    - nice to haves:
-        - Pattern Matching event parameters, e.g.,:
-
-            doorOpen(True) // trigger only enabled if event parameter is True
-            move({x,y}) // trigger only enabled if event parameter can be destructured into 'x' and 'y'
-
-            also support 'pattern matching' in actions:
-                entry / {x,y} = {x: True, y: 42}  // will assign x = True and y = 42
-            with a small caveat:
-                entry / {x,y: 99} = {x: True, y: 42}  // runtime exception because '42' cannot be matched with '99'.
-            but we can use this to write assertions:
-                entry / True = x  // crash if x is not equal to True.
-    
-- bugs
+BUGS
     (*) editing SC <-> Plant connections at runtime doesn't seem to work
     (*) runtime errors coming from plant are mistakenly shown as runtime errors on statechart
     (*) runtime errors during initialization do not appear in trace
 
+REGRESSIONS
+    - file import is broken
+    - [DONE] highlight search results broken
+    - mouseup event sometimes missed in VisualEditor
+    - [DONE] catch and display runtime errors in trace
+
+TODO
+
+- explicitly declare input/output events
+
+- breaking change: state names start with # (not with //)
+
+- [DONE] add banner to v1: "you are using old Statebuddy version"
+
+- [DONE] include MQTT-over-websocket support
+- [DONE] port microwave and traffic light examples
+
+
+- [DONE] Pattern Matching event parameters, e.g.,:
+        doorOpen(True) // trigger only enabled if event parameter is True
+        move({x,y}) // trigger only enabled if event parameter can be destructured into 'x' and 'y'
+
+        also support 'pattern matching' in actions:
+            entry / {x,y} = {x: True, y: 42}  // will assign x = True and y = 42
+        with a small caveat:
+            entry / {x,y: 99} = {x: True, y: 42}  // runtime exception because '42' cannot be matched with '99'.
+        but we can use this to write assertions:
+            entry / True = x  // crash if x is not equal to True.
+
+- [DONE] make side panel user-resizable
+
+- ability to turn off property checking
+
 - maybe support:
-    - ability to turn off property checking
     - explicit order of outgoing transitions?
     - (Rust) code generator?
     - true concurrency
@@ -91,6 +97,11 @@ TODO
 - write documentation
     although ideally the tool should explain itself...
 
+- interesting problems:
+    - at what level should 'undo' work:
+        editing?
+        app state?
+
 - usability stuff:
     - export/import model as JSON
     - export/import traces and properties
@@ -100,7 +111,6 @@ TODO
 
     - traffic light plant: turn state of 'police interrupt' button into a signal
     - show list of internal variables
-    - make side panel user-resizable
     - use smaller margin for selecting endpoint of arrow?
         (right now, often one will select the side of a rountangle but not the arrow connecting to it)
     - action language: add increment operations (++) and (--)
@@ -109,13 +119,13 @@ TODO
             comments only to states
             triggers only to transitions
             entry/exit only to states
-    - ability to hide statechart and only show the plant?    
+    - ability to hide statechart and only show the plant?
     - rename events / variables?
+
     - hovering over error in bottom panel should highlight that error in the SC
     - hovering over event in side panel should highlight all occurrences of the event in the SC
+
     - highlight about-to-fire transitions
-    - integrate undo-history with browser history (back/forward buttons)
-    - ability to 'freeze' editor (e.g., to show plant SC)
     - show insert mode also next to cursor
     - show error when states partially overlap?
         useful when accidentally pasting the same data multiple times
@@ -134,11 +144,6 @@ TODO
         stable tree layout?
             https://pub.dev/packages/ploeg_tree_layout
     - local variable scopes
-
-Breaking changes (after mosis25 is finished):
-    - state names start with # (not with //)
-
-    semantic versioning?
 
 Publish StateBuddy paper(s):
     compare CS approach to other tools, not only YAKINDU
