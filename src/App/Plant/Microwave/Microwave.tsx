@@ -20,7 +20,6 @@ import { parseStatechart } from "@/statecharts/parser";
 import microwaveJSON from "./model.json";
 import { ConcreteSyntax } from "@/statecharts/concrete_syntax";
 import { objectsEqual } from "@/util/util";
-import { dummyTracer } from "@/statecharts/tracer";
 
 export const microwaveConcreteSyntax = microwaveJSON as ConcreteSyntax;
 
