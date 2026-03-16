@@ -246,6 +246,11 @@ export function App() {
     <ModalOverlay modal={modal} setModal={setModal}>
       {/* top-to-bottom: everything -> bottom panel */}
       <div className={styles.stackVertical} style={{height:'100%'}}>
+        
+        <div style={{fontSize: '14pt', backgroundColor: '#4cffa6ff', textAlign: 'center', fontStyle: 'italic', fontWeight: 'bold'}}>
+          You are using an old version of Statebuddy!
+          Click <a href={"https://deemz.org/public/statebuddy/v2/"+window.location.hash}>HERE</a> to upgrade.
+        </div>
 
         {/* left-to-right: main -> sidebar */}
         <div className={styles.stackHorizontal} style={{flexGrow:1, overflow: "auto"}}>
