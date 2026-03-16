@@ -76,6 +76,11 @@ TODO
 - maybe support:
     - explicit order of outgoing transitions?
     - (Rust) code generator?
+    - true concurrency
+        writing a pessimistic static analyzer shouldn't be too hard.
+            2 outcomes:
+                (A) yes, concurrency is guaranteed
+                (B) no, concurrency may be there but is not guaranteed => explicit ordering required!
 
 - write documentation
     although ideally the tool should explain itself...
