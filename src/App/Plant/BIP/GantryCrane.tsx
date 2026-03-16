@@ -82,7 +82,7 @@ export const gantryCranePlant: Plant<GantryCraneState, GantryCraneCleanState> = 
       if (s.mode === "idle") {
         // we'll handle at most one event
         // find first valid request among bag of inputs:
-        const eventToHandle = bagOfInputs.find(e => validRequests.includes(e.name as GantryCraneRequest));
+        const eventToHandle = bagOfInputs.find(e => ["move", "hoist"].includes(e.name));
         if (eventToHandle && typeof eventToHandle.param === 'number') {
           const reqMode = eventToHandle.name as GantryCraneMode;
           let dest;
@@ -92,7 +92,7 @@ export const gantryCranePlant: Plant<GantryCraneState, GantryCraneCleanState> = 
           else if (reqMode == "hoist") {
             dest = { x: s.destX, y: eventToHandle.param }; 
           }
-          else {
+          else if (reqMode === "freeze") {
             dest = { x: s.destX, y: s.destY }; // <-- no change
           }
           return {
@@ -101,6 +101,16 @@ export const gantryCranePlant: Plant<GantryCraneState, GantryCraneCleanState> = 
             nextWakeup: simtime + 3587, // <-- every request takes this many millisecs :p
             ...dest,
             msg: "",
+          };
+        }
+      }
+      else {
+        const eventToHandle = bagOfInputs.find(e => e.name === "freeze");
+        if (eventToHandle) {
+          return {
+            ...s,
+            mode: "freeze",
+            nextWakeup: simtime + 1987, // <-- Harel ;)
           };
         }
       }
