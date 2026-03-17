@@ -65,9 +65,9 @@ export function useMouse(
   
   // The shapes being currently selected.
   // The shapes in this selection are also rendered as selected. But we keep them seperate in case the user decides to cancel the making of the new selection.
-  const newSelection: Selection = useMemo(() =>
+  const newSelection = useCallback((selectingState: SelectingState) =>
     computeSelection(selectingState, refSVG, zoom),
-  [selectingState, refSVG, zoom]);
+  [refSVG, zoom]);
   
   // Helper to convert mouse event coordinates to SVG coordinates.
   const getCurrentPointer = useCallback((e: {pageX: number, pageY: number}) => {
@@ -265,55 +265,55 @@ export function useMouse(
       }
       return ss;
     });
-  }, [replaceState, getCurrentPointer, setSelectingState, dragging, setDragging]);
-
-  // useDetectChange2({replaceState, getCurrentPointer, setSelectingState, selection: state.selection, dragging, setDragging});
+  }, [replaceState, getCurrentPointer, setSelectingState, setDragging]);
   
   const onMouseUp = useCallback((e: {target: any, pageX: number, pageY: number}) => {
-    if (dragging) {
-      // we were moving / resizing
-      setDragging(null);
-      
-      // do not persist sizes smaller than 40x40
-      replaceState(state => {
-        return {
-          ...state,
-          rountangles: state.rountangles.map(r => ({
-            ...r,
-            size: rountangleMinSize(r.size),
-          })),
-          diamonds: state.diamonds.map(d => ({
-            ...d,
-            size: rountangleMinSize(d.size),
-          }))
-        };
-      });
-    }
-    setSelectingState(selectingState => {
-      if (selectingState) {
-        // we were making a selection
-        if (selectingState.size.x === 0 && selectingState.size.y === 0) {
-          // it was only a click (mouse didn't move)
-          // -> select the clicked part(s)
-          // (btw, this is only here to allow selecting rountangles by clicking inside them, all other shapes can be selected entirely by their 'helpers')
-          const [uid, parts] = eventTargetToParts(e.target);
-          if (uid) {
+    setDragging(dragging => {
+      if (dragging) {
+        // we were moving / resizing
+        
+        // do not persist sizes smaller than 40x40
+        replaceState(state => {
+          return {
+            ...state,
+            rountangles: state.rountangles.map(r => ({
+              ...r,
+              size: rountangleMinSize(r.size),
+            })),
+            diamonds: state.diamonds.map(d => ({
+              ...d,
+              size: rountangleMinSize(d.size),
+            }))
+          };
+        });
+      }
+      setSelectingState(selectingState => {
+        if (selectingState) {
+          // we were making a selection
+          if (selectingState.size.x === 0 && selectingState.size.y === 0) {
+            // it was only a click (mouse didn't move)
+            // -> select the clicked part(s)
+            // (btw, this is only here to allow selecting rountangles by clicking inside them, all other shapes can be selected entirely by their 'helpers')
+            const [uid, parts] = eventTargetToParts(e.target);
             if (uid) {
-              replaceSelection(oldSelection => new Selection([
-                ...oldSelection,
-                [uid, (oldSelection.get(uid) || new Set()).union(parts)],
-              ]));
+              if (uid) {
+                replaceSelection(oldSelection => new Selection([
+                  ...oldSelection,
+                  [uid, (oldSelection.get(uid) || new Set()).union(parts)],
+                ]));
+              }
             }
           }
+          else {
+            // user made a 'normal' selection:
+            replaceSelection(oldSelection => mergeSelections(oldSelection, newSelection(selectingState)));
+          }
         }
-        else {
-          replaceSelection(oldSelection => mergeSelections(oldSelection, newSelection));
-        }
-      }
-      return null;
+        return null; // <-- no longer making a selection
+      })
+      return null; // <-- no longer dragging
     })
-    // setSelectingState(null); // no longer making a selection
-  }, [replaceState, replaceSelection, dragging, setSelectingState, refSVG.current]);
+  }, [replaceState, replaceSelection, setDragging, setSelectingState, refSVG.current, newSelection]);
 
   const onSelectAll = useCallback(() => {
     setDragging(null);
@@ -336,9 +336,7 @@ export function useMouse(
     }));
   }, [commitState]);
   
-  
-  
-  const renderSelection = useMemo(() => mergeSelections(state.selection, newSelection), [state.selection, newSelection]);
+  const renderSelection = useMemo(() => mergeSelections(state.selection, newSelection(selectingState)), [state.selection, newSelection, selectingState]);
   
   // copy/paste depends on 'useMouse' (it updates the 'dragging' state on paste)
   const copyPasteCallbacks = useCopyPaste(
@@ -348,152 +346,151 @@ export function useMouse(
     () => setDragging(cursorPos), // <-- upon pasting, the pasted shapes follow the mouse cursor until the user clicks at the desired position.
     cursorPos);
     
-    useShortcuts([
-      {keys: ["o"], action: useCallback(() => convertSelection("or"), [convertSelection])},
-      {keys: ["a"], action: useCallback(() => convertSelection("and"), [convertSelection])},
-      {keys: ["Ctrl", "a"], action: onSelectAll},
-    ]);
+  useShortcuts([
+    {keys: ["o"], action: useCallback(() => convertSelection("or"), [convertSelection])},
+    {keys: ["a"], action: useCallback(() => convertSelection("and"), [convertSelection])},
+    {keys: ["Ctrl", "a"], action: onSelectAll},
+  ]);
     
-    useEffect(() => {
-      console.log('registering mouse handlers');
-      // mousemove and mouseup are registered on the window object (i.e., globally) so they keep working when pointer is outside of browser window.
-      // mousedown will be registered on the SVG element.
-      window.addEventListener("mouseup", onMouseUp);
-      window.addEventListener("mousemove", onMouseMove);
-      return () => {
-        window.removeEventListener("mousemove", onMouseMove);
-        window.removeEventListener("mouseup", onMouseUp);
+  useEffect(() => {
+    console.log('registering mouse handlers');
+    // mousemove and mouseup are registered on the window object (i.e., globally) so they keep working when pointer is outside of browser window.
+    // mousedown will be registered on the SVG element.
+    window.addEventListener("mouseup", onMouseUp);
+    window.addEventListener("mousemove", onMouseMove);
+    return () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+    };
+  }, [onMouseUp, onMouseMove]);
+  
+  return {
+    onMouseDown,
+    dragging,
+    setDragging,
+    cursorPos,
+    refSVG,
+    copyPasteCallbacks,
+
+    newSelection,
+    selectingState,
+    renderSelection,
+  };
+}
+    
+// get list of parts of shapes that are within the selecting-rectangle
+function computeSelection(ss: SelectingState, refSVG: {current: SVGSVGElement | null}, zoom: number): Selection {
+  if (ss) {
+    // complete selection
+    const normalizedSS = normalizeRect(ss);
+    const shapes = Array.from(refSVG.current?.querySelectorAll("rect, line, circle, text") || []) as SVGGraphicsElement[];
+    // Note: the same UID may be represented by multiple 'shapes'. Every 'shape' can represent any number of 'parts'.
+    const shapesInSelection = shapes.filter(el => {
+      const bbox = getBBoxInSvgCoords(el, refSVG.current!);
+      const scaledBBox = {
+        topLeft: scaleV2D(bbox.topLeft, 1/zoom),
+        size: scaleV2D(bbox.size, 1/zoom),
+      }
+      return isEntirelyWithin(scaledBBox, normalizedSS);
+    }).filter(el => !el.classList.contains(styles.corner)); // <-- remove corner elements because they mess up the selection
+    
+    const selection: Selection = new Selection();
+    for (const shape of shapesInSelection) {
+      const [uid, parts] = eventTargetToParts(shape);
+      if (uid) {
+        for (const part of parts) {
+          selection.set(uid, (selection.get(uid) as Parts || new Parts()).add(part));
+        }
+      }
+    }
+    return selection;
+  }
+  return new Selection();
+}
+  
+function drag(state: VisualEditorState, pointerDelta: Vec2D) {
+  const getParts = (uid: string) => {
+    return state.selection.get(uid) || new Parts();
+  }
+  return {
+    ...state,
+    rountangles: state.rountangles.map(r => {
+      const selectedParts = getParts(r.uid);
+      if (selectedParts.size === 0) {
+        return r;
+      }
+      return {
+        ...r,
+        ...roundRect2D(transformRect(r, selectedParts, pointerDelta)),
       };
-    }, [onMouseUp, onMouseMove]);
-    
-    return {
-      onMouseDown,
-      dragging,
-      setDragging,
-      cursorPos,
-      refSVG,
-      copyPasteCallbacks,
-
-      newSelection,
-      selectingState,
-      renderSelection,
-    };
-  }
-  
-  
-  export function mergeSelections(a: Selection, b: Selection) {
-    const result = new Selection(a);
-    for (const [uid, parts] of b.entries()) {
-      result.set(uid, (result.get(uid) || new Set()).union(parts));
-    }
-    return result;
-  }
-  
-  // get list of parts of shapes that are within the selecting-rectangle
-  function computeSelection(ss: SelectingState, refSVG: {current: SVGSVGElement | null}, zoom: number): Selection {
-    if (ss) {
-      // complete selection
-      const normalizedSS = normalizeRect(ss);
-      const shapes = Array.from(refSVG.current?.querySelectorAll("rect, line, circle, text") || []) as SVGGraphicsElement[];
-      // Note: the same UID may be represented by multiple 'shapes'. Every 'shape' can represent any number of 'parts'.
-      const shapesInSelection = shapes.filter(el => {
-        const bbox = getBBoxInSvgCoords(el, refSVG.current!);
-        const scaledBBox = {
-          topLeft: scaleV2D(bbox.topLeft, 1/zoom),
-          size: scaleV2D(bbox.size, 1/zoom),
-        }
-        return isEntirelyWithin(scaledBBox, normalizedSS);
-      }).filter(el => !el.classList.contains(styles.corner)); // <-- remove corner elements because they mess up the selection
-      
-      const selection: Selection = new Selection();
-      for (const shape of shapesInSelection) {
-        const [uid, parts] = eventTargetToParts(shape);
-        if (uid) {
-          for (const part of parts) {
-            selection.set(uid, (selection.get(uid) as Parts || new Parts()).add(part));
-          }
-        }
+    })
+    .toSorted((a,b) => area(b) - area(a)), // sort: smaller rountangles are drawn on top
+    diamonds: state.diamonds.map(d => {
+      const selectedParts = getParts(d.uid);
+      if (selectedParts.size === 0) {
+        return d;
       }
-      return selection;
-    }
-    return new Selection();
-  }
-  
-  function drag(state: VisualEditorState, pointerDelta: Vec2D) {
-    const getParts = (uid: string) => {
-      return state.selection.get(uid) || new Parts();
-    }
-    return {
-      ...state,
-      rountangles: state.rountangles.map(r => {
-        const selectedParts = getParts(r.uid);
-        if (selectedParts.size === 0) {
-          return r;
-        }
-        return {
-          ...r,
-          ...roundRect2D(transformRect(r, selectedParts, pointerDelta)),
-        };
-      })
-      .toSorted((a,b) => area(b) - area(a)), // sort: smaller rountangles are drawn on top
-      diamonds: state.diamonds.map(d => {
-        const selectedParts = getParts(d.uid);
-        if (selectedParts.size === 0) {
-          return d;
-        }
-        return {
-          ...d,
-          ...roundRect2D(transformRect(d, selectedParts, pointerDelta)),
-        };
-      }),
-      history: state.history.map(h => {
-        const selectedParts = getParts(h.uid);
-        if (selectedParts.size === 0) {
-          return h;
-        }
-        return {
-          ...h,
-          topLeft: roundVec2D(addV2D(h.topLeft, pointerDelta)),
-        }
-      }),
-      arrows: state.arrows.map(a => {
-        const selectedParts = getParts(a.uid);
-        if (selectedParts.size === 0) {
-          return a;
-        }
-        return {
-          ...a,
-          ...roundLine2D(transformLine(a, selectedParts, pointerDelta)),
-        }
-      }),
-      texts: state.texts.map(t => {
-        const selectedParts = getParts(t.uid);
-        if (selectedParts.size === 0) {
-          return t;
-        }
-        return {
-          ...t,
-          topLeft: roundVec2D(addV2D(t.topLeft, pointerDelta)),
-        }
-      }).toSorted((a,b) => a.topLeft.y - b.topLeft.y),
-    };
-  }
-
-  function eventTargetToParts(target: EventTarget|null) {
-    while (target) {
-      // @ts-ignore: dataset property unknown to TypeScript
-      if (target.dataset?.uid) {
-        return [
-          // @ts-ignore: dataset property unknown to TypeScript
-          target.dataset.uid as string,
-          // @ts-ignore: dataset property unknown to TypeScript
-          new Parts(target.dataset.parts?.split(' ').filter((p:string) => p!=="") || []),
-          // @ts-ignore: classList unknown
-          target.classList.contains(styles.helper) as boolean,
-        ] as const;
+      return {
+        ...d,
+        ...roundRect2D(transformRect(d, selectedParts, pointerDelta)),
+      };
+    }),
+    history: state.history.map(h => {
+      const selectedParts = getParts(h.uid);
+      if (selectedParts.size === 0) {
+        return h;
       }
-      // @ts-ignore
-      target = target.parentNode;
+      return {
+        ...h,
+        topLeft: roundVec2D(addV2D(h.topLeft, pointerDelta)),
+      }
+    }),
+    arrows: state.arrows.map(a => {
+      const selectedParts = getParts(a.uid);
+      if (selectedParts.size === 0) {
+        return a;
+      }
+      return {
+        ...a,
+        ...roundLine2D(transformLine(a, selectedParts, pointerDelta)),
+      }
+    }),
+    texts: state.texts.map(t => {
+      const selectedParts = getParts(t.uid);
+      if (selectedParts.size === 0) {
+        return t;
+      }
+      return {
+        ...t,
+        topLeft: roundVec2D(addV2D(t.topLeft, pointerDelta)),
+      }
+    }).toSorted((a,b) => a.topLeft.y - b.topLeft.y),
+  };
+}
+
+function eventTargetToParts(target: EventTarget|null) {
+  while (target) {
+    // @ts-ignore: dataset property unknown to TypeScript
+    if (target.dataset?.uid) {
+      return [
+        // @ts-ignore: dataset property unknown to TypeScript
+        target.dataset.uid as string,
+        // @ts-ignore: dataset property unknown to TypeScript
+        new Parts(target.dataset.parts?.split(' ').filter((p:string) => p!=="") || []),
+        // @ts-ignore: classList unknown
+        target.classList.contains(styles.helper) as boolean,
+      ] as const;
     }
-    return [undefined, new Parts(), false] as const;
+    // @ts-ignore
+    target = target.parentNode;
   }
+  return [undefined, new Parts(), false] as const;
+}
+
+export function mergeSelections(a: Selection, b: Selection) {
+  const result = new Selection(a);
+  for (const [uid, parts] of b.entries()) {
+    result.set(uid, (result.get(uid) || new Set()).union(parts));
+  }
+  return result;
+}
