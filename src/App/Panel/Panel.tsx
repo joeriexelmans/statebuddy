@@ -25,7 +25,7 @@ export function Panel({state: {items}, setState, globalProps}: PanelProps) {
     }
   };
   const setItems = makePartialSetter(setState, 'items');
-  console.log({items});
+  // console.log({items});
   return <div style={{display: 'flex', flexDirection: 'column', flexGrow: 1, justifyContent: 'space-between'}}>
     <div style={{display: 'flex', flexGrow: 1, flexDirection: 'column'}}>
       {items.map((item, i) => {

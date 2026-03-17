@@ -11,6 +11,7 @@ import { CopyPasteCallbacks, useCopyPaste } from "./useCopyPaste";
 import { VisualEditorState, Parts } from "../VisualEditor.state";
 import { Selection } from "../VisualEditor.state";
 import { EditHistoryCallbacks } from "@/App/hooks/useEditHistory";
+import { useDetectChange, useDetectChange2 } from "@/hooks/useDetectChange";
 
 export type EditorStuff = {
   onMouseDown: (e: React.MouseEvent<SVGSVGElement, MouseEvent>) => void;
@@ -264,7 +265,9 @@ export function useMouse(
       }
       return ss;
     });
-  }, [replaceState, getCurrentPointer, selectingState, setSelectingState, state.selection, dragging, setDragging]);
+  }, [replaceState, getCurrentPointer, setSelectingState, dragging, setDragging]);
+
+  // useDetectChange2({replaceState, getCurrentPointer, setSelectingState, selection: state.selection, dragging, setDragging});
   
   const onMouseUp = useCallback((e: {target: any, pageX: number, pageY: number}) => {
     if (dragging) {
@@ -286,29 +289,32 @@ export function useMouse(
         };
       });
     }
-    if (selectingState) {
-      // we were making a selection
-      if (selectingState.size.x === 0 && selectingState.size.y === 0) {
-        // it was only a click (mouse didn't move)
-        // -> select the clicked part(s)
-        // (btw, this is only here to allow selecting rountangles by clicking inside them, all other shapes can be selected entirely by their 'helpers')
-        const [uid, parts] = eventTargetToParts(e.target);
-        if (uid) {
+    setSelectingState(selectingState => {
+      if (selectingState) {
+        // we were making a selection
+        if (selectingState.size.x === 0 && selectingState.size.y === 0) {
+          // it was only a click (mouse didn't move)
+          // -> select the clicked part(s)
+          // (btw, this is only here to allow selecting rountangles by clicking inside them, all other shapes can be selected entirely by their 'helpers')
+          const [uid, parts] = eventTargetToParts(e.target);
           if (uid) {
-            replaceSelection(oldSelection => new Selection([
-              ...oldSelection,
-              [uid, (oldSelection.get(uid) || new Set()).union(parts)],
-            ]));
+            if (uid) {
+              replaceSelection(oldSelection => new Selection([
+                ...oldSelection,
+                [uid, (oldSelection.get(uid) || new Set()).union(parts)],
+              ]));
+            }
           }
         }
+        else {
+          replaceSelection(oldSelection => mergeSelections(oldSelection, newSelection));
+        }
       }
-      else {
-        replaceSelection(oldSelection => mergeSelections(oldSelection, newSelection));
-      }
-    }
-    setSelectingState(null); // no longer making a selection
-  }, [replaceState, replaceSelection, dragging, selectingState, setSelectingState, refSVG.current]);
-  
+      return null;
+    })
+    // setSelectingState(null); // no longer making a selection
+  }, [replaceState, replaceSelection, dragging, setSelectingState, refSVG.current]);
+
   const onSelectAll = useCallback(() => {
     setDragging(null);
     commitState(state => ({
@@ -349,6 +355,7 @@ export function useMouse(
     ]);
     
     useEffect(() => {
+      console.log('registering mouse handlers');
       // mousemove and mouseup are registered on the window object (i.e., globally) so they keep working when pointer is outside of browser window.
       // mousedown will be registered on the SVG element.
       window.addEventListener("mouseup", onMouseUp);

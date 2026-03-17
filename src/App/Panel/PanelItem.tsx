@@ -101,7 +101,7 @@ export function PanelItem({type, globalProps: {abstractSyntax, simulator, plants
     />
   }
   else if (type === "execution traces") {
-    console.log({propertyResults, activeProp: propertyEditor.activeProperty});
+    // console.log({propertyResults, activeProp: propertyEditor.activeProperty});
     return <>{abstractSyntax &&
       <Traces
         state={traces}

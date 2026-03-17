@@ -18,6 +18,7 @@ type GantryCraneState = {
   y: number,
   destX: number,
   destY: number,
+  magnet: boolean,
   msg: string, // <-- error to display in case of bad request
 }
 
@@ -36,6 +37,7 @@ const initialState: GantryCraneState = {
   y: 100,
   destX: 0,
   destY: 100,
+  magnet: false,
   msg: "",
 }
 
@@ -47,6 +49,7 @@ function GantryCraneView({state, speed, raiseUIEvent}: PlantRenderProps<GantryCr
     return <div>
       <div>Handling request: {state.mode}</div>
       <div>Target: {state.destX}, {state.destY}</div>
+      <div>Magnet is {state.magnet ? <>"on"</> : <>"off</>}</div>
       <div>Will be done at time: {state.nextWakeup} (ms, simtime)</div>
     </div>
   }

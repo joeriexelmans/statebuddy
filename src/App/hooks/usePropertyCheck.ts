@@ -4,7 +4,7 @@ import { PreparedTraces, PropertyCheckResult } from "../SideBar/prepare_trace";
 export function usePropertyCheck(preparedTraces: PreparedTraces, properties: string[], checkProperty: (property: string, preparedTraces: PreparedTraces) => Promise<PropertyCheckResult>) {
   const [propertyResults, setPropertyResults] = useState<PropertyCheckResult[] | undefined>(undefined);
 
-  console.log('pyodide:', {propertyResults});
+  // console.log('pyodide:', {propertyResults});
 
   // if some properties change, re-evaluate them:
   useEffect(() => {
