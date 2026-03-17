@@ -12,7 +12,6 @@ import { Tooltip } from "../Components/Tooltip";
 import { CoupledState, StateBuddyTraceState } from "../hooks/useSimulator";
 import { PlantsState } from "../hooks/useCoupledExecution";
 import { WithSetters } from "../makePartialSetter";
-import { ShowOutputEvents } from "./ShowAST";
 import { PropertyStatusIndicator } from "./PropertyStatusIndicator";
 import { statebuddyPlants } from "../plants";
 import { TracesState } from "./Traces";
@@ -22,6 +21,7 @@ import NotInterestedIcon from '@mui/icons-material/NotInterested';
 import { actionLangValToText } from "@/statecharts/actionlang_prettyprinter";
 import { StatusType } from "../Components/StatusIndicator";
 import { PropertyTrace } from "./prepare_trace";
+import { RaisedEvent } from "@/statecharts/runtime_types";
 
 type TraceProps = WithSetters<{
   currentTrace: StateBuddyTraceState,
@@ -266,7 +266,7 @@ function CoupledDEVSInternalTransition({item, prevItem, status, showMicroSteps, 
     <Column>
       <div>{lookupName(plantsState, componentMadeIntTransition)}</div>
       {!isOutputStep && <DEVSStepCause item={blessedItem} />}
-      <ShowOutputEvents outputEvents={blessedItem.outputEvents} />
+      {blessedItem.outputEvents.map(o => <RaisedOutputEvent event={o}/>)}
       {showMicroSteps && <MicroSteps microsteps={isOutputStep && ["(output from previous step)"] || getMicroSteps(blessedItem)}/>}
       {blessedAs && showTransitions && <ShowFiredTransitions firedTransitions={getFiredTransitions(blessedAs, blessedItem)}/>}
       <ShowEnvironment item={blessedItem} prevItem={blessedTrace.at(-2)} />
@@ -288,6 +288,17 @@ function CoupledDEVSInternalTransition({item, prevItem, status, showMicroSteps, 
       {...{ast, plantsState, showMicroSteps, showTransitions}}
     />
   </>;
+}
+
+function RaisedOutputEvent({event: {name, param}}: {event: RaisedEvent}) {
+  return <Tooltip tooltip='output event' align='left'>
+    <div className={styles.outputEvent} >
+      {/* <ArrowOutwardIcon fontSize="small" style={{verticalAlign: "middle"}}/> */}
+      &#8599;
+      {name}
+      {param !== undefined && <>({actionLangValToText(param)})</>}
+    </div>
+  </Tooltip>
 }
 
 function Column({children}: PropsWithChildren<{}>) {

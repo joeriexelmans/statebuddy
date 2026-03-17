@@ -226,12 +226,21 @@ export function ShowOutputEvents({outputEvents, declaredOutputs, setDeclaredOutp
         : <Tooltip tooltip="add declaration" align='left'><button onClick={declare}><AddIcon fontSize='small'/></button></Tooltip>}
       <Tooltip tooltip='output event' align='left'>
         <div className={styles.outputEvent} >
-          {/* <ArrowOutwardIcon fontSize="small" style={{verticalAlign: "middle"}}/> */}
           &#8599;
           {eventName}
-          {/* {param !== undefined && <>({actionLangValToText(param)})</>} */}
         </div>
       </Tooltip>
     </div>;
   });
+}
+
+export function RaisedOutputEvent({event: {name, param}}: {event: RaisedEvent}) {
+  <Tooltip tooltip='output event' align='left'>
+    <div className={styles.outputEvent} >
+      {/* <ArrowOutwardIcon fontSize="small" style={{verticalAlign: "middle"}}/> */}
+      &#8599;
+      {name}
+      {param !== undefined && <>({actionLangValToText(param)})</>}
+    </div>
+  </Tooltip>
 }
