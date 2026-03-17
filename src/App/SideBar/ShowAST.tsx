@@ -215,11 +215,11 @@ type ShowOutputEventsProps = {
 }>;
 
 
-export function ShowOutputEvents(props: ShowOutputEventsProps) {
-  return props.outputEvents.map((eventName) => {
-    const isDeclared = props.declaredOutputs.some(o => o.event === eventName);
-    const declare = () => props.setDeclaredOutputs(os => [...os, {kind: "event", event: eventName}]);
-    const undeclare = () => props.setDeclaredOutputs(os => os.filter(event => event.event !== eventName))
+export function ShowOutputEvents({outputEvents, declaredOutputs, setDeclaredOutputs}: ShowOutputEventsProps) {
+  return outputEvents.map((eventName) => {
+    const isDeclared = declaredOutputs.some(o => o.event === eventName);
+    const declare = () => setDeclaredOutputs(os => [...os, {kind: "event", event: eventName}]);
+    const undeclare = () => setDeclaredOutputs(os => os.filter(event => event.event !== eventName))
     return <div key={eventName}>
       {isDeclared
         ? <Tooltip tooltip="remove declaration" align='left'><button onClick={undeclare}><RemoveIcon fontSize='small'/></button></Tooltip>

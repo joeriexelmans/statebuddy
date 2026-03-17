@@ -29,6 +29,13 @@ function fullEventName(componentName: string, eventName: string) {
   else return `${componentName}.${eventName}`;
 }
 
+const inoutStyle = {
+  textOverflow: 'ellipsis',
+  overflow: 'hidden',
+  maxWidth: '100%',
+}
+
+// helper for rendering a bunch of connections in a CSS grid
 function Connections({conns, startIdx, componentNames, actions, bgColor}: {
   conns: Model2ModelConn[],
   startIdx: number,
@@ -41,14 +48,14 @@ function Connections({conns, startIdx, componentNames, actions, bgColor}: {
       <div className={connectStyles.row} style={{gridColumn: '1/-1', gridRow: startIdx+i, backgroundColor: bgColor, height: '1.2lh'}}>
               </div>
       <div style={{gridColumn: 1, gridRow: startIdx+i}}>
-        <div className={traceStyles.outputEvent}>
+        <div className={traceStyles.outputEvent} style={inoutStyle}>
           &#8599;
           {fullEventName(componentNames[conn.outputModelName], conn.outputEvent)}
         </div>
       </div>
       <div style={{gridColumn: 2, gridRow: startIdx+i, textAlign: 'center'}}>&rarr;</div>
       <div style={{gridColumn: 3, gridRow: startIdx+i}}>
-        <div className={traceStyles.inputEvent}>
+        <div className={traceStyles.inputEvent} style={inoutStyle}>
           &#8600;
           {fullEventName(componentNames[conn.inputModelName], conn.inputEvent)}
           </div>
@@ -115,7 +122,7 @@ export const Connect = memo(function Connect({abstractSyntax, plantsState, setPl
   return <>
     <div className={connectStyles.grid} style={{
       display: 'grid',
-      gridTemplateColumns: '1fr 20px 1fr auto',
+      gridTemplateColumns: 'minmax(0, 1fr) 20px minmax(0, 1fr) auto',
       alignItems: 'center',
     }}>
       <Connections
@@ -170,6 +177,7 @@ export const Connect = memo(function Connect({abstractSyntax, plantsState, setPl
             setSelectedOutput(e.target.value);
             setSelectedInput(si => findMatchingEvent(e.target.value, allOutputs, allInputs, si))
           }}
+          style={inoutStyle}
         >
           <option style={{fontStyle: 'italic'}} value="-1"></option>
           {allOutputs.map(([componentId, outputEvent], i) =>
@@ -207,6 +215,7 @@ export const Connect = memo(function Connect({abstractSyntax, plantsState, setPl
             setSelectedInput(e.target.value);
             setSelectedOutput(si => findMatchingEvent(e.target.value, allInputs, allOutputs, si));
           }}
+          style={inoutStyle}
         >
           <option style={{fontStyle: 'italic'}} value="-1"></option>
           {allInputs.map(([componentId, inputEvent], i) =>
