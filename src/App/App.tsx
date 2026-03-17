@@ -40,6 +40,7 @@ import { GlobalProps } from "./Panel/PanelItem";
 import { ResizeHandle } from "./Panel/ResizeHandle";
 import { SizedPanel } from "./Panel/SizedPanel";
 import { WithShadow } from "./Components/WithShadow";
+import { defaultPropertyEditorState } from "./SideBar/PropertyEditor";
 
 export function App() {
   // The entire persisted application state (minus the visual editor state)
@@ -110,23 +111,27 @@ export function App() {
 
   appState.sideBar.propertyEditor.showTable
 
-  const setSideBar = makePartialSetter(setAppState, "sideBar");
+
+  const setSideBar = setters.setSideBar;
   const {setPlantsState, setPropertyEditor, setTraces, setMqtt} = makeAllSetters(
     setSideBar,
     // @ts-ignore
     Object.keys(appState.sideBar));
-  const setShowTable = makePartialSetter(setPropertyEditor, "showTable");
-  const setProperties = makePartialSetter(setPropertyEditor, "properties");
+    // @ts-ignore
+  const propEditSetters = makeAllSetters(setPropertyEditor, Object.keys(defaultPropertyEditorState));
+  const setShowTable = propEditSetters.setShowTable;
+  const setProperties = propEditSetters.setProperties;
   const setSavedTraces = makePartialSetter(setTraces, "savedTraces");
 
   const hidePropertyTable = useCallback(() => setShowTable(false), [setShowTable]);
   const hideDebug = useCallback(() => setters.setTopPanel(tp => ({...tp, showDebug: false})), [setters.setTopPanel]);
   const hideFindReplace = useCallback(() => setters.setTopPanel(tp => ({...tp, showFindReplace: false})), [setters.setTopPanel]);
+  const hideModal = useCallback(() => setModal(null), [setModal]);
 
   const onAboutStateBuddy = useCallback(() => setModal(<About setModal={setModal} {...trial}/>), [trial]);
   const onOpen = useCallback((modelName: string) => {
     editorState && setModal(<OpenFile
-      onClose={() => setModal(null)}
+      onClose={hideModal}
       properties={appState.sideBar.propertyEditor.properties}
       savedTraces={appState.sideBar.traces.savedTraces}
       setSavedTraces={setSavedTraces}
