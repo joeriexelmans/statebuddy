@@ -445,7 +445,7 @@ function TopicView({topic, setTopic, client, clientStatus, baseTopic, onDelete, 
             />
             <DoubleClickButton
               tooltip="delete mapping"
-              align="left"
+              align="right"
               onDoubleClick={() => setters.setInputMappings((m) => m.toSpliced(i, 1))}
             >
               <DeleteOutlineIcon fontSize="small"/>
@@ -492,7 +492,7 @@ function TopicView({topic, setTopic, client, clientStatus, baseTopic, onDelete, 
             />
             <DoubleClickButton
               tooltip="delete mapping"
-              align="left"
+              align="right"
               onDoubleClick={() => setters.setOutputMappings((m) => m.toSpliced(i, 1))}
             >
               <DeleteOutlineIcon fontSize="small"/>

@@ -41,6 +41,7 @@ import { ResizeHandle } from "./Panel/ResizeHandle";
 import { SizedPanel } from "./Panel/SizedPanel";
 import { WithShadow } from "./Components/WithShadow";
 import { defaultPropertyEditorState } from "./SideBar/PropertyEditor";
+import { ScrollVertically } from "./Components/ScrollVertically";
 
 export function App() {
   // The entire persisted application state (minus the visual editor state)
@@ -170,152 +171,147 @@ export function App() {
     setDeclaredOutputs: setters.setDeclaredOutputs,
   }), [appState, abstractSyntax, simulator, propertyResults]);
 
-  return <div className={styles.App}>
+  return <div className={styles.App} style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
     <ModalOverlay modal={modal} setModal={setModal}>
-      {/* top-to-bottom: everything -> bottom panel */}
-      <div className={styles.stackVertical} style={{height:'100%'}}>
 
-        {/* left-to-right: main -> sidebar */}
-        <div className={styles.stackHorizontal} style={{flexGrow:1, overflow: "auto"}}>
+      {/* Top bar */}
+      <WithShadow>
+        {editHistory && editorState &&
+          <TopPanel
+            topPanel={appState.topPanel}
+            setTopPanel={setters.setTopPanel}
+            editorState={editorState}
+            historyCallbacks={historyCallbacks}
+            startDragging={editorStuff.setDragging}
+            editHistory={editHistory}
+            simulator={simulator}
+            displayTime={displayTime}
+            refreshDisplayTime={refreshDisplayTime}
+            modelSize={modelSize}
+            trial={trial}
+            onAboutStateBuddy={onAboutStateBuddy}
+            onOpen={onOpen}
+            onSave={onSave}
+          />}
+      </WithShadow>
 
-          {/* Left panel */}
-          <SizedPanel width={appState.leftPanelWidth}>
-            <Panel
-              state={appState.leftPanel}
-              setState={setters.setLeftPanel}
-              globalProps={globalProps}
-            />
-          </SizedPanel>
-          <ResizeHandle
-            getDelta={e => e.movementX}
-            setSize={setters.setLeftPanelWidth}/>
+      {/* Between top bar and bottom bar(s), we have, from left to right: panel, editor, panel */}
+      <div className={styles.stackHorizontal} style={{flexGrow: 1, overflow: 'clip auto'}}>
 
-          {/* top-to-bottom: top bar, editor */}
-          <div className={styles.stackVertical} style={{flexGrow:1, overflow: "hidden"}}>
-            {/* Top bar */}
-            <WithShadow>
-              {editHistory && editorState &&
-                <TopPanel
-                  topPanel={appState.topPanel}
-                  setTopPanel={setters.setTopPanel}
-                  editorState={editorState}
-                  historyCallbacks={historyCallbacks}
-                  startDragging={editorStuff.setDragging}
-                  editHistory={editHistory}
-                  simulator={simulator}
-
-                  displayTime={displayTime}
-                  refreshDisplayTime={refreshDisplayTime}
-
-                  modelSize={modelSize}
-                  trial={trial}
-                  
-                  onAboutStateBuddy={onAboutStateBuddy}
-                  onOpen={onOpen}
-                  onSave={onSave}
-                />}
-            </WithShadow>
-
-            {/* Editor */}
-            <div style={{flexGrow: 1, overflow: "auto"}}>
-              {editorState && topology && syntaxErrors &&
-                <DebugContext value={appState.debug}>
-                  <VisualEditor
-                    state={editorState}
-                    // @ts-ignore
-                    setState={historyCallbacks.commitState}
-                    topology={topology}
-                    editorStuff={editorStuff}
-                    findText={appState.topPanel.showFindReplace && appState.findReplace.findText || ""}
-                    zoom={appState.topPanel.zoom}
-                    mouseMap={appState.topPanel.mouseMap}
-                    highlightActive={simulator.highlightActive}
-                    highlightTransitions={simulator.highlightTransitions}
-                    syntaxErrors={allErrors}
-                    setModal={setModal}
-                  />
-                </DebugContext>}
-            </div>
-            
-            {/* Stuff that shows below editor but next to sidebar */}
-            <Greeter trial={trial}/>
-            {appState.sideBar.propertyEditor.showTable && appState.sideBar.propertyEditor.properties.length > 0 && appState.sideBar.traces.savedTraces.length > 0 && coupledExecution && abstractSyntax &&
-              <BelowEditor>
-                <PropertyTraceTable
-                  abstractSyntax={abstractSyntax}
-                  properties={appState.sideBar.propertyEditor.properties}
-                  traces={appState.sideBar.traces.savedTraces}
-                  onClose={hidePropertyTable}
-                  checkProperty={pyodide.checkProperty}
-                  cE={coupledExecution}
-                  plantsState={appState.sideBar.plantsState}
-                />
-              </BelowEditor>}
-            {editorState && appState.topPanel.showFindReplace &&
-              <BelowEditor>
-                <FindReplace
-                  state={appState.findReplace}
-                  setState={setters.setFindReplace}
-                  cs={editorState}
-                  setCS={historyCallbacks.commitState}
-                  hide={hideFindReplace}/>
-              </BelowEditor>
-            }
-            {appState.topPanel.showDebug &&
-              <BelowEditor>
-                <DebugPanel
-                  {...appState.debug}
-                  {...debugSetters}
-                  onHide={hideDebug}
-                />
-              </BelowEditor>}
-
-          </div>
-
-          {/* Right panel */}
-          <ResizeHandle
-            getDelta={e => -e.movementX}
-            setSize={setters.setRightPanelWidth}
+        {/* Left panel */}
+        <SizedPanel width={appState.leftPanelWidth}>
+          <Panel
+            state={appState.leftPanel}
+            setState={setters.setLeftPanel}
+            globalProps={globalProps}
           />
-          <SizedPanel width={appState.rightPanelWidth}>
-            <Panel
-              state={appState.rightPanel}
-              setState={setters.setRightPanel}
-              globalProps={globalProps}
-            />
-          </SizedPanel>
+        </SizedPanel>
+        <ResizeHandle
+          getDelta={e => e.movementX}
+          setSize={setters.setLeftPanelWidth}/>
+
+        {/* top-to-bottom: editor, find & replace, ... */}
+        <div style={{display: 'flex', flexDirection: 'column', flexGrow: 1,
+          overflow: 'auto', // <-- this element will overflow in the X-direction (because its parent is a ROW)
+        }}>
+
+          {/* Editor */}
+          <div style={{overflow: 'auto'}}> {/* <-- this element will overflow in the Y-direction (because its parent is a COLUMN) */}
+            {editorState && topology && syntaxErrors &&
+              <DebugContext value={appState.debug}>
+                <VisualEditor
+                  state={editorState}
+                  // @ts-ignore
+                  setState={historyCallbacks.commitState}
+                  topology={topology}
+                  editorStuff={editorStuff}
+                  findText={appState.topPanel.showFindReplace && appState.findReplace.findText || ""}
+                  zoom={appState.topPanel.zoom}
+                  mouseMap={appState.topPanel.mouseMap}
+                  highlightActive={simulator.highlightActive}
+                  highlightTransitions={simulator.highlightTransitions}
+                  syntaxErrors={allErrors}
+                  setModal={setModal}
+                />
+              </DebugContext>}
+          </div>
+          
+          <Greeter trial={trial}/>
+          {appState.sideBar.propertyEditor.showTable && appState.sideBar.propertyEditor.properties.length > 0 && appState.sideBar.traces.savedTraces.length > 0 && coupledExecution && abstractSyntax &&
+            <BelowEditor>
+              <PropertyTraceTable
+                abstractSyntax={abstractSyntax}
+                properties={appState.sideBar.propertyEditor.properties}
+                traces={appState.sideBar.traces.savedTraces}
+                onClose={hidePropertyTable}
+                checkProperty={pyodide.checkProperty}
+                cE={coupledExecution}
+                plantsState={appState.sideBar.plantsState}
+              />
+            </BelowEditor>}
+          {editorState && appState.topPanel.showFindReplace &&
+            <BelowEditor>
+              <FindReplace
+                state={appState.findReplace}
+                setState={setters.setFindReplace}
+                cs={editorState}
+                setCS={historyCallbacks.commitState}
+                hide={hideFindReplace}/>
+            </BelowEditor>
+          }
+          {appState.topPanel.showDebug &&
+            <BelowEditor>
+              <DebugPanel
+                {...appState.debug}
+                {...debugSetters}
+                onHide={hideDebug}
+              />
+            </BelowEditor>}
         </div>
 
-        {/* Bottom panel */}
-        <div style={{flex: '0 0 content', borderTop: '1px solid var(--separator-color'}}>
-          <div className={styles.statusBar}>
-            <PersistentDetails state={appState.showPlot} setState={setters.setShowPlot}>
-              <summary>
-                plot
-                <Tooltip tooltip="All signals are boolean. Input/ouput event parameters start with `in_`/`out_` resp. Plant state starts with `<plantname>_`" above align="left">
-                  <HelpOutlineIcon fontSize='small'/>
-                </Tooltip>
-              </summary>
-              {preparedTraces && simulator.trace && appState.showPlot &&
-                <Plot width="100%"
-                  prepped={tracesAndResults}
-                  trace={simulator.trace}
-                  state={appState.plot}
-                  setState={setters.setPlot}
-                  displayTime={displayTime}
-                />}
-            </PersistentDetails>
-          </div>
-          {syntaxErrors && abstractSyntax &&
-            <BottomPanel
-              abstractSyntax={abstractSyntax}
-              state={appState.bottomPanel}
-              setState={setters.setBottomPanel}
-              errors={syntaxErrors}
-              pyodideStatus={pyodide.status}
-            />
-          }
+        {/* Right panel */}
+        <ResizeHandle
+          getDelta={e => -e.movementX}
+          setSize={setters.setRightPanelWidth}
+        />
+        <SizedPanel width={appState.rightPanelWidth}>
+          <Panel
+            state={appState.rightPanel}
+            setState={setters.setRightPanel}
+            globalProps={globalProps}
+          />
+        </SizedPanel>
+      </div>
+
+      {/* Bottom bars */}
+      <div style={{flex: '0 0 content', borderTop: '1px solid var(--separator-color'}}>
+        <div className={styles.statusBar}>
+          <PersistentDetails state={appState.showPlot} setState={setters.setShowPlot}>
+            <summary>
+              plot
+              <Tooltip tooltip="All signals are boolean. Input/ouput event parameters start with `in_`/`out_` resp. Plant state starts with `<plantname>_`" above align="left">
+                <HelpOutlineIcon fontSize='small'/>
+              </Tooltip>
+            </summary>
+            {preparedTraces && simulator.trace && appState.showPlot &&
+              <Plot width="100%"
+                prepped={tracesAndResults}
+                trace={simulator.trace}
+                state={appState.plot}
+                setState={setters.setPlot}
+                displayTime={displayTime}
+              />}
+          </PersistentDetails>
         </div>
+        {syntaxErrors && abstractSyntax &&
+          <BottomPanel
+            abstractSyntax={abstractSyntax}
+            state={appState.bottomPanel}
+            setState={setters.setBottomPanel}
+            errors={syntaxErrors}
+            pyodideStatus={pyodide.status}
+          />
+        }
       </div>
     </ModalOverlay>
   </div>;

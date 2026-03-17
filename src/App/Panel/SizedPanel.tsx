@@ -9,7 +9,7 @@ export function SizedPanel({width, children}: PropsWithChildren<{width: number}>
     style={{
       flex: '0 0 content',
       overflowY: "auto",
-      overflowX: "hidden",
+      overflowX: "clip",
       flexBasis: width,
       maxWidth: '75vw',
       height: '100%',
