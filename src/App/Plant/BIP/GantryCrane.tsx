@@ -82,7 +82,6 @@ export const gantryCranePlant: Plant<GantryCraneState, GantryCraneCleanState> = 
     },
     extTransition: (simtime, s, bagOfInputs) => {
       const lastMagnetRequest = bagOfInputs.filter(i => i.name === "magnet").at(-1);
-      console.log(lastMagnetRequest);
       let newMagnetState = s.magnet;
       if (lastMagnetRequest) {
         
