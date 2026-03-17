@@ -10,6 +10,7 @@ import { MQTT, MQTTState } from "../SideBar/MQTT";
 import { PropertyEditor, PropertyEditorState } from "../SideBar/PropertyEditor";
 import { PropertyCheckResult } from "../SideBar/prepare_trace";
 import { Traces, TracesState } from "../SideBar/Traces";
+import { EventTrigger } from "@/statecharts/label_ast";
 
 // Union of all the stuff any of the panels need to know about
 export type GlobalProps = {
@@ -21,6 +22,8 @@ export type GlobalProps = {
   mqtt: MQTTState,
   propertyEditor: PropertyEditorState,
   traces: TracesState,
+  declaredInputs: EventTrigger[],
+  declaredOutputs: EventTrigger[],
 }>
 
 export type PanelType =
@@ -44,15 +47,14 @@ export const panelTypes: PanelType[] = [
   "mqtt",
   "properties",
   "execution traces",
-]
-
+];
 
 type PanelItemProps = {
   type: PanelType,
   globalProps: GlobalProps,
 }
 
-export function PanelItem({type, globalProps: {abstractSyntax, simulator, plantsState, setPlantsState, mqtt, setMqtt, propertyEditor, setPropertyEditor, propertyResults, traces, setTraces}}: PanelItemProps) {
+export function PanelItem({type, globalProps: {abstractSyntax, simulator, plantsState, setPlantsState, mqtt, setMqtt, propertyEditor, setPropertyEditor, propertyResults, traces, setTraces, declaredInputs, setDeclaredInputs, declaredOutputs, setDeclaredOutputs}}: PanelItemProps) {
 
   if (type === "state tree") {
     return <>{abstractSyntax && <ShowAST root={abstractSyntax.root}/>}</>
@@ -61,13 +63,20 @@ export function PanelItem({type, globalProps: {abstractSyntax, simulator, plants
     return <Columned>{abstractSyntax && <ShowInputEvents
       inputEvents={abstractSyntax.inputEvents}
       simulator={simulator}
+      declaredInputs={declaredInputs}
+      setDeclaredInputs={setDeclaredInputs}
     />}</Columned>
   }
   else if (type === "internal events") {
     return <Columned>{abstractSyntax && <ShowInternalEvents internalEvents={abstractSyntax.internalEvents}/>}</Columned>
   }
   else if (type === "output events") {
-    return <Columned>{abstractSyntax && <ShowOutputEvents outputEvents={[...abstractSyntax.outputEvents].toSorted((a,b) => a.localeCompare(b)).map(e => ({name: e}))}/>
+    return <Columned>{abstractSyntax &&
+      <ShowOutputEvents
+        outputEvents={[...abstractSyntax.outputEvents]}
+        declaredOutputs={declaredOutputs}
+        setDeclaredOutputs={setDeclaredOutputs}
+      />
       }</Columned>
   }
   else if (type === "plants") {

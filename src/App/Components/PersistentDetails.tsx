@@ -1,4 +1,4 @@
-import { usePersistentState } from "@/hooks/usePersistentState"
+import { useLocalStorage } from "@/hooks/usePersistentState"
 import { DetailsHTMLAttributes, Dispatch, PropsWithChildren, SetStateAction } from "react";
 
 type Props = {
@@ -8,7 +8,7 @@ type Props = {
 
 // A <details> node that remembers whether it was open or closed by storing that state in localStorage.
 export function PersistentDetailsLocalStorage({localStorageKey, initiallyOpen, children, ...rest}: PropsWithChildren<Props>) {
-  const [open, setOpen] = usePersistentState(localStorageKey, initiallyOpen);
+  const [open, setOpen] = useLocalStorage(localStorageKey, initiallyOpen);
   return <details open={open} onToggle={e => setOpen(e.newState === "open")} {...rest}>
     {children}
   </details>;

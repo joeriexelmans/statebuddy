@@ -372,7 +372,7 @@ export function useMouse(
     refSVG,
     copyPasteCallbacks,
 
-    newSelection,
+    newSelection: newSelection(selectingState),
     selectingState,
     renderSelection,
   };

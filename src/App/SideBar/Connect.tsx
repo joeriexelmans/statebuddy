@@ -14,7 +14,7 @@ import { DoubleClickButton } from "../Components/DoubleClickButton";
 import { Tooltip } from "../Components/Tooltip";
 import { statebuddyPlants } from "../plants";
 import { objectsEqual } from "@/util/util";
-import { usePersistentState } from "@/hooks/usePersistentState";
+import { useLocalStorage } from "@/hooks/usePersistentState";
 
 type ConnectProps = {
   abstractSyntax: Statechart,
@@ -61,8 +61,8 @@ function Connections({conns, startIdx, componentNames, actions, bgColor}: {
 }
 
 export const Connect = memo(function Connect({abstractSyntax, plantsState, setPlantsState}: ConnectProps) {
-  const [selectedOutput, setSelectedOutput] = usePersistentState("connect.selectedOutput", "-1");
-  const [selectedInput, setSelectedInput] = usePersistentState("connect.selectedInput", "-1");
+  const [selectedOutput, setSelectedOutput] = useLocalStorage("connect.selectedOutput", "-1");
+  const [selectedInput, setSelectedInput] = useLocalStorage("connect.selectedInput", "-1");
   const plants = plantsState.plants.map(({id, type}) => [id, statebuddyPlants[type]!] as const);
   const names = Object.fromEntries([
     ['sc', ''],

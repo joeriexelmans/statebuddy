@@ -1,4 +1,4 @@
-import { usePersistentState } from "@/hooks/usePersistentState";
+import { useLocalStorage } from "@/hooks/usePersistentState";
 import { useCallback, useMemo } from "react";
 
 export type Trial = {
@@ -9,7 +9,7 @@ export type Trial = {
 }
 
 export function useTrial() {
-  const [whenStarted, setWhenStarted] = usePersistentState<string|null>("stateboss-trial-started", null);
+  const [whenStarted, setWhenStarted] = useLocalStorage<string|null>("stateboss-trial-started", null);
 
   const startTrial = useCallback(() => {
     const now = new Date().toISOString();

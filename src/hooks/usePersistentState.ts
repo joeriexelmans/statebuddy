@@ -2,7 +2,7 @@ import { Dispatch, SetStateAction, useCallback, useState } from "react";
 
 // like useState, but it is persisted in localStorage
 // important: values must be JSON-(de-)serializable
-export function usePersistentState<T>(key: string, initial: T): [T, Dispatch<SetStateAction<T>>] {
+export function useLocalStorage<T>(key: string, initial: T): [T, Dispatch<SetStateAction<T>>] {
   const [state, setState] = useState(() => {
     const recovered = localStorage.getItem(key);
     let parsed;

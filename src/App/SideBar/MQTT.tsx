@@ -16,7 +16,7 @@ import { useDisposable } from "../hooks/useDisposable";
 import { SimulatorStuff } from "../hooks/useSimulator";
 import { makeAllSetters, makePartialArraySetter, makePartialSetter, WithSetters } from "../makePartialSetter";
 import { Toolbar } from "../TopPanel/Toolbar";
-import { usePersistentState } from "@/hooks/usePersistentState";
+import { useLocalStorage } from "@/hooks/usePersistentState";
 import { TwoStateButton } from "../Components/TwoStateButton";
 import { DoubleClickButton } from "../Components/DoubleClickButton";
 import { ClickToCopy } from "../Components/ClickToCopy";
@@ -100,7 +100,7 @@ export function MQTT({state, setState, simulator, abstractSyntax}: MQTTProps) {
   const [error, setError] = useState("");
 
   // for convenience, we store brokers/topics that we successfully connected/subscribed to in the past in localStorage 
-  const [knownBrokers, setKnownBrokers] = usePersistentState<string[]>("known-brokers", []);
+  const [knownBrokers, setKnownBrokers] = useLocalStorage<string[]>("known-brokers", []);
   // const [knownTopics, setKnownTopics] = usePersistentState<string[]>("known-topics", []);
 
   // Connect to MQTT...

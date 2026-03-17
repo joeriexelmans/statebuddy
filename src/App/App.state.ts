@@ -1,5 +1,6 @@
 // Most of the application state is contained herein.
 
+import { EventTrigger } from "@/statecharts/label_ast";
 import { BottomPanelState, defaultBottomPanelState } from "./BottomPanel/BottomPanel.state";
 import { DebugState, defaultDebugState } from "./BottomPanel/Debug";
 import { defaultPlotState, PlotState } from "./BottomPanel/Plot";
@@ -25,6 +26,9 @@ export type AppState = {
 
   leftPanelWidth: number,
   rightPanelWidth: number,
+
+  declaredInputs: EventTrigger[],
+  declaredOutputs: EventTrigger[],
 };
 
 export const defaultAppState: AppState = {
@@ -51,4 +55,7 @@ export const defaultAppState: AppState = {
 
   leftPanelWidth: 200,
   rightPanelWidth: 300,
+
+  declaredInputs: [],
+  declaredOutputs: [],
 };

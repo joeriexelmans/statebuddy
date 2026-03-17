@@ -30,7 +30,6 @@ import { About } from "./Modals/About";
 import { OpenFile } from "./Modals/OpenFile";
 import { ModalOverlay } from "./Overlays/ModalOverlay";
 import { prepareTraces } from "./SideBar/prepare_trace";
-import { defaultSideBarState, SideBar } from "./SideBar/SideBar";
 import { TopPanel } from "./TopPanel/TopPanel";
 import { DebugContext } from "./VisualEditor/context/DebugContext";
 import { useMouse } from "./VisualEditor/hooks/useMouse";
@@ -63,7 +62,7 @@ export function App() {
   const trial = useTrial();
 
   const editorState = editHistory && editHistory.current;
-  const {topology, abstractSyntax, syntaxErrors} = useParser(editorState);
+  const {topology, abstractSyntax, syntaxErrors} = useParser(editorState, appState.declaredInputs, appState.declaredOutputs);
   const historyCallbacks = useEditHistory(setEditHistory);
 
   // Show model name and last edit timestamp in document title (useful for bookmarking).
@@ -160,6 +159,10 @@ export function App() {
     setPlantsState,
     setPropertyEditor,
     setTraces,
+    declaredInputs: appState.declaredInputs,
+    setDeclaredInputs: setters.setDeclaredInputs,
+    declaredOutputs: appState.declaredOutputs,
+    setDeclaredOutputs: setters.setDeclaredOutputs,
   };
 
   return <div className={styles.App}>
@@ -263,21 +266,6 @@ export function App() {
               </BelowEditor>}
 
           </div>
-
-          {/* Right: sidebar */}
-          {/* <ResizeHandle
-            getDelta={e => -e.movementX}
-            setSize={setters.setSidePanelWidth}
-          />
-          <SizedPanel width={appState.sidePanelWidth}>
-            <SideBar
-              abstractSyntax={abstractSyntax}
-              state={appState.sideBar}
-              setState={setters.setSideBar}
-              simulator={simulator}
-              propertyResults={propertyResults}
-            />
-          </SizedPanel> */}
 
           {/* Right panel */}
           <ResizeHandle

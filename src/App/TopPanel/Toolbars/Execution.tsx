@@ -15,7 +15,7 @@ import FlareIcon from '@mui/icons-material/Flare';
 import ClearIcon from '@mui/icons-material/Clear';
 
 import { formatTime } from '@/util/util';
-import { usePersistentState } from '@/hooks/usePersistentState';
+import { useLocalStorage } from '@/hooks/usePersistentState';
 import { setPaused, setRealtime } from '@/statecharts/time';
 import { useShortcuts } from '@/hooks/useShortcuts';
 
@@ -27,7 +27,7 @@ type ExecutionProps = {
 };
 
 export function Execution({simulator, showKeys, refreshDisplayTime, displayTime}: ExecutionProps) {
-  const [timescale, setTimescale] = usePersistentState("timescale", 1);
+  const [timescale, setTimescale] = useLocalStorage("timescale", 1);
 
   const nextWakeup = infinityIfUndefined(simulator.nextWakeup);
   const {currentTraceItem, simulatorCallbacks, time, setTime} = simulator;
