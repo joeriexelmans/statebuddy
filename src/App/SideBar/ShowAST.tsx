@@ -233,14 +233,3 @@ export function ShowOutputEvents({outputEvents, declaredOutputs, setDeclaredOutp
     </div>;
   });
 }
-
-export function RaisedOutputEvent({event: {name, param}}: {event: RaisedEvent}) {
-  <Tooltip tooltip='output event' align='left'>
-    <div className={styles.outputEvent} >
-      {/* <ArrowOutwardIcon fontSize="small" style={{verticalAlign: "middle"}}/> */}
-      &#8599;
-      {name}
-      {param !== undefined && <>({actionLangValToText(param)})</>}
-    </div>
-  </Tooltip>
-}
