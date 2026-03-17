@@ -120,15 +120,18 @@ export function useCopyPaste(state: VisualEditorState, commitState: Dispatch<(v:
   }, [state, selection]);
 
   const deleteSelection = useCallback(() => {
-    commitState(state => ({
-      ...state,
-      rountangles: state.rountangles.filter(r => !state.selection.has(r.uid)),
-      diamonds: state.diamonds.filter(d => !state.selection.has(d.uid)),
-      history: state.history.filter(h => !state.selection.has(h.uid)),
-      arrows: state.arrows.filter(a => !state.selection.has(a.uid)),
-      texts: state.texts.filter(t => !state.selection.has(t.uid)),
-      selection: new Selection(),
-    }));
+    commitState(state => {
+      const es = entirelySelectedShapes(state, state.selection);
+      return {
+        ...state,
+        rountangles: state.rountangles.filter(y => !es.rountangles.some(x => x.uid === y.uid)),
+        diamonds: state.diamonds.filter(y => ! es.diamonds.some(x => x.uid === y.uid)),
+        history: state.history.filter(y => ! es.history.some(x => x.uid === y.uid)),
+        arrows: state.arrows.filter(y => ! es.arrows.some(x => x.uid === y.uid)),
+        texts: state.texts.filter(y => ! es.texts.some(x => x.uid === y.uid)),
+        selection: new Selection(),
+      };
+    });
   }, [commitState]);
 
   useShortcuts([
