@@ -4,10 +4,8 @@ type GantryCraneRequest = "move" | "hoist" | "freeze";
 
 type GantryCraneMode = "idle" | GantryCraneRequest;
 
-const validRequests = ["move", "hoist", "freeze"] as GantryCraneRequest[];
-
-// e.g., validResponse("move") === "doneMove"
-const validResponse = (m: GantryCraneRequest) => {
+// e.g., response("move") === "doneMove"
+const response = (m: GantryCraneRequest) => {
   return "done"+m[0].toUpperCase()+m.slice(1);
 }
 
@@ -19,7 +17,6 @@ type GantryCraneState = {
   destX: number,
   destY: number,
   magnet: boolean,
-  msg: string, // <-- error to display in case of bad request
 }
 
 type GantryCraneCleanState = {
@@ -38,18 +35,20 @@ const initialState: GantryCraneState = {
   destX: 0,
   destY: 100,
   magnet: false,
-  msg: "",
 }
 
 function GantryCraneView({state, speed, raiseUIEvent}: PlantRenderProps<GantryCraneCleanState>) {
   if (state.idle) {
-    return <div>Crane is IDLE</div>
+    return <div>
+      <div>Crane is IDLE</div>
+      <div>Magnet is {state.magnet ? <>ON</> : <>OFF</>}</div>
+    </div>;
   }
   else {
     return <div>
-      <div>Handling request: {state.mode}</div>
+      <div>Handling request: {state.mode.toUpperCase()}</div>
+      <div>Magnet is {state.magnet ? <>ON</> : <>OFF</>}</div>
       <div>Target: {state.destX}, {state.destY}</div>
-      <div>Magnet is {state.magnet ? <>"on"</> : <>"off</>}</div>
       <div>Will be done at time: {state.nextWakeup} (ms, simtime)</div>
     </div>
   }
@@ -68,7 +67,7 @@ export const gantryCranePlant: Plant<GantryCraneState, GantryCraneCleanState> = 
         throw new Error("crane cannot make intTransition! timeAdvance infinity");
       }
       else {
-        const outputEvents = [{name: validResponse(s.mode)}];
+        const outputEvents = [{name: response(s.mode)}];
         const newState = {
           ...s,
           mode: "idle" as GantryCraneMode,
@@ -82,6 +81,13 @@ export const gantryCranePlant: Plant<GantryCraneState, GantryCraneCleanState> = 
       }
     },
     extTransition: (simtime, s, bagOfInputs) => {
+      const lastMagnetRequest = bagOfInputs.filter(i => i.name === "magnet").at(-1);
+      console.log(lastMagnetRequest);
+      let newMagnetState = s.magnet;
+      if (lastMagnetRequest) {
+        
+        newMagnetState = lastMagnetRequest.param;
+      }
       if (s.mode === "idle") {
         // we'll handle at most one event
         // find first valid request among bag of inputs:
@@ -104,6 +110,7 @@ export const gantryCranePlant: Plant<GantryCraneState, GantryCraneCleanState> = 
             nextWakeup: simtime + 3587, // <-- every request takes this many millisecs :p
             ...dest,
             msg: "",
+            magnet: newMagnetState,
           };
         }
       }
@@ -114,16 +121,17 @@ export const gantryCranePlant: Plant<GantryCraneState, GantryCraneCleanState> = 
             ...s,
             mode: "freeze",
             nextWakeup: simtime + 1987, // <-- Harel ;)
+            magnet: newMagnetState,
           };
         }
       }
       return {
         ...s,
-        msg: "invalid request",
+        magnet: newMagnetState,
       };
     },
-    inputs: validRequests,
-    outputs: validRequests.map(validResponse),
+    inputs: ["move", "hoist", "freeze", "magnet"],
+    outputs: ["doneMove", "doneHoist", "doneFreeze"],
   },
   cleanupState: x => ({
     ...x,
@@ -139,5 +147,6 @@ export const gantryCranePlant: Plant<GantryCraneState, GantryCraneCleanState> = 
     "moving",
     "hoisting",
     "freezing",
+    "magnet",
   ],
 }
