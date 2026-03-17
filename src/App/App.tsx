@@ -41,7 +41,6 @@ import { ResizeHandle } from "./Panel/ResizeHandle";
 import { SizedPanel } from "./Panel/SizedPanel";
 import { WithShadow } from "./Components/WithShadow";
 import { defaultPropertyEditorState } from "./SideBar/PropertyEditor";
-import { ScrollVertically } from "./Components/ScrollVertically";
 
 export function App() {
   // The entire persisted application state (minus the visual editor state)
