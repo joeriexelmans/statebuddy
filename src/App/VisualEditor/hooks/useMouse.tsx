@@ -11,13 +11,12 @@ import { CopyPasteCallbacks, useCopyPaste } from "./useCopyPaste";
 import { VisualEditorState, Parts } from "../VisualEditor.state";
 import { Selection } from "../VisualEditor.state";
 import { EditHistoryCallbacks } from "@/App/hooks/useEditHistory";
-import { useDetectChange, useDetectChange2 } from "@/hooks/useDetectChange";
+import { useDetectChange2 } from "@/hooks/useDetectChange";
 
 export type EditorStuff = {
   onMouseDown: (e: React.MouseEvent<SVGSVGElement, MouseEvent>) => void;
   dragging: Vec2D | null;
   setDragging: Dispatch<SetStateAction<Vec2D | null>>;
-  cursorPos: Vec2D;
   refSVG: RefObject<SVGSVGElement | null>;
   copyPasteCallbacks: CopyPasteCallbacks;
 
@@ -343,8 +342,8 @@ export function useMouse(
     state,
     commitState,
     renderSelection,
-    () => setDragging(cursorPos), // <-- upon pasting, the pasted shapes follow the mouse cursor until the user clicks at the desired position.
-    cursorPos);
+    setDragging, // <-- upon pasting, the pasted shapes follow the mouse cursor until the user clicks at the desired position.
+  );
     
   useShortcuts([
     {keys: ["o"], action: useCallback(() => convertSelection("or"), [convertSelection])},
@@ -363,20 +362,40 @@ export function useMouse(
       window.removeEventListener("mouseup", onMouseUp);
     };
   }, [onMouseUp, onMouseMove]);
+
+  // useDetectChange2({
+  //   onMouseDown,
+  //   dragging,
+  //   setDragging,
+  //   refSVG,
+  //   copyPasteCallbacks,
+  //   newSelection: ,
+  //   selectingState,
+  //   renderSelection,
+  // });
+
+  const returnSelection = useMemo(() => newSelection(selectingState), [selectingState]);
   
-  return {
+  return useMemo(() => ({
     onMouseDown,
     dragging,
     setDragging,
-    cursorPos,
     refSVG,
     copyPasteCallbacks,
-
-    newSelection: newSelection(selectingState),
+    newSelection: returnSelection,
     selectingState,
     renderSelection,
-  };
-}
+  }), [
+    onMouseDown,
+    dragging,
+    setDragging,
+    refSVG,
+    copyPasteCallbacks,
+    returnSelection,
+    selectingState,
+    renderSelection,
+  ]);
+};
     
 // get list of parts of shapes that are within the selecting-rectangle
 function computeSelection(ss: SelectingState, refSVG: {current: SVGSVGElement | null}, zoom: number): Selection {

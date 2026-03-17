@@ -8,6 +8,7 @@ import styles from "./VisualEditor.module.css";
 import { RangeWithAnnotation, syntaxHighlight } from "@/statecharts/syntax_higlight";
 import { SyntaxHighlightedText, TextWithLineBreaks } from "./SyntaxHiglightedText";
 import { TextRange } from "@/statecharts/label_ast";
+import { TraceableError } from "@/statecharts/parser";
 
 const foundStyle = {
   fill: 'light-dark( #f00 , #f00 )',
@@ -23,7 +24,7 @@ const fade = (ranges: RangeWithAnnotation[]) => {
 const em = 79/4;
 const ch = 40/5;
 
-export const TextSVG = memo(function TextSVG(props: {text: Text, selected: boolean, highlight: boolean, onEdit: (text: Text, newText: string) => void, setModal: Dispatch<SetStateAction<ReactElement|null>>, findText: string}) {
+export const TextSVG = memo(function TextSVG(props: {text: Text, selected: boolean, highlight: boolean, onEdit: (text: Text, newText: string) => void, setModal: Dispatch<SetStateAction<ReactElement|null>>, findText: string, error?: TraceableError}) {
 
   let {
     ranges,
@@ -48,6 +49,14 @@ export const TextSVG = memo(function TextSVG(props: {text: Text, selected: boole
   const maxLineWidth = lines.reduce((max, cur) => Math.max(max, cur.length), 0);
   const dx = (-maxLineWidth/2)*ch;
   const dy = (-(lines.length-1)/2)*em;
+
+  let errMessage;
+  if (parseError) {
+    errMessage = parseError.message;
+  }
+  else if (props.error) {
+    errMessage = props.error.message;
+  }
 
   return <>
     <BoundingBox {...getTextFatBBox(props.text)}/>
@@ -107,9 +116,9 @@ export const TextSVG = memo(function TextSVG(props: {text: Text, selected: boole
       </g>
 
         {/* error - only visible on hover */}
-        {parseError &&
+        {errMessage &&
           <text className={styles.errorHover} y={dy-20} textAnchor="middle">
-            <tspan>{parseError.message}</tspan>
+            <tspan>{errMessage}</tspan>
           </text>
         }
 

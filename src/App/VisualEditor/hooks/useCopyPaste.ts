@@ -1,7 +1,7 @@
 import { useShortcuts } from "@/hooks/useShortcuts";
 import { allArrowParts, allHistoryParts, allRectParts, allTextParts, Arrow, ConcreteSyntax, Diamond, entirelySelectedShapes, History, Rountangle, shapesBBox, Text } from "@/statecharts/concrete_syntax";
 import { addV2D, area, centerOf, subtractV2D, Vec2D } from "@/util/geometry";
-import { ClipboardEvent, Dispatch, useCallback } from "react";
+import { ClipboardEvent, Dispatch, useCallback, useMemo } from "react";
 import { Selection, VisualEditorState } from "../VisualEditor.state";
 
 export type CopyPasteCallbacks = {
@@ -89,16 +89,18 @@ export const pasteData = (data: string, where: Vec2D, setState: Dispatch<(v:Visu
 }
 
 
-export function useCopyPaste(state: VisualEditorState, commitState: Dispatch<(v:VisualEditorState) => VisualEditorState>, selection: Selection, startDragging: () => void, cursorPos: Vec2D) {
+const pasteWhere = {x: 500, y: 100};
+export function useCopyPaste(state: VisualEditorState, commitState: Dispatch<(v:VisualEditorState) => VisualEditorState>, selection: Selection, startDragging: (where: Vec2D) => void) {
+
 
   const onPaste = useCallback((e: ClipboardEvent) => {
     console.log('paste...');
     const data = e.clipboardData?.getData("text/plain");
-    pasteData(data, cursorPos, commitState, () => {
+    pasteData(data, pasteWhere, commitState, () => {
       e.preventDefault();
-      startDragging();
+      startDragging(pasteWhere);
     });
-  }, [commitState, startDragging, cursorPos]);
+  }, [commitState, startDragging]);
 
   const onCopy = useCallback((e: ClipboardEvent) => {
     console.log('copy...');
@@ -133,5 +135,7 @@ export function useCopyPaste(state: VisualEditorState, commitState: Dispatch<(v:
     {keys: ["Delete"], action: deleteSelection},
   ])
 
-  return {onCopy, onPaste, onCut, deleteSelection} as CopyPasteCallbacks;
+  return useMemo(() => ({
+    onCopy, onPaste, onCut, deleteSelection,
+  }), [onCopy, onPaste, onCut, deleteSelection]) as CopyPasteCallbacks;
 }

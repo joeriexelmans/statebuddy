@@ -147,7 +147,7 @@ export function App() {
   const debugSetters = makeAllSetters(setters.setDebug, Object.keys(appState.debug) as (keyof DebugState)[]);
 
   
-  const globalProps: GlobalProps = {
+  const globalProps: GlobalProps = useMemo(() => ({
     abstractSyntax,
     simulator,
     propertyResults,
@@ -163,7 +163,7 @@ export function App() {
     setDeclaredInputs: setters.setDeclaredInputs,
     declaredOutputs: appState.declaredOutputs,
     setDeclaredOutputs: setters.setDeclaredOutputs,
-  };
+  }), [appState, abstractSyntax, simulator, propertyResults]);
 
   return <div className={styles.App}>
     <ModalOverlay modal={modal} setModal={setModal}>

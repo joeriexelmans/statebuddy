@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { memo, ReactNode } from "react";
 import { MoveUpDown } from "../Components/MoveUpDown";
 import { PersistentDetails } from "../Components/PersistentDetails";
 import { makePartialArraySetter, makePartialSetter, WithSetters } from "../makePartialSetter"
@@ -15,7 +15,7 @@ type PanelProps = WithSetters<{
   globalProps: GlobalProps,
 }
 
-export function Panel({state: {items}, setState, globalProps}: PanelProps) {
+export const Panel = memo(function Panel({state: {items}, setState, globalProps}: PanelProps) {
   const onAddPanel = (type: string) => {
     if (panelTypes.includes(type as PanelType)) {
       setItems(items => [...items, {
@@ -50,7 +50,7 @@ export function Panel({state: {items}, setState, globalProps}: PanelProps) {
         .map(t => <option value={t}>{t}</option>)}
     </select>
   </div>;
-}
+});
 
 
 export type ExpandablePanelItemState = {
