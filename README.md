@@ -47,7 +47,7 @@ Or just play with one of the **example models**:
 
 ## User documentation
 
-See the [cheat sheet](./docs/cheat_sheet.md).
+See the [manual](./docs/index.md).
 
 
 ## Development
