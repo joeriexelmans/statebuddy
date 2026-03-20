@@ -319,7 +319,8 @@ Now we start implementing.
 
 <details class="tip">
   <summary>Tip</summary>
-  <p>Use hierarchical states!</p>
+  <p>To draw a composite state, draw an OR-state!</p>
+  <p>See <a href="https://deemz.org/git/research/statebuddy/src/branch/master/docs/syntax.md">this page</a>.</p>
 </details>
 
 
@@ -334,13 +335,13 @@ Now we start implementing.
 
 <details class="solution">
   <summary>Solution 2 (good)</summary>
-  <img src="solutiondoor2ugly.png"/>
-  Good: Safe behavior.
-  <br/>
-  Good: No duplication, easy to comprehend.
-  <br/>
-  <p><b>Note:</b> an AND-state with only one child can be ommitted, for an even better solution:</p>
   <img src="solutiondoor2.png"/>
+
+  Good: Safe behavior, no duplication, easy to comprehend.
+  <br/>
+  <p><b>Side note:</b> many Statechart tools enforce wrapping of OR-states into AND-states, which would looks more like what you say in the theory slides:</p>
+  <img src="solutiondoor2ugly.png"/>
+  <p>StateBuddy allows this (the meaning remains the same) but does not enforce it.</p>
 </details>
 
 <h3>1.6 Epilogue</h3>
