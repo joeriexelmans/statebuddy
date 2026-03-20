@@ -65,7 +65,7 @@ For OR-states, only one child can be active at a given time. So if an OR-state i
 
 ![error: an OR-state needs at least one child](./or_state_at_least_one_child.png)
 
-## Comparison with Itemis CREATE
+## Arbitrary nesting of AND-states and OR-states
 
 The Statechart tool Itemis CREATE also uses a notation that cleanly distinguishes between AND-states and OR-states, but it enforces a strict alternation of AND-states and OR-states. Therefore, a hierarchical state in Itemis is always an OR-state wrapped in an AND-state:
 
