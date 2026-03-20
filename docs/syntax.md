@@ -37,9 +37,13 @@ To model "orthogonal regions" in a state machine with orthogonality, we nest OR-
 
 ![orthogonal regions in statebuddy](./orthogonal_regions.png)
 
-This notation is once again similar to what we encounter in Statecharts literature, where we typically see something like this:
+The fact that the regions (= OR-states) have an AND-state parent, is what makes them orthogonal.
+
+In Statecharts literature, we would instead see something like this:
 
 ![classic statechart syntax of orthogonal regions](./classic_syntax.png)
+
+Although stylish, StateBuddy does not use dashed lines because they would be cumbersome to work with, both for the user, and for the parser.
 
 ## Implicit root-state
 
