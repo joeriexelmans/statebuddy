@@ -88,6 +88,17 @@ The most important points are:
  - In StateBuddy, AND-states and OR-states, as [formalized in Harel's paper](https://www.weizmann.ac.il/math/harel/sites/math.harel/files/users/user56/FormalSemanticsStatecharts.pdf),  exist as explicit concepts.
  - You can nest them arbitrarily:
     - AND within OR: modes
+
+      ![and within or](./and-within-or.png)
+
     - OR within OR: "composite states"
+
+      ![or within or](./or-within-or.png)
+
     - OR within AND: "orthogonal regions"
-    - AND within AND: not really useful (but allowed), you probably want to flatten these
+
+      ![or within and](./or-within-and.png)
+
+    - AND within AND: not really useful, you probably want to flatten these (but it is allowed)
+
+      ![and within and](./and-within-and.png)
