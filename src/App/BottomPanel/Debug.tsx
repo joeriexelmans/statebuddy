@@ -1,16 +1,22 @@
 import CloseIcon from '@mui/icons-material/Close';
 import { Tooltip } from "../Components/Tooltip";
-import { Setters } from "../makePartialSetter";
+import { DeepSetter, Setters } from "../makePartialSetter";
 import { GRID_CELL_SIZE } from '../parameters';
 import { useState } from 'react';
 import { DoubleClickButton } from '../Components/DoubleClickButton';
 import { DebugState } from '../migrations/v1_types';
 
-type DebugProps = DebugState & Setters<DebugState> & {
+type DebugProps = {
+  state: DebugState,
+  setState: DeepSetter<DebugState>,
   onHide: () => void,
 };
 
-export function DebugPanel({showBBox, showGrid, showCells, onHide: hide, ...setters}: DebugProps) {
+export function DebugPanel({
+  state: {showBBox, showGrid, showCells},
+  setState: {setShowBBox, setShowCells, setShowGrid},
+  onHide: hide,
+}: DebugProps) {
   const [crash, setCrash] = useState(false);
   if (crash) {
     throw new Error("Crashed!");
@@ -21,7 +27,7 @@ export function DebugPanel({showBBox, showGrid, showCells, onHide: hide, ...sett
         <label>
           <input type="checkbox"
             checked={showGrid}
-            onChange={e  => setters.setShowGrid(e.target.checked)} 
+            onChange={e  => setShowGrid(e.target.checked)} 
             />
           grid
         </label>
@@ -31,7 +37,7 @@ export function DebugPanel({showBBox, showGrid, showCells, onHide: hide, ...sett
       <label>
         <input type="checkbox"
           checked={showBBox}
-          onChange={e  => setters.setShowBBox(e.target.checked)} 
+          onChange={e  => setShowBBox(e.target.checked)} 
           />
         bounding boxes
       </label>
@@ -41,7 +47,7 @@ export function DebugPanel({showBBox, showGrid, showCells, onHide: hide, ...sett
       <label>
         <input type="checkbox"
           checked={showCells}
-          onChange={e  => setters.setShowCells(e.target.checked)} 
+          onChange={e  => setShowCells(e.target.checked)} 
           />
         occupied cells
         </label>

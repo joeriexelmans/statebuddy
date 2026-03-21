@@ -69,22 +69,23 @@ export const ShowAST = memo(function ShowASTx(props: {root: ConcreteState | Unst
 
 type ShowInputEventsProps = {
   inputEvents: EventTrigger[], // <-- input events from the abstract syntax
-  simulator: SimulatorStuff,
+  // simulator: SimulatorStuff,
+  onRaise: (bag: RaisedEvent[]) => void,
+  disabled: boolean,
 } & WithSetters<{
   declaredInputs: EventTrigger[],
 }>;
 
 export const ShowInputEvents = memo(function ShowInputEvents({
   inputEvents,
-  simulator,
+  onRaise,
+  disabled,
   declaredInputs,
   setDeclaredInputs,
 }: ShowInputEventsProps) {
   const [inputParams, setInputParams] = useLocalStorage<{[eventName:string]: string}>("inputParams", {});
 
-  const raiseOneEvent = useCallback((e: RaisedEvent) => simulator.simulatorCallbacks.onRaise([e]), [simulator.simulatorCallbacks.onRaise]);
-
-  const disabled = (simulator.trace === undefined);
+  const raiseOneEvent = useCallback((e: RaisedEvent) => onRaise([e]), [onRaise]);
 
   const raiseHandlers = inputEvents.map(({event}) => {
     return () => {

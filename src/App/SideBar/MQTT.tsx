@@ -7,14 +7,13 @@ import ContentPasteIcon from '@mui/icons-material/ContentPaste';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import AddIcon from '@mui/icons-material/Add';
-import JavascriptIcon from '@mui/icons-material/Javascript';
 
 import { RaisedEvent } from "@/statecharts/runtime_types";
 import { generateRandomHexString, myPureDeepAssign } from "@/util/util";
 import { Tooltip } from "../Components/Tooltip";
 import { useDisposable } from "../hooks/useDisposable";
 import { SimulatorStuff } from "../hooks/useSimulator";
-import { makeAllSetters, makePartialArraySetter, makePartialSetter, WithSetters } from "../makePartialSetter";
+import { DeepSetter, makeAllSetters, makePartialArraySetter, makePartialSetter, WithSetters } from "../makePartialSetter";
 import { Toolbar } from "../TopPanel/Toolbar";
 import { useLocalStorage } from "@/hooks/usePersistentState";
 import { TwoStateButton } from "../Components/TwoStateButton";
@@ -40,9 +39,9 @@ const defaultMapping: Event2MQTTMapping = {
   payload: "",
 }
 
-type MQTTProps = WithSetters<{
+type MQTTProps = {
   state: MQTTState; // <-- the user-configurable MQTT setup
-}> & {
+  setState: DeepSetter<MQTTState>,
   simulator: SimulatorStuff;  // <-- needed for subscribing to output events and raising input events
   abstractSyntax: Statechart; // <-- needed for list of in/out events
 };
@@ -53,7 +52,6 @@ const flickerDuration = 60; // ms
 
 export function MQTT({state, setState, simulator, abstractSyntax}: MQTTProps) {
   const {on, brokerUrl, topics, baseTopic, authentication, user, password, seePassword, enableCA, ca} = state;
-  const setters = makeAllSetters(setState, Object.keys(defaultMQTTState) as (keyof MQTTState)[]);
 
   const [status, setStatus] = useState<StatusType>("pending");
   const [error, setError] = useState("");
@@ -145,7 +143,7 @@ export function MQTT({state, setState, simulator, abstractSyntax}: MQTTProps) {
       try {
         const newState = JSON.parse(text);
         console.log('pasted data:', newState);
-        setState(oldState => {
+        setState._setShallow(oldState => {
           const mergedState = myPureDeepAssign(
             oldState,
             myPureDeepAssign(newState, {}), // <-- ensure we're dealing with an object
@@ -164,7 +162,7 @@ export function MQTT({state, setState, simulator, abstractSyntax}: MQTTProps) {
     <Toolbar>
       <label>
         connect to MQTT
-        <input type="checkbox" checked={on} onChange={e => setters.setOn(e.target.checked)} />
+        <input type="checkbox" checked={on} onChange={e => setState.setOn(e.target.checked)} />
       </label>
       <div style={{flexGrow: 1}}/>
       <Toolbar>
@@ -202,7 +200,7 @@ export function MQTT({state, setState, simulator, abstractSyntax}: MQTTProps) {
           placeholder="broker URL"
           style={{flexGrow: 1, width: 40}}
           value={brokerUrl}
-          onChange={e => setters.setBrokerUrl(e.target.value)}
+          onChange={e => setState.setBrokerUrl(e.target.value)}
           list="known-brokers"
         />
         <datalist id="known-brokers">
@@ -214,14 +212,14 @@ export function MQTT({state, setState, simulator, abstractSyntax}: MQTTProps) {
       <Tooltip tooltip="enable/disable authentication with broker" align="left">
         <label>
           auth
-          <input type="checkbox" checked={authentication} onChange={e => setters.setAuthentication(e.target.checked)} />
+          <input type="checkbox" checked={authentication} onChange={e => setState.setAuthentication(e.target.checked)} />
         </label>
       </Tooltip>
-      <input style={{flexGrow: 1, width: 40}} placeholder="username" value={user} disabled={!authentication} onChange={e => setters.setUser(e.target.value)}/>
+      <input style={{flexGrow: 1, width: 40}} placeholder="username" value={user} disabled={!authentication} onChange={e => setState.setUser(e.target.value)}/>
       <Toolbar style={{flexGrow: 1}}>
-        <input style={{flexGrow: 1, width: 40}} type={seePassword ? "text" : "password"} placeholder="password" value={password} disabled={!authentication} onChange={e => setters.setPassword(e.target.value)}/>
+        <input style={{flexGrow: 1, width: 40}} type={seePassword ? "text" : "password"} placeholder="password" value={password} disabled={!authentication} onChange={e => setState.setPassword(e.target.value)}/>
         <Tooltip tooltip="see password" align="right">
-          <TwoStateButton active={seePassword} onClick={() => setters.setSeePassword(p => !p)}>
+          <TwoStateButton active={seePassword} onClick={() => setState.setSeePassword(p => !p)}>
             <VisibilityIcon fontSize="small"/>
           </TwoStateButton>
         </Tooltip>
@@ -230,7 +228,7 @@ export function MQTT({state, setState, simulator, abstractSyntax}: MQTTProps) {
     <Toolbar>
       <label>
         CA cert
-        <input type="checkbox" checked={enableCA} onChange={e => setters.setEnableCA(e.target.checked)} />
+        <input type="checkbox" checked={enableCA} onChange={e => setState.setEnableCA(e.target.checked)} />
       </label>
       {enableCA && <textarea
         style={{
@@ -244,7 +242,7 @@ export function MQTT({state, setState, simulator, abstractSyntax}: MQTTProps) {
         placeholder="paste CA cert here"
         value={ca}
         disabled={!enableCA}
-        onChange={e => setters.setCa(e.target.value)}
+        onChange={e => setState.setCa(e.target.value)}
       />}
     </Toolbar>
 
@@ -254,7 +252,7 @@ export function MQTT({state, setState, simulator, abstractSyntax}: MQTTProps) {
         <input
           style={{flexGrow: 1}}
           value={baseTopic}
-          onChange={e => setters.setBaseTopic(e.target.value)}
+          onChange={e => setState.setBaseTopic(e.target.value)}
         />
       </label>
     </Toolbar>
@@ -263,16 +261,16 @@ export function MQTT({state, setState, simulator, abstractSyntax}: MQTTProps) {
       <TopicView
         key={i}
         topic={t}
-        setTopic={makePartialArraySetter(setters.setTopics, i)}
+        setTopic={makePartialArraySetter(setState.setTopics, i)}
         client={client}
         clientStatus={status}
         baseTopic={baseTopic}
-        onDelete={() => setters.setTopics(ts => ts.toSpliced(i, 1))}
+        onDelete={() => setState.setTopics(ts => ts.toSpliced(i, 1))}
         simulator={simulator}
         abstractSyntax={abstractSyntax}
       />)}
 
-    <button onClick={() => setters.setTopics(ts => [...ts, defaultTopic])}>
+    <button onClick={() => setState.setTopics(ts => [...ts, defaultTopic])}>
       <AddIcon fontSize="small"/> add topic
     </button>
   </div>;

@@ -6,7 +6,6 @@ import { ArrowPart, Diamond, RectSide, Rountangle, Text } from "../../statechart
 import { Topology } from "../../statecharts/detect_topology";
 import { TraceableError } from "../../statecharts/parser";
 import { ArcDirection, arcDirection } from "../../util/geometry";
-import { ToolSelectState } from "../TopPanel/Toolbars/ToolSelect";
 import { EDITOR_HEIGHT, EDITOR_WIDTH } from "../parameters";
 import { ArrowSVG } from "./ArrowSVG";
 import { DiamondSVG } from "./DiamondSVG";
@@ -20,6 +19,7 @@ import styles from "./VisualEditor.module.css";
 import { Selection, VisualEditorState } from "./VisualEditor.state";
 import { DebugContext } from "./context/DebugContext";
 import { EditorStuff } from "./hooks/useMouse";
+import { ToolSelectState } from "../migrations/v1_types";
 
 type VisualEditorProps = {
   state: VisualEditorState,

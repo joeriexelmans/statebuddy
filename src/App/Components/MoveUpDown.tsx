@@ -1,10 +1,10 @@
-import { Dispatch, SetStateAction } from "react";
+import { Dispatch, memo, SetStateAction } from "react";
 import { Tooltip } from "./Tooltip";
 
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 
-export function MoveUpDown<T>({i, ls, setter}: {i: number, ls: T[], setter: Dispatch<SetStateAction<T[]>>}) {
+export const MoveUpDown = memo(function MoveUpDown<T>({i, ls, setter}: {i: number, ls: T[], setter: Dispatch<SetStateAction<T[]>>}) {
   return <>
     <Tooltip tooltip='move down'>
       <button disabled={i === ls.length-1}
@@ -19,4 +19,4 @@ export function MoveUpDown<T>({i, ls, setter}: {i: number, ls: T[], setter: Disp
       </button>
     </Tooltip>
   </>;
-}
+});

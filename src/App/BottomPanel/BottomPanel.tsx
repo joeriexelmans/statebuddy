@@ -6,12 +6,10 @@ import { PersistentDetails } from "../Components/PersistentDetails";
 import gitRev from "@/git-rev.txt";
 import { Tooltip } from "../Components/Tooltip";
 import { Stats } from "./Stats";
-import { Statechart, stateDescription } from "@/statecharts/abstract_syntax";
+import { Statechart } from "@/statecharts/abstract_syntax";
 
 import appStyles from "../App.module.css";
-import { VisualEditorState } from "../VisualEditor/VisualEditor.state";
-import { BottomPanelState } from "../migrations/v1_types";
-import { makePartialSetter, WithSetters } from "../makePartialSetter";
+import { WithSetters } from "../makePartialSetter";
 
 const statusStrings = {
   "notLoaded": "not loaded",
@@ -20,28 +18,32 @@ const statusStrings = {
 }
 
 type BottomPanelProps = WithSetters<{
-  state: BottomPanelState,
+  errorsExpanded: boolean,
 }> & {
   errors: TraceableError[],
   abstractSyntax: Statechart,
   pyodideStatus: "notLoaded" | "loading" | "loaded",
 }
 
-export function BottomPanel(props: BottomPanelProps) {
-  const {errorsExpanded} = props.state;
-  const setErrorsExpanded = makePartialSetter(props.setState, "errorsExpanded");
+export function BottomPanel({
+  errorsExpanded,
+  setErrorsExpanded,
+  errors,
+  abstractSyntax,
+  pyodideStatus,
+}: BottomPanelProps) {
 
   return <div className="bottom">
     <div className={appStyles.stackHorizontal
             + ' ' + appStyles.statusBar
-            + ' ' + (props.errors.length ? appStyles.error : ""
-            + ' ' + (props.pyodideStatus === "loading" ? appStyles.pyodideLoading : "")
+            + ' ' + (errors.length ? appStyles.error : ""
+            + ' ' + (pyodideStatus === "loading" ? appStyles.pyodideLoading : "")
             )}>
       <div style={{flexGrow:1}}>
       <PersistentDetails state={errorsExpanded} setState={setErrorsExpanded}>
-          <summary>{props.errors.length} errors</summary>
+          <summary>{errors.length} errors</summary>
           <div style={{maxHeight: '20vh', overflow: 'auto'}}>
-          {props.errors.map(({message, shapeUid})=>
+          {errors.map(({message, shapeUid})=>
             <div>
               {shapeUid}: {message}
             </div>)}
@@ -49,12 +51,12 @@ export function BottomPanel(props: BottomPanelProps) {
         </PersistentDetails>
       </div>
       <div style={{display: 'flex', alignItems: 'center'}}>
-        <Stats abstractSyntax={props.abstractSyntax}/>
+        <Stats abstractSyntax={abstractSyntax}/>
         &nbsp;|&nbsp;
         <Tooltip tooltip="MTL properties are checked with a Python library, which runs in your browser via Pyodide. Pyodide is slow to start and currently blocks the main thread, which is a known issue." above>
           Pyodide: <span style={{
-            fontWeight: props.pyodideStatus === "loading" ? 600 : 400,
-          }}>{statusStrings[props.pyodideStatus]}</span>
+            fontWeight: pyodideStatus === "loading" ? 600 : 400,
+          }}>{statusStrings[pyodideStatus]}</span>
         </Tooltip>
         &nbsp;|&nbsp;
         switch to&nbsp;

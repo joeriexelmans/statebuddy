@@ -133,10 +133,10 @@ export type ExpandablePanelItemState = {
   type: PanelType;
   expanded: boolean;
 };
+
 export type BottomPanelState = {
   errorsExpanded: boolean;
 };
-// Part of application state.
 
 export type PlotState = {
   visiblePlots: { [name: string]: boolean; };
@@ -156,4 +156,3 @@ export type PanelType =
   showGrid: boolean;
   showCells: boolean;
 };
-

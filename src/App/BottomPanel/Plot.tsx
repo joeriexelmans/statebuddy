@@ -1,14 +1,14 @@
 import plotStyles from "./Plot.module.css";
-import { memo, SVGAttributes, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Dispatch, memo, SetStateAction, SVGAttributes, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { WithSetters } from "../makePartialSetter";
-import { PreparedTraces, PropertyCheckResult } from "../SideBar/prepare_trace";
+import { PreparedTraces } from "../SideBar/prepare_trace";
 import { objectsEqual } from "@/util/util";
 import { StateBuddyTraceState } from "../hooks/useSimulator";
-import { PlotState } from "../migrations/v1_types";
 
 type PlotProperties = SVGAttributes<SVGElement> & WithSetters<{
-  state: PlotState
 }> & {
+  visible: { [name:string]: boolean },
+  setVisible: Dispatch<SetStateAction<{ [name:string]: boolean }>>,
   // Traces to plot.
   prepped: PreparedTraces,
   trace: StateBuddyTraceState,
@@ -17,8 +17,7 @@ type PlotProperties = SVGAttributes<SVGElement> & WithSetters<{
 
 const numColors = 6; // corresponds to CSS variables --plot-color-N in index.css
 
-export const Plot = memo(function Plot({state, setState, prepped, trace, displayTime, ...rest}: PlotProperties) {
-  const {visiblePlots} = state;
+export const Plot = memo(function Plot({visible, setVisible, prepped, trace, displayTime, ...rest}: PlotProperties) {
   const refSVG = useRef(null);
   const [width, setWidth] = useState<number>(window.innerWidth);
 
@@ -29,7 +28,7 @@ export const Plot = memo(function Plot({state, setState, prepped, trace, display
 
   const currentItemSimTime = trace.trace[trace.idx].simtime;
 
-  const atLeastOnePlot = Object.entries(visiblePlots).some(([key, val]) => val === true && Object.hasOwn(prepped, key));
+  const atLeastOnePlot = Object.entries(visible).some(([key, val]) => val === true && Object.hasOwn(prepped, key));
   const traceNames = useMemo(() => Object.keys(prepped).filter(name => !["true", "false"].includes(name)), [prepped]);
 
   useLayoutEffect(() => {
@@ -43,7 +42,7 @@ export const Plot = memo(function Plot({state, setState, prepped, trace, display
     }    
   }, [refSVG.current]);
 
-  const numVisible = Object.entries(visiblePlots).reduce((n, [name, visible]) => (visible && Object.hasOwn(prepped, name)) ? n + 1 : n, 0);
+  const numVisible = Object.entries(visible).reduce((n, [name, visible]) => (visible && Object.hasOwn(prepped, name)) ? n + 1 : n, 0);
   const height = 20*numVisible;
 
   prepped = Object.fromEntries(Object.entries(prepped).filter(([name]) => !["true", "false"].includes(name)))
@@ -100,7 +99,7 @@ export const Plot = memo(function Plot({state, setState, prepped, trace, display
   const paths = (() => {
     let i=0;
     return traceNames.map(name => {
-      if (visiblePlots[name]) {
+      if (visible[name]) {
         const color = `var(--plot-color-${i%numColors})`;
         return <path key={name} d={renderSignal(name, i++)} className={plotStyles.plotLine} style={{stroke: color}} />;
       }
@@ -113,7 +112,7 @@ export const Plot = memo(function Plot({state, setState, prepped, trace, display
   const checkboxes = (() => {
     let i=0;
     return traceNames.map((name, j) => {
-      const color = visiblePlots[name]
+      const color = visible[name]
         ? `var(--plot-color-${i++%numColors})`
         : 'var(--text-color)';
       const prevPrefix = traceNames[j-1]?.split('_')[0];
@@ -124,12 +123,10 @@ export const Plot = memo(function Plot({state, setState, prepped, trace, display
           || <div style={{breakAfter: 'column'}}></div>))}
           {/*             ^ doesn't yet work in Firefox :( */}
         <label key={name} htmlFor={`checkbox-trace-${name}`} style={{breakInside: 'avoid'}}>
-          <input type="checkbox" id={`checkbox-trace-${name}`} checked={visiblePlots[name]} onChange={e =>
-            setState(({visiblePlots}) => ({
-              visiblePlots: {
-                ...visiblePlots,
+          <input type="checkbox" id={`checkbox-trace-${name}`} checked={visible[name]} onChange={e =>
+            setVisible(v => ({
+                ...v,
                 [name]: e.target.checked,
-              },
             }))}
             style={{accentColor: color}}/>
           <span style={{color}}>{name}</span>

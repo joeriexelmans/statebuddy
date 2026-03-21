@@ -1,33 +1,25 @@
 import { Statechart } from "@/statecharts/abstract_syntax";
-import { WithSetters } from "../makePartialSetter"
-import { ShowAST, ShowInputEvents, ShowInternalEvents, ShowOutputEvents } from "../SideBar/ShowAST";
+import { ReactNode, useMemo } from "react";
+import { AppState } from "../App.state";
 import { SimulatorStuff } from "../hooks/useSimulator";
-import { ReactNode } from "react";
-import { PlantsView } from "../SideBar/PlantsView";
-import { PanelType, PlantsState } from "../migrations/v1_types";
-import { Connect } from "../SideBar/Connect";
+import { DeepSetter } from "../makePartialSetter";
+import { PanelType } from "../migrations/v1_types";
+import { autoConnect, Connect, useConnect } from "../SideBar/Connect";
 import { MQTT } from "../SideBar/MQTT";
-import { MQTTState } from "../migrations/v1_types";
-import { PropertyEditor } from "../SideBar/PropertyEditor";
-import { PropertyEditorState } from "../migrations/v1_types";
+import { PlantsView } from "../SideBar/PlantsView";
 import { PropertyCheckResult } from "../SideBar/prepare_trace";
+import { PropertyEditor } from "../SideBar/PropertyEditor";
+import { ShowAST, ShowInputEvents, ShowInternalEvents, ShowOutputEvents } from "../SideBar/ShowAST";
 import { Traces } from "../SideBar/Traces";
-import { TracesState } from '../migrations/v1_types';
-import { EventTrigger } from "@/statecharts/label_ast";
 
 // Union of all the stuff any of the panels need to know about
 export type GlobalProps = {
+  appState: AppState,
+  setAppState: DeepSetter<AppState>,
   abstractSyntax?: Statechart,
   simulator: SimulatorStuff,
   propertyResults?: PropertyCheckResult[],
-} & WithSetters<{
-  plantsState: PlantsState,
-  mqtt: MQTTState,
-  propertyEditor: PropertyEditorState,
-  traces: TracesState,
-  declaredInputs: EventTrigger[],
-  declaredOutputs: EventTrigger[],
-}>
+}
 
 export const panelTypes: PanelType[] = [
   "state tree",
@@ -44,73 +36,92 @@ export const panelTypes: PanelType[] = [
 type PanelItemProps = {
   type: PanelType,
   globalProps: GlobalProps,
+  isExpanded: boolean,
 }
 
-export function PanelItem({type, globalProps: {abstractSyntax, simulator, plantsState, setPlantsState, mqtt, setMqtt, propertyEditor, setPropertyEditor, propertyResults, traces, setTraces, declaredInputs, setDeclaredInputs, declaredOutputs, setDeclaredOutputs}}: PanelItemProps) {
+export function panelItemInfo({type, globalProps: {appState, abstractSyntax}}: PanelItemProps) {
+  if (type === "connect" && abstractSyntax) {
+    const [_, _2, suggestions] = useConnect(abstractSyntax, appState.execution.plants);
+    if (suggestions.length > 0) {
+      return `${suggestions.length} suggested connections`;
+    }
+  }
+  return undefined;
+}
+
+export function PanelItem({type, globalProps: {appState, setAppState, abstractSyntax, simulator, propertyResults}, isExpanded}: PanelItemProps) {
 
   if (type === "state tree") {
     return <>{abstractSyntax && <ShowAST root={abstractSyntax.root}/>}</>
   }
   else if (type === "input events") {
-    return <Columned>{abstractSyntax && <ShowInputEvents
-      inputEvents={abstractSyntax.inputEvents}
-      simulator={simulator}
-      declaredInputs={declaredInputs}
-      setDeclaredInputs={setDeclaredInputs}
-    />}</Columned>
+    return useMemo(() =>
+      <Columned>{abstractSyntax && <ShowInputEvents
+        inputEvents={abstractSyntax.inputEvents}
+        onRaise={simulator.simulatorCallbacks.onRaise}
+        disabled={simulator.trace === undefined}
+        declaredInputs={appState.syntax.declaredInputs}
+        setDeclaredInputs={setAppState.setSyntax.setDeclaredInputs}
+      />}</Columned>,
+      [abstractSyntax?.inputEvents, simulator, appState.syntax.declaredInputs]);
   }
   else if (type === "internal events") {
     return <Columned>{abstractSyntax && <ShowInternalEvents internalEvents={abstractSyntax.internalEvents}/>}</Columned>
   }
   else if (type === "output events") {
-    return <Columned>{abstractSyntax &&
-      <ShowOutputEvents
-        outputEvents={[...abstractSyntax.outputEvents]}
-        declaredOutputs={declaredOutputs}
-        setDeclaredOutputs={setDeclaredOutputs}
-      />
-      }</Columned>
+    return useMemo(() =>
+      <Columned>{abstractSyntax &&
+        <ShowOutputEvents
+          outputEvents={[...abstractSyntax.outputEvents]}
+          declaredOutputs={appState.syntax.declaredOutputs}
+          setDeclaredOutputs={setAppState.setSyntax.setDeclaredOutputs}
+        />
+      }</Columned>,
+      [abstractSyntax?.outputEvents, appState.syntax.declaredOutputs]);
   }
   else if (type === "plants") {
     return <PlantsView
-      plantsState={plantsState}
-      setPlantsState={setPlantsState}
+      plantsState={appState.execution.plants}
+      setPlantsState={setAppState.setExecution.setPlants}
       simulator={simulator}
     />
   }
   else if (type === "connect") {
     return <>{abstractSyntax && <Connect
       abstractSyntax={abstractSyntax}
-      plantsState={plantsState}
-      setPlantsState={setPlantsState}
+      plantsState={appState.execution.plants}
+      setPlantsState={setAppState.setExecution.setPlants}
       />}</>
   }
   else if (type === "mqtt") {
     return <>{abstractSyntax && <MQTT
-      state={mqtt}
-      setState={setMqtt}
+      state={appState.mqtt}
+      setState={setAppState.setMqtt}
       simulator={simulator}
       abstractSyntax={abstractSyntax}
     />}</>
   }
   else if (type === "properties") {
     return <PropertyEditor
-      state={propertyEditor}
-      setState={setPropertyEditor}
+      properties={appState.execution.properties}
+      setProperties={setAppState.setExecution.setProperties}
+      activeProperty={appState.execution.activeProperty}
+      setActiveProperty={setAppState.setExecution.setActiveProperty}
+      showTable={appState.view.visibility.table}
+      setShowTable={setAppState.setView.setVisibility.setTable}
       propertyResults={propertyResults}
-      enableTable={traces.savedTraces.length === 0 || propertyEditor.properties.length === 0}
     />
   }
   else if (type === "execution traces") {
     // console.log({propertyResults, activeProp: propertyEditor.activeProperty});
     return <>{abstractSyntax &&
       <Traces
-        state={traces}
-        setState={setTraces}
+        state={appState}
+        setState={setAppState}
         abstractSyntax={abstractSyntax}
-        plantsState={plantsState}
         simulator={simulator}
-        activePropertyTrace={propertyResults?.[propertyEditor.activeProperty]?.[0]}
+        activePropertyTrace={propertyResults?.[appState.execution.activeProperty]?.[0]}
+        isExpanded={isExpanded}
       />}</>
   }
 }

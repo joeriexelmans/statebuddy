@@ -4,30 +4,30 @@ import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import FlareIcon from '@mui/icons-material/Flare';
 
 import { Tooltip } from "../Components/Tooltip";
-import { makeAllSetters, WithSetters } from "../makePartialSetter";
+import { DeepSetter } from "../makePartialSetter";
 import { saveExtTransitions } from '@/devs/serialize_trace';
 import appStyles from "../App.module.css";
 import { MoveUpDown } from '../Components/MoveUpDown';
 import { DoubleClickButton } from '../Components/DoubleClickButton';
-import { useCallback, useState } from 'react';
+import { Dispatch, memo, SetStateAction, useCallback } from 'react';
 import { getSimTime, } from '@/statecharts/time';
 import { SimulatorStuff, } from '../hooks/useSimulator';
 import { CoupledDEVSTrace } from './CoupledDEVSTrace';
 import { Statechart } from '@/statecharts/abstract_syntax';
-import { PlantsState } from "../migrations/v1_types";
 import { PropertyTrace } from './prepare_trace';
 import { ResizeHandle } from '../Panel/ResizeHandle';
 import { NicelyCentered } from '../Components/NicelyCentered';
-import { TracesState } from '../migrations/v1_types';
-import { defaultTracesState } from '../migrations/v1_default';
+import { AppState } from '../App.state';
+import { ExtTransitionTrace, SavedTraces } from '../migrations/v1_types';
+import { TraceView } from '../migrations/v2_types';
 
-type TracesProps = WithSetters<{
-  state: TracesState,
-}> & {
+type TracesProps = {
+  state: AppState,
+  setState: DeepSetter<AppState>,
   simulator: SimulatorStuff,
   abstractSyntax: Statechart,
-  plantsState: PlantsState,
-  activePropertyTrace?: PropertyTrace,
+  activePropertyTrace?: PropertyTrace;
+  isExpanded: boolean,
 };
 
 export function Traces({
@@ -35,11 +35,13 @@ export function Traces({
   setState,
   simulator,
   abstractSyntax,
-  plantsState,
   activePropertyTrace,
+  isExpanded,
 }: TracesProps) {
-  const {savedTraces, showMicroSteps, showPlantTrace, showTransitions, autoScroll, height} = state;
-  const {setSavedTraces, setAutoScroll, setShowMicroSteps, setShowPlantTrace, setShowTransitions, setHeight} = makeAllSetters(setState, Object.keys(defaultTracesState) as (keyof TracesState)[]);
+  const {savedTraces, plants} = state.execution;
+  const {setSavedTraces} = setState.setExecution;
+  const {height} = state.view.trace;
+  const {setHeight} = setState.setView.setTrace;
   const {trace, time} = simulator;
 
   const onSaveTrace = useCallback(() => {
@@ -53,97 +55,36 @@ export function Traces({
   }, [trace, setSavedTraces]);
   
   return <div style={{display: 'flex', flexGrow: 1, flexDirection: 'column'}}>
-    <div>
-      {savedTraces.map((savedTrace, i) =>
-        <div key={i} className={appStyles.toolbar} style={{alignItems: 'center'}}>
-          <Tooltip tooltip="replay trace" align="left">
-            <button
-              onClick={() => simulator.simulatorCallbacks.onReplayTrace(savedTrace[1])}>
-              <CachedOutlinedIcon fontSize="small"/>
-            </button>
-          </Tooltip>
-          <Tooltip tooltip='duration' align='left'>
-            <div style={{display:'inline-block', width: 22, fontSize: 9, textAlign: 'center'}}>{(Math.floor(savedTrace[1].lastSimTime/1000))}s</div>
-          </Tooltip>
-          <Tooltip tooltip='number of input events' align='left'>
-            <div style={{display:'inline-block', width: 22, fontSize: 9, textAlign: 'center'}}>({savedTrace[1].trace.length})</div>
-          </Tooltip>
-          <Tooltip tooltip='does not have to be unique, can be empty...' align='left' fullWidth={true} showWhen='focus'>
-            <input
-              placeholder="description"
-              type="text"
-              value={savedTrace[0]}
-              style={{flexGrow: 1}}
-              size={1}
-              className={appStyles.description}
-              onChange={e => setSavedTraces(savedTraces => savedTraces.toSpliced(i, 1, [e.target.value, savedTraces[i][1]]))}/>
-          </Tooltip>
-          <MoveUpDown i={i} ls={savedTraces} setter={setSavedTraces}/>
-          <DoubleClickButton
-            tooltip="forget this trace"
-            onDoubleClick={() => setSavedTraces(savedTraces => savedTraces.toSpliced(i, 1))}
-            align="right">
-              <DeleteOutlineIcon fontSize="small"/>
-          </DoubleClickButton>
-        </div>
-      )}
-    </div>
-    
-    {/* checkboxes, buttons, ... */}
-    <div className={appStyles.toolbar} style={{justifyContent: 'space-around', columnGap: '1em'}}>
-      <Tooltip tooltip="plant steps are steps where only the state of a plant changed" align="left">
-        <label>
-          <input type="checkbox"
-          checked={showPlantTrace}
-          onChange={e => setShowPlantTrace(e.target.checked)}/>
-          show plant steps
-        </label>
-      </Tooltip>
-      <label>
-        <input type="checkbox"
-          checked={showMicroSteps}
-          onChange={e => setShowMicroSteps(e.target.checked)}/>
-          show microsteps
-      </label>
-      <label>
-        <input type="checkbox"
-          checked={showTransitions}
-          onChange={e => setShowTransitions(e.target.checked)}/>
-          show transitions
-      </label>
-      <Tooltip tooltip="scroll down upon new events" align="left">
-        <input id="checkbox-autoscroll" type="checkbox" checked={autoScroll} onChange={e => setAutoScroll(e.target.checked)}/>
-        <label htmlFor="checkbox-autoscroll">auto-scroll</label>
-      </Tooltip>
-      <button
-        disabled={trace === undefined}
-        onClick={() => onSaveTrace()}
-        style={{marginLeft: 'auto', flexGrow: 1}}
-        >
-        <SaveOutlinedIcon fontSize="small"/> save trace
-      </button>
-    </div>
-
-    
+    <SavedTracesView
+      savedTraces={savedTraces}
+      setSavedTraces={setSavedTraces}
+      onReplayTrace={simulator.simulatorCallbacks.onReplayTrace}
+    />
+    <Checkboxes
+      state={state.view.trace}
+      setState={setState.setView.setTrace}
+      disableSave={trace === undefined}
+      onSaveTrace={onSaveTrace}
+    />
     <div style={{
       flexGrow: 1,
       overflow:'auto',
       height,
       boxShadow: 'inset 0 10px 10px -10px rgba(0,0,0,0.4)',
       }}>
-        {abstractSyntax && trace &&
+        {abstractSyntax && trace && isExpanded &&
           <div>
-          <CoupledDEVSTrace
-            ast={abstractSyntax}
-            setTime={simulator.setTime}
-            currentTrace={trace}
-            // @ts-ignore
-            setCurrentTrace={simulator.setTrace}
-            traces={state}
-            setTraces={setState}
-            plantsState={plantsState}
-            propertyTrace={activePropertyTrace}
-          />
+            <CoupledDEVSTrace
+              ast={abstractSyntax}
+              setTime={simulator.setTime}
+              currentTrace={trace}
+              // @ts-ignore
+              setCurrentTrace={simulator.setTrace}
+              traceView={state.view.trace}
+              setMicroSteps={setState.setView.setTrace.setMicroSteps}
+              plantsState={plants}
+              propertyTrace={activePropertyTrace}
+            />
           </div>
           || <NicelyCentered style={{backgroundColor: 'var(--statusbar-bg-color)'}}>
               <div style={{display: 'flex', justifyContent: 'center', flexDirection: 'column', rowGap: 12}}>
@@ -165,3 +106,87 @@ export function Traces({
 
   </div>;
 }
+
+const SavedTracesView = memo(function SavedTracesView({savedTraces, setSavedTraces, onReplayTrace}: {
+  savedTraces: SavedTraces,
+  setSavedTraces: Dispatch<SetStateAction<SavedTraces>>,
+  onReplayTrace: (t: ExtTransitionTrace) => void,
+}) {
+  return <div>
+    {savedTraces.map((savedTrace, i) =>
+      <div key={i} className={appStyles.toolbar} style={{alignItems: 'center'}}>
+        <Tooltip tooltip="replay trace" align="left">
+          <button
+            onClick={() => onReplayTrace(savedTrace[1])}>
+            <CachedOutlinedIcon fontSize="small"/>
+          </button>
+        </Tooltip>
+        <Tooltip tooltip='duration' align='left'>
+          <div style={{display:'inline-block', width: 22, fontSize: 9, textAlign: 'center'}}>{(Math.floor(savedTrace[1].lastSimTime/1000))}s</div>
+        </Tooltip>
+        <Tooltip tooltip='number of input events' align='left'>
+          <div style={{display:'inline-block', width: 22, fontSize: 9, textAlign: 'center'}}>({savedTrace[1].trace.length})</div>
+        </Tooltip>
+        <Tooltip tooltip='does not have to be unique, can be empty...' align='left' fullWidth={true} showWhen='focus'>
+          <input
+            placeholder="description"
+            type="text"
+            value={savedTrace[0]}
+            style={{flexGrow: 1}}
+            size={1}
+            className={appStyles.description}
+            onChange={e => setSavedTraces(savedTraces => savedTraces.toSpliced(i, 1, [e.target.value, savedTraces[i][1]]))}/>
+        </Tooltip>
+        {/* @ts-ignore */}
+        <MoveUpDown i={i} ls={savedTraces} setter={setSavedTraces}/>
+        <DoubleClickButton
+          tooltip="forget this trace"
+          onDoubleClick={() => setSavedTraces(savedTraces => savedTraces.toSpliced(i, 1))}
+          align="right">
+            <DeleteOutlineIcon fontSize="small"/>
+        </DoubleClickButton>
+      </div>
+    )}
+  </div>
+});
+
+const Checkboxes = memo(function Checkboxes({state, setState, disableSave, onSaveTrace}: {
+  state: TraceView,
+  setState: DeepSetter<TraceView>,
+  disableSave: boolean,
+  onSaveTrace: () => void,
+}) {
+  return <div className={appStyles.toolbar} style={{justifyContent: 'space-around', columnGap: '1em'}}>
+    <Tooltip tooltip="plant steps are steps where only the state of a plant changed" align="left">
+      <label>
+        <input type="checkbox"
+        checked={state.plantSteps}
+        onChange={e => setState.setPlantSteps(e.target.checked)}/>
+        show plant steps
+      </label>
+    </Tooltip>
+    <label>
+      <input type="checkbox"
+        checked={state.microSteps}
+        onChange={e => setState.setMicroSteps(e.target.checked)}/>
+        show microsteps
+    </label>
+    <label>
+      <input type="checkbox"
+        checked={state.transitions}
+        onChange={e => setState.setTransitions(e.target.checked)}/>
+        show transitions
+    </label>
+    <Tooltip tooltip="scroll down upon new events" align="left">
+      <input id="checkbox-autoscroll" type="checkbox" checked={state.autoScroll} onChange={e => setState.setAutoScroll(e.target.checked)}/>
+      <label htmlFor="checkbox-autoscroll">auto-scroll</label>
+    </Tooltip>
+    <button
+      disabled={disableSave}
+      onClick={() => onSaveTrace()}
+      style={{marginLeft: 'auto', flexGrow: 1}}
+      >
+      <SaveOutlinedIcon fontSize="small"/> save trace
+    </button>
+  </div>
+});

@@ -250,13 +250,26 @@
   /* background-color: var(--statusbar-bg-color); */
 }
 
-.App legend {
-  /* background-color: var(--statusbar-bg-color); */
-}
-
 .App summary button {
   visibility: hidden;
 }
 .App summary:hover button {
   visibility: visible;
+}
+
+.App details > summary:hover {
+  background-color: var(--summary-hover-bg-color);
+  cursor: default;
+}
+
+.App .activeState {
+  border: var(--active-state-border-color) 1px solid;
+  background-color: var(--active-state-bg-color);
+  border-radius: 6px;
+  margin-left: 2px;
+  margin-right: 2px;
+  padding-left: 2px;
+  padding-right: 2px;
+  display: inline-block;
+  color: var(--text-color);
 }

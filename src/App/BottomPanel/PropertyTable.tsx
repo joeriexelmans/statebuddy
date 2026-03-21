@@ -1,6 +1,5 @@
 import CloseIcon from '@mui/icons-material/Close';
 import TextRotateUpIcon from '@mui/icons-material/TextRotateUp';
-// import TextRotationNoneIcon from '@mui/icons-material/TextRotationNone';
 import { memo, useEffect, useState } from "react";
 import { Tooltip } from "../Components/Tooltip";
 import { TwoStateButton } from "../Components/TwoStateButton";
@@ -10,34 +9,38 @@ import styles from "@/App/App.module.css";
 import { restoreTrace } from '@/devs/serialize_trace';
 import { DEVSComponent } from '@/devs/devs';
 import { CoupledState } from '../hooks/useSimulator';
-import { PlantsState } from "../migrations/v1_types";
 import { Statechart } from '@/statecharts/abstract_syntax';
 import { DEVSTrace } from '@/devs/trace';
-import { SavedTraces } from '../migrations/v1_types';
 import { objectsEqual } from '@/util/util';
 import { StatusType } from '../Components/StatusIndicator';
+import { ExecutionState } from '../migrations/v2_types';
 
-export const PropertyTraceTable = memo(function PropertyTraceTable({
+type PropertyTableProps = {
+  abstractSyntax: Statechart,
+  execution: ExecutionState,
+  cE: DEVSComponent<DEVSTrace<CoupledState>>,
+  onClose: () => void,
+  checkProperty: (property: string, preparedTraces: PreparedTraces) => Promise<PropertyCheckResult>
+}
+
+export const PropertyTable = memo(function PropertyTable({
   abstractSyntax,
-  properties,
-  traces,
-  onClose,
+  execution,
   cE,
-  plantsState,
+  onClose,
   checkProperty,
-}: {abstractSyntax: Statechart, properties: string[], traces: SavedTraces, onClose: () => void, cE: DEVSComponent<DEVSTrace<CoupledState>>, plantsState: PlantsState, checkProperty: (property: string, preparedTraces: PreparedTraces) => Promise<PropertyCheckResult>,
-}) {
+}: PropertyTableProps) {
+  const {properties, plants, savedTraces} = execution;
   const [rotateText, setRotateText] = useState(false);
-
   const [results, setResults] = useState<StatusType[][]|undefined>(undefined);
 
   useEffect(() => {
     setResults(() => {
       return properties.map((property, i) => {
-        return traces.map(([name, trace], j) => {
+        return savedTraces.map(([name, trace], j) => {
           // replay each saved trace (obtaining the full trace), and property check it
           const restored = restoreTrace(trace, cE);
-          const prepared = prepareTraces(abstractSyntax, plantsState, restored);
+          const prepared = prepareTraces(abstractSyntax, plants, restored);
           checkProperty(property, prepared).then(([result, errors]) => {
             if (result) {
               const [[_, ok]] = result;
@@ -54,7 +57,7 @@ export const PropertyTraceTable = memo(function PropertyTraceTable({
         })
       })
     });
-  }, [traces, properties]);
+  }, [savedTraces, properties]);
 
   return <div style={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between'}}>
 
@@ -65,7 +68,7 @@ export const PropertyTraceTable = memo(function PropertyTraceTable({
         <thead>
           <tr>
             <th style={{verticalAlign: 'bottom'}}>property</th>
-            {traces.map(([name, trace], j) => <th key={j} style={{verticalAlign: 'bottom'}}>
+            {savedTraces.map(([name, trace], j) => <th key={j} style={{verticalAlign: 'bottom'}}>
               <div style={{writingMode: rotateText ? 'sideways-lr' : undefined}}><span className={styles.description}>{name}</span></div>
             </th>)}
           </tr>
@@ -73,7 +76,7 @@ export const PropertyTraceTable = memo(function PropertyTraceTable({
         <tbody>
           {properties.map((property, i) => <tr>
             <td>{property}</td>
-            {traces.map(([name, trace], j) => <td key={j}>
+            {savedTraces.map(([name, trace], j) => <td key={j}>
               <PropertyStatusIndicator status={results===undefined
                 ? "pending"
                 : (results[i]?.[j] || "pending")}

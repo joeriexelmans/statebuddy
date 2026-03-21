@@ -1,6 +1,6 @@
 // AppState in version 1 of StateBuddy
 
-type ToolMode = "select" | "and" | "or" | "pseudo" | "shallow" | "deep" | "transition" | "text" | "nothing";
+export type ToolModeV0 = "select" | "and" | "or" | "pseudo" | "shallow" | "deep" | "transition" | "text" | "nothing";
 
 type BigStepCause = {
   kind: "init",
@@ -28,9 +28,9 @@ export type AppStateV0 = {
   showDebug: boolean;
   sidePanelWidth: number;
 
-  leftMouseMode: ToolMode,   // <-- the tool that is activated by left mouse button
-  middleMouseMode: ToolMode, // <-- the tool that is activated by middle mouse button
-  insertMode: ToolMode,      // <-- the tool that is activated by right mouse button (should be renamed to 'rightMouseMode' but that would break compatibility with existing StateBuddy models)
+  leftMouseMode: ToolModeV0,   // <-- the tool that is activated by left mouse button
+  middleMouseMode: ToolModeV0, // <-- the tool that is activated by middle mouse button
+  insertMode: ToolModeV0,      // <-- the tool that is activated by right mouse button (should be renamed to 'rightMouseMode' but that would break compatibility with existing StateBuddy models)
 
   visiblePlots: {[name: string]: boolean},
 

@@ -1,4 +1,4 @@
-import { Dispatch, SetStateAction, useCallback, useMemo } from "react";
+import { Dispatch, SetStateAction, useMemo } from "react";
 
 export function makePartialSetter<T, K extends keyof T>(fullSetter: Dispatch<SetStateAction<T>>, key: K): Dispatch<SetStateAction<T[typeof key]>> {
   return (newValueOrCallback: T[K] | ((oldValue: T[K]) => T[K])) => {
@@ -36,7 +36,6 @@ export function makeAllSetters<T extends {[key: string]: any}>(
   }, [fullSetter]);
 }
 
-
 export function makePartialArraySetter<T>(fullSetter: Dispatch<SetStateAction<T[]>>, idx: number) {
   return (newValueOrCallback: T | ((oldValue: T) => T)) => {
     fullSetter(oldFullValue => {
@@ -50,5 +49,37 @@ export function makePartialArraySetter<T>(fullSetter: Dispatch<SetStateAction<T[
       }
       return oldFullValue.with(idx, newValue);
     });
+  }
+}
+
+export type DeepSetter<T> = 
+  T extends any[] ? Dispatch<SetStateAction<T>> : // <-- treat arrays like values
+  T extends object
+    ? {
+        [K in keyof T as `set${Capitalize<Extract<K, string>>}`]: DeepSetter<T[K]>;
+      } & {
+        _setShallow: Dispatch<SetStateAction<T>>,
+      }
+    // the following seems necessary or we get strange type errors...
+    : T extends boolean ? Dispatch<SetStateAction<boolean>>
+    : T extends string ? Dispatch<SetStateAction<string>>
+    : T extends number ? Dispatch<SetStateAction<number>>
+    : Dispatch<SetStateAction<T>>;
+
+export function makeDeepSetter<T>(state: T, setState: Dispatch<SetStateAction<T>>): DeepSetter<T> {
+  if (!Array.isArray(state) && state && typeof state === 'object') {
+    const result = Object.fromEntries([
+      ...Object.entries(state).map(([k, v]) => {
+        const setK = makePartialSetter(setState, k as keyof T);
+        return [`set${k[0].toUpperCase()+k.slice(1)}`, makeDeepSetter(v, setK)];
+      }),
+      ['_setShallow', setState],
+    ]);
+    return result;
+  }
+  else {
+    // state is not an object
+    // @ts-ignore
+    return setState;
   }
 }

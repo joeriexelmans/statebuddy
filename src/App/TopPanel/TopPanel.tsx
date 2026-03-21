@@ -1,23 +1,19 @@
 import gitRev from "@/git-rev.txt";
+import { useShortcuts } from "@/hooks/useShortcuts";
+import { Vec2D } from '@/util/geometry';
+import BugReportIcon from '@mui/icons-material/BugReport';
 import FindInPageOutlinedIcon from '@mui/icons-material/FindInPageOutlined';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
-
-import { useShortcuts } from "@/hooks/useShortcuts";
-import BugReportIcon from '@mui/icons-material/BugReport';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import ContentPasteIcon from '@mui/icons-material/ContentPaste';
 import InfoOutlineIcon from '@mui/icons-material/InfoOutline';
 import KeyboardIcon from '@mui/icons-material/Keyboard';
 import SaveAltIcon from '@mui/icons-material/SaveAlt';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
-
-import { Vec2D } from '@/util/geometry';
 import { Dispatch, memo, useCallback } from "react";
 import { prettyNumber } from '../../util/pretty';
 import styles from "../App.module.css";
+import { AppState } from "../App.state";
 import { Tooltip } from "../Components/Tooltip";
 import { TwoStateButton } from "../Components/TwoStateButton";
-import { SavedTraces } from '../migrations/v1_types';
 import { copySelection, pasteData } from '../VisualEditor/hooks/useCopyPaste';
 import { rotateSelection } from '../VisualEditor/transformations/rotate';
 import { EditHistory, EditHistoryCallbacks } from '../hooks/useEditHistory';
@@ -25,7 +21,7 @@ import { ModelSize } from '../hooks/usePersistentAppState';
 import { SimulatorStuff } from '../hooks/useSimulator';
 import { Trial } from '../hooks/useTrial';
 import { useUpdater } from '../hooks/useUpdater';
-import { makeAllSetters, WithSetters } from "../makePartialSetter";
+import { DeepSetter } from "../makePartialSetter";
 import { KeyInfoHidden, KeyInfoVisible } from "./KeyInfo";
 import { Toolbar } from './Toolbar';
 import { Execution } from './Toolbars/Execution';
@@ -33,13 +29,11 @@ import { RotateButtons } from "./Toolbars/RotateButtons";
 import { ToolSelect } from "./Toolbars/ToolSelect";
 import { UndoRedoButtons } from "./Toolbars/UndoRedoButtons";
 import { ZoomButtons } from "./Toolbars/ZoomButtons";
-import { VisualEditorState } from "../VisualEditor/VisualEditor.state";
-import { TopPanelState } from "../migrations/v1_types";
+import { CopyPasteButtons } from "./Toolbars/CopyPasteButtons";
 
-export type TopPanelProps = WithSetters<{
-  topPanel: TopPanelState,
-}> & {
-  editorState: VisualEditorState,
+export type TopPanelProps = {
+  appState: AppState,
+  setAppState: DeepSetter<AppState>,
 
   historyCallbacks: EditHistoryCallbacks,
 
@@ -60,47 +54,47 @@ export type TopPanelProps = WithSetters<{
   trial: Trial,
 
   onAboutStateBuddy: () => void,
-  onOpen: (modelName: string) => void,
+  // onOpen: (modelName: string) => void,
   onSave: (modelName: string) => void,
 };
 
-const ShortCutShowKeys = <kbd>~</kbd>;
+const ShortcutShowKeys = <kbd>~</kbd>;
+const ShortcutExport = <><kbd>Ctrl</kbd>+<kbd>S</kbd></>;
 
 function toggle(booleanSetter: Dispatch<(state: boolean) => boolean>) {
-  return () => booleanSetter(x => !x);
+  return useCallback(() => booleanSetter(x => !x), [booleanSetter]);
 }
 
+const toolbarGap = {columnGap: '1em'};
+
 export const TopPanel = memo(function TopPanel(props: TopPanelProps) {
-  const {trial, editHistory, displayTime, refreshDisplayTime, modelSize, editorState, startDragging, simulator, topPanel, setTopPanel,
-    onAboutStateBuddy, onOpen, onSave, historyCallbacks,
+  const {trial, editHistory, displayTime, refreshDisplayTime, modelSize, startDragging, simulator, appState, setAppState, onAboutStateBuddy, onSave, historyCallbacks,
   } = props;
-
-  const {modelName, showDebug, showFindReplace, showKeys, zoom} = topPanel;
-  const {setModelName, setShowDebug, setShowFindReplace, setShowKeys, setZoom, setMouseMap} = makeAllSetters(setTopPanel, Object.keys(topPanel) as (keyof TopPanelState)[]);
-
+  const {setKeys, setFind} = setAppState.setView.setVisibility;
+  const showKeys = appState.view.visibility.keys;
+  const {modelName, zoom, mouseMap} = appState.view.topPanel;
+  const {setModelName, setZoom, setMouseMap} = setAppState.setView.setTopPanel;
+  const toggleKeys = toggle(setKeys);
   const {currentTraceItem, simulatorCallbacks} = simulator;
 
   const updateAvailable = useUpdater();
 
   useShortcuts([
-    {keys: ["`"], action: toggle(setShowKeys)},
-    {keys: ["Shift", "~"], action: toggle(setShowKeys)},
-    {keys: ["Ctrl", "o"], action: () => onOpen(modelName)},
+    {keys: ["`"], action: toggleKeys},
+    {keys: ["Shift", "~"], action: toggleKeys},
+    // {keys: ["Ctrl", "o"], action: () => onOpen(modelName)},
     {keys: ["Ctrl", "s"], action: () => onSave(modelName)},
-    {keys: ["Ctrl", "Shift", "F"], action: toggle(setShowFindReplace)},
+    {keys: ["Ctrl", "Shift", "F"], action: toggle(setFind)},
     {keys: ["i"], action: simulatorCallbacks.onInit},
     {keys: ["c"], action: simulatorCallbacks.onClear},
     {keys: ["Backspace"], action: simulatorCallbacks.onBack},
-  ]);
-
-  useShortcuts([
     {keys: ["Tab"], action: currentTraceItem && simulatorCallbacks.onSkip || simulatorCallbacks.onInit},
     {keys: ["Shift", "Tab"], action: simulatorCallbacks.onBack},
   ]);
 
   const KeyInfo = showKeys ? KeyInfoVisible : KeyInfoHidden;
 
-  return <Toolbar style={{columnGap: '1em'}}>
+  return <Toolbar style={toolbarGap}>
     {/* shortcuts / about */}
     <Toolbar>
       <Tooltip tooltip={updateAvailable ? `${trial.appName} update available!
@@ -117,21 +111,21 @@ Refresh the page to get the latest version.` : `about ${trial.appName}`} align="
           <HelpOutlineIcon fontSize='small'/>
         </button>
       </Tooltip>
-      <KeyInfo keyInfo={ShortCutShowKeys}>
+      <KeyInfo keyInfo={ShortcutShowKeys}>
         <Tooltip tooltip="show/hide keyboard shortcuts" align="left">
-        <TwoStateButton active={showKeys} onClick={useCallback(() => setShowKeys(s => !s), [setShowKeys])}><KeyboardIcon fontSize="small"/></TwoStateButton>
+        <TwoStateButton active={showKeys} onClick={toggleKeys}><KeyboardIcon fontSize="small"/></TwoStateButton>
         </Tooltip>
       </KeyInfo>
     </Toolbar>
 
     <Toolbar>
-      <KeyInfo keyInfo={<><kbd>Ctrl</kbd>+<kbd>O</kbd></>}>
+      {/* <KeyInfo keyInfo={<><kbd>Ctrl</kbd>+<kbd>O</kbd></>}>
         <Tooltip tooltip='import file(s)...'>
           <button onClick={() => onOpen(modelName)}>
             <UploadFileIcon fontSize='small'/>
           </button>
         </Tooltip>
-      </KeyInfo>
+      </KeyInfo> */}
       <Tooltip tooltip={`model size: ${prettyNumber(modelSize.original)} bytes
 compressed: ${prettyNumber(modelSize.compressed)} bytes (${Math.round(modelSize.compressed/modelSize.original*100)}%)`} align='left'>
         <input
@@ -143,7 +137,7 @@ compressed: ${prettyNumber(modelSize.compressed)} bytes (${Math.round(modelSize.
           className={styles.description}
           />
       </Tooltip>
-      <KeyInfo keyInfo={<><kbd>Ctrl</kbd>+<kbd>S</kbd></>}>
+      <KeyInfo keyInfo={ShortcutExport}>
         <Tooltip tooltip='export as JSON'>
           <button onClick={() => onSave(modelName)}>
             <SaveAltIcon fontSize='small'/>
@@ -169,51 +163,28 @@ compressed: ${prettyNumber(modelSize.compressed)} bytes (${Math.round(modelSize.
 
     {/* copy / paste */}
     <Toolbar>
-      <KeyInfo keyInfo={<><kbd>Ctrl</kbd>+<kbd>C</kbd></>}>
-        <Tooltip tooltip='copy'>
-          <button
-            disabled={editHistory.current.selection.size === 0}
-            onClick={() => {
-              const item = new ClipboardItem({"text/plain": copySelection(editHistory.current, editHistory.current.selection)});
-              navigator.clipboard.write([item]);
-            }}
-          >
-            <ContentCopyIcon fontSize='small'/>
-          </button>
-        </Tooltip>
-      </KeyInfo>
-      <KeyInfo keyInfo={<><kbd>Ctrl</kbd>+<kbd>V</kbd></>}>
-        <Tooltip tooltip='paste'>
-          <button
-            onClick={() => {
-              navigator.clipboard.readText().then((text) => {
-                const where = {x: 500, y: 100};
-                pasteData(text, // <-- data to decode
-                  where, // <-- where on the canvas
-                  historyCallbacks.commitState, // <-- create new entry in edit history
-                  () => startDragging(where)); // <-- pasted shapes follow mouse
-              });
-            }}
-          >
-            <ContentPasteIcon fontSize='small'/>
-          </button>
-        </Tooltip>
-      </KeyInfo>
+      <CopyPasteButtons
+        // @ts-ignore
+        KeyInfo={KeyInfo}
+        current={editHistory.current}
+        commitState={historyCallbacks.commitState}
+        startDragging={startDragging}
+      />
     </Toolbar>
 
     {/* insert rountangle / arrow / ... */}
     <Toolbar>
       <ToolSelect
-        mouseMap={topPanel.mouseMap}
+        mouseMap={mouseMap}
         setMouseMap={setMouseMap}
-        showKeys={topPanel.showKeys}
+        showKeys={showKeys}
       />
     </Toolbar>
 
     {/* rotate */}
     <Toolbar>
       <RotateButtons
-        disabled={editorState.selection.size === 0}
+        disabled={editHistory.current.selection.size === 0}
         onRotate={useCallback((direction: "ccw"|"cw") =>
           historyCallbacks.commitState(editorState =>
             rotateSelection(editorState, direction)),
@@ -226,8 +197,8 @@ compressed: ${prettyNumber(modelSize.compressed)} bytes (${Math.round(modelSize.
       <KeyInfo keyInfo={<><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd></>}>
         <Tooltip tooltip="find & replace ...">
           <TwoStateButton
-            active={showFindReplace}
-            onClick={() => setShowFindReplace(x => !x)}
+            active={appState.view.visibility.find}
+            onClick={toggle(setAppState.setView.setVisibility.setFind)}
           >
             <FindInPageOutlinedIcon fontSize="small"/>
           </TwoStateButton>
@@ -235,8 +206,8 @@ compressed: ${prettyNumber(modelSize.compressed)} bytes (${Math.round(modelSize.
       </KeyInfo>
       <Tooltip tooltip="show debug panel">
         <TwoStateButton
-          active={showDebug}
-          onClick={() => setShowDebug(x => !x)}
+          active={appState.view.visibility.debug}
+          onClick={toggle(setAppState.setView.setVisibility.setDebug)}
         >
           <BugReportIcon fontSize="small"/>
         </TwoStateButton>

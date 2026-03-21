@@ -10,6 +10,7 @@ import { DEVSComponent } from "@/devs/devs";
 import { WithSetters } from "../makePartialSetter";
 import { TraceableError } from "@/statecharts/parser";
 import { Mode, RaisedEvent } from "@/statecharts/runtime_types";
+import { useDetectChange2 } from "@/hooks/useDetectChange";
 
 // In StateBuddy, currently, the state of our simulation is always a CoupledDEVS state of our statechart model (with a DEVS adapter around it) and a bunch of 'plants'.
 // Perhaps in the future, we could let the user arbitrarily configure this setup (anything on the spectrum from a single Statechart Atomic DEVS to many nested Coupled DEVS ...), but for now, it is what it is.
@@ -257,30 +258,38 @@ export function useSimulator(cE: DEVSComponent<DEVSTrace<CoupledState>> | undefi
   }, [cE, time, currentTraceItem, makeNextTimedTransition]);
 
   const onBack = useCallback(() => {
-    if (trace !== undefined && trace.idx > 0) {
+    setTrace(s => {
+      if (!s) return s;
+      const {trace, idx} = s;
+      const newIdx = idx - 1;
+      if (newIdx < 0) return s; // can't go back
       setTime({
         kind: "paused",
-        simtime: trace.trace[trace.idx-1].simtime,
+        simtime: trace[newIdx].simtime,
       });
-      setTrace({
-        ...trace,
-        idx: trace.idx-1,
-      });
-    }
-  }, [trace, trace?.idx, setTime, setTrace]);
+      return {
+        trace,
+        idx: newIdx,
+      };
+    });
+  }, [setTrace, setTime]);
 
   const onNext = useCallback(() => {
-    if (trace !== undefined && trace.idx < trace.trace.length -1) {
+    setTrace(s => {
+      if (!s) return s;
+      const {trace, idx} = s;
+      const newIdx = idx + 1;
+      if (newIdx >= trace.length) return s; // can't go forward
       setTime({
         kind: "paused",
-        simtime: trace.trace[trace.idx+1].simtime,
+        simtime: trace[idx+1].simtime,
       });
-      setTrace({
-        ...trace,
-        idx: trace.idx+1,
-      });
-    }
-  }, [trace, trace?.idx, setTrace]);
+      return {
+        trace,
+        idx: newIdx,
+      }
+    })
+  }, [setTrace, setTime]);
 
   useShortcuts([
     {keys: ["ArrowUp"], action: onBack},
@@ -300,6 +309,10 @@ export function useSimulator(cE: DEVSComponent<DEVSTrace<CoupledState>> | undefi
     }
   }, [cE]);
 
+  const simulatorCallbacks = useMemo(() => ({
+    onInit, onClear, onBack, onRaise, onSkip, onReplayTrace, addOutputListener, rmOutputListener,
+  }), [onInit, onClear, onBack, onRaise, onSkip, onReplayTrace, addOutputListener, rmOutputListener]);
+
   const simulator = useMemo(() => ({
       // state
       trace,
@@ -315,9 +328,7 @@ export function useSimulator(cE: DEVSComponent<DEVSTrace<CoupledState>> | undefi
       highlightTransitions,
 
       // 'reducers'
-      simulatorCallbacks: {
-        onInit, onClear, onBack, onRaise, onSkip, onReplayTrace, addOutputListener, rmOutputListener,
-      },
+      simulatorCallbacks,
   }), [cE, time, trace, outputListeners]);
 
   return simulator;

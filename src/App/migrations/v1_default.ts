@@ -26,7 +26,7 @@ export const defaultPropertyEditorState = {
   showTable: false,
 };
 
-export const defaultMQTTState: MQTTState = {
+export const defaultMQTTState = {
   on: false,
   brokerUrl: "ws://localhost:9001",
   authentication: false,
@@ -37,7 +37,7 @@ export const defaultMQTTState: MQTTState = {
   ca: "",
   baseTopic: "",
   topics: [],
-};
+} as MQTTState;
 
 export const defaultTracesState: TracesState = {
   autoScroll: true,

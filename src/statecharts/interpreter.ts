@@ -298,7 +298,7 @@ function matchEventToTrigger(
           }
           catch (e) {
             if (e instanceof RuntimeError) {
-              console.debug('failed to match event parameter', event.param, 'with label', trigger.param);
+              // console.debug('failed to match event parameter', event.param, 'with label', trigger.param);
               return [false, environment, []];
             }
             else throw e; // only catch RuntimeError

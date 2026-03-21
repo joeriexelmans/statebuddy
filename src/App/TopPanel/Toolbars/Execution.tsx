@@ -1,9 +1,9 @@
-import { useCallback, useMemo } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 
 import { Toolbar } from '../Toolbar';
 import { Tooltip } from '@/App/Components/Tooltip';
 import { KeyInfoHidden, KeyInfoVisible } from '../KeyInfo';
-import { infinityIfUndefined, SimulatorStuff } from '@/App/hooks/useSimulator';
+import { infinityIfUndefined, SimulatorCallbacks, SimulatorStuff } from '@/App/hooks/useSimulator';
 import { RunPauseButtons } from './RunPauseButtons';
 import { SpeedControl } from './SpeedControl';
 
@@ -26,6 +26,8 @@ type ExecutionProps = {
   displayTime: number,
 };
 
+const toolbarStyle = {columnGap: '1em'};
+
 export function Execution({simulator, showKeys, refreshDisplayTime, displayTime}: ExecutionProps) {
   const [timescale, setTimescale] = useLocalStorage("timescale", 1);
 
@@ -40,42 +42,34 @@ export function Execution({simulator, showKeys, refreshDisplayTime, displayTime}
 
   // User clicked play / pause:
   const onTogglePaused = useCallback(() => {
-    if (currentTraceItem) {
+    if (simulator.trace) {
       setTime(time => {
-        const wallclktime = Math.round(performance.now());
-        if (time.kind === "realtime") {
-          return setPaused(time, wallclktime);
-        }
-        else {
-          return setRealtime(time, timescale, wallclktime);
-        }
+          const wallclktime = Math.round(performance.now());
+          if (time.kind === "realtime") {
+            return setPaused(time, wallclktime);
+          }
+          else {
+            return setRealtime(time, timescale, wallclktime);
+          }
       });
-      refreshDisplayTime();
     }
-  }, [setTime, timescale, refreshDisplayTime, currentTraceItem]);
+    refreshDisplayTime();
+  }, [setTime, timescale, refreshDisplayTime, Boolean(simulator.trace)]);
 
   // Spacebar pauses/resumes
   useShortcuts([
     {keys: [" "], action: onTogglePaused},
   ]);
 
-  return <Toolbar style={{columnGap: '1em'}}>
+  return <Toolbar style={toolbarStyle}>
     {/* init / clear */}
     <Toolbar>
-      <KeyInfo keyInfo={<kbd>I</kbd>}>
-        <Tooltip tooltip="(re)initialize simulation" align='left'>
-          <button onClick={simulatorCallbacks.onInit} >
-            <FlareIcon fontSize="small"/>
-          </button>
-        </Tooltip>
-      </KeyInfo>
-      <KeyInfo keyInfo={<kbd>C</kbd>}>
-        <Tooltip tooltip="clear the simulation" align='left'>
-          <button onClick={simulatorCallbacks.onClear} disabled={!currentTraceItem}>
-            <ClearIcon fontSize="small"/>
-          </button>
-        </Tooltip>
-      </KeyInfo>
+      <InitClear
+        KeyInfo={KeyInfo}
+        onInit={simulatorCallbacks.onInit}
+        onClear={simulatorCallbacks.onClear}
+        disabled={!simulator.trace}
+      />
     </Toolbar>
       
     {/* pause / real time */}
@@ -149,3 +143,28 @@ export function Execution({simulator, showKeys, refreshDisplayTime, displayTime}
     </Toolbar>
   </Toolbar>;
 }
+
+
+const InitClear = memo(function InitClear({KeyInfo, onInit, onClear, disabled}: {
+  KeyInfo: any,
+  onInit: () => void,
+  onClear: () => void,
+  disabled: boolean,
+}) {
+  return <>
+    <KeyInfo keyInfo={<kbd>I</kbd>}>
+      <Tooltip tooltip="(re)initialize simulation" align='left'>
+        <button onClick={onInit} >
+          <FlareIcon fontSize="small"/>
+        </button>
+      </Tooltip>
+    </KeyInfo>
+    <KeyInfo keyInfo={<kbd>C</kbd>}>
+      <Tooltip tooltip="clear the simulation" align='left'>
+        <button onClick={onClear} disabled={disabled}>
+          <ClearIcon fontSize="small"/>
+        </button>
+      </Tooltip>
+    </KeyInfo>
+  </>
+})

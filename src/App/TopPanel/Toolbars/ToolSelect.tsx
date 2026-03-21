@@ -5,7 +5,7 @@ import TrendingFlatIcon from '@mui/icons-material/TrendingFlat';
 import { memo, ReactElement } from "react";
 import { Tooltip } from "../../Components/Tooltip";
 import { TwoStateButton } from "../../Components/TwoStateButton";
-import { makeAllSetters, Setters, WithSetters } from "../../makePartialSetter";
+import { DeepSetter, makeAllSetters, Setters, WithSetters } from "../../makePartialSetter";
 import { HistoryIcon, PseudoStateIcon, RountangleIcon } from "../Icons";
 import { KeyInfoHidden, KeyInfoVisible } from "../KeyInfo";
 import { MouseIcon } from "../MouseIcon";
@@ -24,15 +24,15 @@ const insertModes: [ToolMode, string, ReactElement, ReactElement][] = [
 
 export type ToolSelectSetters = Setters<ToolSelectState>;
 
-export type ToolSelectProps = WithSetters<{
+export type ToolSelectProps = {
   mouseMap: ToolSelectState,
-}> & {
+  setMouseMap: DeepSetter<ToolSelectState>,
   showKeys: boolean,
 }
 
 export const ToolSelect = memo(function ToolSelect({mouseMap, setMouseMap, showKeys}: ToolSelectProps) {
   const {leftMouseMode, middleMouseMode, rightMouseMode} = mouseMap;
-  const {setLeftMouseMode, setMiddleMouseMode, setRightMouseMode} = makeAllSetters(setMouseMap, Object.keys(mouseMap) as (keyof ToolSelectState)[]);
+  const {setLeftMouseMode, setMiddleMouseMode, setRightMouseMode} = setMouseMap;
 
   useShortcuts([
     {keys: ["a"], action: () => setRightMouseMode("and")},

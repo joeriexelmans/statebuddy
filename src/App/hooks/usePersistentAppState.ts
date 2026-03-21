@@ -7,11 +7,12 @@ import { EditHistory } from "./useEditHistory";
 import { useDelay } from "./useDelay";
 import { useMemo } from "react";
 import { myPureDeepAssign } from "@/util/util";
+import { AppStateUnknownVersion, autoMigrate } from "../migrations/auto_migrate";
 
 // valid URL hashes contain:
 export type UrlState = {
   editorState: VisualEditorState<SerializableSelection>;
-} & Partial<AppState>;
+} & AppStateUnknownVersion;
 
 export type ModelSize = {
   original: number,
@@ -34,7 +35,7 @@ export function usePersistentAppState({
       else {
         // recover state
         const { editorState, ...appState } = recoveredState;
-        setAppState(() => myPureDeepAssign(defaultAppState, appState));
+        setAppState(() => myPureDeepAssign(defaultAppState, autoMigrate(appState)));
         setEditHistory(() => ({ current: deserializeEditorState(editorState), history: [], future: [] }));
       }
     }

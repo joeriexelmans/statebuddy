@@ -1,12 +1,12 @@
 import { Tooltip } from "../Components/Tooltip"
 import { PlantsState } from "../migrations/v1_types"
 import { SimulatorStuff } from "../hooks/useSimulator"
-import { WithSetters } from "../makePartialSetter"
+import { DeepSetter } from "../makePartialSetter"
 import { statebuddyPlants } from "../plants"
 import { Toolbar } from "../TopPanel/Toolbar"
 import { ShowPlants } from "./ShowPlants"
 
-export function PlantsView({plantsState, setPlantsState, simulator}: WithSetters<{plantsState: PlantsState}> & {simulator: SimulatorStuff}) {
+export function PlantsView({plantsState, setPlantsState, simulator}: {plantsState: PlantsState, setPlantsState: DeepSetter<PlantsState>} & {simulator: SimulatorStuff}) {
   const speed = simulator.time.kind === "paused" ? 0 : simulator.time.scale;
   const trace = simulator.trace;
   const coupledState = simulator.currentTraceItem?.newState;
@@ -14,17 +14,17 @@ export function PlantsView({plantsState, setPlantsState, simulator}: WithSetters
   const onAddPlant = (type: string) => {
     const plantToInstantiate = statebuddyPlants[type];
     if (plantToInstantiate !== undefined) {
-      setPlantsState(ps => ({
+      setPlantsState._setShallow(({plants, nextPlantID, ...rest}) => ({
         plants: [
-          ...ps.plants,
+          ...plants,
           {
-            id: type + ps.nextPlantID.toString(), // <-- for readability, we include the plant type in the ID
-            name: type + ps.nextPlantID.toString(),
+            id: type + nextPlantID.toString(), // <-- for readability, we include the plant type in the ID
+            name: type + nextPlantID.toString(),
             type,
           },
         ],
-        conns: ps.conns,
-        nextPlantID: ps.nextPlantID+1,
+        nextPlantID: nextPlantID + 1,
+        ...rest,
       }));
     }
   };

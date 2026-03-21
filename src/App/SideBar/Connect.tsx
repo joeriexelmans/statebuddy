@@ -5,8 +5,8 @@ import { Model2ModelConn } from "@/devs/coupled_devs"
 import { Statechart } from "@/statecharts/abstract_syntax";
 import { PlantsState } from "../migrations/v1_types";
 import traceStyles from "./Trace.module.css";
-import { memo, useCallback, useMemo, useState } from "react";
-import { WithSetters } from "../makePartialSetter";
+import { memo, useCallback, useMemo } from "react";
+import { DeepSetter, WithSetters } from "../makePartialSetter";
 
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
@@ -15,12 +15,13 @@ import { Tooltip } from "../Components/Tooltip";
 import { statebuddyPlants } from "../plants";
 import { objectsEqual } from "@/util/util";
 import { useLocalStorage } from "@/hooks/usePersistentState";
+import { Plant } from "../Plant/Plant";
 
 type ConnectProps = {
   abstractSyntax: Statechart,
-} & WithSetters<{
   plantsState: PlantsState,
-}>;
+  setPlantsState: DeepSetter<PlantsState>,
+};
 
 function fullEventName(componentName: string, eventName: string) {
   if (componentName === "") {
@@ -67,28 +68,35 @@ function Connections({conns, startIdx, componentNames, actions, bgColor}: {
   );
 }
 
-export const Connect = memo(function Connect({abstractSyntax, plantsState, setPlantsState}: ConnectProps) {
+export function useConnect(abstractSyntax: Statechart, plantsState: PlantsState) {
+  return useMemo(() => {
+    const plants = plantsState.plants.map(({id, type}) => [id, statebuddyPlants[type]!] as const);
+    const allOutputs = [
+      ...[...abstractSyntax.outputEvents].map(eventName =>
+          ['sc', eventName] as const),
+      ...plants.flatMap(([plantId, plant]) =>
+          plant.plant.execution.outputs.map(eventName =>
+            [plantId, eventName] as const)),
+    ];
+    const allInputs = [
+      ...abstractSyntax.inputEvents.map(({event}) =>
+          ['sc', event] as const),
+      ...plants.flatMap(([plantId, plant]) =>
+          plant.plant.execution.inputs.map(eventName =>
+            [plantId, eventName] as const)),
+    ];
+    const suggestions = autoConnect(allOutputs, allInputs, plantsState.conns);
+    return [allOutputs, allInputs, suggestions] as const;
+  }, [abstractSyntax, plantsState]);
+}
+
+export const Connect = memo(function Connect({abstractSyntax, plantsState, setPlantsState: {setConns}}: ConnectProps) {
   const [selectedOutput, setSelectedOutput] = useLocalStorage("connect.selectedOutput", "-1");
   const [selectedInput, setSelectedInput] = useLocalStorage("connect.selectedInput", "-1");
-  const plants = plantsState.plants.map(({id, type}) => [id, statebuddyPlants[type]!] as const);
   const names = Object.fromEntries([
     ['sc', ''],
     ...plantsState.plants.map(({id, name}) => [id, name]),
   ]);
-  const allOutputs = [
-    ...[...abstractSyntax.outputEvents].map(eventName =>
-        ['sc', eventName] as const),
-    ...plants.flatMap(([plantId, plant]) =>
-        plant.plant.execution.outputs.map(eventName =>
-          [plantId, eventName] as const)),
-  ];
-  const allInputs = [
-    ...abstractSyntax.inputEvents.map(({event}) =>
-        ['sc', event] as const),
-    ...plants.flatMap(([plantId, plant]) =>
-        plant.plant.execution.inputs.map(eventName =>
-          [plantId, eventName] as const)),
-  ];
   const findMatchingEvent = (selectedIdx: string, selectedArray: (readonly [string, string])[], arrayToSearch: (readonly [string, string])[], currIdx: string) => {
     if (currIdx === "-1") {
       if (selectedIdx !== "-1") {
@@ -98,13 +106,11 @@ export const Connect = memo(function Connect({abstractSyntax, plantsState, setPl
     }
     return currIdx;
   }
-  const suggestions = useMemo(() => autoConnect(allOutputs, allInputs, plantsState.conns), [allOutputs, allInputs, plantsState.conns]);
+  const [allOutputs, allInputs, suggestions] = useConnect(abstractSyntax, plantsState);
+
   const deleteConnection = useCallback((i: number) => {
-    setPlantsState(ps => ({
-        ...ps,
-        conns: ps.conns.toSpliced(i, 1),
-    }));
-  }, [setPlantsState]);
+    setConns(conns => conns.toSpliced(i, 1));
+  }, [setConns]);
   const showDeleteButton = useCallback((i: number) => {
     return <DoubleClickButton
       tooltip="delete connection"
@@ -135,7 +141,7 @@ export const Connect = memo(function Connect({abstractSyntax, plantsState, setPl
         <DoubleClickButton
           tooltip="remove all connections"
           style={{width: '100%'}}
-          onDoubleClick={() => setPlantsState(ps => ({...ps, conns: []}))}
+          onDoubleClick={() => setConns([])}
           disabled={plantsState.conns.length === 0}
           fullWidth
         >
@@ -151,7 +157,7 @@ export const Connect = memo(function Connect({abstractSyntax, plantsState, setPl
         startIdx={plantsState.conns.length+3}
         actions={(i: number) =>
           <Tooltip tooltip="add connection" align="right">
-            <button onClick={() => setPlantsState(ps => ({...ps, conns: [...ps.conns, suggestions[i]]}))}>
+            <button onClick={() => setConns(conns => [...conns, suggestions[i]])}>
               <AddIcon fontSize="small"/>
             </button>
           </Tooltip>}
@@ -163,7 +169,7 @@ export const Connect = memo(function Connect({abstractSyntax, plantsState, setPl
             tooltip='add all suggested connections (above)'
             fullWidth
             style={{width: '100%'}}
-            onDoubleClick={() => setPlantsState(ps => ({...ps, conns: [...ps.conns, ...suggestions]}))}
+            onDoubleClick={() => setConns(conns => [...conns, ...suggestions])}
           >
             <AddIcon fontSize="small"/>
             add all
@@ -190,7 +196,7 @@ export const Connect = memo(function Connect({abstractSyntax, plantsState, setPl
 
       {/* very shitty way of making the background pink if there's an error */}
       {attemptingSelfConnect &&
-        <div style={{gridColumn: '1 / 5', gridRow: plantsState.conns.length+suggestions.length+4, backgroundColor: 'var(--error-bg-color)', height: '1.8em', zIndex: -1}}/>}
+        <div style={{gridColumn: '1 / 5', gridRow: plantsState.conns.length+suggestions.length+4, backgroundColor: 'var(--error-bg-color)', height: '2.2em', zIndex: -1}}/>}
 
       <div style={{gridColumn: 2, gridRow: plantsState.conns.length+suggestions.length+4, textAlign: 'center'}}>
         {attemptingSelfConnect &&
@@ -232,18 +238,15 @@ export const Connect = memo(function Connect({abstractSyntax, plantsState, setPl
             onClick={() => {
               const [fromComponent, fromOutputEvent] = allOutputs[Number(selectedOutput)];
               const [toComponent, toInputEvent] = allInputs[Number(selectedInput)];
-              setPlantsState(ps => ({
-                ...ps,
-                conns: [
-                  ...ps.conns,
+              setConns(conns => [
+                  ...conns,
                   {
                     outputModelName: fromComponent,
                     outputEvent: fromOutputEvent,
                     inputModelName: toComponent,
                     inputEvent: toInputEvent,
                   },
-                ],
-              }));
+                ]);
               setSelectedInput("-1");
               setSelectedOutput("-1");
             }}
@@ -256,7 +259,7 @@ export const Connect = memo(function Connect({abstractSyntax, plantsState, setPl
   </>;
 }, objectsEqual);
 
-function autoConnect(allOutputs: (readonly [string, string])[], allInputs: (readonly [string, string])[], alreadyHave: Model2ModelConn[]) {
+export function autoConnect(allOutputs: (readonly [string, string])[], allInputs: (readonly [string, string])[], alreadyHave: Model2ModelConn[]) {
   return allOutputs.flatMap(([outputModelName, outputEvent]) =>
     allInputs.flatMap(([inputModelName, inputEvent]) =>
       (outputEvent === inputEvent && !alreadyHave.some(entry => entry.outputModelName === outputModelName && entry.outputEvent === outputEvent && entry.inputModelName === inputModelName && entry.inputEvent === inputEvent)) ? [{

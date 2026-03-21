@@ -1,6 +1,6 @@
 import styles from "./App.module.css";
 
-import { PropsWithChildren, ReactElement, useCallback, useMemo, useState } from "react";
+import { Dispatch, PropsWithChildren, ReactElement, SetStateAction, useCallback, useMemo, useState } from "react";
 
 import { useDisplayTime } from "@/hooks/useDisplayTime";
 import { initialEditorState } from "@/statecharts/concrete_syntax";
@@ -10,48 +10,42 @@ import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import { AppState, defaultAppState } from "./App.state";
 import { BottomPanel } from "./BottomPanel/BottomPanel";
 import { DebugPanel } from "./BottomPanel/Debug";
-import { DebugState } from './migrations/v1_types';
 import { FindReplace } from "./BottomPanel/FindReplace";
 import { Greeter } from "./BottomPanel/Greeter";
 import { Plot } from "./BottomPanel/Plot";
-import { PropertyTraceTable } from "./BottomPanel/PropertyTraceTable";
+import { PropertyTable } from "./BottomPanel/PropertyTable";
 import { PersistentDetails } from "./Components/PersistentDetails";
 import { Tooltip } from "./Components/Tooltip";
+import { WithShadow } from "./Components/WithShadow";
 import { useCoupledExecution } from "./hooks/useCoupledExecution";
 import { useDelay } from "./hooks/useDelay";
 import { EditHistory, useEditHistory } from "./hooks/useEditHistory";
 import { useParser } from "./hooks/useParser";
 import { usePersistentAppState } from "./hooks/usePersistentAppState";
+import { usePropertyCheck } from "./hooks/usePropertyCheck";
 import { usePyodide } from "./hooks/usePyodide";
 import { useSimulator } from "./hooks/useSimulator";
 import { useTrial } from "./hooks/useTrial";
-import { makeAllSetters, makePartialSetter } from "./makePartialSetter";
+import { makeDeepSetter } from "./makePartialSetter";
 import { About } from "./Modals/About";
-import { OpenFile } from "./Modals/OpenFile";
 import { ModalOverlay } from "./Overlays/ModalOverlay";
+import { Panel } from "./Panel/Panel";
+import { GlobalProps } from "./Panel/PanelItem";
+import { ResizeHandle } from "./Panel/ResizeHandle";
+import { SizedPanel } from "./Panel/SizedPanel";
 import { prepareTraces } from "./SideBar/prepare_trace";
 import { TopPanel } from "./TopPanel/TopPanel";
 import { DebugContext } from "./VisualEditor/context/DebugContext";
 import { useMouse } from "./VisualEditor/hooks/useMouse";
 import { VisualEditor } from "./VisualEditor/VisualEditor";
-import { usePropertyCheck } from "./hooks/usePropertyCheck";
-import { Panel } from "./Panel/Panel";
-import { GlobalProps } from "./Panel/PanelItem";
-import { ResizeHandle } from "./Panel/ResizeHandle";
-import { SizedPanel } from "./Panel/SizedPanel";
-import { WithShadow } from "./Components/WithShadow";
-import { defaultPropertyEditorState } from "./migrations/v1_default";
 
 export function App() {
   // The entire persisted application state (minus the visual editor state)
-  const [appState, setAppState] = useState<AppState>(defaultAppState);
+  const [appState, setAppStateShallow] = useState<AppState>(defaultAppState);
+  const setAppState = useMemo(() => makeDeepSetter(defaultAppState, setAppStateShallow), [setAppStateShallow]);
 
   // @ts-ignore: useful for debugging
   window['appState'] = appState;
-  // @ts-ignore: useful for debugging
-  window['setAppState'] = setAppState;
-
-  const setters = makeAllSetters(setAppState, Object.keys(appState) as (keyof AppState)[]);
 
   // The state of the visual editor (and all previous and future states)
   const [editHistory, setEditHistory] = useState<EditHistory|undefined>(undefined);
@@ -63,22 +57,22 @@ export function App() {
   const trial = useTrial();
 
   const editorState = editHistory && editHistory.current;
-  const {topology, abstractSyntax, syntaxErrors} = useParser(editorState, appState.declaredInputs, appState.declaredOutputs);
+  const {topology, abstractSyntax, syntaxErrors} = useParser(editorState, appState.syntax.declaredInputs, appState.syntax.declaredOutputs);
   const historyCallbacks = useEditHistory(setEditHistory);
 
   // Show model name and last edit timestamp in document title (useful for bookmarking).
   useDelay(() => {
     const timeFormatted = formatDateTime(new Date());
-    document.title = `${location.hostname === "localhost" ? "[dev] " : ""}${appState.topPanel.modelName} [StateBuddy] ${timeFormatted}`;
+    document.title = `${location.hostname === "localhost" ? "[dev] " : ""}${appState.view.topPanel.modelName} [StateBuddy] ${timeFormatted}`;
   }, 100, [appState, editorState]);
 
   // Store app state in URL hash:
   const modelSize = usePersistentAppState({
-    appState, setAppState, editHistory, setEditHistory,
+    appState, setAppState: setAppStateShallow, editHistory, setEditHistory,
     delayMs: 100, // <-- only store URL hash if user doesn't do anything for 100 ms.
   });
 
-  const coupledExecution = useCoupledExecution(abstractSyntax, appState.sideBar.plantsState);
+  const coupledExecution = useCoupledExecution(abstractSyntax, appState.execution.plants);
   const simulator = useSimulator(coupledExecution);
   const {displayTime, refreshDisplayTime} = useDisplayTime(simulator.time);
   
@@ -89,16 +83,16 @@ export function App() {
   const preparedTraces = useMemo(() => {
     return simulator.trace && abstractSyntax && prepareTraces(
       abstractSyntax,
-      appState.sideBar.plantsState,
+      appState.execution.plants,
       simulator.trace.trace,
     ) || {};
-  }, [simulator.trace, appState.sideBar.plantsState, abstractSyntax]);
+  }, [simulator.trace, appState.execution.plants, abstractSyntax]);
 
   const pyodide = usePyodide();
 
   const propertyResults = usePropertyCheck(
     preparedTraces,
-    appState.sideBar.propertyEditor.properties,
+    appState.execution.properties,
     pyodide.checkProperty);
 
   const tracesAndResults = {
@@ -109,66 +103,38 @@ export function App() {
     }))
   }
 
-  appState.sideBar.propertyEditor.showTable
-
-
-  const setSideBar = setters.setSideBar;
-  const {setPlantsState, setPropertyEditor, setTraces, setMqtt} = makeAllSetters(
-    setSideBar,
-    // @ts-ignore
-    Object.keys(appState.sideBar));
-    // @ts-ignore
-  const propEditSetters = makeAllSetters(setPropertyEditor, Object.keys(defaultPropertyEditorState));
-  const setShowTable = propEditSetters.setShowTable;
-  const setProperties = propEditSetters.setProperties;
-  const setSavedTraces = makePartialSetter(setTraces, "savedTraces");
-
-  const hidePropertyTable = useCallback(() => setShowTable(false), [setShowTable]);
-  const hideDebug = useCallback(() => setters.setTopPanel(tp => ({...tp, showDebug: false})), [setters.setTopPanel]);
-  const hideFindReplace = useCallback(() => setters.setTopPanel(tp => ({...tp, showFindReplace: false})), [setters.setTopPanel]);
-  const hideModal = useCallback(() => setModal(null), [setModal]);
-
   const onAboutStateBuddy = useCallback(() => setModal(<About setModal={setModal} {...trial}/>), [trial]);
-  const onOpen = useCallback((modelName: string) => {
-    editorState && setModal(<OpenFile
-      onClose={hideModal}
-      properties={appState.sideBar.propertyEditor.properties}
-      savedTraces={appState.sideBar.traces.savedTraces}
-      setSavedTraces={setSavedTraces}
-      editorState={editorState}
-      bytes={modelSize.original}
-      modelName={modelName}
-      setProperties={setProperties}
-      replaceModel={historyCallbacks.commitState}/>);
-  }, [appState.sideBar, editorState, modelSize, historyCallbacks]);
+  // const onOpen = useCallback((modelName: string) => {
+  //   editorState && setModal(<OpenFile
+  //     onClose={hideModal}
+  //     properties={appState.sideBar.propertyEditor.properties}
+  //     savedTraces={appState.sideBar.traces.savedTraces}
+  //     setSavedTraces={setSavedTraces}
+  //     editorState={editorState}
+  //     bytes={modelSize.original}
+  //     modelName={modelName}
+  //     setProperties={setProperties}
+  //     replaceModel={historyCallbacks.commitState}/>);
+  // }, [appState.sideBar, editorState, modelSize, historyCallbacks]);
   const onSave = useCallback((modelName: string) => {
     downloadObjectAsJson(
       {editorState, ...appState},
       modelName.replaceAll(' ','-')+'_'+formatDateTime(new Date()).replaceAll('/','-').replaceAll(':','-').replaceAll(' ','_')+".statebuddy.json");
   }, [editorState, appState]);
 
-  const editorStuff = useMouse(appState.topPanel.mouseMap, appState.topPanel.zoom, editorState || initialEditorState, historyCallbacks);
+  const editorStuff = useMouse(appState.view.topPanel.mouseMap, appState.view.topPanel.zoom, editorState || initialEditorState, historyCallbacks);
 
-  const debugSetters = makeAllSetters(setters.setDebug, Object.keys(appState.debug) as (keyof DebugState)[]);
-
-  
   const globalProps: GlobalProps = useMemo(() => ({
-    abstractSyntax,
+    appState,
+    setAppState,
     simulator,
+    abstractSyntax,
     propertyResults,
-    mqtt: appState.sideBar.mqtt,
-    plantsState: appState.sideBar.plantsState,
-    propertyEditor: appState.sideBar.propertyEditor,
-    traces: appState.sideBar.traces,
-    setMqtt,
-    setPlantsState,
-    setPropertyEditor,
-    setTraces,
-    declaredInputs: appState.declaredInputs,
-    setDeclaredInputs: setters.setDeclaredInputs,
-    declaredOutputs: appState.declaredOutputs,
-    setDeclaredOutputs: setters.setDeclaredOutputs,
-  }), [appState, abstractSyntax, simulator, propertyResults]);
+  }), [appState, simulator, abstractSyntax, propertyResults]);
+
+  const hidePropertyTable = hide(setAppState.setView.setVisibility.setTable);
+  const hideFindReplace = hide(setAppState.setView.setVisibility.setFind);
+  const hideDebug = hide(setAppState.setView.setVisibility.setDebug);
 
   return <div className={styles.App} style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
     <ModalOverlay modal={modal} setModal={setModal}>
@@ -177,9 +143,8 @@ export function App() {
       <WithShadow>
         {editHistory && editorState &&
           <TopPanel
-            topPanel={appState.topPanel}
-            setTopPanel={setters.setTopPanel}
-            editorState={editorState}
+            appState={appState}
+            setAppState={setAppState}
             historyCallbacks={historyCallbacks}
             startDragging={editorStuff.setDragging}
             editHistory={editHistory}
@@ -189,7 +154,7 @@ export function App() {
             modelSize={modelSize}
             trial={trial}
             onAboutStateBuddy={onAboutStateBuddy}
-            onOpen={onOpen}
+            // onOpen={() => {}}
             onSave={onSave}
           />}
       </WithShadow>
@@ -198,16 +163,16 @@ export function App() {
       <div className={styles.stackHorizontal} style={{flexGrow: 1, overflow: 'clip auto'}}>
 
         {/* Left panel */}
-        <SizedPanel width={appState.leftPanelWidth}>
+        <SizedPanel width={appState.view.leftPanel.width}>
           <Panel
-            state={appState.leftPanel}
-            setState={setters.setLeftPanel}
+            items={appState.view.leftPanel.items}
+            setItems={setAppState.setView.setLeftPanel.setItems}
             globalProps={globalProps}
           />
         </SizedPanel>
         <ResizeHandle
           getDelta={e => e.movementX}
-          setSize={setters.setLeftPanelWidth}/>
+          setSize={setAppState.setView.setLeftPanel.setWidth}/>
 
         {/* top-to-bottom: editor, find & replace, ... */}
         <div style={{display: 'flex', flexDirection: 'column', flexGrow: 1,
@@ -217,16 +182,16 @@ export function App() {
           {/* Editor */}
           <div style={{overflow: 'auto'}}> {/* <-- this element will overflow in the Y-direction (because its parent is a COLUMN) */}
             {editorState && topology && syntaxErrors &&
-              <DebugContext value={appState.debug}>
+              <DebugContext value={appState.view.debug}>
                 <VisualEditor
                   state={editorState}
                   // @ts-ignore
                   setState={historyCallbacks.commitState}
                   topology={topology}
                   editorStuff={editorStuff}
-                  findText={appState.topPanel.showFindReplace && appState.findReplace.findText || ""}
-                  zoom={appState.topPanel.zoom}
-                  mouseMap={appState.topPanel.mouseMap}
+                  findText={appState.view.visibility.find && appState.find.findText || ""}
+                  zoom={appState.view.topPanel.zoom}
+                  mouseMap={appState.view.topPanel.mouseMap}
                   highlightActive={simulator.highlightActive}
                   highlightTransitions={simulator.highlightTransitions}
                   syntaxErrors={allErrors}
@@ -236,33 +201,31 @@ export function App() {
           </div>
           
           <Greeter trial={trial}/>
-          {appState.sideBar.propertyEditor.showTable && appState.sideBar.propertyEditor.properties.length > 0 && appState.sideBar.traces.savedTraces.length > 0 && coupledExecution && abstractSyntax &&
+          {appState.view.visibility.table && appState.execution.properties.length > 0 && appState.execution.savedTraces.length > 0 && coupledExecution && abstractSyntax &&
             <BelowEditor>
-              <PropertyTraceTable
+              <PropertyTable
                 abstractSyntax={abstractSyntax}
-                properties={appState.sideBar.propertyEditor.properties}
-                traces={appState.sideBar.traces.savedTraces}
+                execution={appState.execution}
+                cE={coupledExecution}
                 onClose={hidePropertyTable}
                 checkProperty={pyodide.checkProperty}
-                cE={coupledExecution}
-                plantsState={appState.sideBar.plantsState}
               />
             </BelowEditor>}
-          {editorState && appState.topPanel.showFindReplace &&
+          {editorState && appState.view.visibility.find &&
             <BelowEditor>
               <FindReplace
-                state={appState.findReplace}
-                setState={setters.setFindReplace}
+                state={appState.find}
+                setState={setAppState.setFind._setShallow}
                 cs={editorState}
                 setCS={historyCallbacks.commitState}
                 hide={hideFindReplace}/>
             </BelowEditor>
           }
-          {appState.topPanel.showDebug &&
+          {appState.view.visibility.debug &&
             <BelowEditor>
               <DebugPanel
-                {...appState.debug}
-                {...debugSetters}
+                state={appState.view.debug}
+                setState={setAppState.setView.setDebug}
                 onHide={hideDebug}
               />
             </BelowEditor>}
@@ -271,12 +234,12 @@ export function App() {
         {/* Right panel */}
         <ResizeHandle
           getDelta={e => -e.movementX}
-          setSize={setters.setRightPanelWidth}
+          setSize={setAppState.setView.setRightPanel.setWidth}
         />
-        <SizedPanel width={appState.rightPanelWidth}>
+        <SizedPanel width={appState.view.rightPanel.width}>
           <Panel
-            state={appState.rightPanel}
-            setState={setters.setRightPanel}
+            items={appState.view.rightPanel.items}
+            setItems={setAppState.setView.setRightPanel.setItems}
             globalProps={globalProps}
           />
         </SizedPanel>
@@ -285,19 +248,19 @@ export function App() {
       {/* Bottom bars */}
       <div style={{flex: '0 0 content', borderTop: '1px solid var(--separator-color'}}>
         <div className={styles.statusBar}>
-          <PersistentDetails state={appState.showPlot} setState={setters.setShowPlot}>
+          <PersistentDetails state={appState.view.visibility.plot} setState={setAppState.setView.setVisibility.setPlot}>
             <summary>
               plot
               <Tooltip tooltip="All signals are boolean. Input/ouput event parameters start with `in_`/`out_` resp. Plant state starts with `<plantname>_`" above align="left">
                 <HelpOutlineIcon fontSize='small'/>
               </Tooltip>
             </summary>
-            {preparedTraces && simulator.trace && appState.showPlot &&
+            {preparedTraces && simulator.trace && appState.view.visibility.plot &&
               <Plot width="100%"
                 prepped={tracesAndResults}
                 trace={simulator.trace}
-                state={appState.plot}
-                setState={setters.setPlot}
+                visible={appState.view.plot.visible}
+                setVisible={setAppState.setView.setPlot.setVisible._setShallow}
                 displayTime={displayTime}
               />}
           </PersistentDetails>
@@ -305,8 +268,8 @@ export function App() {
         {syntaxErrors && abstractSyntax &&
           <BottomPanel
             abstractSyntax={abstractSyntax}
-            state={appState.bottomPanel}
-            setState={setters.setBottomPanel}
+            errorsExpanded={appState.view.visibility.errors}
+            setErrorsExpanded={setAppState.setView.setVisibility.setErrors}
             errors={syntaxErrors}
             pyodideStatus={pyodide.status}
           />
@@ -314,6 +277,10 @@ export function App() {
       </div>
     </ModalOverlay>
   </div>;
+}
+
+const hide = (setter: Dispatch<SetStateAction<boolean>>) => {
+  return useCallback(() => setter(false), [setter]);
 }
 
 function BelowEditor({children}: PropsWithChildren<{}>) {

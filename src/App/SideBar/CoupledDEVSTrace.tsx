@@ -1,4 +1,5 @@
 import styles from "./Trace.module.css";
+import appStyles from "../App.module.css";
 
 import { SC2DEVSState } from "@/devs/sc2devs";
 import { DEVSTrace, DEVSTraceItem, DEVSTraceItemExtTransition, DEVSTraceItemInit, DEVSTraceItemIntTransition } from "@/devs/trace";
@@ -11,10 +12,9 @@ import { formatTime, jsonDeepEqual, memoizeOne, objectsEqual } from "../../util/
 import { Tooltip } from "../Components/Tooltip";
 import { CoupledState, StateBuddyTraceState } from "../hooks/useSimulator";
 import { PlantsState } from "../migrations/v1_types";
-import { WithSetters } from "../makePartialSetter";
+import { DeepSetter, WithSetters } from "../makePartialSetter";
 import { PropertyStatusIndicator } from "./PropertyStatusIndicator";
 import { statebuddyPlants } from "../plants";
-import { TracesState } from '../migrations/v1_types';
 import { RuntimeError } from "@/statecharts/interpreter";
 import { whoMadeExtTransition, whoMadeIntTransition } from "@/devs/coupled_trace";
 import NotInterestedIcon from '@mui/icons-material/NotInterested';
@@ -22,11 +22,14 @@ import { actionLangValToText } from "@/statecharts/actionlang_prettyprinter";
 import { StatusType } from "../Components/StatusIndicator";
 import { PropertyTrace } from "./prepare_trace";
 import { RaisedEvent } from "@/statecharts/runtime_types";
+import { TraceView } from "../migrations/v2_types";
 
 type TraceProps = WithSetters<{
   currentTrace: StateBuddyTraceState,
-  traces: TracesState,
 }> & {
+  traceView: TraceView,
+  setMicroSteps: Dispatch<SetStateAction<boolean>>,
+
   // clicking on an item in the trace will jump to it so we need to set the time to that point.
   setTime: Dispatch<SetStateAction<TimeMode>>,
 
@@ -42,13 +45,13 @@ export const CoupledDEVSTrace = memo(function CoupledDEVSTrace({
   currentTrace, setCurrentTrace,
   setTime,
   ast,
-  traces: {
-    showMicroSteps,
-    showTransitions,
-    showPlantTrace,
+  traceView: {
+    microSteps,
+    transitions,
+    plantSteps,
     autoScroll,
   },
-  setTraces,
+  setMicroSteps,
   propertyTrace,
   plantsState,
 }: TraceProps) {
@@ -94,7 +97,7 @@ export const CoupledDEVSTrace = memo(function CoupledDEVSTrace({
                     + ' ' + (isPlantStep ? styles.plantStep : "")}
           onDoubleClick={e => {
             // toggle microsteps visibility
-            setTraces(traces => ({...traces, showMicroSteps: !traces.showMicroSteps}))
+            setMicroSteps(x => !x);
             e.preventDefault();
             e.stopPropagation();
           }}
@@ -104,7 +107,7 @@ export const CoupledDEVSTrace = memo(function CoupledDEVSTrace({
               setTime(_ => ({kind: "paused", simtime: item.simtime}));
             }
           }}
-          style={{display: (isPlantStep && !showPlantTrace) ? 'none' : undefined}}
+          style={{display: (isPlantStep && !plantSteps) ? 'none' : undefined}}
         >
         <div style={{display: 'flex', gap: '1em'}}>
           #{i}
@@ -114,8 +117,8 @@ export const CoupledDEVSTrace = memo(function CoupledDEVSTrace({
             status={propertyStatus}
             plantsState={plantsState}
             // only show micro-steps of currently selected item:
-            showMicroSteps={showMicroSteps && i === currentTrace.idx}
-            showTransitions={showTransitions}
+            showMicroSteps={microSteps && i === currentTrace.idx}
+            showTransitions={transitions}
             ast={ast}
           />
         </div>
@@ -268,7 +271,7 @@ function CoupledDEVSInternalTransition({item, prevItem, status, showMicroSteps, 
       {!isOutputStep && <DEVSStepCause item={blessedItem} />}
       {blessedItem.outputEvents.map(o => <RaisedOutputEvent event={o}/>)}
       {showMicroSteps && <MicroSteps microsteps={isOutputStep && ["(output from previous step)"] || getMicroSteps(blessedItem)}/>}
-      {blessedAs && showTransitions && <ShowFiredTransitions firedTransitions={getFiredTransitions(blessedAs, blessedItem)}/>}
+      {blessedAs && showTransitions && !isOutputStep && <ShowFiredTransitions firedTransitions={getFiredTransitions(blessedAs, blessedItem)}/>}
       <ShowEnvironment item={blessedItem} prevItem={blessedTrace.at(-2)} />
       {error && <ShowRuntimeError error={error} />}
     </Column>
@@ -444,7 +447,7 @@ function ShowFiredTransitions({firedTransitions}: {firedTransitions: Transition[
 function ShowTransition({transition}: {transition: Transition}) {
   if (transition.src === transition.tgt) {
     return <span>
-      <span className="activeState">{stateDescription(transition.src)}</span>
+      <span className={appStyles.activeState}>{stateDescription(transition.src)}</span>
       &#x21BA;
     </span>
   }
@@ -452,7 +455,7 @@ function ShowTransition({transition}: {transition: Transition}) {
     return <span>
       <span className="" style={{border: '1px solid var(--rountangle-stroke-color)', borderRadius: 4, paddingLeft: 2, paddingRight: 2, marginLeft: 2, marginRight: 2}}>{stateDescription(transition.src)}</span>
       &#x21B7;
-      <span className="activeState">{stateDescription(transition.tgt)}</span>
+      <span className={appStyles.activeState}>{stateDescription(transition.tgt)}</span>
       &emsp;
     </span>;
   }

@@ -62,7 +62,7 @@ export function makeCoupledDEVS<T extends CoupledDEVSState<any>>(
       //   console.debug(coupledInputEvent.name, 'goes nowhere');
       // }
       for (const {inputModelName, inputEvent} of routings) {
-        console.debug(`${coupledInputEvent.name} -> ${inputModelName}.${inputEvent}`);
+        // console.debug(`${coupledInputEvent.name} -> ${inputModelName}.${inputEvent}`);
       }
       return routings;
     }));
@@ -78,7 +78,7 @@ export function makeCoupledDEVS<T extends CoupledDEVSState<any>>(
       //   console.debug(`${outputModelName}.${outputEvent.name} goes nowhere`);
       // }
       for (const {inputModelName, inputEvent} of routings) {
-        console.debug(`${outputModelName}.${outputEvent.name} -> ${inputModelName}.${inputEvent}`);
+        // console.debug(`${outputModelName}.${outputEvent.name} -> ${inputModelName}.${inputEvent}`);
       }
       return routings;
     }));
@@ -133,7 +133,7 @@ export function makeCoupledDEVS<T extends CoupledDEVSState<any>>(
           const routings2Output = conns.outputs.filter(conn =>
               conn.outputModelName === modelId && conn.outputEvent === outputEvent.name);
           for (const {coupledOutputEvent} of routings2Output) {
-            console.debug(`${modelId}.${outputEvent.name} -> ${coupledOutputEvent}`);
+            // console.debug(`${modelId}.${outputEvent.name} -> ${coupledOutputEvent}`);
             coupledOutputs.push({
               name: coupledOutputEvent,
               param: outputEvent.param,
