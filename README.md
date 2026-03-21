@@ -2,7 +2,7 @@
 
 Statechart design, simulation and testing tool, developed with the goal of teaching Statecharts to university students, but probably useful in its own right.
 
-![screenshot](./docs/screenshot.png)
+![screenshot](./docs/screenshot2.png)
 
 
 ## Features
