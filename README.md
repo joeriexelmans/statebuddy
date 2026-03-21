@@ -62,7 +62,8 @@ See the [manual](./docs/readme.md).
 
 StateBuddy was written in TypeScript, using React as the frontend framework.
 
-Probably the "dirtiest" aspect of the code right now, is that most of the application state sits at or very close to the top, meaning that many properties need to passed down rather deep. I'm aware that 'contexts' are the React feature that aims to solve this problem, but I find them a bit dirty because it's rather implicit and you have to specify default values for everything, which sometimes doesn't make sense. So I'd rather group properties hierarchically into objects, so properties that belong together are passed together, reducing the amount of repetition. Some day ... :)
+Most of the application state sits at the top of the component hierarchy (`AppState`). It is an object that is JSON (de-)serializable and therefore easily persisted in between page reloads. I tried to divide `AppState` into several hierarchical levels of objects such that detecting changes to parts of the `AppState` can be done 
+efficiently to decide whether dependant components should re-render or not (memoization). I refuse to use "state management" libraries such as zustand or redux, because they reverse the purely functional paradigm of React by letting components decide which parts of **global state** they access, rather than letting their parents decide which parts they *can* see. If I were to re-write StateBuddy from scratch, I would probably give [Elm](https://elm-lang.org) a try.
 
 The [statechart language](./src/statecharts/), which could be used independently from the frontend, consists of:
   - type definitions for
@@ -74,3 +75,5 @@ The [statechart language](./src/statecharts/), which could be used independently
       - [interpreter](./src/statecharts/interpreter.ts)
           - initialization (abstract syntax -> runtime configuration)
           - step function ((runtime configuration × event) -> runtime configuration)
+
+The action language embedded within the statechart language is parsed by [Peggy](https://peggyjs.org/). Peggy turned out "good enough" for my purposes, although syntax highlighting required more boilerplate than I like. Further, Peggy allows JavaScript code in the grammar file (a feature I have used), which can be considered dirty because now the grammar depends on JavaScript.
