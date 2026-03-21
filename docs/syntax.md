@@ -78,7 +78,7 @@ In StateBuddy, you *can* do the same thing...
 ... but:
 
  - it is not necessary: following link with ADTs (explained above), it is like wrapping a single item (= the OR-state) in a tuple (= the AND-state). Further, product-types and sum-types can be nested arbitrarily, and likewise StateBuddy does not enforce strict alternation of AND-states and OR-states.
- - it is extra work: you have to draw two states
+ - it is extra work: in StateBuddy, you draw everything yourself (no syntax-directed editing), so you have to draw two states
  - it is ugly
 
 ## Summary
