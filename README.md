@@ -14,8 +14,8 @@ Statechart design, simulation and testing tool, developed with the goal of teach
       - Visual feedback from parser during editing.
           - ![](/./docs/editing3.webp)
           - Syntax highlighting
-  - Useful language features
-      - Builtin action language (variables, simple arithmetic, arrays and dictionaries)
+  - Builtin action language
+      - Variables, simple arithmetic, arrays and dictionaries
       - Pattern matching on event parameters
   - Simulation
       - Time simulation
