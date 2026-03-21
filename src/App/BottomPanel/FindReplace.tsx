@@ -3,7 +3,7 @@ import { Dispatch, FormEvent, SetStateAction, useCallback } from "react";
 import CloseIcon from '@mui/icons-material/Close';
 import SwapVertIcon from '@mui/icons-material/SwapVert';
 import { Tooltip } from "../Components/Tooltip";
-import { FindReplaceState } from "../reducers/FindReplaceState";
+import { FindReplaceState } from "../migrations/v2_types";
 import { VisualEditorState } from "../VisualEditor/VisualEditor.state";
 
 

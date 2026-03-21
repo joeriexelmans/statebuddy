@@ -16,20 +16,8 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import TableViewIcon from '@mui/icons-material/TableView';
 import VisibilityIcon from '@mui/icons-material/Visibility';
-
-
-export type PropertyEditorState = {
-  properties: string[],
-  activeProperty: number,
-  showTable: boolean,
-}
-
-export const defaultPropertyEditorState = {
-  properties: [],
-  activeProperty: 0,
-  showTable: false,
-}
-
+import { PropertyEditorState } from "../migrations/v2_types";
+import { defaultPropertyEditorState } from "../migrations/v2_default";
 
 type PropertyEditorProps = WithSetters<{
   state: PropertyEditorState;

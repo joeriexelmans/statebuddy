@@ -10,7 +10,7 @@ import { Statechart, stateDescription } from "@/statecharts/abstract_syntax";
 
 import appStyles from "../App.module.css";
 import { VisualEditorState } from "../VisualEditor/VisualEditor.state";
-import { BottomPanelState } from "./BottomPanel.state";
+import { BottomPanelState } from "../migrations/v2_types";
 import { makePartialSetter, WithSetters } from "../makePartialSetter";
 
 const statusStrings = {

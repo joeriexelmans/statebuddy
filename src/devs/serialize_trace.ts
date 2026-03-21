@@ -1,21 +1,6 @@
-import { RaisedEvent } from "@/statecharts/runtime_types";
 import { DEVSComponent } from "./devs";
 import { DEVSTrace } from "./trace";
-
-type ExtTransitionTraceItem = {
-  simtime: number;
-  bagOfInputs: RaisedEvent[],
-}
-
-// A trace of only extTransitions.
-// This is the minimum of information necessary to replay a trace on a DEVS component.
-export type ExtTransitionTrace = {
-  // sequence of timed extTransitions:
-  trace: ExtTransitionTraceItem[],
-
-  // we also store last point in simulated time, because there may still be intTransitions that happened after the last extTransition:
-  lastSimTime: number,
-};
+import { ExtTransitionTrace, ExtTransitionTraceItem } from "@/App/migrations/v2_types";
 
 // returns a trace containing only the extTransitions.
 // this is the minimum of information we need to replay a trace.

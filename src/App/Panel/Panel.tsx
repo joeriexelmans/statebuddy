@@ -2,12 +2,10 @@ import { memo, ReactNode } from "react";
 import { MoveUpDown } from "../Components/MoveUpDown";
 import { PersistentDetails } from "../Components/PersistentDetails";
 import { makePartialArraySetter, makePartialSetter, WithSetters } from "../makePartialSetter"
-import { GlobalProps, PanelItem, PanelType, panelTypes } from "./PanelItem"
+import { GlobalProps, PanelItem, panelTypes } from "./PanelItem"
+import { PanelType } from "../migrations/v2_types";
 import CloseIcon from '@mui/icons-material/Close';
-
-export type PanelState = {
-  items: ExpandablePanelItemState[],
-}
+import { PanelState, ExpandablePanelItemState } from "../migrations/v2_types";
 
 type PanelProps = WithSetters<{
   state: PanelState,
@@ -51,12 +49,6 @@ export const Panel = memo(function Panel({state: {items}, setState, globalProps}
     </select>
   </div>;
 });
-
-
-export type ExpandablePanelItemState = {
-  type: PanelType,
-  expanded: boolean,
-}
 
 type ExpandablePanelItemProps = WithSetters<{
   state: ExpandablePanelItemState,

@@ -1,30 +1,10 @@
-import { CoupledDEVSConns, makeCoupledDEVS, Model2ModelConn } from "@/devs/coupled_devs";
+import { CoupledDEVSConns, makeCoupledDEVS } from "@/devs/coupled_devs";
 import { makeTracedDEVS } from "@/devs/trace";
 import { useMemo } from "react";
 import { statebuddyPlants } from "../plants";
 import { Statechart } from "@/statecharts/abstract_syntax";
 import { sc2DEVS } from "@/devs/sc2devs";
-
-// Statebuddy's application state wrt. plants:
-// JSON-serializable.
-export type PlantsState = {
-  plants: PlantInstance[];
-  nextPlantID: number;
-  conns: Model2ModelConn[]; // <-- the user can configure the connections between the different components (meaning: the statechart model and the plant(s))
-};
-
-export const defaultPlantsState = {
-  plants: [],
-  nextPlantID: 0,
-  conns: [],
-};
-
-// For every plant the user instantiates, we keep the following kind of entry:
-export type PlantInstance = {
-  id: string; // <-- every plant instance gets a unique immutable ID
-  name: string; // <-- a human-readable and editable name for the plant
-  type: string; // <-- the plant type ("digital watch", "traffic light", "microwave", ...)
-};
+import { PlantsState } from "../migrations/v2_types";
 
 export function useCoupledExecution(ast: Statechart|undefined, plantsState: PlantsState) {
   const plantInstances = useMemo(() =>

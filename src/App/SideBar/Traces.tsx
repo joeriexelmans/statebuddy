@@ -5,7 +5,7 @@ import FlareIcon from '@mui/icons-material/Flare';
 
 import { Tooltip } from "../Components/Tooltip";
 import { makeAllSetters, WithSetters } from "../makePartialSetter";
-import { ExtTransitionTrace, saveExtTransitions } from '@/devs/serialize_trace';
+import { saveExtTransitions } from '@/devs/serialize_trace';
 import appStyles from "../App.module.css";
 import { MoveUpDown } from '../Components/MoveUpDown';
 import { DoubleClickButton } from '../Components/DoubleClickButton';
@@ -14,33 +14,12 @@ import { getSimTime, } from '@/statecharts/time';
 import { SimulatorStuff, } from '../hooks/useSimulator';
 import { CoupledDEVSTrace } from './CoupledDEVSTrace';
 import { Statechart } from '@/statecharts/abstract_syntax';
-import { PlantsState } from '../hooks/useCoupledExecution';
+import { PlantsState } from "../migrations/v2_types";
 import { PropertyTrace } from './prepare_trace';
 import { ResizeHandle } from '../Panel/ResizeHandle';
 import { NicelyCentered } from '../Components/NicelyCentered';
-
-export type SavedTraces = [string, ExtTransitionTrace][];
-
-// Part of application state
-export type TracesState = {
-  showMicroSteps: boolean,
-  showTransitions: boolean,
-  autoScroll: boolean,
-  showPlantTrace: boolean,
-
-  savedTraces: SavedTraces,
-  height: number,
-}
-
-export const defaultTracesState: TracesState = {
-  autoScroll: true,
-  showMicroSteps: false,
-  showTransitions: false,
-  showPlantTrace: false,
-
-  savedTraces: [],
-  height: 300,
-}
+import { TracesState } from '../migrations/v2_types';
+import { defaultTracesState } from '../migrations/v2_default';
 
 type TracesProps = WithSetters<{
   state: TracesState,

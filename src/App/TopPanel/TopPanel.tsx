@@ -17,7 +17,7 @@ import { prettyNumber } from '../../util/pretty';
 import styles from "../App.module.css";
 import { Tooltip } from "../Components/Tooltip";
 import { TwoStateButton } from "../Components/TwoStateButton";
-import { SavedTraces } from '../SideBar/Traces';
+import { SavedTraces } from '../migrations/v2_types';
 import { copySelection, pasteData } from '../VisualEditor/hooks/useCopyPaste';
 import { rotateSelection } from '../VisualEditor/transformations/rotate';
 import { EditHistory, EditHistoryCallbacks } from '../hooks/useEditHistory';
@@ -34,7 +34,7 @@ import { ToolSelect } from "./Toolbars/ToolSelect";
 import { UndoRedoButtons } from "./Toolbars/UndoRedoButtons";
 import { ZoomButtons } from "./Toolbars/ZoomButtons";
 import { VisualEditorState } from "../VisualEditor/VisualEditor.state";
-import { TopPanelState } from "./TopPanel.state";
+import { TopPanelState } from "../migrations/v2_types";
 
 export type TopPanelProps = WithSetters<{
   topPanel: TopPanelState,

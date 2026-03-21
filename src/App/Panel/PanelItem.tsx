@@ -4,12 +4,15 @@ import { ShowAST, ShowInputEvents, ShowInternalEvents, ShowOutputEvents } from "
 import { SimulatorStuff } from "../hooks/useSimulator";
 import { ReactNode } from "react";
 import { PlantsView } from "../SideBar/PlantsView";
-import { PlantsState } from "../hooks/useCoupledExecution";
+import { PanelType, PlantsState } from "../migrations/v2_types";
 import { Connect } from "../SideBar/Connect";
-import { MQTT, MQTTState } from "../SideBar/MQTT";
-import { PropertyEditor, PropertyEditorState } from "../SideBar/PropertyEditor";
+import { MQTT } from "../SideBar/MQTT";
+import { MQTTState } from "../migrations/v2_types";
+import { PropertyEditor } from "../SideBar/PropertyEditor";
+import { PropertyEditorState } from "../migrations/v2_types";
 import { PropertyCheckResult } from "../SideBar/prepare_trace";
-import { Traces, TracesState } from "../SideBar/Traces";
+import { Traces } from "../SideBar/Traces";
+import { TracesState } from '../migrations/v2_types';
 import { EventTrigger } from "@/statecharts/label_ast";
 
 // Union of all the stuff any of the panels need to know about
@@ -25,17 +28,6 @@ export type GlobalProps = {
   declaredInputs: EventTrigger[],
   declaredOutputs: EventTrigger[],
 }>
-
-export type PanelType =
-    "state tree"
-  | "input events"
-  | "internal events"
-  | "output events"
-  | "plants"
-  | "connect"
-  | "mqtt"
-  | "properties"
-  | "execution traces";
 
 export const panelTypes: PanelType[] = [
   "state tree",

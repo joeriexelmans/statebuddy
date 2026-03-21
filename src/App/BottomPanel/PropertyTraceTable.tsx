@@ -10,10 +10,10 @@ import styles from "@/App/App.module.css";
 import { restoreTrace } from '@/devs/serialize_trace';
 import { DEVSComponent } from '@/devs/devs';
 import { CoupledState } from '../hooks/useSimulator';
-import { PlantsState } from "../hooks/useCoupledExecution";
+import { PlantsState } from "../migrations/v2_types";
 import { Statechart } from '@/statecharts/abstract_syntax';
 import { DEVSTrace } from '@/devs/trace';
-import { SavedTraces } from '../SideBar/Traces';
+import { SavedTraces } from '../migrations/v2_types';
 import { objectsEqual } from '@/util/util';
 import { StatusType } from '../Components/StatusIndicator';
 

@@ -1,16 +1,14 @@
-import { Dispatch, memo, ReactElement, SetStateAction, useCallback, useEffect } from "react";
-import { KeyInfoHidden, KeyInfoVisible } from "../KeyInfo";
-import { HistoryIcon, PseudoStateIcon, RountangleIcon } from "../Icons";
-
-import TrendingFlatIcon from '@mui/icons-material/TrendingFlat';
+import { ToolMode, ToolSelectState } from "@/App/migrations/v2_types";
 import { useShortcuts } from "@/hooks/useShortcuts";
+import HighlightAltSharpIcon from '@mui/icons-material/HighlightAltSharp';
+import TrendingFlatIcon from '@mui/icons-material/TrendingFlat';
+import { memo, ReactElement } from "react";
 import { Tooltip } from "../../Components/Tooltip";
 import { TwoStateButton } from "../../Components/TwoStateButton";
-import HighlightAltSharpIcon from '@mui/icons-material/HighlightAltSharp';
-import { makeAllSetters, makePartialSetter, Setters, WithSetters } from "../../makePartialSetter";
+import { makeAllSetters, Setters, WithSetters } from "../../makePartialSetter";
+import { HistoryIcon, PseudoStateIcon, RountangleIcon } from "../Icons";
+import { KeyInfoHidden, KeyInfoVisible } from "../KeyInfo";
 import { MouseIcon } from "../MouseIcon";
-
-export type ToolMode = "select" | "and" | "or" | "pseudo" | "shallow" | "deep" | "transition" | "text" | "nothing";
 
 const insertModes: [ToolMode, string, ReactElement, ReactElement][] = [
   ["select", "select, move, resize", <HighlightAltSharpIcon fontSize="small"/>, <></>],
@@ -23,19 +21,8 @@ const insertModes: [ToolMode, string, ReactElement, ReactElement][] = [
   ["text", "insert text", <>&nbsp;T&nbsp;</>, <kbd>X</kbd>],
 ];
 
-export type ToolSelectState = {
-  leftMouseMode: ToolMode,   // <-- the tool that is activated by left mouse button
-  middleMouseMode: ToolMode, // <-- the tool that is activated by middle mouse button
-  rightMouseMode: ToolMode,      // <-- the tool that is activated by right mouse button
-};
 
 export type ToolSelectSetters = Setters<ToolSelectState>;
-
-export const defaultToolSelectState: ToolSelectState = {
-  leftMouseMode: 'select',
-  middleMouseMode: 'nothing',
-  rightMouseMode: 'and',
-};
 
 export type ToolSelectProps = WithSetters<{
   mouseMap: ToolSelectState,
@@ -98,6 +85,7 @@ export const ToolSelect = memo(function ToolSelect({mouseMap, setMouseMap, showK
         <Tooltip tooltip={hint + extraToolTip}>
           <TwoStateButton
             active={rightMouseMode===m || leftMouseMode===m || middleMouseMode === m}
+            // @ts-ignore
             onMouseUp={e => mapConservatively(e, m)}
             onContextMenu={e => {e.preventDefault()}}
           >

@@ -25,38 +25,10 @@ import { StatusType, StatusIndicator, FlickeringStatusIndicator } from "../Compo
 import { Statechart } from "@/statecharts/abstract_syntax";
 import { EventTrigger } from "@/statecharts/label_ast";
 import traceStyles from "./Trace.module.css";
+import { MQTTTopicConfig, Event2MQTTMapping, MQTTState } from "../migrations/v2_types";
+import { defaultMQTTState } from "../migrations/v2_default";
 
-export type MQTTState = {
-  on: boolean;
-  brokerUrl: string;
-  authentication: boolean;
-  user: string;
-  password: string;
-  seePassword: boolean;
-  enableCA: boolean;
-  ca: string;
-  baseTopic: string;
-  topics: TopicConfig[];
-}
-
-type TopicConfig = {
-  // prefix to the topic
-  prefix: string;
-
-  // mapping MQTT subscriptions -> input events
-  inputMappings: Event2MQTTMapping[];
-
-  // mapping output events -> MQTT publications
-  outputMappings:  Event2MQTTMapping[];
-};
-
-type Event2MQTTMapping = {
-  eventName:   string; // e.g., doneHoist
-  requestName: string; // e.g., hoist
-  payload:     string; // e.g., "({height}) => height"
-};
-
-const defaultTopic: TopicConfig = {
+const defaultTopic: MQTTTopicConfig = {
   prefix: "",
   inputMappings: [],
   outputMappings: [],
@@ -66,19 +38,6 @@ const defaultMapping: Event2MQTTMapping = {
   eventName: "",
   requestName: "",
   payload: "",
-}
-
-export const defaultMQTTState: MQTTState = {
-  on: false,
-  brokerUrl: "ws://localhost:9001",
-  authentication: false,
-  user: "",
-  password: "",
-  seePassword: false,
-  enableCA: false,
-  ca: "",
-  baseTopic: "",
-  topics: [],
 }
 
 type MQTTProps = WithSetters<{
@@ -400,8 +359,8 @@ function ScOutEventSubscriptionView({simulator, fullTopic, client, clientStatus,
   </ClickToCopy>;
 }
 
-function TopicView({topic, setTopic, client, clientStatus, baseTopic, onDelete, simulator, abstractSyntax}: WithSetters<{topic: TopicConfig}> & {client: MqttClient|null, clientStatus: StatusType, baseTopic: string, onDelete: () => void, simulator: SimulatorStuff, abstractSyntax: Statechart}) {
-  const setters = makeAllSetters(setTopic, Object.keys(defaultTopic) as (keyof TopicConfig)[]);
+function TopicView({topic, setTopic, client, clientStatus, baseTopic, onDelete, simulator, abstractSyntax}: WithSetters<{topic: MQTTTopicConfig}> & {client: MqttClient|null, clientStatus: StatusType, baseTopic: string, onDelete: () => void, simulator: SimulatorStuff, abstractSyntax: Statechart}) {
+  const setters = makeAllSetters(setTopic, Object.keys(defaultTopic) as (keyof MQTTTopicConfig)[]);
   const fullPrefix = baseTopic+topic.prefix;
 
   return <fieldset>

@@ -4,18 +4,7 @@ import { Setters } from "../makePartialSetter";
 import { GRID_CELL_SIZE } from '../parameters';
 import { useState } from 'react';
 import { DoubleClickButton } from '../Components/DoubleClickButton';
-
-export type DebugState = {
-  showBBox: boolean,
-  showGrid: boolean,
-  showCells: boolean,
-}
-
-export const defaultDebugState: DebugState = {
-  showBBox: false,
-  showGrid: false,
-  showCells: false,
-}
+import { DebugState } from '../migrations/v2_types';
 
 type DebugProps = DebugState & Setters<DebugState> & {
   onHide: () => void,

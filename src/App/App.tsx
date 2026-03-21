@@ -10,7 +10,8 @@ import { formatDateTime } from "@/util/util";
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import { AppState, defaultAppState } from "./App.state";
 import { BottomPanel } from "./BottomPanel/BottomPanel";
-import { DebugPanel, DebugState } from "./BottomPanel/Debug";
+import { DebugPanel } from "./BottomPanel/Debug";
+import { DebugState } from './migrations/v2_types';
 import { FindReplace } from "./BottomPanel/FindReplace";
 import { Greeter } from "./BottomPanel/Greeter";
 import { Plot } from "./BottomPanel/Plot";
@@ -40,7 +41,7 @@ import { GlobalProps } from "./Panel/PanelItem";
 import { ResizeHandle } from "./Panel/ResizeHandle";
 import { SizedPanel } from "./Panel/SizedPanel";
 import { WithShadow } from "./Components/WithShadow";
-import { defaultPropertyEditorState } from "./SideBar/PropertyEditor";
+import { defaultPropertyEditorState } from "./migrations/v2_default";
 
 export function App() {
   // The entire persisted application state (minus the visual editor state)
