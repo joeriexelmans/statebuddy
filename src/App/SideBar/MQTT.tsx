@@ -25,8 +25,8 @@ import { StatusType, StatusIndicator, FlickeringStatusIndicator } from "../Compo
 import { Statechart } from "@/statecharts/abstract_syntax";
 import { EventTrigger } from "@/statecharts/label_ast";
 import traceStyles from "./Trace.module.css";
-import { MQTTTopicConfig, Event2MQTTMapping, MQTTState } from "../migrations/v2_types";
-import { defaultMQTTState } from "../migrations/v2_default";
+import { MQTTTopicConfig, Event2MQTTMapping, MQTTState } from "../migrations/v1_types";
+import { defaultMQTTState } from "../migrations/v1_default";
 
 const defaultTopic: MQTTTopicConfig = {
   prefix: "",

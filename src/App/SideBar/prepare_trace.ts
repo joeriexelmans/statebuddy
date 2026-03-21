@@ -1,5 +1,5 @@
 import { CoupledState } from "../hooks/useSimulator";
-import { PlantsState } from "../migrations/v2_types";
+import { PlantsState } from "../migrations/v1_types";
 import { DEVSTrace } from "@/devs/trace";
 import { Statechart } from "@/statecharts/abstract_syntax";
 import { statebuddyPlants } from "../plants";

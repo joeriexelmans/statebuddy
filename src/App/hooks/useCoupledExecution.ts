@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { statebuddyPlants } from "../plants";
 import { Statechart } from "@/statecharts/abstract_syntax";
 import { sc2DEVS } from "@/devs/sc2devs";
-import { PlantsState } from "../migrations/v2_types";
+import { PlantsState } from "../migrations/v1_types";
 
 export function useCoupledExecution(ast: Statechart|undefined, plantsState: PlantsState) {
   const plantInstances = useMemo(() =>

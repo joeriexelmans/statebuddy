@@ -14,12 +14,12 @@ import { getSimTime, } from '@/statecharts/time';
 import { SimulatorStuff, } from '../hooks/useSimulator';
 import { CoupledDEVSTrace } from './CoupledDEVSTrace';
 import { Statechart } from '@/statecharts/abstract_syntax';
-import { PlantsState } from "../migrations/v2_types";
+import { PlantsState } from "../migrations/v1_types";
 import { PropertyTrace } from './prepare_trace';
 import { ResizeHandle } from '../Panel/ResizeHandle';
 import { NicelyCentered } from '../Components/NicelyCentered';
-import { TracesState } from '../migrations/v2_types';
-import { defaultTracesState } from '../migrations/v2_default';
+import { TracesState } from '../migrations/v1_types';
+import { defaultTracesState } from '../migrations/v1_default';
 
 type TracesProps = WithSetters<{
   state: TracesState,

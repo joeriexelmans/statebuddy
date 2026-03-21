@@ -1,5 +1,5 @@
 import { Tooltip } from "../Components/Tooltip"
-import { PlantsState } from "../migrations/v2_types"
+import { PlantsState } from "../migrations/v1_types"
 import { SimulatorStuff } from "../hooks/useSimulator"
 import { WithSetters } from "../makePartialSetter"
 import { statebuddyPlants } from "../plants"

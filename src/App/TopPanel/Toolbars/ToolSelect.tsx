@@ -1,4 +1,4 @@
-import { ToolMode, ToolSelectState } from "@/App/migrations/v2_types";
+import { ToolMode, ToolSelectState } from "@/App/migrations/v1_types";
 import { useShortcuts } from "@/hooks/useShortcuts";
 import HighlightAltSharpIcon from '@mui/icons-material/HighlightAltSharp';
 import TrendingFlatIcon from '@mui/icons-material/TrendingFlat';

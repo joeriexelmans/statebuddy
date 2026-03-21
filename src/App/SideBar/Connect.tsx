@@ -3,7 +3,7 @@ import connectStyles from "./Connect.module.css";
 
 import { Model2ModelConn } from "@/devs/coupled_devs"
 import { Statechart } from "@/statecharts/abstract_syntax";
-import { PlantsState } from "../migrations/v2_types";
+import { PlantsState } from "../migrations/v1_types";
 import traceStyles from "./Trace.module.css";
 import { memo, useCallback, useMemo, useState } from "react";
 import { WithSetters } from "../makePartialSetter";

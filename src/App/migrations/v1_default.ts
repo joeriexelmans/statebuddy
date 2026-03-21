@@ -1,4 +1,4 @@
-import { AppStateV2, DebugState, MQTTState, SideBarState, ToolSelectState, TracesState } from "./v2_types";
+import { AppStateV1, DebugState, MQTTState, SideBarState, ToolSelectState, TracesState } from "./v1_types";
 
 export const defaultToolSelectState: ToolSelectState = {
   leftMouseMode: 'select',
@@ -56,16 +56,6 @@ export const defaultPlantsState = {
 };
 
 export const defaultSideBarState: SideBarState = {
-  showStateTree: false,
-  showInputEvents: true,
-  showInternalEvents: true,
-  showOutputEvents: true,
-  showPlant: true,
-  showConnections: false,
-  showProperties: false,
-  showExecutionTrace: true,
-  showMQTT: false,
-
   plantsState: defaultPlantsState,
   propertyEditor: defaultPropertyEditorState,
   traces: defaultTracesState,
@@ -86,9 +76,8 @@ export const defaultDebugState: DebugState = {
   showCells: false,
 };
 
-export const defaultAppStateV2: AppStateV2 = {
+export const defaultAppStateV1: AppStateV1 = {
   showPlot: false,
-  sidePanelWidth: 400,
   findReplace: defaultFindReplaceState,
   topPanel: defaultTopPanelState,
   sideBar: defaultSideBarState,

@@ -1,6 +1,6 @@
 import { DoubleClickButton } from "../Components/DoubleClickButton";
 import { CoupledState } from "../hooks/useSimulator";
-import { PlantsState } from "../migrations/v2_types";
+import { PlantsState } from "../migrations/v1_types";
 import { WithSetters } from "../makePartialSetter";
 import appStyles from "../App.module.css";
 

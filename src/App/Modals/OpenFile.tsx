@@ -12,7 +12,7 @@ import styles from "../App.module.css";
 import { buf2base64, deflateBuffer, str2buf } from "@/compression/deflate";
 import { useShortcuts } from "@/hooks/useShortcuts";
 import { ToolSelectState } from "../TopPanel/Toolbars/ToolSelect";
-import { SavedTraces } from '../migrations/v2_types';
+import { SavedTraces } from '../migrations/v1_types';
 import { Selection, VisualEditorState } from "../VisualEditor/VisualEditor.state";
 import { CopyPasteCallbacks } from "../VisualEditor/hooks/useCopyPaste";
 

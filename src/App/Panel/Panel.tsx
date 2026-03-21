@@ -3,9 +3,9 @@ import { MoveUpDown } from "../Components/MoveUpDown";
 import { PersistentDetails } from "../Components/PersistentDetails";
 import { makePartialArraySetter, makePartialSetter, WithSetters } from "../makePartialSetter"
 import { GlobalProps, PanelItem, panelTypes } from "./PanelItem"
-import { PanelType } from "../migrations/v2_types";
+import { PanelType } from "../migrations/v1_types";
 import CloseIcon from '@mui/icons-material/Close';
-import { PanelState, ExpandablePanelItemState } from "../migrations/v2_types";
+import { PanelState, ExpandablePanelItemState } from "../migrations/v1_types";
 
 type PanelProps = WithSetters<{
   state: PanelState,

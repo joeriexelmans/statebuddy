@@ -1,6 +1,6 @@
 import { DEVSComponent } from "./devs";
 import { DEVSTrace } from "./trace";
-import { ExtTransitionTrace, ExtTransitionTraceItem } from "@/App/migrations/v2_types";
+import { ExtTransitionTrace, ExtTransitionTraceItem } from "@/App/migrations/v1_types";
 
 // returns a trace containing only the extTransitions.
 // this is the minimum of information we need to replay a trace.

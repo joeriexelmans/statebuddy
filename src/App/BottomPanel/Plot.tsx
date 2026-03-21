@@ -4,7 +4,7 @@ import { WithSetters } from "../makePartialSetter";
 import { PreparedTraces, PropertyCheckResult } from "../SideBar/prepare_trace";
 import { objectsEqual } from "@/util/util";
 import { StateBuddyTraceState } from "../hooks/useSimulator";
-import { PlotState } from "../migrations/v2_types";
+import { PlotState } from "../migrations/v1_types";
 
 type PlotProperties = SVGAttributes<SVGElement> & WithSetters<{
   state: PlotState

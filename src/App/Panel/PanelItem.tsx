@@ -4,15 +4,15 @@ import { ShowAST, ShowInputEvents, ShowInternalEvents, ShowOutputEvents } from "
 import { SimulatorStuff } from "../hooks/useSimulator";
 import { ReactNode } from "react";
 import { PlantsView } from "../SideBar/PlantsView";
-import { PanelType, PlantsState } from "../migrations/v2_types";
+import { PanelType, PlantsState } from "../migrations/v1_types";
 import { Connect } from "../SideBar/Connect";
 import { MQTT } from "../SideBar/MQTT";
-import { MQTTState } from "../migrations/v2_types";
+import { MQTTState } from "../migrations/v1_types";
 import { PropertyEditor } from "../SideBar/PropertyEditor";
-import { PropertyEditorState } from "../migrations/v2_types";
+import { PropertyEditorState } from "../migrations/v1_types";
 import { PropertyCheckResult } from "../SideBar/prepare_trace";
 import { Traces } from "../SideBar/Traces";
-import { TracesState } from '../migrations/v2_types';
+import { TracesState } from '../migrations/v1_types';
 import { EventTrigger } from "@/statecharts/label_ast";
 
 // Union of all the stuff any of the panels need to know about

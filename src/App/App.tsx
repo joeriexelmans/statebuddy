@@ -3,7 +3,6 @@ import styles from "./App.module.css";
 import { PropsWithChildren, ReactElement, useCallback, useMemo, useState } from "react";
 
 import { useDisplayTime } from "@/hooks/useDisplayTime";
-import { useResizeable } from "@/hooks/useResizeable";
 import { initialEditorState } from "@/statecharts/concrete_syntax";
 import { downloadObjectAsJson } from "@/util/download_json";
 import { formatDateTime } from "@/util/util";
@@ -11,7 +10,7 @@ import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import { AppState, defaultAppState } from "./App.state";
 import { BottomPanel } from "./BottomPanel/BottomPanel";
 import { DebugPanel } from "./BottomPanel/Debug";
-import { DebugState } from './migrations/v2_types';
+import { DebugState } from './migrations/v1_types';
 import { FindReplace } from "./BottomPanel/FindReplace";
 import { Greeter } from "./BottomPanel/Greeter";
 import { Plot } from "./BottomPanel/Plot";
@@ -41,7 +40,7 @@ import { GlobalProps } from "./Panel/PanelItem";
 import { ResizeHandle } from "./Panel/ResizeHandle";
 import { SizedPanel } from "./Panel/SizedPanel";
 import { WithShadow } from "./Components/WithShadow";
-import { defaultPropertyEditorState } from "./migrations/v2_default";
+import { defaultPropertyEditorState } from "./migrations/v1_default";
 
 export function App() {
   // The entire persisted application state (minus the visual editor state)

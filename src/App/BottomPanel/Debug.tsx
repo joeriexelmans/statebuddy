@@ -4,7 +4,7 @@ import { Setters } from "../makePartialSetter";
 import { GRID_CELL_SIZE } from '../parameters';
 import { useState } from 'react';
 import { DoubleClickButton } from '../Components/DoubleClickButton';
-import { DebugState } from '../migrations/v2_types';
+import { DebugState } from '../migrations/v1_types';
 
 type DebugProps = DebugState & Setters<DebugState> & {
   onHide: () => void,

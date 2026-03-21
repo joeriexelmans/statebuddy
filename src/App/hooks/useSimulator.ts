@@ -1,6 +1,6 @@
 import { SC2DEVSState } from "@/devs/sc2devs";
 import { restoreTrace } from "@/devs/serialize_trace";
-import { ExtTransitionTrace } from "../migrations/v2_types";
+import { ExtTransitionTrace } from "../migrations/v1_types";
 import { DEVSTrace, DEVSTraceItem } from "@/devs/trace";
 import { useShortcuts } from "@/hooks/useShortcuts";
 import { getSimTime, getWallClkDelay, TimeMode } from "@/statecharts/time";

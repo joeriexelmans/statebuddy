@@ -16,8 +16,8 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import TableViewIcon from '@mui/icons-material/TableView';
 import VisibilityIcon from '@mui/icons-material/Visibility';
-import { PropertyEditorState } from "../migrations/v2_types";
-import { defaultPropertyEditorState } from "../migrations/v2_default";
+import { PropertyEditorState } from "../migrations/v1_types";
+import { defaultPropertyEditorState } from "../migrations/v1_default";
 
 type PropertyEditorProps = WithSetters<{
   state: PropertyEditorState;
