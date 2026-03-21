@@ -13,14 +13,22 @@ Statechart design, simulation and testing tool, developed with the goal of teach
       - No hidden information: the parser sees exactly what you see, nothing more.
       - Visual feedback from parser during editing.
           - ![](/./docs/editing3.webp)
+          - Syntax highlighting
+  - Useful language features
+      - Builtin action language (variables, simple arithmetic, arrays and dictionaries)
+      - Pattern matching on event parameters
   - Simulation
-      - step-by-step
-      - (scaled) real-time
+      - Time simulation
+          - step-by-step
+          - (scaled) real-time
+      - Coupled execution: controller <-> plant(s) (currently 3 hardcoded plant types: digital watch, traffic light, microwave oven)
+          - follows Coupled DEVS
   - Omniscient debugging (= ability to undo execution steps)
       - logging of microsteps
   - Live modeling (= ability to edit model at runtime -- use at your own risk :)
   - Ability to save / restore execution traces
   - Metric Temporal Logic (MTL) property checking on saved traces
+  - Visual plot of event parameters and plant state over time
   - No need to install anything, everything runs locally in browser
 
 See also the [comparison with Itemis CREATE](./docs/comparison_itemis.md), the tool it meant to replace (for teaching Statecharts).
