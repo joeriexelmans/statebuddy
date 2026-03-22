@@ -54,17 +54,28 @@ The mouse button mapping is always visible. For instance, in the next screenshot
     * examples
       * example: `buttonPressed [t == 0] / t=3; ^start`
       * example: `after 2s / ^ringBell`
-    * triggers
+    * trigger
       * on transitions:
         * `e`, `_e` input / internal event
           * can pattern match on event parameter:
-              * `e(x)` if transition fires, variable `x` is assigned the parameter of `e`.
+              * `e(x)` if transition fires, the parameter value of `e` is assigned to variable `x`.
               * `e(True)` transition can only fire if parameter of `e` is `True`
                   * same meaning as: `e(x) [x]`
               * `e([x, 2])` transition can only fire if event parameter of `e` is a list with at least two elements, and the 2nd element is equal to `2`. If the transition fires, the 1st element in the list is assigned to `x`.
         * `after 5s`, `after 500ms` timer
       * on states:
         * `entry`, `exit`
+    * guard
+        = action language expression (see below) that evaluates to a boolean
+    * action
+         * `x = 5` variable assignment (creates `x` if it doesn't exist yet)
+            * `{x: x, y: z} = {x: 1, y: 2}` destructuring assignment
+               * will assign `x = 1` and `z = 2`
+               * `{x}` is syntactic sugar for `{x: x}` (both in LHS and RHS)
+               * destructuring assignment can fail if structures incompatible (runtime error)
+            * `True = myBool` assertion that `myBool` must be `True` (runtime error if not)
+               * can mix with destructuring assignment: `{x: True} = {x: myBool}` will fail if myBool is `False`.
+         * `^o`, `^_o` raise output event `o` or internal event `_o`
  * action language
     * expressions
        * literals
@@ -82,13 +93,9 @@ The mouse button mapping is always visible. For instance, in the next screenshot
        * structures
           * `{x: 1, y: 2}` dictionaries
           * `["hey", 42, False]` lists
-    * actions
-      * `x = 5` variable assignment
-          * `{x: x, y: z} = {x: 1, y: 2}` destructuring assignment
-             * will assign `x = 1` and `z = 2`
-             * `{x}` is syntactic sugar for `{x: x}` (both in LHS and RHS)
-             * destructuring assignment can fail if structures incompatible (runtime error)
-          * `True = myBool` assertion that `myBool` must be `True` (runtime error if not)
-             * can mix with destructuring assignment: `{x: True} = {x: myBool}` will fail if myBool is `False`.
-      * `^o`, `^_o` raise output event `o` or internal event `_o`
- * internal event names start with `_` (underscore)
+
+### Naming conventions
+
+ * internal event names **must** start with `_` (underscore)
+ * variable names **must** start with a lowercase letter (`[a-z]`)
+ * boolean literals start with uppercase letter: `True`, `False`
