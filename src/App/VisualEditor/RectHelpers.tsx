@@ -27,15 +27,20 @@ function lineGeometryProps(size: Vec2D): [RectSide, object][] {
 const cornerClass = `${styles.helper} ${styles.corner}`;
 
 // no need to memo() this component, the parent component is already memoized
-export const RectHelper = memo(function RectHelper(props: { uid: string, size: Vec2D, selected: Set<RectSide>, highlight: string[] }) {
+export const RectHelper = memo(function RectHelper(props: { uid: string, size: Vec2D, selected: Set<RectSide>, highlight: string[], dashed: boolean }) {
   const geomProps = lineGeometryProps(props.size);
   return <>
     {geomProps.map(([side, ps]) => <g key={side}>
       {(props.selected.has(side) || props.highlight.includes(side)) &&
         <line className={""
             + ' ' + (props.selected.has(side) ? styles.selected : "")
-            + ' ' + (props.highlight.includes(side) ? styles.highlight : "")}
-            {...ps} data-uid={props.uid} data-parts={side}/>
+            + ' ' + (props.highlight.includes(side) ? styles.highlight : "")
+            + ' ' + (props.dashed ? styles.dashed : "")
+          }
+          {...ps}
+          data-uid={props.uid}
+          data-parts={side}
+        />
       }
       <line className={styles.helper} {...ps} data-uid={props.uid} data-parts={side}/>
     </g>)}
@@ -75,4 +80,5 @@ export const RectHelper = memo(function RectHelper(props: { uid: string, size: V
     && objectsEqual(prevProps.size, nextProps.size)
     && setsEqual(prevProps.selected, nextProps.selected)
     && arraysEqual(prevProps.highlight, nextProps.highlight)
+    && prevProps.dashed === nextProps.dashed
 });

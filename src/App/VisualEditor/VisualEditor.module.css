@@ -80,8 +80,12 @@ circle.helper:hover:not(:active) {
 }
 
 .rountangle.or {
-  stroke-dasharray: 7 6;
   fill: var(--or-state-bg-color);
+}
+
+.rountangle.dashed,
+line.selected.dashed {
+  stroke-dasharray: 7 6;
 }
 
 .arrow {

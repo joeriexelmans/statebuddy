@@ -1,4 +1,4 @@
-import { Dispatch, memo, ReactElement, SetStateAction, useCallback, useContext, useEffect } from "react";
+import { Dispatch, memo, ReactElement, SetStateAction, useCallback, useContext, useEffect, useMemo } from "react";
 
 import { Mode } from "@/statecharts/runtime_types";
 import { arraysEqual, mapsEqual, objectsEqual, setsEqual } from "@/util/util";
@@ -20,6 +20,8 @@ import { Selection, VisualEditorState } from "./VisualEditor.state";
 import { DebugContext } from "./context/DebugContext";
 import { EditorStuff } from "./hooks/useMouse";
 import { ToolSelectState } from "../migrations/v1_types";
+import { useDelay } from "../hooks/useDelay";
+import { useDelayedMemo } from "../hooks/useDelayedMemo";
 
 type VisualEditorProps = {
   state: VisualEditorState,
@@ -185,7 +187,7 @@ export const VisualEditor = memo(function VisualEditor({state, setState, topolog
       }
     `}</style>
 
-    <Rountangles rountangles={state.rountangles} {...{selection: renderSelection, sidesToHighlight, rountanglesToHighlight, errors, highlightActive}}/>
+    <Rountangles rountangles={state.rountangles} topology={topology} {...{selection: renderSelection, sidesToHighlight, rountanglesToHighlight, errors, highlightActive}}/>
     <Diamonds diamonds={state.diamonds} {...{selection: renderSelection, sidesToHighlight, rountanglesToHighlight, errors}}/>
 
     {state.history.map(history => <>
@@ -229,8 +231,16 @@ export const VisualEditor = memo(function VisualEditor({state, setState, topolog
   </svg>;
 });
 
-const Rountangles = memo(function Rountangles({rountangles, selection, sidesToHighlight, rountanglesToHighlight, errors, highlightActive}: {rountangles: Rountangle[], selection: Selection, sidesToHighlight: {[key: string]: RectSide[]}, rountanglesToHighlight: {[key: string]: boolean}, errors: TraceableError[], highlightActive: Mode}) {
+const Rountangles = memo(function Rountangles({rountangles, topology, selection, sidesToHighlight, rountanglesToHighlight, errors, highlightActive}: {rountangles: Rountangle[], topology: Topology, selection: Selection, sidesToHighlight: {[key: string]: RectSide[]}, rountanglesToHighlight: {[key: string]: boolean}, errors: TraceableError[], highlightActive: Mode}) {
+  // dirty:
+  const uidToRect = useDelayedMemo(() =>
+    new Map(rountangles.map(r => [r.uid ,r])),
+  [rountangles], 100);
   return <>{rountangles.map(rountangle => {
+    const parentUID = topology.insidenessMap.get(rountangle.uid);
+    const parent = uidToRect.get(parentUID!);
+    console.log(rountangle.uid, 'parent', parentUID, parent);
+    const parentIsOrState = parent ? (parent.kind === "or") : true;
     return <RountangleSVG
       key={rountangle.uid}
       rountangle={rountangle}
@@ -240,9 +250,11 @@ const Rountangles = memo(function Rountangles({rountangles, selection, sidesToHi
         .filter(({shapeUid}) => shapeUid === rountangle.uid)
         .map(({message}) => message).join(', ')}
       active={highlightActive.has(rountangle.uid)}
+      dashed={!parentIsOrState}
     />})}</>;
 }, (p, n) => {
   return arraysEqual(p.rountangles, n.rountangles)
+    && mapsEqual(p.topology.insidenessMap, n.topology.insidenessMap)
     && mapsEqual(p.selection, n.selection)
     && objectsEqual(p.sidesToHighlight, n.sidesToHighlight)
     && objectsEqual(p.rountanglesToHighlight, n.rountanglesToHighlight)
