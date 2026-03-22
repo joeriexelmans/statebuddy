@@ -9,10 +9,10 @@ StateBuddy's aims to be a pleasant, logically consistent experience where I ulti
 |                           | Itemis CREATE                                          | StateBuddy                                                    |
 |---------------------------|--------------------------------------------------------|---------------------------------------------------------------|
 | profit model              | for profit                                             | not-for-profit (currently)                                    |
-| free for academic use     | ✅ yes (yearly license renewal procedure necessary)     | ✅ yes (without license)                                       |
+| free for academic use     | ✅ yes (yearly license renewal procedure)     | ✅ yes (without license)                                       |
 | open source               | ❌ not anymore                                          | ✅ yes                                                         |
 | tech stack                | Eclipse Modeling Framework                             | custom, web-based (React app)                                 |
-| download size             | >300 MB zipped (need to unzip, trust and run the code) | <10 MB zipped (just a web page -> already sandboxed)          |
+| download size             | >300 MB zipped (need to unzip, trust and run the code) | <1 MB zipped (just a web page -> already sandboxed), <10 MB when using MTL checker          |
 | boot time                 | ~7 seconds (not including download time)               | <1 second (includes download time)                            |
 |                           |                                                        |                                                               |
 | **concrete syntax**          |                                                        |                                                               |
