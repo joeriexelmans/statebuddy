@@ -239,7 +239,6 @@ const Rountangles = memo(function Rountangles({rountangles, topology, selection,
   return <>{rountangles.map(rountangle => {
     const parentUID = topology.insidenessMap.get(rountangle.uid);
     const parent = uidToRect.get(parentUID!);
-    console.log(rountangle.uid, 'parent', parentUID, parent);
     const parentIsOrState = parent ? (parent.kind === "or") : true;
     return <RountangleSVG
       key={rountangle.uid}
