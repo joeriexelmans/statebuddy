@@ -40,6 +40,6 @@ MQTT allows your simulation to interact with the **real world**. Output events c
 
 ### Careful with time-travel!
 
-When recording an execution trace in StateBuddy, only the sequence of raised input events and their timings is recorded. This is sufficient information to replay a trace entirely, because StateBuddy's semantics are always deterministic.
+When recording an execution trace in StateBuddy, only the sequence of raised input events and their timings is recorded. This is sufficient information to replay a trace entirely, because StateBuddy's semantics are always deterministic. **As long as we are in the simulated world, everything works as expected.**
 
-Received MQTT messages are mapped to input events, so they are recorded just like any other input event. This means that you can still record and replay execution traces, pause, go back in time, etc. BUT whatever *real-world thing* you are communicating with over MQTT is obviously NOT going to time-travel with you. Therefore it is best to disable MQTT when replaying traces, or when simulating at scaled real-time. Use your best judgement.
+Received MQTT messages are mapped to input events, so they are recorded just like any other input event. This means that you can still record and replay execution traces, pause, go back in time, ... BUT whatever *real-world thing* you are communicating with over MQTT is obviously NOT going to time-travel with you. Therefore it is best to disable MQTT when replaying traces, or when simulating at scaled real-time. Use your best judgement.
