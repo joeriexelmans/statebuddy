@@ -3,7 +3,6 @@ import { addV2D, area, isEntirelyWithin, normalizeRect, Rect2D, roundLine2D, rou
 import { getBBoxInSvgCoords } from "@/util/svg_helper";
 import { Dispatch, RefObject, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MIN_ROUNTANGLE_SIZE } from "../../parameters";
-import { ToolMode, ToolSelectState } from "../../TopPanel/Toolbars/ToolSelect";
 import { SelectingState } from "../Selection";
 import { useShortcuts } from "@/hooks/useShortcuts";
 import styles from "../VisualEditor.module.css";
@@ -11,7 +10,7 @@ import { CopyPasteCallbacks, useCopyPaste } from "./useCopyPaste";
 import { VisualEditorState, Parts } from "../VisualEditor.state";
 import { Selection } from "../VisualEditor.state";
 import { EditHistoryCallbacks } from "@/App/hooks/useEditHistory";
-import { useDetectChange2 } from "@/hooks/useDetectChange";
+import { ToolMode, ToolSelectState } from "@/App/migrations/v1_types";
 
 export type EditorStuff = {
   onMouseDown: (e: React.MouseEvent<SVGSVGElement, MouseEvent>) => void;
@@ -45,7 +44,7 @@ export function useMouse(
   
   // The last known cursor position (via the most recent mouse event).
   // Needed for pasting from clipboard (insert shapes under cursor).
-  const [cursorPos, setCursorPos] = useState<Vec2D>({x:0,y:0});
+  // const [cursorPos, setCursorPos] = useState<Vec2D>({x:0,y:0});
   
   // We keep a ref to the SVG element in order to transform mouse event coordinates to SVG coordinates.
   const refSVG = useRef<SVGSVGElement>(null);
@@ -241,7 +240,7 @@ export function useMouse(
   
   const onMouseMove = useCallback((e: {pageX: number, pageY: number}) => {
     const currentPointer = getCurrentPointer(e);
-    setCursorPos(currentPointer);
+    // setCursorPos(currentPointer);
     setDragging(prevPointer => {
       if (prevPointer) {
         // user was dragging / resizing
@@ -426,46 +425,45 @@ function computeSelection(ss: SelectingState, refSVG: {current: SVGSVGElement | 
   }
   return new Selection();
 }
-  
-function drag(state: VisualEditorState, pointerDelta: Vec2D) {
-  const getParts = (uid: string) => {
-    return state.selection.get(uid) || new Parts();
+
+const getParts = (selection: Selection, uid: string) => {
+  return selection.get(uid) || new Parts();
+}
+
+function dragRectLike(shape: Rect2D & {uid: string}, pointerDelta: Vec2D, selection: Selection) {
+  const parts = getParts(selection, shape.uid);
+  if (parts.size === 0)
+    return shape;
+  const result = {
+    ...shape,
+    ...transformRect(shape, parts, pointerDelta),
+  };
+  return result;
+}
+
+function dragPointLike(shape: {topLeft: Vec2D, uid: string}, pointerDelta: Vec2D, selection: Selection) {
+  if (getParts(selection, shape.uid).size === 0) {
+    return shape; // nothing to move
   }
+  const {topLeft, ...rest} = shape;
   return {
-    ...state,
-    rountangles: state.rountangles.map(r => {
-      const selectedParts = getParts(r.uid);
-      if (selectedParts.size === 0) {
-        return r;
-      }
-      return {
-        ...r,
-        ...roundRect2D(transformRect(r, selectedParts, pointerDelta)),
-      };
-    })
-    .toSorted((a,b) => area(b) - area(a)), // sort: smaller rountangles are drawn on top
-    diamonds: state.diamonds.map(d => {
-      const selectedParts = getParts(d.uid);
-      if (selectedParts.size === 0) {
-        return d;
-      }
-      return {
-        ...d,
-        ...roundRect2D(transformRect(d, selectedParts, pointerDelta)),
-      };
-    }),
-    history: state.history.map(h => {
-      const selectedParts = getParts(h.uid);
-      if (selectedParts.size === 0) {
-        return h;
-      }
-      return {
-        ...h,
-        topLeft: roundVec2D(addV2D(h.topLeft, pointerDelta)),
-      }
-    }),
-    arrows: state.arrows.map(a => {
-      const selectedParts = getParts(a.uid);
+    ...rest,
+    topLeft: addV2D(topLeft, pointerDelta),
+  }
+}
+
+function drag({rountangles, diamonds, history, arrows, texts, selection, ...rest}: VisualEditorState, pointerDelta: Vec2D) {
+  return {
+    rountangles: rountangles
+      .map(r => dragRectLike(r, pointerDelta, selection))
+      .toSorted((a,b) => area(b) - area(a)), // sort: smaller rountangles are drawn on top
+
+    diamonds: diamonds.map(d => dragRectLike(d, pointerDelta, selection)),
+
+    history: history.map(h => dragPointLike(h, pointerDelta, selection)),
+
+    arrows: arrows.map(a => {
+      const selectedParts = getParts(selection, a.uid);
       if (selectedParts.size === 0) {
         return a;
       }
@@ -474,17 +472,15 @@ function drag(state: VisualEditorState, pointerDelta: Vec2D) {
         ...roundLine2D(transformLine(a, selectedParts, pointerDelta)),
       }
     }),
-    texts: state.texts.map(t => {
-      const selectedParts = getParts(t.uid);
-      if (selectedParts.size === 0) {
-        return t;
-      }
-      return {
-        ...t,
-        topLeft: roundVec2D(addV2D(t.topLeft, pointerDelta)),
-      }
-    }).toSorted((a,b) => a.topLeft.y - b.topLeft.y),
-  };
+
+    texts: texts
+      .map(t => dragPointLike(t, pointerDelta, selection))
+      .toSorted((a,b) => a.topLeft.y - b.topLeft.y),
+
+    selection,
+    ...rest,
+
+  } as VisualEditorState;
 }
 
 function eventTargetToParts(target: EventTarget|null) {

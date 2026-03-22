@@ -1,5 +1,5 @@
 import { buf2base64, deflateBuffer, inflateJSON, str2buf } from "@/compression/deflate";
-import { Dispatch, SetStateAction, useCallback, useLayoutEffect, useState } from "react";
+import { useCallback, useLayoutEffect, useState } from "react";
 
 // persist state in URL hash
 export function useUrlHashState<T>(recoverCallback: (recoveredState: (T|undefined)) => void) {
@@ -22,13 +22,7 @@ export function useUrlHashState<T>(recoverCallback: (recoveredState: (T|undefine
   // layout effect because we want to run it before rendering the first frame
   useLayoutEffect(() => {
     recover(window.location.hash.slice(1));
-  }, []);
-
-  // useEffect(() => {
-  //   window.addEventListener("popstate", e => {
-  //     recover(e.target.location.hash.slice(1));
-  //   });
-  // }, []);
+  }, []); // <-- This effect only runs once, on startup.
 
   function persist(state: T, cancel: Promise<void>) {
     const str = JSON.stringify(state);

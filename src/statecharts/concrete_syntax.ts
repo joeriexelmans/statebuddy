@@ -36,6 +36,22 @@ export type ConcreteSyntax = {
   history: History[];
 };
 
+// Rounds all the coordinates to whole numbers.
+// This saves quite a lot of space when serializing numbers to decimal strings (as in JSON) and is not really noticeable.
+export function lossyCompressConcreteSyntax<T extends ConcreteSyntax>({rountangles, texts, arrows, diamonds, history, ...rest}: T): T {
+  function roundPointLike<T extends {topLeft: Vec2D}>({topLeft, ...rest}: T): T{
+    return {topLeft: roundVec2D(topLeft), ...rest} as T;
+  }
+  return {
+    rountangles: rountangles.map(roundRect2D),
+    diamonds: diamonds.map(roundRect2D),
+    texts: texts.map(roundPointLike),
+    arrows: arrows.map(roundLine2D),
+    history: history.map(roundPointLike),
+    ...rest,
+  } as T;
+}
+
 export function roundCS(cs: ConcreteSyntax): ConcreteSyntax {
   return {
     rountangles: cs.rountangles.map(r => ({...r, ...roundRect2D(r)})),

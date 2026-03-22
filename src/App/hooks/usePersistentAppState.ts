@@ -1,5 +1,5 @@
 import { useUrlHashState } from "@/hooks/useUrlHashState";
-import { initialEditorState } from "@/statecharts/concrete_syntax";
+import { initialEditorState, lossyCompressConcreteSyntax } from "@/statecharts/concrete_syntax";
 import { AppState, defaultAppState } from "../App.state";
 import { WithSetters } from "../makePartialSetter";
 import { VisualEditorState, SerializableSelection, deserializeEditorState, serializeEditorState } from "../VisualEditor/VisualEditor.state";
@@ -42,9 +42,11 @@ export function usePersistentAppState({
   );
 
   useDelay(() => {
+    // serialize state to URL hash
     let cancel;
     if (editHistory?.current !== undefined) {
-      const urlState = { editorState: serializeEditorState(editHistory.current), ...appState };
+      const compressed = lossyCompressConcreteSyntax(editHistory.current);
+      const urlState = { editorState: serializeEditorState(compressed), ...appState };
       const cancelPromise = new Promise<void>((resolve) => {
         cancel = resolve;
       });
