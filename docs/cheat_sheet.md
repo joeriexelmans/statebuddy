@@ -50,7 +50,7 @@ The mouse button mapping is always visible. For instance, in the next screenshot
     * expressions
        * literals
           * `3` numbers
-          * `true`, `false` booleans
+          * `True`, `False` booleans (warning: `true` and `false` with small caps will be seen as variable names!)
           * `"hello world"` strings
        * `x` variable references
        * unary operators
