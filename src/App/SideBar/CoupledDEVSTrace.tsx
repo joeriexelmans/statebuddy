@@ -287,6 +287,7 @@ function CoupledDEVSInternalTransition({item, prevItem, status, showMicroSteps, 
           // component did not step
           return false;
         }
+        return true;
       })}
       {...{ast, plantsState, showMicroSteps, showTransitions}}
     />
