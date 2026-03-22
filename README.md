@@ -2,17 +2,17 @@
 
 Statechart design, simulation and testing tool, developed with the goal of teaching Statecharts to university students, but probably useful in its own right.
 
-![screenshot](./docs/screenshot2.png)
+![screenshot](./docs/images/screenshot2.png)
 
 
 ## Features
 
   - Intuitive editor (inspired by [CouchEdit](https://dl.acm.org/doi/10.1145/3417990.3421401), which was in turn inspired by [StateMate](https://ieeexplore.ieee.org/document/54292))
       - Low cognitive load: concrete syntax is just a bunch of flat shapes, that you can *freely* manipulate.
-          - ![](./docs/editing.webp) ![](./docs/editing2.webp)
+          - ![](./docs/videos/editing.webp) ![](./docs/videos/editing2.webp)
       - No hidden information: the parser sees exactly what you see, nothing more, nothing less.
       - Visual feedback from parser during editing.
-          - ![](/./docs/editing3.webp)
+          - ![](/./docs/videos/editing3.webp)
           - Syntax highlighting
   - Builtin action language
       - Variables, simple arithmetic, arrays and dictionaries

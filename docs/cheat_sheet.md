@@ -6,11 +6,11 @@
 Each of three mouse buttons (left, middle, right) can be mapped to any of the available tools, by clicking on the tool button with the desired mouse button (e.g., right-click to map to right mouse button).
 The tools are shown in the top panel:
 
-![](./tools-available.png)
+![](./images/tools-available.png)
 
 The mouse button mapping is always visible. For instance, in the next screenshot, the 'select / move / resize' tool is mapped to the left mouse button, and the 'draw arrows' tool is mapped to the right mouse button:
 
-![](./tools.png)
+![](./images/tools.png)
 
 
 ## Keyboard shortcuts
