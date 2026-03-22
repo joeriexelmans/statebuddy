@@ -29,7 +29,7 @@ Statechart design, simulation and testing tool, developed with the goal of teach
   - Ability to save / restore execution traces
   - Metric Temporal Logic (MTL) property checking on saved traces
   - Visual plot of event parameters and plant state over time
-  - MQTT (over websocket) client
+  - [MQTT](./docs/mqtt/index.md) (over websocket) client
        - define mapping: Statechart in/out events <-> MQTT subscriptions/publications
   - No need to install anything, everything runs locally in browser
 
