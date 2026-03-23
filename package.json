@@ -7,7 +7,7 @@
   "module": "src/index.tsx",
   "scripts": {
     "dev": "bun --hot src/index.tsx",
-    "build": "git rev-parse HEAD > src/git-rev.txt && NODE_ENV=production bun build ./src/index.html --outdir=dist --sourcemap --target=browser --minify --define:process.env.NODE_ENV='\"production\"' --env='BUN_PUBLIC_*'",
+    "build": "git rev-parse HEAD > src/git-rev.txt && NODE_ENV=production bun build ./src/index.html ./src/mtl-checker/mtl_web_worker.ts --entry-naming='[name].[ext]' --outdir=dist --sourcemap --target=browser --minify --define:process.env.NODE_ENV='\"production\"' --env='BUN_PUBLIC_*'",
     "start": "NODE_ENV=production bun src/index.tsx"
   },
   "dependencies": {
@@ -17,7 +17,8 @@
     "pyodide": "^0.29.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "react-error-boundary": "^6.1.1"
+    "react-error-boundary": "^6.1.1",
+    "tar-js": "^0.3.0"
   },
   "devDependencies": {
     "@types/react": "^19.2.2",

@@ -1,10 +1,42 @@
-import { serve } from "bun";
+import { serve, Transpiler } from "bun";
 import index from "./index.html";
+
+// const transpiler = new Transpiler({tsconfig: {
+//   "compilerOptions": {
+//     "target": "ESNext",
+//     "module": "Preserve",
+//     "moduleResolution": "bundler",
+//     "jsx": "react-jsx",
+//     "allowJs": true,
+//     "strict": true,
+//     "skipLibCheck": true,
+//     "forceConsistentCasingInFileNames": true,
+//     "paths": {
+//       "@/*": ["./src/*"]
+//     }
+//   },
+//   "exclude": ["dist", "node_modules"]
+// }
+// });
 
 const server = serve({
   routes: {
     // Serve index.html for all unmatched routes.
     "/*": index,
+    "/mtl_web_worker.js": async () => {
+      // const source = await Bun.file("./src/mtl-checker/mtl_web_worker.ts").text();
+      // const code = transpiler.transformSync(source);
+      const result = await Bun.build({
+        entrypoints: ["./src/mtl-checker/mtl_web_worker.ts"],
+        target: "browser",
+      });
+      return new Response(await result.outputs[0].arrayBuffer(), {
+        headers: {
+          "Content-Type": "application/javascript; charset=utf-8",
+          "Cache-Control": "no-store",
+        },
+      });
+    },
   },
 
   development: process.env.NODE_ENV !== "production" && {

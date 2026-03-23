@@ -16,15 +16,15 @@ import funcy from "./wheels/funcy-1.18-py2.py3-none-any.whl";
 import singledispatch from "./wheels/singledispatch-4.1.2-py3-none-any.whl";
 import regex from "./wheels/regex-2024.11.6-cp313-cp313-pyodide_2025_0_wasm32.whl";
 
-pyodideLock.packages['metric-temporal-logic'].file_name = mtl;
-pyodideLock.packages['parsimonious'].file_name = parsimonious;
-pyodideLock.packages['attrs'].file_name = attrs;
-pyodideLock.packages['discrete-signals'].file_name = discretesignals;
-pyodideLock.packages['sortedcontainers'].file_name = sortedcontainers;
-pyodideLock.packages['lenses'].file_name = lenses;
-pyodideLock.packages['funcy'].file_name = funcy;
-pyodideLock.packages['singledispatch'].file_name = singledispatch;
-pyodideLock.packages['regex'].file_name = regex;
+// pyodideLock.packages['metric-temporal-logic'].file_name = mtl;
+// pyodideLock.packages['parsimonious'].file_name = parsimonious;
+// pyodideLock.packages['attrs'].file_name = attrs;
+// pyodideLock.packages['discrete-signals'].file_name = discretesignals;
+// pyodideLock.packages['sortedcontainers'].file_name = sortedcontainers;
+// pyodideLock.packages['lenses'].file_name = lenses;
+// pyodideLock.packages['funcy'].file_name = funcy;
+// pyodideLock.packages['singledispatch'].file_name = singledispatch;
+// pyodideLock.packages['regex'].file_name = regex;
 
 // this function was used to discover the closure of dependencies of metric-temporal-logic
 // function printdeps(pkgs: any, name: string, indent=0) {
@@ -34,8 +34,11 @@ pyodideLock.packages['regex'].file_name = regex;
 //   }
 // }
 
+
 export async function initPyodide() {
   console.log('loading pyodide...');
+  // const packageBaseUrl = location.protocol + location.hostname + ':' + location.port + location.pathname.split('/').slice(0, -1).join('/') + '/';
+  // console.log(packageBaseUrl);
   const pyodide = await loadPyodide({
     checkAPIVersion: false,
     fullStdLib: false,
@@ -44,7 +47,7 @@ export async function initPyodide() {
     lockFileContents: pyodideLock as Lockfile,
     stdout: (msg: string) => console.log(`Pyodide: ${msg}`),
     packages: ['metric-temporal-logic'],
-    packageBaseUrl: window.location.protocol + window.location.hostname + ':' + window.location.port + window.location.pathname,
+    // packageBaseUrl,
   });
   console.log('loaded pyodide');
   await pyodide.runPythonAsync('import mtl.parser');

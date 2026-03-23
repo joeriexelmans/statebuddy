@@ -38,6 +38,7 @@ import { TopPanel } from "./TopPanel/TopPanel";
 import { DebugContext } from "./VisualEditor/context/DebugContext";
 import { useMouse } from "./VisualEditor/hooks/useMouse";
 import { VisualEditor } from "./VisualEditor/VisualEditor";
+import { useMtlWorkerPool } from "./hooks/useMtlWorkerPool";
 
 export function App() {
   // The entire persisted application state (minus the visual editor state)
@@ -89,6 +90,8 @@ export function App() {
   }, [simulator.trace, appState.execution.plants, abstractSyntax]);
 
   const pyodide = usePyodide();
+
+  console.log(useMtlWorkerPool(1));
 
   const propertyResults = usePropertyCheck(
     preparedTraces,

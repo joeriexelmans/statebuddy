@@ -6,3 +6,5 @@ declare module '*.wav';
 declare module '*.opus';
 declare module '*.webp';
 declare module '*.wasm';
+
+declare module "tar-js";
