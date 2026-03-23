@@ -1,9 +1,8 @@
 import CloseIcon from '@mui/icons-material/Close';
 import TextRotateUpIcon from '@mui/icons-material/TextRotateUp';
-import { memo, useEffect, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import { Tooltip } from "../Components/Tooltip";
 import { TwoStateButton } from "../Components/TwoStateButton";
-import { PropertyStatusIndicator } from "../SideBar/PropertyStatusIndicator";
 import { PreparedTraces, prepareTraces, PropertyCheckStatus } from '../SideBar/prepare_trace';
 import styles from "@/App/App.module.css";
 import { restoreTrace } from '@/devs/serialize_trace';
@@ -12,15 +11,15 @@ import { CoupledState } from '../hooks/useSimulator';
 import { Statechart } from '@/statecharts/abstract_syntax';
 import { DEVSTrace } from '@/devs/trace';
 import { objectsEqual } from '@/util/util';
-import { StatusType } from '../Components/StatusIndicator';
 import { ExecutionState } from '../migrations/v2_types';
+import { PropertyCheckResult } from '../SideBar/PropertyCheckResult';
 
 type PropertyTableProps = {
   abstractSyntax: Statechart,
   execution: ExecutionState,
   cE: DEVSComponent<DEVSTrace<CoupledState>>,
   onClose: () => void,
-  checkProperty: (property: string, preparedTraces: PreparedTraces) => Promise<PropertyCheckStatus>
+  checkProperty: (property: string, traces: PreparedTraces) => readonly [Promise<PropertyCheckStatus>, () => void],
 }
 
 export const PropertyTable = memo(function PropertyTable({
@@ -32,32 +31,14 @@ export const PropertyTable = memo(function PropertyTable({
 }: PropertyTableProps) {
   const {properties, plants, savedTraces} = execution;
   const [rotateText, setRotateText] = useState(false);
-  const [results, setResults] = useState<StatusType[][]|undefined>(undefined);
 
-  useEffect(() => {
-    setResults(() => {
-      return properties.map((property, i) => {
-        return savedTraces.map(([name, trace], j) => {
-          // replay each saved trace (obtaining the full trace), and property check it
-          const restored = restoreTrace(trace, cE);
-          const prepared = prepareTraces(abstractSyntax, plants, restored);
-          checkProperty(property, prepared).then((result) => {
-            if (result.kind === "ok") {
-              const [[_, pass]] = result.result;
-              setResults(results => {
-                if (results) {
-                  return results?.with(i,
-                    results[i].with(j, pass ? "ok" : "nok"));
-                }
-                return;
-              });
-            }
-          });
-          return "pending";
-        })
-      })
+  const preparedTraces = useMemo(() => {
+    return savedTraces.map(([name, trace], j) => {
+      const restored = restoreTrace(trace, cE);
+      const prepared = prepareTraces(abstractSyntax, plants, restored);
+      return prepared;
     });
-  }, [savedTraces, properties]);
+  }, [savedTraces]);
 
   return <div style={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between'}}>
 
@@ -77,10 +58,7 @@ export const PropertyTable = memo(function PropertyTable({
           {properties.map((property, i) => <tr>
             <td>{property}</td>
             {savedTraces.map(([name, trace], j) => <td key={j}>
-              <PropertyStatusIndicator status={results===undefined
-                ? "pending"
-                : (results[i]?.[j] || "pending")}
-              />
+              <PropertyCheckResult property={property} trace={preparedTraces[j]} checkProperty={checkProperty} delay={0}/>
             </td>)}
           </tr>)}
         </tbody>
@@ -98,9 +76,6 @@ export const PropertyTable = memo(function PropertyTable({
       <Tooltip tooltip="rotate table header text" above={true} align='right'>
         <TwoStateButton style={{width: 50}} active={rotateText} onClick={() => setRotateText(s => !s)}>
           <TextRotateUpIcon fontSize="small"/>
-          {/* {rotateText
-            ? <TextRotateUpIcon fontSize="small"/>
-            : <TextRotationNoneIcon fontSize='small'/>} */}
         </TwoStateButton>
       </Tooltip>
     </div>

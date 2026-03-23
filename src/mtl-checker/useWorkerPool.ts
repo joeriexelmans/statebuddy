@@ -101,13 +101,17 @@ export function useMtlWorkerPool(nWorkers: number) {
   }, [state.queue.length, nextReadyIdx]);
 
   const submitJob = useCallback((property: string, preparedTraces: PreparedTraces) => {
-    return new Promise<PropertyCheckStatus>(resolve => {
-      // everything goes into the queue :)
-      setState(({workers, queue}) => ({
-        workers,
-        queue: [...queue, {property, preparedTraces, resolve}],
-      }))
-    });
+    const {promise, resolve} = Promise.withResolvers<PropertyCheckStatus>();
+    const job = {property, preparedTraces, resolve};
+    setState(({workers, queue}) => ({
+      workers,
+      queue: [...queue, job],
+    }));
+    const cancel = () => setState(({workers, queue}) => ({
+      workers,
+      queue: queue.filter(j => j !== job),
+    }));
+    return [promise, cancel] as const;
   }, [setState]);
 
   return [submitJob, state] as const;

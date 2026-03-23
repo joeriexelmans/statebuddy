@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 
-
-export function useDelay(
+// Like useEffect, but with a delay.
+export function useDelayedEffect(
   doSomething: () => (void | (() => void)),
   delayMs: number,
   deps: any[],

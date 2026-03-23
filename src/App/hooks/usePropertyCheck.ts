@@ -18,24 +18,27 @@ const customResize = resize<PropertyCheckStatus>(statusPending);
 export function usePropertyCheck(
   traces: PreparedTraces | undefined,
   properties: string[],
-  checkProperty: (property: string, traces: PreparedTraces) => Promise<PropertyCheckStatus>,
+  checkProperty: (property: string, traces: PreparedTraces) => readonly [Promise<PropertyCheckStatus>, () => void],
 ) {
   const [results, setResultsPromise] = usePromise<PropertyCheckStatus[]>();
 
   useEffect(() => {
     // clear previous results
     let timeout: NodeJS.Timeout;
+    let clearQueue = () => {};
     const cancel = setResultsPromise(new Promise((resolve) => {
       timeout = setTimeout(() => {
         if (traces) {
-          Promise.all(properties.map(p => checkProperty(p, traces)))
-          .then(resolve);
+          const mapped = properties.map(p => checkProperty(p, traces));
+          Promise.all(mapped.map(m => m[0])).then(resolve);
+          clearQueue = () => mapped.forEach(m => m[1]());
         }
-      }, 100);
+      }, 1);
     }));
 
     return () => {
       cancel();
+      clearQueue();
       clearTimeout(timeout);
     };
   }, [traces, properties]);

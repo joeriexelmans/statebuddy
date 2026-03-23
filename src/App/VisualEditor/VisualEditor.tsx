@@ -20,7 +20,7 @@ import { Selection, VisualEditorState } from "./VisualEditor.state";
 import { DebugContext } from "./context/DebugContext";
 import { EditorStuff } from "./hooks/useMouse";
 import { ToolSelectState } from "../migrations/v1_types";
-import { useDelay } from "../hooks/useDelay";
+import { useDelayedEffect } from "../hooks/useDelay";
 import { useDelayedMemo } from "../hooks/useDelayedMemo";
 
 type VisualEditorProps = {

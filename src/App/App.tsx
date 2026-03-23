@@ -20,7 +20,7 @@ import { PersistentDetails } from "./Components/PersistentDetails";
 import { Tooltip } from "./Components/Tooltip";
 import { WithShadow } from "./Components/WithShadow";
 import { useCoupledExecution } from "./hooks/useCoupledExecution";
-import { useDelay } from "./hooks/useDelay";
+import { useDelayedEffect } from "./hooks/useDelay";
 import { EditHistory, useEditHistory } from "./hooks/useEditHistory";
 import { useParser } from "./hooks/useParser";
 import { usePersistentAppState } from "./hooks/usePersistentAppState";
@@ -55,6 +55,9 @@ export function App() {
   // Wether a modal dialog is being shown or not
   const [modal, setModal] = useState<ReactElement|null>(null);
 
+  // Persist the size of the worker pool in the user's localStorage (not in AppState) - the optimal value here is machine-bound.
+  const [nWorkers, setNWorkers] = useLocalStorage("nWorkers", 4);
+
   // What the ???
   const trial = useTrial();
 
@@ -63,7 +66,7 @@ export function App() {
   const historyCallbacks = useEditHistory(setEditHistory);
 
   // Show model name and last edit timestamp in document title (useful for bookmarking).
-  useDelay(() => {
+  useDelayedEffect(() => {
     const timeFormatted = formatDateTime(new Date());
     document.title = `${location.hostname === "localhost" ? "[dev] " : ""}${appState.view.topPanel.modelName} [StateBuddy] ${timeFormatted}`;
   }, 100, [appState, editorState]);
@@ -82,14 +85,14 @@ export function App() {
     () => [...syntaxErrors, ...simulator.runtimeErrors],
     [syntaxErrors, simulator.runtimeErrors]);
 
-  // const pyodide = usePyodide();
-
-  // performance optimization: only compute what we truly need:
+  // Performance optimization: only compute what we truly need:
   const panelHasVisibleProperties = (panel: PanelState) => panel.items.find(item => item.type === "properties")?.expanded
   const propertiesVisible = panelHasVisibleProperties(appState.view.leftPanel)
                          || panelHasVisibleProperties(appState.view.rightPanel);
   const shouldPrepareTraces = appState.view.visibility.plot || propertiesVisible;
 
+  // Convert from internal trace format to a format that py-mtl understands.
+  // Also, we use this format for plotting our plot.
   const preparedTraces = useMemo(() => {
     if (simulator.trace && abstractSyntax && shouldPrepareTraces) {
       return prepareTraces(
@@ -100,9 +103,13 @@ export function App() {
     }
   }, [simulator.trace && simulator.trace.trace, appState.execution.plants, abstractSyntax, shouldPrepareTraces]);
 
-  const [nWorkers, setNWorkers] = useLocalStorage("nWorkers", 4);
-
   const [checkProperty, workerPoolState] = useMtlWorkerPool(nWorkers);
+
+  // Check ALL properties on the current execution trace.
+  // We display the results in 3 places:
+  //  - the plot
+  //  - the property editor
+  //  - the execution trace
   const propertyResults = usePropertyCheck(
     preparedTraces,
     appState.execution.properties,

@@ -11,7 +11,10 @@ export function DoubleClickButton({children, onDoubleClick, align, tooltip, full
       <button
         {...rest}
         className="alert"
-        onClick={onDoubleClick}
+        onClick={e => {
+          onDoubleClick?.(e);
+          setClickedOnce(false); // <-- there's a reason for this but i'm too tired to explain
+        }}
         onMouseLeave={() => setClickedOnce(false)}
         >
         {children}
@@ -23,7 +26,7 @@ export function DoubleClickButton({children, onDoubleClick, align, tooltip, full
       <button
         {...rest}
         onClick={() => setClickedOnce(true)}
-        >
+      >
         {children}
       </button>
     </Tooltip>;
