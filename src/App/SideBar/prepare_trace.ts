@@ -62,9 +62,12 @@ export function prepareTraces(ast: Statechart, plantsState: PlantsState, trace: 
 function appendToSignal(traces: {[key: string]: [number, boolean][]}, key: string, simtime: number, value: boolean) {
   const lastValue = traces[key]?.at(-1)?.[1]; // <-- initially every signal is false
   if (lastValue === undefined || value !== lastValue) {
-    traces[key] = [
-      ...(traces[key] || []),
-      [simtime, value],
-    ];
+    // we mutate our trace in-place, profiling showed this is a crazy amount faster
+    if (traces[key]) {
+      traces[key].push([simtime, value]);
+    }
+    else {
+      traces[key] = [[simtime, value]];
+    }
   }
 }

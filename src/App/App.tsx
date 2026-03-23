@@ -81,18 +81,23 @@ export function App() {
     () => [...syntaxErrors, ...simulator.runtimeErrors],
     [syntaxErrors, simulator.runtimeErrors]);
 
+  const pyodide = usePyodide();
+
+  const panelHasVisibleProperties = (panel: PanelState) => panel.items.find(item => item.type === "properties")?.expanded
+  const propertiesVisible = panelHasVisibleProperties(appState.view.leftPanel)
+                         || panelHasVisibleProperties(appState.view.rightPanel);
+
+  const shouldPrepareTraces = appState.view.visibility.plot || propertiesVisible;
+
+
   const preparedTraces = useMemo(() => {
-    return simulator.trace && abstractSyntax && prepareTraces(
+    return simulator.trace && abstractSyntax && shouldPrepareTraces &&  prepareTraces(
       abstractSyntax,
       appState.execution.plants,
       simulator.trace.trace,
     ) || {};
-  }, [simulator.trace, appState.execution.plants, abstractSyntax]);
+  }, [simulator.trace, appState.execution.plants, abstractSyntax, shouldPrepareTraces]);
 
-  const pyodide = usePyodide();
-  const panelHasVisibleProperties = (panel: PanelState) => panel.items.find(item => item.type === "properties")?.expanded
-  const propertiesVisible = panelHasVisibleProperties(appState.view.leftPanel)
-                         || panelHasVisibleProperties(appState.view.rightPanel);
   const checkProperty = propertiesVisible ? pyodide.checkProperty : () => {
     return Promise.resolve([undefined, "not checking properties"] as PropertyCheckResult);
   };
