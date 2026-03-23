@@ -3,6 +3,8 @@ import styles from "./App.module.css";
 import { Dispatch, PropsWithChildren, ReactElement, SetStateAction, useCallback, useMemo, useState } from "react";
 
 import { useDisplayTime } from "@/hooks/useDisplayTime";
+import { useLocalStorage } from "@/hooks/usePersistentState";
+import { useMtlWorkerPool } from "@/mtl-checker/useWorkerPool";
 import { initialEditorState } from "@/statecharts/concrete_syntax";
 import { downloadObjectAsJson } from "@/util/download_json";
 import { formatDateTime } from "@/util/util";
@@ -23,22 +25,21 @@ import { EditHistory, useEditHistory } from "./hooks/useEditHistory";
 import { useParser } from "./hooks/useParser";
 import { usePersistentAppState } from "./hooks/usePersistentAppState";
 import { usePropertyCheck } from "./hooks/usePropertyCheck";
-import { usePyodide } from "./hooks/usePyodide";
 import { useSimulator } from "./hooks/useSimulator";
 import { useTrial } from "./hooks/useTrial";
 import { makeDeepSetter } from "./makePartialSetter";
+import { PanelState } from "./migrations/v1_types";
 import { About } from "./Modals/About";
 import { ModalOverlay } from "./Overlays/ModalOverlay";
 import { Panel } from "./Panel/Panel";
 import { GlobalProps } from "./Panel/PanelItem";
 import { ResizeHandle } from "./Panel/ResizeHandle";
 import { SizedPanel } from "./Panel/SizedPanel";
-import { PreparedTraces, prepareTraces, PropertyCheckStatus } from "./SideBar/prepare_trace";
+import { prepareTraces } from "./SideBar/prepare_trace";
 import { TopPanel } from "./TopPanel/TopPanel";
 import { DebugContext } from "./VisualEditor/context/DebugContext";
 import { useMouse } from "./VisualEditor/hooks/useMouse";
 import { VisualEditor } from "./VisualEditor/VisualEditor";
-import { PanelState } from "./migrations/v1_types";
 
 export function App() {
   // The entire persisted application state (minus the visual editor state)
@@ -81,7 +82,7 @@ export function App() {
     () => [...syntaxErrors, ...simulator.runtimeErrors],
     [syntaxErrors, simulator.runtimeErrors]);
 
-  const pyodide = usePyodide();
+  // const pyodide = usePyodide();
 
   // performance optimization: only compute what we truly need:
   const panelHasVisibleProperties = (panel: PanelState) => panel.items.find(item => item.type === "properties")?.expanded
@@ -99,9 +100,9 @@ export function App() {
     }
   }, [simulator.trace && simulator.trace.trace, appState.execution.plants, abstractSyntax, shouldPrepareTraces]);
 
-  const checkProperty = propertiesVisible ? pyodide.checkProperty : () => {
-    return Promise.resolve({kind: "pending"} as PropertyCheckStatus);
-  };
+  const [nWorkers, setNWorkers] = useLocalStorage("nWorkers", 4);
+
+  const [checkProperty, workerPoolState] = useMtlWorkerPool(nWorkers);
   const propertyResults = usePropertyCheck(
     preparedTraces,
     appState.execution.properties,
@@ -115,7 +116,7 @@ export function App() {
         return [["P"+i, result.result]];
       }
       if (result.kind === "pending") {
-        return [["P"+i, [[0, false]]]];
+        return [["P"+i, [[0, false] as [number, boolean]]]];
       }
       return [];
     })),
@@ -226,7 +227,7 @@ export function App() {
                 execution={appState.execution}
                 cE={coupledExecution}
                 onClose={hidePropertyTable}
-                checkProperty={pyodide.checkProperty}
+                checkProperty={checkProperty}
               />
             </BelowEditor>}
           {editorState && appState.view.visibility.find &&
@@ -289,7 +290,9 @@ export function App() {
             errorsExpanded={appState.view.visibility.errors}
             setErrorsExpanded={setAppState.setView.setVisibility.setErrors}
             errors={syntaxErrors}
-            pyodideStatus={pyodide.status}
+            // pyodideStatus={pyodide.status}
+            workerPoolState={workerPoolState}
+            setNWorkers={setNWorkers}
           />
         }
       </div>

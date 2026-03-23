@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { PreparedTraces, PropertyCheckStatus } from "../SideBar/prepare_trace";
-import { useDelay } from "./useDelay";
-import { useDetectChange2 } from "@/hooks/useDetectChange";
+import { usePromise } from "./usePromise";
 
 function resize<T>(fill: T) {
   return function(arr: T[], newSize: number) {
@@ -21,53 +20,32 @@ export function usePropertyCheck(
   properties: string[],
   checkProperty: (property: string, traces: PreparedTraces) => Promise<PropertyCheckStatus>,
 ) {
-  const [pending, setPending] = useState<{[p:string]: (PreparedTraces|undefined)[]}>({});
-  const [results, setResults] = useState<PropertyCheckStatus[]>([]);
+  const [results, setResultsPromise] = usePromise<PropertyCheckStatus[]>();
 
   useEffect(() => {
-    // set property status to 'pending' for properties that need re-checking:
-    properties.forEach((p, i) => {
-      if (pending[p] !== undefined) {
-        if (pending[p].includes(traces)) {
-          return;
-        }
-      }
-      setResults(rs => customResize(rs, properties.length).with(i, statusPending));
-    });
-  }, [properties, traces]);
-
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      setPending(pending => {
+    // clear previous results
+    let timeout: NodeJS.Timeout;
+    const cancel = setResultsPromise(new Promise((resolve) => {
+      timeout = setTimeout(() => {
         if (traces) {
-          return Object.fromEntries(properties.map((p, i) => {
-            if (pending[p] !== undefined) {
-              if (pending[p].includes(traces)) {
-                // we already computed this one
-                return [p, pending[p]] as const;
-              }
-            }
-            // we haven't computed this property yet
-            // setResults(rs => customResize(rs, properties.length).with(i, statusPending));
-            checkProperty(p, traces)
-              .then(result => {
-                setResults(rs => customResize(rs, properties.length).with(i, result));
-              });
-            // memoize at most 4 items
-            const newPending = resize<PreparedTraces|undefined>(undefined)([traces, ...(pending[p]||[])], 4);
-            return [p, newPending] as const;
-          }));
+          Promise.all(properties.map(p => checkProperty(p, traces)))
+          .then(resolve);
         }
-        else {
-          setResults([]);
-          return pending;
-        }
-      });
-    }, 250);
-    return () => clearTimeout(timeout);
-  }, [properties, traces]);
+      }, 100);
+    }));
 
-  useDetectChange2({pending})
+    return () => {
+      cancel();
+      clearTimeout(timeout);
+    };
+  }, [traces, properties]);
 
-  return customResize(results, properties.length);
+  if (results.kind === "pending") {
+    // checking is pending for all properties
+    return properties.map(() => statusPending);
+  }
+  else if (results.kind === "resolved") {
+    return customResize(results.result, properties.length);
+  }
+  throw new Error("should never happen");
 }

@@ -1,54 +1,33 @@
 import { PreparedTraces, PropertyCheckStatus } from "@/App/SideBar/prepare_trace";
 
-import { loadPyodide, Lockfile, PyodideAPI, version as pyodideVersion } from "pyodide";
+import { loadPyodide, PyodideAPI, version as pyodideVersion } from "pyodide"
 
-// import pyodideLock from "./wheels/pyodide-lock.json";
-import pyodideLock from "./wheels/pyodide-lock-min.json"; // <-- only what's strictly necessary
+import pylibs from "./python-libs.zip";
 
-// change URLs so all the wheels are loaded from our own server
-import mtl from "./wheels/metric_temporal_logic-0.4.1-py3-none-any.whl";
-import parsimonious from "./wheels/parsimonious-0.9.0-py3-none-any.whl";
-import attrs from "./wheels/attrs-22.2.0-py3-none-any.whl";
-import discretesignals from "./wheels/discrete_signals-0.8.3-py3-none-any.whl";
-import sortedcontainers from "./wheels/sortedcontainers-2.4.0-py2.py3-none-any.whl";
-import lenses from "./wheels/lenses-0.5.0-py3-none-any.whl";
-import funcy from "./wheels/funcy-1.18-py2.py3-none-any.whl";
-import singledispatch from "./wheels/singledispatch-4.1.2-py3-none-any.whl";
-import regex from "./wheels/regex-2024.11.6-cp313-cp313-pyodide_2025_0_wasm32.whl";
+async function fetchBuffer(url: string) {
+  const res = await fetch(url);
+  const buffer = await res.arrayBuffer();
+  return buffer;
+}
 
-pyodideLock.packages['metric-temporal-logic'].file_name = mtl;
-pyodideLock.packages['parsimonious'].file_name = parsimonious;
-pyodideLock.packages['attrs'].file_name = attrs;
-pyodideLock.packages['discrete-signals'].file_name = discretesignals;
-pyodideLock.packages['sortedcontainers'].file_name = sortedcontainers;
-pyodideLock.packages['lenses'].file_name = lenses;
-pyodideLock.packages['funcy'].file_name = funcy;
-pyodideLock.packages['singledispatch'].file_name = singledispatch;
-pyodideLock.packages['regex'].file_name = regex;
-
-// this function was used to discover the closure of dependencies of metric-temporal-logic
-// function printdeps(pkgs: any, name: string, indent=0) {
-//   console.log('  '.repeat(indent), name);
-//   for (const dep of pkgs[name].depends) {
-//     printdeps(pkgs, dep, indent+1);
-//   }
-// }
-
+// Spins up an instance of Pyodide with py-mtl loaded and ready to go.
+// Slow!!! You don't want to call this in the main thread!!
 export async function initPyodide() {
-  console.log('loading pyodide...');
   const pyodide = await loadPyodide({
     checkAPIVersion: false,
     fullStdLib: false,
     indexURL: `https://cdn.jsdelivr.net/pyodide/v${pyodideVersion}/full/`,
-    // @ts-ignore
-    lockFileContents: pyodideLock as Lockfile,
-    stdout: (msg: string) => console.log(`Pyodide: ${msg}`),
-    packages: ['metric-temporal-logic'],
-    packageBaseUrl: window.location.protocol + window.location.hostname + ':' + window.location.port + window.location.pathname,
   });
-  console.log('loaded pyodide');
-  await pyodide.runPythonAsync('import mtl.parser');
-  console.log("loaded mtl library");
+  
+  const buf = await fetchBuffer(pylibs);
+  pyodide.unpackArchive(buf, "zip", {
+    extractDir: '/lib/python3.13/site-packages',
+  });
+
+  await pyodide.runPythonAsync(`
+    import mtl.parser
+  `);
+
   return pyodide;
 }
 

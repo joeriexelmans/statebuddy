@@ -1,4 +1,4 @@
-import { Dispatch } from "react";
+import { Dispatch, SetStateAction } from "react";
 import { TraceableError } from "../../statecharts/parser";
 
 import { PersistentDetails } from "../Components/PersistentDetails";
@@ -10,6 +10,8 @@ import { Statechart } from "@/statecharts/abstract_syntax";
 
 import appStyles from "../App.module.css";
 import { WithSetters } from "../makePartialSetter";
+import { WorkerPoolState } from "@/mtl-checker/useWorkerPool";
+import { Toolbar } from "../TopPanel/Toolbar";
 
 const statusStrings = {
   "notLoaded": "not loaded",
@@ -22,7 +24,8 @@ type BottomPanelProps = WithSetters<{
 }> & {
   errors: TraceableError[],
   abstractSyntax: Statechart,
-  pyodideStatus: "notLoaded" | "loading" | "loaded",
+  workerPoolState: WorkerPoolState,
+  setNWorkers: Dispatch<SetStateAction<number>>,
 }
 
 export function BottomPanel({
@@ -30,15 +33,20 @@ export function BottomPanel({
   setErrorsExpanded,
   errors,
   abstractSyntax,
-  pyodideStatus,
+  workerPoolState,
+  setNWorkers,
 }: BottomPanelProps) {
+
+  const nBooting = workerPoolState.workers.filter(w => w.state === "booting").length;
+  const nReady = workerPoolState.workers.filter(w => w.state === "ready").length;
+  const nWorking = workerPoolState.workers.filter(w => w.state === "working").length;
 
   return <div className="bottom">
     <div className={appStyles.stackHorizontal
             + ' ' + appStyles.statusBar
             + ' ' + (errors.length ? appStyles.error : ""
-            + ' ' + (pyodideStatus === "loading" ? appStyles.pyodideLoading : "")
-            )}>
+            // + ' ' + (pyodideStatus === "loading" ? appStyles.pyodideLoading : "")
+          )}>
       <div style={{flexGrow:1}}>
       <PersistentDetails state={errorsExpanded} setState={setErrorsExpanded}>
           <summary>{errors.length} errors</summary>
@@ -53,11 +61,23 @@ export function BottomPanel({
       <div style={{display: 'flex', alignItems: 'center'}}>
         <Stats abstractSyntax={abstractSyntax}/>
         &nbsp;|&nbsp;
-        <Tooltip tooltip="MTL properties are checked with a Python library, which runs in your browser via Pyodide. Pyodide is slow to start and currently blocks the main thread, which is a known issue." above>
-          Pyodide: <span style={{
-            fontWeight: pyodideStatus === "loading" ? 600 : 400,
-          }}>{statusStrings[pyodideStatus]}</span>
-        </Tooltip>
+          <Tooltip tooltip="MTL properties are checked with a Python library, which runs in your browser via Pyodide. Each worker is an instance of Python running in its own thread." above>
+            MTL worker pool:
+            &nbsp;
+            <span>{nBooting} booting / {nReady} ready / {nWorking} working</span>
+          </Tooltip>
+          &nbsp;
+          <Toolbar>
+            <Tooltip above tooltip="remove worker">
+              <button onClick={() => setNWorkers(n => Math.max(1, n-1))}>-</button>
+            </Tooltip>
+            <Tooltip above tooltip="add worker">
+              <button onClick={() => setNWorkers(n => Math.min(n+1, 8))}>+</button>
+            </Tooltip>
+          </Toolbar>
+          &nbsp;
+          {workerPoolState.queue.length} jobs queued
+        
         &nbsp;|&nbsp;
         switch to&nbsp;
         <Tooltip tooltip="only works if you are running a development server locally" above={true}>
