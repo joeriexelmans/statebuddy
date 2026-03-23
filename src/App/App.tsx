@@ -33,11 +33,12 @@ import { Panel } from "./Panel/Panel";
 import { GlobalProps } from "./Panel/PanelItem";
 import { ResizeHandle } from "./Panel/ResizeHandle";
 import { SizedPanel } from "./Panel/SizedPanel";
-import { prepareTraces } from "./SideBar/prepare_trace";
+import { PreparedTraces, prepareTraces, PropertyCheckResult } from "./SideBar/prepare_trace";
 import { TopPanel } from "./TopPanel/TopPanel";
 import { DebugContext } from "./VisualEditor/context/DebugContext";
 import { useMouse } from "./VisualEditor/hooks/useMouse";
 import { VisualEditor } from "./VisualEditor/VisualEditor";
+import { PanelState } from "./migrations/v1_types";
 
 export function App() {
   // The entire persisted application state (minus the visual editor state)
@@ -89,11 +90,16 @@ export function App() {
   }, [simulator.trace, appState.execution.plants, abstractSyntax]);
 
   const pyodide = usePyodide();
-
+  const panelHasVisibleProperties = (panel: PanelState) => panel.items.find(item => item.type === "properties")?.expanded
+  const propertiesVisible = panelHasVisibleProperties(appState.view.leftPanel)
+                         || panelHasVisibleProperties(appState.view.rightPanel);
+  const checkProperty = propertiesVisible ? pyodide.checkProperty : () => {
+    return Promise.resolve([undefined, "not checking properties"] as PropertyCheckResult);
+  };
   const propertyResults = usePropertyCheck(
     preparedTraces,
     appState.execution.properties,
-    pyodide.checkProperty);
+    checkProperty);
 
   const tracesAndResults = {
     ...preparedTraces,

@@ -29,7 +29,7 @@ export function usePropertyCheck(preparedTraces: PreparedTraces, properties: str
       clearTimeout(timeout);
       clearTimeout(clearResultTimeout);
     };
-  }, [preparedTraces, properties]);
+  }, [preparedTraces, properties, checkProperty]);
 
   return propertyResults;
 }
