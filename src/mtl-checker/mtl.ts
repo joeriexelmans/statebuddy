@@ -1,4 +1,4 @@
-import { PreparedTraces, PropertyCheckResult } from "@/App/SideBar/prepare_trace";
+import { PreparedTraces, PropertyCheckStatus } from "@/App/SideBar/prepare_trace";
 
 import { loadPyodide, Lockfile, PyodideAPI, version as pyodideVersion } from "pyodide";
 
@@ -52,7 +52,7 @@ export async function initPyodide() {
   return pyodide;
 }
 
-export const getPropertyChecker = (pyodide: PyodideAPI) => async (property: string, preparedTraces: PreparedTraces): Promise<PropertyCheckResult> => {
+export const getPropertyChecker = (pyodide: PyodideAPI) => async (property: string, preparedTraces: PreparedTraces): Promise<PropertyCheckStatus> => {
   const codeToRun = `
     result = None
     error = None
@@ -61,15 +61,20 @@ export const getPropertyChecker = (pyodide: PyodideAPI) => async (property: stri
       traces = {
         ${Object.entries(preparedTraces).map(([traceName, trace]) =>
           `"${traceName}": [${trace.map(([n,b]) =>
-            `(${n},${b ? "True" : "False"})`).join(',')}]`).join(',')}
+            `(${n},${b ? "True" : "False"})`).join(', ')}]`).join(', ')}
       }
       result = phi(traces, time=None, quantitative=False)
     except Exception as e:
       error = str(e)
     (result, error)
   `;
-  const result = await pyodide.runPythonAsync(codeToRun);
-  const result2 = result.toJs();
-  result.destroy();
-  return result2;
+  const pyResult = await pyodide.runPythonAsync(codeToRun);
+  const [result, errorMsg] = pyResult.toJs();
+  pyResult.destroy();
+  if (result) {
+    return {kind: "ok", result};
+  }
+  else {
+    return {kind: "nok", errorMsg};
+  }
 }

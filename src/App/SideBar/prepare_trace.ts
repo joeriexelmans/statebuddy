@@ -7,9 +7,16 @@ import { statebuddyPlants } from "../plants";
 export type PropertyTrace = [number, boolean][]; // list of tuples [timestamp, true or false]
 
 // The successful evaluation of a property is again a trace (of booleans).
-export type PropertyCheckResult =
-    [PropertyTrace, undefined] // <-- success
-  | [undefined, string]; // <-- error message
+export type PropertyCheckStatus = {
+  kind: "pending",
+  // promise: Promise<PropertyTrace>,
+} | {
+  kind: "ok",
+  result: PropertyTrace,
+} | {
+  kind: "nok",
+  errorMsg: string,
+}
 
 // Bunch of traces in a format that the property checker can deal with
 export type PreparedTraces = { [name: string]: PropertyTrace };

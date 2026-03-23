@@ -5,7 +5,7 @@ import { MoveUpDown } from "../Components/MoveUpDown";
 import { Tooltip } from "../Components/Tooltip";
 import { TwoStateButton } from "../Components/TwoStateButton";
 import { WithSetters } from "../makePartialSetter";
-import { PropertyCheckResult } from "./prepare_trace";
+import { PropertyCheckStatus } from "./prepare_trace";
 import { PropertyStatusIndicator } from "./PropertyStatusIndicator";
 
 import styles from "../App.module.css";
@@ -24,7 +24,7 @@ type PropertyEditorProps = WithSetters<{
   activeProperty: number,
   showTable: boolean,
 }> & {
-  propertyResults: PropertyCheckResult[] | undefined;
+  propertyResults: PropertyCheckStatus[] | undefined;
 }
 
 export function PropertyEditor({
@@ -41,13 +41,9 @@ export function PropertyEditor({
   return <>
     {properties.map((property, i) => {
       const result = propertyResults && propertyResults[i];
-      let violated, propertyError;
-      if (result) {
-        violated = result[0] && result[0].length > 0 && !result[0][0][1];
-        propertyError = result[1];
-      }
-      const status = (violated === undefined) ? "pending" : (violated ? "nok" : "ok");
-      return <div style={{display: 'flex'}} key={`${i}-${property}`} className={styles.toolbar}>
+      const status = (result && result.kind === "ok" && (result.result[0][1] ? "ok" : "nok")) || "pending";
+      const errorMsg = result && result.kind === "nok" && result.errorMsg || "";
+      return <div style={{display: 'flex'}} key={i} className={styles.toolbar}>
         <SingleProperty
           i={i}
           status={status}
@@ -55,6 +51,7 @@ export function PropertyEditor({
           isActive={activeProperty === i}
           setActiveProperty={setActiveProperty}
           setProperties={setProperties}
+          error={errorMsg}
         />
         {/* @ts-ignore */}
         <MoveUpDown i={i} ls={properties} setter={setProperties}/>
@@ -85,7 +82,7 @@ export function PropertyEditor({
 
 const SingleProperty = memo(function SingleProperty({i, status, property, isActive, setActiveProperty, error, setProperties}: {
   i: number,
-  status: StatusType,
+  status?: StatusType,
   property: string,
   isActive: boolean,
   setActiveProperty: (i: number) => void,
@@ -95,7 +92,7 @@ const SingleProperty = memo(function SingleProperty({i, status, property, isActi
   return <>
     <div>
       P{i}
-      <PropertyStatusIndicator status={status} />
+      {status && <PropertyStatusIndicator status={status} />}
       <Tooltip tooltip="see in trace (below)" align="left">
         <TwoStateButton active={isActive} onClick={() => setActiveProperty(isActive ? -1 : i)}>
           <VisibilityIcon fontSize="small"/>
@@ -103,17 +100,22 @@ const SingleProperty = memo(function SingleProperty({i, status, property, isActi
       </Tooltip>
     </div>
     <Tooltip
-      tooltip=""
+      tooltip={error}
       align='left'
       fullWidth={true}
-      error={Boolean(error)}
-      showWhen='focus'
+      error={true}
+      showWhen='hover'
       >
       <input
         className={error && "error" || ""}
         type="text"
-        style={{flexGrow: 1}}
-        value={property}
+        style={{flexGrow: 1, backgroundColor: error ? 'var(--error-bg-color)' : undefined}}
+        value={
+          property
+          // .replaceAll('G', '□')
+          // .replaceAll('F', '◇')
+          // .replaceAll('X', '○')
+        }
         size={1}
         onChange={e => setProperties(properties => properties.toSpliced(i, 1, e.target.value))} 
         placeholder='write MTL property...'

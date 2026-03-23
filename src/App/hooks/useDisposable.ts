@@ -8,8 +8,6 @@ export function useDisposable<T>(
 
   useEffect(() => {
     const dispose = factory(setValue);
-    // setValue(resource);
-
     return dispose;
   }, deps);
 

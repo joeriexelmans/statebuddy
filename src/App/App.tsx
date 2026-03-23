@@ -33,7 +33,7 @@ import { Panel } from "./Panel/Panel";
 import { GlobalProps } from "./Panel/PanelItem";
 import { ResizeHandle } from "./Panel/ResizeHandle";
 import { SizedPanel } from "./Panel/SizedPanel";
-import { PreparedTraces, prepareTraces, PropertyCheckResult } from "./SideBar/prepare_trace";
+import { PreparedTraces, prepareTraces, PropertyCheckStatus } from "./SideBar/prepare_trace";
 import { TopPanel } from "./TopPanel/TopPanel";
 import { DebugContext } from "./VisualEditor/context/DebugContext";
 import { useMouse } from "./VisualEditor/hooks/useMouse";
@@ -83,23 +83,24 @@ export function App() {
 
   const pyodide = usePyodide();
 
+  // performance optimization: only compute what we truly need:
   const panelHasVisibleProperties = (panel: PanelState) => panel.items.find(item => item.type === "properties")?.expanded
   const propertiesVisible = panelHasVisibleProperties(appState.view.leftPanel)
                          || panelHasVisibleProperties(appState.view.rightPanel);
-
   const shouldPrepareTraces = appState.view.visibility.plot || propertiesVisible;
 
-
   const preparedTraces = useMemo(() => {
-    return simulator.trace && abstractSyntax && shouldPrepareTraces &&  prepareTraces(
-      abstractSyntax,
-      appState.execution.plants,
-      simulator.trace.trace,
-    ) || {};
-  }, [simulator.trace, appState.execution.plants, abstractSyntax, shouldPrepareTraces]);
+    if (simulator.trace && abstractSyntax && shouldPrepareTraces) {
+      return prepareTraces(
+        abstractSyntax,
+        appState.execution.plants,
+        simulator.trace.trace,
+      );
+    }
+  }, [simulator.trace && simulator.trace.trace, appState.execution.plants, abstractSyntax, shouldPrepareTraces]);
 
   const checkProperty = propertiesVisible ? pyodide.checkProperty : () => {
-    return Promise.resolve([undefined, "not checking properties"] as PropertyCheckResult);
+    return Promise.resolve({kind: "pending"} as PropertyCheckStatus);
   };
   const propertyResults = usePropertyCheck(
     preparedTraces,
@@ -107,11 +108,17 @@ export function App() {
     checkProperty);
 
   const tracesAndResults = {
-    ...preparedTraces,
-    ...Object.fromEntries((propertyResults||[]).flatMap(([result], i) => {
+    ...(preparedTraces || {}),
+    ...Object.fromEntries((propertyResults||[]).flatMap((result, i) => {
       // non-error property check results are included in the traces that can be plotted:
-      return result && [["P"+i, result]] || [];
-    }))
+      if (result.kind === "ok") {
+        return [["P"+i, result.result]];
+      }
+      if (result.kind === "pending") {
+        return [["P"+i, [[0, false]]]];
+      }
+      return [];
+    })),
   }
 
   const onAboutStateBuddy = useCallback(() => setModal(<About setModal={setModal} {...trial}/>), [trial]);

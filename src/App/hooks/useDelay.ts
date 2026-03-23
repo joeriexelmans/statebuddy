@@ -12,7 +12,7 @@ export function useDelay(
       cancel = doSomething();
     }, delayMs);
     return () => {
-      if (cancel) {
+      if (typeof cancel === 'function') {
         // the delayed thing started but it provides a way to stop it anyway
         cancel();
       }

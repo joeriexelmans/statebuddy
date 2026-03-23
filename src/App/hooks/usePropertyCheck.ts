@@ -1,35 +1,73 @@
 import { useEffect, useState } from "react";
-import { PreparedTraces, PropertyCheckResult } from "../SideBar/prepare_trace";
+import { PreparedTraces, PropertyCheckStatus } from "../SideBar/prepare_trace";
+import { useDelay } from "./useDelay";
+import { useDetectChange2 } from "@/hooks/useDetectChange";
 
-export function usePropertyCheck(preparedTraces: PreparedTraces, properties: string[], checkProperty: (property: string, preparedTraces: PreparedTraces) => Promise<PropertyCheckResult>) {
-  const [propertyResults, setPropertyResults] = useState<PropertyCheckResult[] | undefined>(undefined);
+function resize<T>(fill: T) {
+  return function(arr: T[], newSize: number) {
+    return [
+      ...arr.slice(0, newSize),
+      ...Array.from(Array(Math.max(0, newSize - arr.length))).map(_ => fill),
+    ]
+  }
+}
 
-  // console.log('pyodide:', {propertyResults});
+const statusPending: PropertyCheckStatus = {kind: "pending"};
 
-  // if some properties change, re-evaluate them:
+const customResize = resize<PropertyCheckStatus>(statusPending);
+
+export function usePropertyCheck(
+  traces: PreparedTraces | undefined,
+  properties: string[],
+  checkProperty: (property: string, traces: PreparedTraces) => Promise<PropertyCheckStatus>,
+) {
+  const [pending, setPending] = useState<{[p:string]: (PreparedTraces|undefined)[]}>({});
+  const [results, setResults] = useState<PropertyCheckStatus[]>([]);
+
   useEffect(() => {
-    let timeout: NodeJS.Timeout;
-    let clearResultTimeout: NodeJS.Timeout;
-    if (preparedTraces) {
-      // very often we recompute the same property on a trace that is one item longer, resulting in largely the same trace.
-      clearResultTimeout = setTimeout(() => {
-        setPropertyResults(undefined);
-      }, 500);
-      timeout = setTimeout(() => {
-        Promise.all(properties.map((property, i) => {
-          return checkProperty(property, preparedTraces);
-        }))
-        .then(results => {
-          clearTimeout(clearResultTimeout);
-          setPropertyResults(results);
-        })
-      })
-    }
-    return () => {
-      clearTimeout(timeout);
-      clearTimeout(clearResultTimeout);
-    };
-  }, [preparedTraces, properties, checkProperty]);
+    // set property status to 'pending' for properties that need re-checking:
+    properties.forEach((p, i) => {
+      if (pending[p] !== undefined) {
+        if (pending[p].includes(traces)) {
+          return;
+        }
+      }
+      setResults(rs => customResize(rs, properties.length).with(i, statusPending));
+    });
+  }, [properties, traces]);
 
-  return propertyResults;
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setPending(pending => {
+        if (traces) {
+          return Object.fromEntries(properties.map((p, i) => {
+            if (pending[p] !== undefined) {
+              if (pending[p].includes(traces)) {
+                // we already computed this one
+                return [p, pending[p]] as const;
+              }
+            }
+            // we haven't computed this property yet
+            // setResults(rs => customResize(rs, properties.length).with(i, statusPending));
+            checkProperty(p, traces)
+              .then(result => {
+                setResults(rs => customResize(rs, properties.length).with(i, result));
+              });
+            // memoize at most 4 items
+            const newPending = resize<PreparedTraces|undefined>(undefined)([traces, ...(pending[p]||[])], 4);
+            return [p, newPending] as const;
+          }));
+        }
+        else {
+          setResults([]);
+          return pending;
+        }
+      });
+    }, 250);
+    return () => clearTimeout(timeout);
+  }, [properties, traces]);
+
+  useDetectChange2({pending})
+
+  return customResize(results, properties.length);
 }

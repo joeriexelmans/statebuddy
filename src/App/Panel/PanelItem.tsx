@@ -7,7 +7,7 @@ import { PanelType } from "../migrations/v1_types";
 import { autoConnect, Connect, useConnect } from "../SideBar/Connect";
 import { MQTT } from "../SideBar/MQTT";
 import { PlantsView } from "../SideBar/PlantsView";
-import { PropertyCheckResult } from "../SideBar/prepare_trace";
+import { PropertyCheckStatus } from "../SideBar/prepare_trace";
 import { PropertyEditor } from "../SideBar/PropertyEditor";
 import { ShowAST, ShowInputEvents, ShowInternalEvents, ShowOutputEvents } from "../SideBar/ShowAST";
 import { Traces } from "../SideBar/Traces";
@@ -18,7 +18,7 @@ export type GlobalProps = {
   setAppState: DeepSetter<AppState>,
   abstractSyntax?: Statechart,
   simulator: SimulatorStuff,
-  propertyResults?: PropertyCheckResult[],
+  propertyResults?: PropertyCheckStatus[],
 }
 
 export const panelTypes: PanelType[] = [
@@ -113,14 +113,15 @@ export function PanelItem({type, globalProps: {appState, setAppState, abstractSy
     />
   }
   else if (type === "execution traces") {
-    // console.log({propertyResults, activeProp: propertyEditor.activeProperty});
+    const propResults = propertyResults?.[appState.execution.activeProperty];
+    const propTrace = propResults?.kind === "ok" && propResults.result || undefined;
     return <>{abstractSyntax &&
       <Traces
         state={appState}
         setState={setAppState}
         abstractSyntax={abstractSyntax}
         simulator={simulator}
-        activePropertyTrace={propertyResults?.[appState.execution.activeProperty]?.[0]}
+        activePropertyTrace={propTrace}
         isExpanded={isExpanded}
       />}</>
   }

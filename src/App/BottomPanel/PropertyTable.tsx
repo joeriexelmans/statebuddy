@@ -4,7 +4,7 @@ import { memo, useEffect, useState } from "react";
 import { Tooltip } from "../Components/Tooltip";
 import { TwoStateButton } from "../Components/TwoStateButton";
 import { PropertyStatusIndicator } from "../SideBar/PropertyStatusIndicator";
-import { PreparedTraces, prepareTraces, PropertyCheckResult } from '../SideBar/prepare_trace';
+import { PreparedTraces, prepareTraces, PropertyCheckStatus } from '../SideBar/prepare_trace';
 import styles from "@/App/App.module.css";
 import { restoreTrace } from '@/devs/serialize_trace';
 import { DEVSComponent } from '@/devs/devs';
@@ -20,7 +20,7 @@ type PropertyTableProps = {
   execution: ExecutionState,
   cE: DEVSComponent<DEVSTrace<CoupledState>>,
   onClose: () => void,
-  checkProperty: (property: string, preparedTraces: PreparedTraces) => Promise<PropertyCheckResult>
+  checkProperty: (property: string, preparedTraces: PreparedTraces) => Promise<PropertyCheckStatus>
 }
 
 export const PropertyTable = memo(function PropertyTable({
@@ -41,13 +41,13 @@ export const PropertyTable = memo(function PropertyTable({
           // replay each saved trace (obtaining the full trace), and property check it
           const restored = restoreTrace(trace, cE);
           const prepared = prepareTraces(abstractSyntax, plants, restored);
-          checkProperty(property, prepared).then(([result, errors]) => {
-            if (result) {
-              const [[_, ok]] = result;
+          checkProperty(property, prepared).then((result) => {
+            if (result.kind === "ok") {
+              const [[_, pass]] = result.result;
               setResults(results => {
                 if (results) {
                   return results?.with(i,
-                    results[i].with(j, ok ? "ok" : "nok"));
+                    results[i].with(j, pass ? "ok" : "nok"));
                 }
                 return;
               });
