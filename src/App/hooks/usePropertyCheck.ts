@@ -27,19 +27,16 @@ export function usePropertyCheck(
     let timeout: NodeJS.Timeout;
     let clearQueue = () => {};
     const cancel = setResultsPromise(new Promise((resolve) => {
-      timeout = setTimeout(() => {
-        if (traces) {
-          const mapped = properties.map(p => checkProperty(p, traces));
-          Promise.all(mapped.map(m => m[0])).then(resolve);
-          clearQueue = () => mapped.forEach(m => m[1]());
-        }
-      }, 1);
+      if (traces) {
+        const mapped = properties.map(p => checkProperty(p, traces));
+        Promise.all(mapped.map(m => m[0])).then(resolve);
+        clearQueue = () => mapped.forEach(m => m[1]());
+      }
     }));
 
     return () => {
       cancel();
       clearQueue();
-      clearTimeout(timeout);
     };
   }, [traces, properties]);
 

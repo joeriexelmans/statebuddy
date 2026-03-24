@@ -32,7 +32,7 @@ function sendJob(
 export function useMtlWorkerPool(nWorkers: number) {
   const [state, setState] = useState<WorkerPoolState>({workers: [], queue: []});
 
-  const nextReadyIdx = useMemo(() => state.workers.findIndex(w => w.state === "ready"), [state.workers]);
+  const workersAvailable = useMemo(() => state.workers.findIndex(w => w.state === "ready") !== -1, [state.workers]);
 
   const onRecv = useCallback((w: Worker) => ({data}: {data: Response}) => {
     // whenever we receive a message from a worker, we consider the worker 'ready'
@@ -83,8 +83,7 @@ export function useMtlWorkerPool(nWorkers: number) {
     });
   }, [nWorkers]);
 
-  // feed queue items to workers if worker becomes available
-  useEffect(() => {
+  const handleNextJob = useCallback(() => {
     setState(state => {
       const nextReadyIdx = state.workers.findIndex(w => w.state === "ready");
       if (state.queue.length > 0 && nextReadyIdx !== -1) {
@@ -97,8 +96,13 @@ export function useMtlWorkerPool(nWorkers: number) {
         }
       }
       else return state;
-    })
-  }, [state.queue.length, nextReadyIdx]);
+    });
+  }, [setState])
+
+  // feed queue items to workers if worker becomes available
+  useEffect(() => {
+    handleNextJob();
+  }, [workersAvailable, state.queue.length]);
 
   const submitJob = useCallback((property: string, preparedTraces: PreparedTraces) => {
     const {promise, resolve} = Promise.withResolvers<PropertyCheckStatus>();
@@ -107,6 +111,7 @@ export function useMtlWorkerPool(nWorkers: number) {
       workers,
       queue: [...queue, job],
     }));
+    handleNextJob();
     const cancel = () => setState(({workers, queue}) => ({
       workers,
       queue: queue.filter(j => j !== job),

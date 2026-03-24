@@ -351,7 +351,6 @@ export function useMouse(
   ]);
     
   useEffect(() => {
-    console.log('registering mouse handlers');
     // mousemove and mouseup are registered on the window object (i.e., globally) so they keep working when pointer is outside of browser window.
     // mousedown will be registered on the SVG element.
     window.addEventListener("mouseup", onMouseUp);
