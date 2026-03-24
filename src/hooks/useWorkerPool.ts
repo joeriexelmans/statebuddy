@@ -16,7 +16,7 @@ export type WorkerPoolState<I,O> = {
 export function useWorkerPool<I,O>(nWorkers: number, workerUrl: string) {
   const [state, setState] = useState<WorkerPoolState<I,O>>({workers: [], queue: []});
 
-  console.log({poolstate: state});
+  // console.log({poolstate: state});
 
   const [nextID, releaseID] = useGenID();
 

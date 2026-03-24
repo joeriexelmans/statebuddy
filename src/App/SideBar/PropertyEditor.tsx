@@ -18,6 +18,7 @@ import TableViewIcon from '@mui/icons-material/TableView';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import { Dispatch, memo, SetStateAction } from "react";
 import { StatusType } from "../Components/StatusIndicator";
+import { PropertyCheckResult2 } from "./PropertyCheckResult";
 
 type PropertyEditorProps = WithSetters<{
   properties: string[],
@@ -41,18 +42,15 @@ export function PropertyEditor({
   return <>
     {properties.map((property, i) => {
       const result = propertyResults && propertyResults[i];
-      const status = (result && result.kind === "ok" && (result.result[0][1] ? "ok" : "nok")) || "pending";
-      const errorMsg = result && result.kind === "nok" && result.errorMsg || "";
       return <div style={{display: 'flex'}} key={i} className={styles.toolbar}>
-        <SingleProperty
+        {result && <SingleProperty
           i={i}
-          status={status}
+          state={result}
           property={property}
           isActive={activeProperty === i}
           setActiveProperty={setActiveProperty}
           setProperties={setProperties}
-          error={errorMsg}
-        />
+        />}
         {/* @ts-ignore */}
         <MoveUpDown i={i} ls={properties} setter={setProperties}/>
         <DoubleClickButton
@@ -80,19 +78,19 @@ export function PropertyEditor({
   </>
 }
 
-const SingleProperty = memo(function SingleProperty({i, status, property, isActive, setActiveProperty, error, setProperties}: {
+const SingleProperty = memo(function SingleProperty({i, state, property, isActive, setActiveProperty, setProperties}: {
   i: number,
-  status?: StatusType,
+  state: PropertyCheckStatus,
   property: string,
   isActive: boolean,
   setActiveProperty: (i: number) => void,
-  error?: string,
   setProperties: Dispatch<SetStateAction<string[]>>,
 }) {
+  const error = state && state.kind === "nok" && state.errorMsg || "";
   return <>
     <div>
       P{i}
-      {status && <PropertyStatusIndicator status={status} />}
+      {true && <PropertyCheckResult2 state={state} />}
       <Tooltip tooltip="see in trace (below)" align="left">
         <TwoStateButton active={isActive} onClick={() => setActiveProperty(isActive ? -1 : i)}>
           <VisibilityIcon fontSize="small"/>

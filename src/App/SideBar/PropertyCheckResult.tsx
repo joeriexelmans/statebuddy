@@ -21,8 +21,8 @@ export function usePropertyCheck(property: string, trace: PreparedTrace|undefine
 
   useDelayedEffect(() => {
     if (trace) {
-      const [promise, cancelJob] = checkProperty({property, trace});
-      setPromise(promise);
+      const [workerPoolPromise, cancelJob] = checkProperty({property, trace});
+      setPromise(workerPoolPromise);
       return cancelJob;
     }
   }, delay, [property, trace]);
@@ -33,25 +33,32 @@ export function usePropertyCheck(property: string, trace: PreparedTrace|undefine
   else if (state.kind === "resolved") {
     return state.result;
   }
-  throw new Error("should never reach here");
+  throw new Error("should never reach here - worker pool promises never reject");
 }
 
 // Given a property and a trace, verifies the property and displays the result as a cute status indicator.
 export function PropertyCheckResult({property, trace, checkProperty, delay}: Props) {
   const state = usePropertyCheck(property, trace, delay, checkProperty);
+  return <PropertyCheckResult2 state={state}/>;
+}
 
-  console.log({state});
-
+export function PropertyCheckResult2({state}: {state: PropertyCheckStatus}) {
   if (state.kind === "pending") {
+    // check still in progress
     return <PropertyStatusIndicator status="pending"/>
   }
   else if (state.kind === "ok") {
+    // check done
+    if (state.result.length === 0) {
+      // seems necessary?
+      return <PropertyStatusIndicator status="pending"/>
+    }
     // check succeeded
     const satisfied = state.result[0][1];
     return <PropertyStatusIndicator status={satisfied ? "ok" : "nok"}/>
   }
   else if (state.kind === "nok") {
     // there was an error - probably a syntax error in the property
-    return <PropertyStatusIndicator status="pending"/>
+    return <PropertyStatusIndicator status="err" errorMsg={state.errorMsg}/>
   }
 }

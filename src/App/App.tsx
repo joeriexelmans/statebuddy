@@ -24,7 +24,7 @@ import { useDelayedEffect } from "../hooks/useDelayedEffect";
 import { EditHistory, useEditHistory } from "./hooks/useEditHistory";
 import { useParser } from "./hooks/useParser";
 import { usePersistentAppState } from "./hooks/usePersistentAppState";
-import { useCheckProperties } from "./hooks/usePropertyCheck";
+import { useCheckProperties } from "./hooks/useCheckProperties";
 import { useSimulator } from "./hooks/useSimulator";
 import { useTrial } from "./hooks/useTrial";
 import { makeDeepSetter } from "./makePartialSetter";

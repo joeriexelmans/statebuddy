@@ -2,36 +2,58 @@ import { PreparedTrace, PropertyCheckStatus } from "@/App/SideBar/prepare_trace_
 
 import { loadPyodide, PyodideAPI, version as pyodideVersion } from "pyodide"
 
-import pylibs from "./python-libs.zip";
+import pylibs from "./assets/python-libs.zip";
 
 async function fetchBuffer(url: string) {
   const res = await fetch(url);
-  const buffer = await res.arrayBuffer();
-  return buffer;
+  if (res.ok) {
+    const buffer = await res.arrayBuffer();
+    return buffer;
+  }
+  throw new Error("failed to fetch " + url);
 }
 
 // Spins up an instance of Pyodide with py-mtl loaded and ready to go.
 // Slow!!! You don't want to call this in the main thread!!
 export async function initPyodide() {
+  console.log('loading pyodide ...');
   const pyodide = await loadPyodide({
     checkAPIVersion: false,
     fullStdLib: false,
     indexURL: `https://cdn.jsdelivr.net/pyodide/v${pyodideVersion}/full/`,
+    lockFileContents: {
+      info: {
+        "abi_version": "2025_0",
+        "arch": "wasm32",
+        "platform": "emscripten_4_0_9",
+        "python": "3.13.2",
+        "version": "0.28.0.dev0",
+      },
+      packages: {},
+    },
+    stdout: console.log,
+    stderr: console.log,
   });
-  
+
+  console.log('fetching libs ...');
   const buf = await fetchBuffer(pylibs);
+
+  console.log('unpacking libs ...');
   pyodide.unpackArchive(buf, "zip", {
     extractDir: '/lib/python3.13/site-packages',
   });
 
+  console.log('import mtl parser...');
   await pyodide.runPythonAsync(`
     import mtl.parser
   `);
 
+  console.log('done!');
+
   return pyodide;
 }
 
-export const getPropertyChecker = (pyodide: PyodideAPI) => async (property: string, preparedTraces: PreparedTrace): Promise<PropertyCheckStatus> => {
+export const checkProperty = async (pyodide: PyodideAPI, property: string, preparedTraces: PreparedTrace): Promise<PropertyCheckStatus> => {
   const codeToRun = `
     result = None
     error = None
@@ -49,6 +71,7 @@ export const getPropertyChecker = (pyodide: PyodideAPI) => async (property: stri
   `;
   const pyResult = await pyodide.runPythonAsync(codeToRun);
   const [result, errorMsg] = pyResult.toJs();
+  console.log({result, errorMsg});
   pyResult.destroy();
   if (result) {
     return {kind: "ok", result};
