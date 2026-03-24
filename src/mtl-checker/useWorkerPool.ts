@@ -32,7 +32,21 @@ function sendJob(
 export function useMtlWorkerPool(nWorkers: number) {
   const [state, setState] = useState<WorkerPoolState>({workers: [], queue: []});
 
-  const workersAvailable = useMemo(() => state.workers.findIndex(w => w.state === "ready") !== -1, [state.workers]);
+  const pullJobFromQueue = useCallback(() => {
+    setState(state => {
+      const nextReadyIdx = state.workers.findIndex(w => w.state === "ready");
+      if (state.queue.length > 0 && nextReadyIdx !== -1) {
+        const [first, ...rest] = state.queue;
+        const {w} = state.workers[nextReadyIdx];
+        sendJob(w, first);
+        return {
+          workers: state.workers.with(nextReadyIdx, {w, state: "working"}),
+          queue: rest,
+        }
+      }
+      else return state; // no more jobs or all workers busy => no change
+    });
+  }, [setState])
 
   const onRecv = useCallback((w: Worker) => ({data}: {data: Response}) => {
     // whenever we receive a message from a worker, we consider the worker 'ready'
@@ -54,6 +68,7 @@ export function useMtlWorkerPool(nWorkers: number) {
         requests.delete(data.reqId);
       }
     }
+    pullJobFromQueue();
   }, []);
 
   // react to changing pool size
@@ -81,28 +96,8 @@ export function useMtlWorkerPool(nWorkers: number) {
         queue: state.queue,
       };
     });
+    pullJobFromQueue();
   }, [nWorkers]);
-
-  const handleNextJob = useCallback(() => {
-    setState(state => {
-      const nextReadyIdx = state.workers.findIndex(w => w.state === "ready");
-      if (state.queue.length > 0 && nextReadyIdx !== -1) {
-        const [first, ...rest] = state.queue;
-        const {w} = state.workers[nextReadyIdx];
-        sendJob(w, first);
-        return {
-          workers: state.workers.with(nextReadyIdx, {w, state: "working"}),
-          queue: rest,
-        }
-      }
-      else return state;
-    });
-  }, [setState])
-
-  // feed queue items to workers if worker becomes available
-  useEffect(() => {
-    handleNextJob();
-  }, [workersAvailable, state.queue.length]);
 
   const submitJob = useCallback((property: string, preparedTraces: PreparedTraces) => {
     const {promise, resolve} = Promise.withResolvers<PropertyCheckStatus>();
@@ -111,7 +106,7 @@ export function useMtlWorkerPool(nWorkers: number) {
       workers,
       queue: [...queue, job],
     }));
-    handleNextJob();
+    pullJobFromQueue();
     const cancel = () => setState(({workers, queue}) => ({
       workers,
       queue: queue.filter(j => j !== job),
