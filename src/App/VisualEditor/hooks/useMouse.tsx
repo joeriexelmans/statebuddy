@@ -26,7 +26,7 @@ export type EditorStuff = {
 
 export function useMouse(
   mouseMap: ToolSelectState,
-  zoom: number,
+  zoomPercentage: number,
   
   // set of currently selected shapes
   // selection: Selection,
@@ -34,6 +34,8 @@ export function useMouse(
   
   historyCallbacks: EditHistoryCallbacks,
 ) {
+  const zoom = zoomPercentage / 100;
+  
   // Not null while the user is making a selection (rendered as a transparent dashed-border blue box).
   const [selectingState, setSelectingState] = useState<SelectingState>(null);
   
