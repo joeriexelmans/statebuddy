@@ -38,7 +38,7 @@ export type AppStateV2 = VersionedAppState & {
   view: {
     topPanel: {
       modelName: string,
-      zoom: number,
+      zoom: number, // <-- percentage!!! (100 means 100%)
       mouseMap: ToolSelectState,
     },
     visibility: {

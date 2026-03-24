@@ -25,13 +25,11 @@ export const ZoomButtons = memo(function ZoomButtons({showKeys, zoom, setZoom}: 
   const KeyInfo = showKeys ? KeyInfoVisible : KeyInfoHidden;
 
   function onZoomIn() {
-    // somewhat confusingly, zoom is actually stored as a fraction, but we display a percentage (and also the zoom steps are defined as percentages).
-    // it would've been simpler to store the zoom also as a percentage, but we don't, to remain compatible with our models already 'out there'.
-    setZoom(stepUp(ZOOM_STEPS, zoom*100, 1)/100);
+    setZoom(stepUp(ZOOM_STEPS, zoom, 1));
   }
   function onZoomOut() {
     // see comment above
-    setZoom(stepDown(ZOOM_STEPS, zoom*100, 1)/100);
+    setZoom(stepDown(ZOOM_STEPS, zoom, 1));
   }
 
   function setZoomStr(str: string) {
@@ -40,8 +38,8 @@ export const ZoomButtons = memo(function ZoomButtons({showKeys, zoom, setZoom}: 
     }
     const n = Number(str.trim());
     if (!Number.isNaN(n)) {
-      const newZoom = n/100;
-      const bounded = Math.min(Math.max(0.1, newZoom), 9.99); // <-- let's keep it civilized
+      const newZoom = n;
+      const bounded = Math.min(Math.max(10, newZoom), 1000); // <-- let's keep it civilized
       return setZoom(bounded);
     }
   }
@@ -51,7 +49,7 @@ export const ZoomButtons = memo(function ZoomButtons({showKeys, zoom, setZoom}: 
       <Tooltip tooltip="zoom out">
         <button
           onClick={onZoomOut}
-          disabled={zoom*100 <= ZOOM_MIN}
+          disabled={zoom <= ZOOM_MIN}
           >
           <ZoomOutIcon fontSize="small"/>
         </button>
@@ -59,7 +57,7 @@ export const ZoomButtons = memo(function ZoomButtons({showKeys, zoom, setZoom}: 
     </KeyInfo>
     <Tooltip tooltip="current zoom level">
       <EnterText
-        value={Math.round(zoom*100)+'%'}
+        value={Math.round(zoom)+'%'}
         style={{width:40, textAlign: 'center'}}
         onEnter={str => setZoomStr(str)}
       />
@@ -68,7 +66,7 @@ export const ZoomButtons = memo(function ZoomButtons({showKeys, zoom, setZoom}: 
       <Tooltip tooltip="zoom in">
         <button
           onClick={onZoomIn}
-          disabled={zoom*100 >= ZOOM_MAX}
+          disabled={zoom >= ZOOM_MAX}
           >
           <ZoomInIcon fontSize="small"/>
         </button>

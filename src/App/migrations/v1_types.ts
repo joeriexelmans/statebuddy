@@ -32,7 +32,7 @@ export type SideBarState = {
 
 export type TopPanelState = {
   mouseMap: ToolSelectState;
-  zoom: number;
+  zoom: number; // <-- factor (1 means 100%)
   showKeys: boolean;
   showFindReplace: boolean;
   modelName: string;

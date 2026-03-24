@@ -134,7 +134,7 @@ export const VisualEditor = memo(function VisualEditor({state, setState, topolog
 
   const rootErrors = errors.filter(({shapeUid}) => shapeUid === "root").map(({message}) => message);
 
-  const size = EDITOR_WIDTH*zoom;
+  const size = EDITOR_WIDTH*zoom/100;
 
   const debugContext = useContext(DebugContext);
 

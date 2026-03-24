@@ -42,7 +42,7 @@ export function migrateToV2(state: AppStateV1): AppStateV2 {
       topPanel: {
         modelName: fullV1.topPanel.modelName,
         mouseMap: fullV1.topPanel.mouseMap,
-        zoom: fullV1.topPanel.zoom,
+        zoom: fullV1.topPanel.zoom * 100,
       },
       trace: {
         autoScroll: fullV1.sideBar.traces.autoScroll,
