@@ -45,13 +45,14 @@ export function makeStatechartPlant<CleanStateType>({uiEvents, ast, cleanupState
     // outputEvents: [...ast.outputEvents].map(e => ({kind: "event" as const, event: e})),
     execution: sc2DEVS(ast),
     cleanupState: (state: SC2DEVSState) => {
-      if (state instanceof RuntimeError) {
-        const e = new Error("unexpected runtime error in plant: " + state.message);
-        // @ts-ignore
-        e.runtimeError = state; // <-- attach the error so we can see what went wrong.
+      if (state.state instanceof RuntimeError) {
+        console.error(state.state, state.state.highlight.map(uid => ast.uid2State.get(uid)?.comments));
+        const e = new Error("unexpected runtime error in plant: " + state.state.message);
         throw e; // <-- crash StateBuddy
       }
-      return cleanupState(state.state);
+      else {
+        return cleanupState(state.state);
+      }
     },
     render,
     signals,
