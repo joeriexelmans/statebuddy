@@ -1,7 +1,7 @@
 import plotStyles from "./Plot.module.css";
 import { Dispatch, memo, SetStateAction, SVGAttributes, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { WithSetters } from "../makePartialSetter";
-import { PreparedTraces } from "../SideBar/prepare_trace";
+import { PreparedTrace } from "../SideBar/prepare_trace_types";
 import { objectsEqual } from "@/util/util";
 import { StateBuddyTraceState } from "../hooks/useSimulator";
 
@@ -10,7 +10,7 @@ type PlotProperties = SVGAttributes<SVGElement> & WithSetters<{
   visible: { [name:string]: boolean },
   setVisible: Dispatch<SetStateAction<{ [name:string]: boolean }>>,
   // Traces to plot.
-  prepped: PreparedTraces,
+  prepped: PreparedTrace,
   trace: StateBuddyTraceState,
   displayTime: number,
 }

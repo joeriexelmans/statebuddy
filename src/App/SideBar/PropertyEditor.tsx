@@ -5,7 +5,7 @@ import { MoveUpDown } from "../Components/MoveUpDown";
 import { Tooltip } from "../Components/Tooltip";
 import { TwoStateButton } from "../Components/TwoStateButton";
 import { WithSetters } from "../makePartialSetter";
-import { PropertyCheckStatus } from "./prepare_trace";
+import { PropertyCheckStatus } from "./prepare_trace_types";
 import { PropertyStatusIndicator } from "./PropertyStatusIndicator";
 
 import styles from "../App.module.css";

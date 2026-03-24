@@ -7,7 +7,7 @@ import { PanelType } from "../migrations/v1_types";
 import { autoConnect, Connect, useConnect } from "../SideBar/Connect";
 import { MQTT } from "../SideBar/MQTT";
 import { PlantsView } from "../SideBar/PlantsView";
-import { PropertyCheckStatus } from "../SideBar/prepare_trace";
+import { PropertyCheckStatus } from "../SideBar/prepare_trace_types";
 import { PropertyEditor } from "../SideBar/PropertyEditor";
 import { ShowAST, ShowInputEvents, ShowInternalEvents, ShowOutputEvents } from "../SideBar/ShowAST";
 import { Traces } from "../SideBar/Traces";

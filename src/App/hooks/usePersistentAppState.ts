@@ -4,7 +4,7 @@ import { AppState, defaultAppState } from "../App.state";
 import { WithSetters } from "../makePartialSetter";
 import { VisualEditorState, SerializableSelection, deserializeEditorState, serializeEditorState } from "../VisualEditor/VisualEditor.state";
 import { EditHistory } from "./useEditHistory";
-import { useDelayedEffect } from "./useDelay";
+import { useDelayedEffect } from "../../hooks/useDelayedEffect";
 import { useMemo } from "react";
 import { myPureDeepAssign } from "@/util/util";
 import { AppStateUnknownVersion, autoMigrate } from "../migrations/auto_migrate";

@@ -1,7 +1,7 @@
 import { getPropertyChecker, initPyodide } from "@/mtl-checker/mtl";
 import { PyodideAPI } from "pyodide";
 import { useCallback, useState } from "react";
-import { PreparedTraces, PropertyCheckStatus } from "../SideBar/prepare_trace";
+import { PreparedTrace, PropertyCheckStatus } from "../SideBar/prepare_trace_types";
 
 export function usePyodide() {
   const [state, setState] = useState<{
@@ -29,9 +29,9 @@ export function usePyodide() {
     })
   }, [setState]);
 
-  const checkProperty = useCallback((property: string, preparedTraces: PreparedTraces) => {
+  const checkProperty = useCallback((property: string, preparedTrace: PreparedTrace) => {
     return new Promise<PropertyCheckStatus>((resolve) => {
-      withPyodide(pyodide => resolve(getPropertyChecker(pyodide)(property, preparedTraces)));
+      withPyodide(pyodide => resolve(getPropertyChecker(pyodide)(property, preparedTrace)));
     })
   }, [withPyodide]);
 

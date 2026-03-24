@@ -3,7 +3,8 @@ import TextRotateUpIcon from '@mui/icons-material/TextRotateUp';
 import { memo, useMemo, useState } from "react";
 import { Tooltip } from "../Components/Tooltip";
 import { TwoStateButton } from "../Components/TwoStateButton";
-import { PreparedTraces, prepareTraces, PropertyCheckStatus } from '../SideBar/prepare_trace';
+import { prepareTraces } from '../SideBar/prepare_trace';
+import { PreparedTrace, PropertyCheckStatus } from "../SideBar/prepare_trace_types";
 import styles from "@/App/App.module.css";
 import { restoreTrace } from '@/devs/serialize_trace';
 import { DEVSComponent } from '@/devs/devs';
@@ -13,13 +14,14 @@ import { DEVSTrace } from '@/devs/trace';
 import { objectsEqual } from '@/util/util';
 import { ExecutionState } from '../migrations/v2_types';
 import { PropertyCheckResult } from '../SideBar/PropertyCheckResult';
+import { CheckPropFn } from '@/mtl-checker/useMtlWorkerPool';
 
 type PropertyTableProps = {
   abstractSyntax: Statechart,
   execution: ExecutionState,
   cE: DEVSComponent<DEVSTrace<CoupledState>>,
   onClose: () => void,
-  checkProperty: (property: string, traces: PreparedTraces) => readonly [Promise<PropertyCheckStatus>, () => void],
+  checkProperty: CheckPropFn,
 }
 
 export const PropertyTable = memo(function PropertyTable({
@@ -32,7 +34,7 @@ export const PropertyTable = memo(function PropertyTable({
   const {properties, plants, savedTraces} = execution;
   const [rotateText, setRotateText] = useState(false);
 
-  const preparedTraces = useMemo(() => {
+  const preparedTrace = useMemo(() => {
     return savedTraces.map(([name, trace], j) => {
       const restored = restoreTrace(trace, cE);
       const prepared = prepareTraces(abstractSyntax, plants, restored);
@@ -58,7 +60,7 @@ export const PropertyTable = memo(function PropertyTable({
           {properties.map((property, i) => <tr>
             <td>{property}</td>
             {savedTraces.map(([name, trace], j) => <td key={j}>
-              <PropertyCheckResult property={property} trace={preparedTraces[j]} checkProperty={checkProperty} delay={0}/>
+              <PropertyCheckResult property={property} trace={preparedTrace[j]} checkProperty={checkProperty} delay={0}/>
             </td>)}
           </tr>)}
         </tbody>

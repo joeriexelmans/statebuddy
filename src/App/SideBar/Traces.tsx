@@ -14,7 +14,7 @@ import { getSimTime, } from '@/statecharts/time';
 import { SimulatorStuff, } from '../hooks/useSimulator';
 import { CoupledDEVSTrace } from './CoupledDEVSTrace';
 import { Statechart } from '@/statecharts/abstract_syntax';
-import { PropertyTrace } from './prepare_trace';
+import { PropertyTrace } from "./prepare_trace_types";
 import { ResizeHandle } from '../Panel/ResizeHandle';
 import { NicelyCentered } from '../Components/NicelyCentered';
 import { AppState } from '../App.state';

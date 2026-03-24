@@ -1,4 +1,4 @@
-import { PreparedTraces, PropertyCheckStatus } from "@/App/SideBar/prepare_trace";
+import { PreparedTrace, PropertyCheckStatus } from "@/App/SideBar/prepare_trace_types";
 
 import { loadPyodide, PyodideAPI, version as pyodideVersion } from "pyodide"
 
@@ -31,7 +31,7 @@ export async function initPyodide() {
   return pyodide;
 }
 
-export const getPropertyChecker = (pyodide: PyodideAPI) => async (property: string, preparedTraces: PreparedTraces): Promise<PropertyCheckStatus> => {
+export const getPropertyChecker = (pyodide: PyodideAPI) => async (property: string, preparedTraces: PreparedTrace): Promise<PropertyCheckStatus> => {
   const codeToRun = `
     result = None
     error = None

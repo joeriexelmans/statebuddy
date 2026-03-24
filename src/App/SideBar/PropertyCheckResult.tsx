@@ -1,19 +1,18 @@
-import { PreparedTraces, PropertyCheckStatus } from "./prepare_trace"
+import { PreparedTrace, PropertyCheckStatus } from "./prepare_trace_types";
 import { usePromise } from "../hooks/usePromise"
 import { PropertyStatusIndicator } from "./PropertyStatusIndicator"
-import { useDelayedEffect } from "../hooks/useDelay"
+import { useDelayedEffect } from "../../hooks/useDelayedEffect"
 import { useEffect } from "react";
-
-export type PropCheckFunc = (property: string, traces: PreparedTraces) => readonly [Promise<PropertyCheckStatus>, () => void];
+import { CheckPropFn } from "@/mtl-checker/useMtlWorkerPool";
 
 type Props = {
   property: string,
-  trace?: PreparedTraces,
-  checkProperty: PropCheckFunc,
+  trace?: PreparedTrace,
+  checkProperty: CheckPropFn,
   delay: number,
 }
 
-export function usePropertyCheck(property: string, trace: PreparedTraces|undefined, delay: number, checkProperty: PropCheckFunc): PropertyCheckStatus {
+export function usePropertyCheck(property: string, trace: PreparedTrace|undefined, delay: number, checkProperty: CheckPropFn): PropertyCheckStatus {
   const [state, setPromise] = usePromise<PropertyCheckStatus>();
 
   useEffect(() => {
@@ -22,7 +21,7 @@ export function usePropertyCheck(property: string, trace: PreparedTraces|undefin
 
   useDelayedEffect(() => {
     if (trace) {
-      const [promise, cancelJob] = checkProperty(property, trace);
+      const [promise, cancelJob] = checkProperty({property, trace});
       setPromise(promise);
       return cancelJob;
     }

@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 
 // Like useEffect, but with a delay.
+// If the deps change before the delay elapses, the effect is canceled and re-scheduled.
 export function useDelayedEffect(
   doSomething: () => (void | (() => void)),
   delayMs: number,

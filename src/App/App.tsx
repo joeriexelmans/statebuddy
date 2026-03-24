@@ -4,7 +4,7 @@ import { Dispatch, PropsWithChildren, ReactElement, SetStateAction, useCallback,
 
 import { useDisplayTime } from "@/hooks/useDisplayTime";
 import { useLocalStorage } from "@/hooks/usePersistentState";
-import { useMtlWorkerPool } from "@/mtl-checker/useWorkerPool";
+import { useMtlWorkerPool } from "@/mtl-checker/useMtlWorkerPool";
 import { initialEditorState } from "@/statecharts/concrete_syntax";
 import { downloadObjectAsJson } from "@/util/download_json";
 import { formatDateTime } from "@/util/util";
@@ -20,11 +20,11 @@ import { PersistentDetails } from "./Components/PersistentDetails";
 import { Tooltip } from "./Components/Tooltip";
 import { WithShadow } from "./Components/WithShadow";
 import { useCoupledExecution } from "./hooks/useCoupledExecution";
-import { useDelayedEffect } from "./hooks/useDelay";
+import { useDelayedEffect } from "../hooks/useDelayedEffect";
 import { EditHistory, useEditHistory } from "./hooks/useEditHistory";
 import { useParser } from "./hooks/useParser";
 import { usePersistentAppState } from "./hooks/usePersistentAppState";
-import { usePropertyCheck } from "./hooks/usePropertyCheck";
+import { useCheckProperties } from "./hooks/usePropertyCheck";
 import { useSimulator } from "./hooks/useSimulator";
 import { useTrial } from "./hooks/useTrial";
 import { makeDeepSetter } from "./makePartialSetter";
@@ -93,7 +93,7 @@ export function App() {
 
   // Convert from internal trace format to a format that py-mtl understands.
   // Also, we use this format for plotting our plot.
-  const preparedTraces = useMemo(() => {
+  const preparedTrace = useMemo(() => {
     if (simulator.trace && abstractSyntax && shouldPrepareTraces) {
       return prepareTraces(
         abstractSyntax,
@@ -110,13 +110,13 @@ export function App() {
   //  - the plot
   //  - the property editor
   //  - the execution trace
-  const propertyResults = usePropertyCheck(
-    preparedTraces,
+  const propertyResults = useCheckProperties(
+    preparedTrace,
     appState.execution.properties,
     checkProperty);
 
   const tracesAndResults = {
-    ...(preparedTraces || {}),
+    ...(preparedTrace || {}),
     ...Object.fromEntries((propertyResults||[]).flatMap((result, i) => {
       // non-error property check results are included in the traces that can be plotted:
       if (result.kind === "ok") {
@@ -281,7 +281,7 @@ export function App() {
                 <HelpOutlineIcon fontSize='small'/>
               </Tooltip>
             </summary>
-            {preparedTraces && simulator.trace && appState.view.visibility.plot &&
+            {preparedTrace && simulator.trace && appState.view.visibility.plot &&
               <Plot width="100%"
                 prepped={tracesAndResults}
                 trace={simulator.trace}

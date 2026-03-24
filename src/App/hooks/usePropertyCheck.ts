@@ -1,24 +1,15 @@
 import { useEffect } from "react";
-import { PreparedTraces, PropertyCheckStatus } from "../SideBar/prepare_trace";
+import { PreparedTrace, PropertyCheckStatus } from "../SideBar/prepare_trace_types";
 import { usePromise } from "./usePromise";
-
-function resize<T>(fill: T) {
-  return function(arr: T[], newSize: number) {
-    return [
-      ...arr.slice(0, newSize),
-      ...Array.from(Array(Math.max(0, newSize - arr.length))).map(_ => fill),
-    ]
-  }
-}
+import { arrResizeDefault } from "@/util/util";
+import { CheckPropFn } from "@/mtl-checker/useMtlWorkerPool";
 
 const statusPending: PropertyCheckStatus = {kind: "pending"};
 
-const customResize = resize<PropertyCheckStatus>(statusPending);
-
-export function usePropertyCheck(
-  traces: PreparedTraces | undefined,
+export function useCheckProperties(
+  trace: PreparedTrace | undefined,
   properties: string[],
-  checkProperty: (property: string, traces: PreparedTraces) => readonly [Promise<PropertyCheckStatus>, () => void],
+  checkProperty: CheckPropFn,
 ) {
   const [results, setResultsPromise] = usePromise<PropertyCheckStatus[]>();
 
@@ -26,8 +17,8 @@ export function usePropertyCheck(
     // clear previous results
     let clearQueue = () => {};
     const cancel = setResultsPromise(new Promise((resolve) => {
-      if (traces) {
-        const mapped = properties.map(p => checkProperty(p, traces));
+      if (trace) {
+        const mapped = properties.map(property => checkProperty({property, trace}));
         Promise.all(mapped.map(m => m[0])).then(resolve);
         clearQueue = () => mapped.forEach(m => m[1]());
       }
@@ -37,14 +28,14 @@ export function usePropertyCheck(
       cancel();
       clearQueue();
     };
-  }, [traces, properties]);
+  }, [trace, properties]);
 
   if (results.kind === "pending") {
     // checking is pending for all properties
     return properties.map(() => statusPending);
   }
   else if (results.kind === "resolved") {
-    return customResize(results.result, properties.length);
+    return arrResizeDefault(results.result, properties.length, statusPending);
   }
   throw new Error("should never happen");
 }

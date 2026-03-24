@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useDelayedEffect } from "./useDelay";
+import { useDelayedEffect } from "../../hooks/useDelayedEffect";
 
 // like useDelay, but it computes a value
 // This should never be used blindly as an alternative to useMemo!! It must be safe to see a stale value for a short period of time after the deps change.

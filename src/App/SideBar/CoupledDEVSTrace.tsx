@@ -20,7 +20,7 @@ import { whoMadeExtTransition, whoMadeIntTransition } from "@/devs/coupled_trace
 import NotInterestedIcon from '@mui/icons-material/NotInterested';
 import { actionLangValToText } from "@/statecharts/actionlang_prettyprinter";
 import { StatusType } from "../Components/StatusIndicator";
-import { PropertyTrace } from "./prepare_trace";
+import { PropertyTrace } from "./prepare_trace_types";
 import { RaisedEvent } from "@/statecharts/runtime_types";
 import { TraceView } from "../migrations/v2_types";
 

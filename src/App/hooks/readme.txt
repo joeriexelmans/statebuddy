@@ -1,0 +1,1 @@
+In this directory, React hooks that are specific to StateBuddy (not reusable in other apps).

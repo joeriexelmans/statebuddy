@@ -11,7 +11,7 @@ import AddIcon from '@mui/icons-material/Add';
 import { RaisedEvent } from "@/statecharts/runtime_types";
 import { generateRandomHexString, myPureDeepAssign } from "@/util/util";
 import { Tooltip } from "../Components/Tooltip";
-import { useDisposable } from "../hooks/useDisposable";
+import { useDisposable } from "../../hooks/useDisposable";
 import { SimulatorStuff } from "../hooks/useSimulator";
 import { DeepSetter, makeAllSetters, makePartialArraySetter, makePartialSetter, WithSetters } from "../makePartialSetter";
 import { Toolbar } from "../TopPanel/Toolbar";
@@ -25,7 +25,6 @@ import { Statechart } from "@/statecharts/abstract_syntax";
 import { EventTrigger } from "@/statecharts/label_ast";
 import traceStyles from "./Trace.module.css";
 import { MQTTTopicConfig, Event2MQTTMapping, MQTTState } from "../migrations/v1_types";
-import { defaultMQTTState } from "../migrations/v1_default";
 
 const defaultTopic: MQTTTopicConfig = {
   prefix: "",
@@ -61,46 +60,54 @@ export function MQTT({state, setState, simulator, abstractSyntax}: MQTTProps) {
   // const [knownTopics, setKnownTopics] = usePersistentState<string[]>("known-topics", []);
 
   // Connect to MQTT...
-  const client = useDisposable<MqttClient|null>(null, setClient => {
+  const client = useDisposable<MqttClient|null>(() => {
     const clientId = `statebuddy-${generateRandomHexString(32)}`;
     let client: MqttClient;
-    const errHandler = (err: any) => {
+    setError("");
+    const onErr = (err: {message: string}) => {
       console.error(brokerUrl, err);
       setStatus("nok");
       setError(`${err.message}\n\nURL: ${brokerUrl}\n\n${user}\n${password}\n\nClient ID: ${clientId}`);
     };
-    const timeout = setTimeout(() => {
-      if (on) {
-        try {
-          const options: IClientOptions = {
-            username: authentication ? user : undefined,
-            password: authentication ? password : undefined,
-            ca: enableCA ? ca : undefined,
-            reconnectPeriod: 5000,
-            clientId,
-          };
-          console.log('connecting', JSON.stringify(options));
-          client = mqtt.connect(brokerUrl, options);
-        } catch (e) {
-          return () => {};
-        }
-        client.on("connect", () => {
-          setStatus("ok");
-          console.log('connected to', brokerUrl);
-          setKnownBrokers(known => [brokerUrl, ...known.filter(u => u !== brokerUrl)]);
-        });
-        client.on("error", errHandler);
-        setClient(client);
+    const onClose = () => onErr({message: "connection closed"});
+    const onDisconnect = () => onErr({message: "disconnected"});
+    const onOffline = () => onErr({message: "offline"});
+    if (on) {
+      try {
+        const options: IClientOptions = {
+          username: authentication ? user : undefined,
+          password: authentication ? password : undefined,
+          ca: enableCA ? ca : undefined,
+          reconnectPeriod: 5000,
+          clientId,
+        };
+        console.log('connecting', JSON.stringify(options));
+        client = mqtt.connect(brokerUrl, options);
+      } catch (e) {
+        return [null, () => {}];
       }
-    }, 200);
-    return () => {
-      clearTimeout(timeout);
-      setStatus("pending");
-      if (client) {
-        client.off("error", errHandler); // <-- not interested in errors after disconnect
+      client.on("connect", () => {
+        setStatus("ok");
+        console.log('connected to', brokerUrl);
+        setKnownBrokers(known => [brokerUrl, ...known.filter(u => u !== brokerUrl)]);
+      });
+
+      client.on("close", onClose);
+      client.on("disconnect", onDisconnect);
+      client.on("offline", onOffline);
+      client.on("error", onErr);
+
+      return [client, () => {
+        // cleanup:
+        setStatus("pending");
+        client.off("close", onClose);
+        client.off("disconnect", onDisconnect);
+        client.off("offline", onOffline);
+        client.off("error", onErr);
         client.end();
-      }
-    };
+      }];
+    }
+    return [null, () => {}];
   }, [on, brokerUrl, authentication, user, password, enableCA, ca]);
 
   // MQTT message handler feeds received messages into our simulation

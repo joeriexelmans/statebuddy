@@ -3,26 +3,10 @@ import { PlantsState } from "../migrations/v1_types";
 import { DEVSTrace } from "@/devs/trace";
 import { Statechart } from "@/statecharts/abstract_syntax";
 import { statebuddyPlants } from "../plants";
-
-export type PropertyTrace = [number, boolean][]; // list of tuples [timestamp, true or false]
-
-// The successful evaluation of a property is again a trace (of booleans).
-export type PropertyCheckStatus = {
-  kind: "pending",
-  // promise: Promise<PropertyTrace>,
-} | {
-  kind: "ok",
-  result: PropertyTrace,
-} | {
-  kind: "nok",
-  errorMsg: string,
-}
-
-// Bunch of traces in a format that the property checker can deal with
-export type PreparedTraces = { [name: string]: PropertyTrace };
+import { PreparedTrace, PropertyTrace } from "./prepare_trace_types";
 
 // Given a coupled DEVS execution trace, turn it into a bunch of signals that our MTL property checker understands.
-export function prepareTraces(ast: Statechart, plantsState: PlantsState, trace: DEVSTrace<CoupledState>): PreparedTraces {  
+export function prepareTraces(ast: Statechart, plantsState: PlantsState, trace: DEVSTrace<CoupledState>): PreparedTrace {  
   const result = {} as {[key: string]: PropertyTrace};
 
   for (const signal of [

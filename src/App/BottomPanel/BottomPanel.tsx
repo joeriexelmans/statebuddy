@@ -10,21 +10,15 @@ import { Statechart } from "@/statecharts/abstract_syntax";
 
 import appStyles from "../App.module.css";
 import { WithSetters } from "../makePartialSetter";
-import { WorkerPoolState } from "@/mtl-checker/useWorkerPool";
 import { Toolbar } from "../TopPanel/Toolbar";
-
-const statusStrings = {
-  "notLoaded": "not loaded",
-  "loading": "loading...",
-  "loaded": "ready",
-}
+import { MtlWorkerPoolState } from "@/mtl-checker/useMtlWorkerPool";
 
 type BottomPanelProps = WithSetters<{
   errorsExpanded: boolean,
 }> & {
   errors: TraceableError[],
   abstractSyntax: Statechart,
-  workerPoolState: WorkerPoolState,
+  workerPoolState: MtlWorkerPoolState,
   setNWorkers: Dispatch<SetStateAction<number>>,
 }
 

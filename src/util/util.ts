@@ -235,3 +235,24 @@ export function generateRandomHexString(bitsOfInformation: number) {
     .map(b => b.toString(16).padStart(2, "0"))
     .join("");
 }
+
+// resize array and if new entries are created, fill them with given value
+// it is also possible to call a 'destructor' on deleted elements when shrinking the arrayf
+export function arrResizeDefault<T>(arr: T[], newSize: number, fill: T | (() => T), destroy?: (el: T) => void) {
+  const keep = arr.slice(0, newSize);
+  if (destroy) {
+    const kill = arr.slice(newSize);
+    kill.forEach(destroy);
+  }
+  let newElems;
+  if (typeof fill === 'function') {
+    newElems = Array.from(Array(Math.max(0, newSize - arr.length))).map(fill as () => T);
+  }
+  else {
+    newElems = Array.from(Array(Math.max(0, newSize - arr.length))).map(_ => fill);
+  }
+  return [
+    ...keep,
+    ...newElems,
+  ];
+}
