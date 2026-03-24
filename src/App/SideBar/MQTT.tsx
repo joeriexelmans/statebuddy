@@ -61,7 +61,7 @@ export function MQTT({state, setState, simulator, abstractSyntax}: MQTTProps) {
   // const [knownTopics, setKnownTopics] = usePersistentState<string[]>("known-topics", []);
 
   // Connect to MQTT...
-  const client = useDisposable<MqttClient>(setClient => {
+  const client = useDisposable<MqttClient|null>(null, setClient => {
     const clientId = `statebuddy-${generateRandomHexString(32)}`;
     let client: MqttClient;
     const errHandler = (err: any) => {

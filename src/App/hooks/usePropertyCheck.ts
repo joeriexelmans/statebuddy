@@ -24,7 +24,6 @@ export function usePropertyCheck(
 
   useEffect(() => {
     // clear previous results
-    let timeout: NodeJS.Timeout;
     let clearQueue = () => {};
     const cancel = setResultsPromise(new Promise((resolve) => {
       if (traces) {
