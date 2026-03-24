@@ -40,6 +40,8 @@ export function usePropertyCheck(property: string, trace: PreparedTrace|undefine
 export function PropertyCheckResult({property, trace, checkProperty, delay}: Props) {
   const state = usePropertyCheck(property, trace, delay, checkProperty);
 
+  console.log({state});
+
   if (state.kind === "pending") {
     return <PropertyStatusIndicator status="pending"/>
   }

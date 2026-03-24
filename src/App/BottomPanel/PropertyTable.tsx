@@ -4,7 +4,6 @@ import { memo, useMemo, useState } from "react";
 import { Tooltip } from "../Components/Tooltip";
 import { TwoStateButton } from "../Components/TwoStateButton";
 import { prepareTraces } from '../SideBar/prepare_trace';
-import { PreparedTrace, PropertyCheckStatus } from "../SideBar/prepare_trace_types";
 import styles from "@/App/App.module.css";
 import { restoreTrace } from '@/devs/serialize_trace';
 import { DEVSComponent } from '@/devs/devs';

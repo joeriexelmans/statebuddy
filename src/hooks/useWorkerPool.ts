@@ -16,6 +16,8 @@ export type WorkerPoolState<I,O> = {
 export function useWorkerPool<I,O>(nWorkers: number, workerUrl: string) {
   const [state, setState] = useState<WorkerPoolState<I,O>>({workers: [], queue: []});
 
+  console.log({poolstate: state});
+
   const [nextID, releaseID] = useGenID();
 
   const requests = useRef(new Map<string, (result: any) => void>());
@@ -48,7 +50,6 @@ export function useWorkerPool<I,O>(nWorkers: number, workerUrl: string) {
 
   const onRecv = useCallback((w: Worker) => ({data}: {data: WebWorkerResponse<O>}) => {
     // whenever we receive a message from a worker, the worker's state becomes 'ready'
-    console.log('onRecv', w, data);
     setState(state => {
       // find the worker (it may no longer exist)
       const idx = state.workers.findIndex(wx => wx.w === w);
