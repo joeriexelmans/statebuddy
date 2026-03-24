@@ -21,9 +21,16 @@ const server = serve({
       });
     },
 
-    // HACK because otherwise strangely it no longer serves this file ??
-    "/python-libs-h32n6y5c.zip": async () => {
-      return new Response(await Bun.file("./src/mtl-checker/assets/python-libs.zip").arrayBuffer());
+    "/assets/*": async (req) => {
+      const url = new URL(req.url);
+      return new Response(await Bun.file("./src/" + url.pathname).arrayBuffer(), {
+        headers: {
+          "Content-Type": {
+            "js": "application/javascript",
+            "wasm": "application/wasm",
+          }[url.pathname.split('.').at(-1)!] || "text/html",
+        }
+      });
     },
 
     "/*": new Response("Not Found", { status: 404 }),

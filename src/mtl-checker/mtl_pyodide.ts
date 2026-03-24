@@ -2,7 +2,7 @@ import { PreparedTrace, PropertyCheckStatus } from "@/App/SideBar/prepare_trace_
 
 import { loadPyodide, PyodideAPI, version as pyodideVersion } from "pyodide"
 
-import pylibs from "./assets/python-libs.zip";
+// import pylibs from "./assets/python-libs.zip";
 
 async function fetchBuffer(url: string) {
   const res = await fetch(url);
@@ -17,10 +17,14 @@ async function fetchBuffer(url: string) {
 // Slow!!! You don't want to call this in the main thread!!
 export async function initPyodide() {
   console.log('loading pyodide ...');
+  // const path = location.protocol + location.host + location.pathname;
+  // console.log({path});
   const pyodide = await loadPyodide({
+    // indexURL: location.protocol + location.port + 
     checkAPIVersion: false,
     fullStdLib: false,
-    indexURL: `https://cdn.jsdelivr.net/pyodide/v${pyodideVersion}/full/`,
+    // indexURL: `https://cdn.jsdelivr.net/pyodide/v${pyodideVersion}/full/`,
+    indexURL: './assets/pyodide',
     lockFileContents: {
       info: {
         "abi_version": "2025_0",
@@ -36,19 +40,16 @@ export async function initPyodide() {
   });
 
   console.log('fetching libs ...');
-  const buf = await fetchBuffer(pylibs);
+  const buf = await fetchBuffer("assets/pyodide/mtl-libs.zip");
 
   console.log('unpacking libs ...');
   pyodide.unpackArchive(buf, "zip", {
     extractDir: '/lib/python3.13/site-packages',
   });
 
-  console.log('import mtl parser...');
   await pyodide.runPythonAsync(`
     import mtl.parser
   `);
-
-  console.log('done!');
 
   return pyodide;
 }
@@ -71,7 +72,6 @@ export const checkProperty = async (pyodide: PyodideAPI, property: string, prepa
   `;
   const pyResult = await pyodide.runPythonAsync(codeToRun);
   const [result, errorMsg] = pyResult.toJs();
-  console.log({result, errorMsg});
   pyResult.destroy();
   if (result) {
     return {kind: "ok", result};
