@@ -278,6 +278,6 @@
   padding-left: 16px;
 }
 
-.App .stateTree li:hover:not(:has(li:hover)) {
+.App .stateTree .stateTreeDescription:hover {
   background-color: var(--summary-hover-bg-color);
 }

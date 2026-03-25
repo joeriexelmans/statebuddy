@@ -9,18 +9,25 @@ export const StateTree = memo(function StateTree(props: {root: ConcreteState | U
 
   const [expanded, setExpanded] = useState(false);
 
-  return <li style={{verticalAlign: 'middle', cursor: 'default'}} onClick={e => {setExpanded(e => !e); e.stopPropagation()}}>
-    {expanded ? "▾" : "▸"}&nbsp;
-    {{
-      "and": <RountangleIcon kind="and"/>,
-      "or": <RountangleIcon kind="or"/>,
-      "pseudo": <PseudoStateIcon/>,
-    }[props.root.kind]}
-    &nbsp;
-    {description}
-    {expanded && props.root.kind !== "pseudo" && props.root.children.length>0 &&
-      <ul>
-        {props.root.children.map(child => 
+  const hasChildren = props.root.kind !== "pseudo" && props.root.children.length > 0;
+
+  return <li style={{cursor: 'default'}} onClick={e => {setExpanded(e => !e); e.stopPropagation()}}>
+    <div className={styles.stateTreeDescription}>
+      <div style={{width: 16, display: 'inline-block'}}>{hasChildren && (expanded ? "▾ " : "▸ ")}</div>
+      <div style={{display: 'inline-block', verticalAlign: 'middle'}}>
+      {{
+        "and": <RountangleIcon kind="and"/>,
+        "or": <RountangleIcon kind="or"/>,
+        "pseudo": <PseudoStateIcon/>,
+      }[props.root.kind]}
+      </div>
+      &nbsp;
+      {description}
+    </div>
+    {hasChildren &&
+      <ul style={{display: expanded ? undefined : 'none'}}>
+        {/* @ts-ignore */}
+        {props.root.children!.map(child => 
           <StateTree key={child.uid} root={child} />
         )}
       </ul>
