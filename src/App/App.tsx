@@ -149,11 +149,8 @@ export function App() {
       modelName.replaceAll(' ','-')+'_'+formatDateTime(new Date()).replaceAll('/','-').replaceAll(':','-').replaceAll(' ','_')+".statebuddy.json");
   }, [editorState, appState]);
 
-  console.log(editorState);
-
   // callback to start editing text label (in modal dialog)
   const beginEdit = useCallback((uid: string) => {
-    console.log(editorState);
     const text = editorState?.texts.find(t => t.uid === uid)?.text;
     if (text !== undefined) {
       setModal(<TextDialog

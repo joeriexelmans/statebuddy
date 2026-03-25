@@ -1,6 +1,5 @@
-import { TextDialog } from "@/App/Modals/TextDialog";
 import {getTextFatBBox, Text} from "../../statecharts/concrete_syntax";
-import { CSSProperties, Dispatch, memo, ReactElement, SetStateAction, useCallback, useMemo } from "react";
+import { CSSProperties, memo, useMemo } from "react";
 import { jsonDeepEqual } from "@/util/util";
 import { BoundingBox } from "./BoundingBox";
 
