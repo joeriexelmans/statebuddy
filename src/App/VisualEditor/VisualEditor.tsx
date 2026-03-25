@@ -20,7 +20,6 @@ import { Selection, VisualEditorState } from "./VisualEditor.state";
 import { DebugContext } from "./context/DebugContext";
 import { EditorStuff } from "./hooks/useMouse";
 import { ToolSelectState } from "../migrations/v1_types";
-import { useDelayedEffect } from "../../hooks/useDelayedEffect";
 import { useDelayedMemo } from "../hooks/useDelayedMemo";
 
 type VisualEditorProps = {
@@ -70,8 +69,10 @@ export const VisualEditor = memo(function VisualEditor({state, setState, topolog
     const sides = topology.arrow2SideMap.get(selectedUid);
     if (sides) {
       const [startSide, endSide] = sides;
-      if (startSide) sidesToHighlight[startSide.uid] = [...sidesToHighlight[startSide.uid]||[], startSide.part];
-      if (endSide) sidesToHighlight[endSide.uid] = [...sidesToHighlight[endSide.uid]||[], endSide.part];
+      if (parts.has("start"))
+        if (startSide) sidesToHighlight[startSide.uid] = [...sidesToHighlight[startSide.uid]||[], startSide.part];
+      if (parts.has("end"))
+        if (endSide) sidesToHighlight[endSide.uid] = [...sidesToHighlight[endSide.uid]||[], endSide.part];
     }
     const texts = [
       ...(topology.arrow2TextMap.get(selectedUid) || []),
