@@ -129,7 +129,8 @@ export function useCopyPaste(state: VisualEditorState, commitState: Dispatch<(v:
         history: state.history.filter(y => ! es.history.some(x => x.uid === y.uid)),
         arrows: state.arrows.filter(y => ! es.arrows.some(x => x.uid === y.uid)),
         texts: state.texts.filter(y => ! es.texts.some(x => x.uid === y.uid)),
-        selection: new Selection(),
+        selection: new Selection([...state.selection].filter(([uid]) =>
+            !Object.values(es).some(s => s.some(s => s.uid === uid)))),
       };
     });
   }, [commitState]);
