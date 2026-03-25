@@ -1,12 +1,12 @@
 import styles from "../VisualEditor/VisualEditor.module.css";
 
-export function RountangleIcon(props: { kind: string; }) {
+export function RountangleIcon(props: { kind: string; dashed: boolean }) {
   return <svg width={20} height={20} style={{display: 'inline-block'}}>
     <rect rx={7} ry={7}
       x={1} y={1}
       width={18} height={18}
       className={`${styles.rountangle} ${styles[props.kind]}`}
-      style={{ ...(props.kind === "or" ? { strokeDasharray: '3 2' } : {}),
+      style={{ ...(props.kind === "or" ? { strokeDasharray: props.dashed ? '3 2' : undefined } : {}),
         strokeWidth: 1.2 }} />
   </svg>;
 }

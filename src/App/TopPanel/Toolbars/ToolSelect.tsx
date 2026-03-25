@@ -5,15 +5,15 @@ import TrendingFlatIcon from '@mui/icons-material/TrendingFlat';
 import { memo, ReactElement } from "react";
 import { Tooltip } from "../../Components/Tooltip";
 import { TwoStateButton } from "../../Components/TwoStateButton";
-import { DeepSetter, makeAllSetters, Setters, WithSetters } from "../../makePartialSetter";
+import { DeepSetter, Setters } from "../../makePartialSetter";
 import { HistoryIcon, PseudoStateIcon, RountangleIcon } from "../Icons";
 import { KeyInfoHidden, KeyInfoVisible } from "../KeyInfo";
 import { MouseIcon } from "../MouseIcon";
 
 const insertModes: [ToolMode, string, ReactElement, ReactElement][] = [
   ["select", "select, move, resize", <HighlightAltSharpIcon fontSize="small"/>, <></>],
-  ["and", "draw AND-states", <RountangleIcon kind="and"/>, <kbd>A</kbd>],
-  ["or", "draw OR-states", <RountangleIcon kind="or"/>, <kbd>O</kbd>],
+  ["and", "draw AND-states", <RountangleIcon kind="and" dashed={false}/>, <kbd>A</kbd>],
+  ["or", "draw OR-states", <RountangleIcon kind="or" dashed={true}/>, <kbd>O</kbd>],
   ["pseudo", "draw pseudo-states", <PseudoStateIcon/>, <kbd>P</kbd>],
   ["shallow", "draw shallow history", <HistoryIcon kind="shallow"/>, <kbd>H</kbd>],
   ["deep", "draw deep history", <HistoryIcon kind="deep"/>, <></>],
