@@ -50,8 +50,11 @@ Or just play with one of the **example models**:
 
 ## Building
 
-1. install [bun](https://bun.com)
-2. run `bun build`
+
+1. get [bun](https://bun.com)
+    - nix users can instead just enter development shell: `nix develop`
+2. run:
+        ```bun build```
 3. build artifacts can be found in `dist/` (`index.html` and a bunch of supporting files). Any static file server can host these files.
 
 
