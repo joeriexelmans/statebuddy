@@ -2,37 +2,30 @@
   description = "StateBuddy";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs";
-    flake-utils.url = "github:numtide/flake-utils";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
   };
 
-  outputs = { nixpkgs, flake-utils, ... }:
-    flake-utils.simpleFlake {
-      inherit nixpkgs;
-      packages = pkgs: {
-        default = pkgs.bun;
+  outputs = { self, nixpkgs }:
+    let
+      systems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
+      forEachSystem = f:
+        nixpkgs.lib.genAttrs systems (system:
+          f {
+            pkgs = import nixpkgs { inherit system; };
+          });
+    in
+    {
+      devShells = forEachSystem ({ pkgs }: {
+        default = pkgs.mkShell {
+          buildInputs = [
+            pkgs.bun
+          ];
 
-        project = pkgs.stdenv.mkDerivation {
-          pname = "statebuddy";
-          version = "1.0.0";
-          src = ./.;
-
-          buildInputs = [ pkgs.bun ];
-
-          buildPhase = ''
-            bun install
-            bun run build
-          '';
-
-          installPhase = ''
-            mkdir -p $out
-            cp -r dist/* $out/
+          shellHook = ''
+            echo "Bun dev environment ready"
+            bun --version
           '';
         };
-      };
-
-      devShell = pkgs: pkgs.mkShell {
-        buildInputs = [ pkgs.bun ];
-      };
+      });
     };
 }
