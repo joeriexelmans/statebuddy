@@ -48,19 +48,27 @@ Or just play with one of the **example models**:
   - [Traffic light](https://deemz.org/public/statebuddy/v2/#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)
 
 
-## Building
-
-
-1. get [bun](https://bun.com)
-    - nix users can instead just enter development shell: `nix develop`
-2. run:
-        ```bun build```
-3. build artifacts can be found in `dist/` (`index.html` and a bunch of supporting files). Any static file server can host these files.
-
-
 ## User documentation
 
 See the [manual](./docs/readme.md).
+
+
+## Building
+
+
+1. Get [bun](https://bun.com).
+    
+    Alternatively, nix users can instead just enter development shell:
+
+    ```
+    nix develop
+    ```
+2. Run:
+
+    ```
+    bun build
+    ```
+3. Build artifacts can be found in `dist/` (`index.html` and a bunch of supporting files). Any static file server can host these files. Nothing else is needed.
 
 
 ## Development
