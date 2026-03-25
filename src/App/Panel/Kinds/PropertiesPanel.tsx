@@ -87,7 +87,7 @@ const SingleProperty = memo(function SingleProperty({i, state, property, isActiv
     <div>
       P{i}
       {true && <PropertyCheckResult2 state={state} />}
-      <Tooltip tooltip="see in trace (below)" align="left">
+      <Tooltip tooltip="see in panel: execution traces" align="left">
         <TwoStateButton active={isActive} onClick={() => setActiveProperty(isActive ? -1 : i)}>
           <VisibilityIcon fontSize="small"/>
         </TwoStateButton>

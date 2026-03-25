@@ -38,8 +38,9 @@ import { SizedPanel } from "./Panel/SizedPanel";
 import { prepareTraces } from "./SideBar/prepare_trace";
 import { TopPanel } from "./TopPanel/TopPanel";
 import { DebugContext } from "./VisualEditor/context/DebugContext";
-import { useMouse } from "./VisualEditor/hooks/useMouse";
+import { useEditor } from "./VisualEditor/hooks/useEditor";
 import { VisualEditor } from "./VisualEditor/VisualEditor";
+import { TextDialog } from "./Modals/TextDialog";
 
 export function App() {
   // The entire persisted application state (minus the visual editor state)
@@ -148,7 +149,48 @@ export function App() {
       modelName.replaceAll(' ','-')+'_'+formatDateTime(new Date()).replaceAll('/','-').replaceAll(':','-').replaceAll(' ','_')+".statebuddy.json");
   }, [editorState, appState]);
 
-  const editorStuff = useMouse(appState.view.topPanel.mouseMap, appState.view.topPanel.zoom, editorState || initialEditorState, historyCallbacks);
+  console.log(editorState);
+
+  // callback to start editing text label (in modal dialog)
+  const beginEdit = useCallback((uid: string) => {
+    console.log(editorState);
+    const text = editorState?.texts.find(t => t.uid === uid)?.text;
+    if (text !== undefined) {
+      setModal(<TextDialog
+        setModal={setModal}
+        text={text}
+        done={newText => {
+          if (newText === undefined) {
+            // user canceled -> do nothing
+            return;
+          }
+          else if (newText === "") {
+            // delete text
+            historyCallbacks.commitState(({texts, ...rest}) => ({
+              texts: texts.filter(t => t.uid !== uid),
+              ...rest,
+            }));
+          }
+          else {
+            // update text
+            historyCallbacks.commitState(oldState => ({
+              ...oldState,
+              texts: oldState.texts.map(t => {
+                if (t.uid === uid) {
+                  return {
+                    ...t,
+                    text: newText,
+                  }
+                }
+                else return t;
+              }),
+            }));
+          }
+      }} />);
+    }
+  }, [editorState, setModal, historyCallbacks.commitState]);
+
+  const editorStuff = useEditor(appState.view.topPanel.mouseMap, appState.view.topPanel.zoom, editorState || initialEditorState, historyCallbacks, beginEdit);
 
   const globalProps: GlobalProps = useMemo(() => ({
     appState,
@@ -221,7 +263,7 @@ export function App() {
                   highlightActive={simulator.highlightActive}
                   highlightTransitions={simulator.highlightTransitions}
                   syntaxErrors={allErrors}
-                  setModal={setModal}
+                  beginEdit={beginEdit}
                 />
               </DebugContext>}
           </div>

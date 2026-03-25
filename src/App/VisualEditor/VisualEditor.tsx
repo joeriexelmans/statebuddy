@@ -18,7 +18,7 @@ import "./VisualEditor.css";
 import styles from "./VisualEditor.module.css";
 import { Selection, VisualEditorState } from "./VisualEditor.state";
 import { DebugContext } from "./context/DebugContext";
-import { EditorStuff } from "./hooks/useMouse";
+import { EditorStuff } from "./hooks/useEditor";
 import { ToolSelectState } from "../migrations/v1_types";
 import { useDelayedMemo } from "../hooks/useDelayedMemo";
 
@@ -27,10 +27,10 @@ type VisualEditorProps = {
   setState: Dispatch<SetStateAction<VisualEditorState>>,
   topology: Topology,
   editorStuff: EditorStuff;
+  beginEdit: (uid: string) => void,
   syntaxErrors: TraceableError[],
   highlightActive: Set<string>,
   highlightTransitions: string[],
-  setModal: Dispatch<SetStateAction<ReactElement|null>>,
   zoom: number;
   findText: string;
   mouseMap: ToolSelectState;
@@ -38,7 +38,7 @@ type VisualEditorProps = {
 
 const viewBox = `0 0 ${EDITOR_WIDTH} ${EDITOR_HEIGHT}`;
 
-export const VisualEditor = memo(function VisualEditor({state, setState, topology, syntaxErrors: errors, highlightActive, highlightTransitions, setModal, zoom, findText, editorStuff}: VisualEditorProps) {
+export const VisualEditor = memo(function VisualEditor({state, setState, topology, syntaxErrors: errors, highlightActive, highlightTransitions, beginEdit, zoom, findText, editorStuff}: VisualEditorProps) {
 
   const {copyPasteCallbacks, dragging, onMouseDown, refSVG, renderSelection, selectingState} = editorStuff;
 
@@ -106,32 +106,6 @@ export const VisualEditor = memo(function VisualEditor({state, setState, topolog
       arrowsToHighlight[arrow] = true;
     }
   }
-
-  const onEditText = useCallback((text: Text, newText: string) => {
-    if (newText === "") {
-      // delete text node
-      setState(state => ({
-        ...state,
-        texts: state.texts.filter(t => t.uid !== text.uid),
-      }));
-    }
-    else {
-      setState(state => ({
-        ...state,
-        texts: state.texts.map(t => {
-          if (t.uid === text.uid) {
-            return {
-              ...text,
-              text: newText,
-            }
-          }
-          else {
-            return t;
-          }
-        }),
-      }));
-    }
-  }, [setState]);
 
   const rootErrors = errors.filter(({shapeUid}) => shapeUid === "root").map(({message}) => message);
 
@@ -222,7 +196,7 @@ export const VisualEditor = memo(function VisualEditor({state, setState, topolog
       }
     )}
 
-    <Texts texts={state.texts} {...{selection: renderSelection, textsToHighlight, errors, onEditText, setModal, findText}}/>
+    <Texts texts={state.texts} {...{selection: renderSelection, textsToHighlight, errors, beginEdit, findText}}/>
 
     {(rootErrors.length>0) && <text className={styles.errorHover} x={5} y={20} style={{display:'inline'}}>{rootErrors.join('\n')}</text>}
 
@@ -282,7 +256,7 @@ const Diamonds = memo(function Diamonds({diamonds, selection, sidesToHighlight, 
     && arraysEqual(p.errors, n.errors);
 });
 
-const Texts = memo(function Texts({texts, selection, textsToHighlight, errors, onEditText, setModal, findText}: {texts: Text[], selection: Selection, textsToHighlight: {[key: string]: boolean}, errors: TraceableError[], onEditText: (text: Text, newText: string) => void, setModal: Dispatch<SetStateAction<ReactElement|null>>, findText: string}) {
+const Texts = memo(function Texts({texts, selection, textsToHighlight, errors, beginEdit, findText}: {texts: Text[], selection: Selection, textsToHighlight: {[key: string]: boolean}, errors: TraceableError[], beginEdit: (uid: string) => void, findText: string}) {
   return <>{texts.map(txt => {
     return <TextSVG
       key={txt.uid}
@@ -290,8 +264,7 @@ const Texts = memo(function Texts({texts, selection, textsToHighlight, errors, o
       text={txt}
       selected={selection.has(txt.uid)}
       highlight={textsToHighlight.hasOwnProperty(txt.uid)}
-      onEdit={onEditText}
-      setModal={setModal}
+      beginEdit={beginEdit}
       findText={findText}
     />
   })}</>;
@@ -300,8 +273,7 @@ const Texts = memo(function Texts({texts, selection, textsToHighlight, errors, o
     && mapsEqual(p.selection, n.selection)
     && objectsEqual(p.textsToHighlight, n.textsToHighlight)
     && arraysEqual(p.errors, n.errors)
-    && p.onEditText === n.onEditText
-    && p.setModal === n.setModal
+    && p.beginEdit === n.beginEdit
     && p.findText === n.findText;
 });
 

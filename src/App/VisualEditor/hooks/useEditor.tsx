@@ -24,15 +24,13 @@ export type EditorStuff = {
   renderSelection: Selection,
 };
 
-export function useMouse(
+// the stateful part of the VisualEditor
+export function useEditor(
   mouseMap: ToolSelectState,
   zoomPercentage: number,
-  
-  // set of currently selected shapes
-  // selection: Selection,
-  state: VisualEditorState,
-  
+  state: VisualEditorState,  
   historyCallbacks: EditHistoryCallbacks,
+  beginEdit: (uid: string) => void,
 ) {
   const zoom = zoomPercentage / 100;
   
@@ -197,7 +195,7 @@ export function useMouse(
           ...state,
           texts: [...state.texts, {
             uid: newID,
-            text: "// Double-click to edit",
+            text: "// Double-click or <Enter> to edit",
             topLeft: currentPointer,
           }],
           nextID: state.nextID+1,
@@ -345,11 +343,30 @@ export function useMouse(
     renderSelection,
     setDragging, // <-- upon pasting, the pasted shapes follow the mouse cursor until the user clicks at the desired position.
   );
+
+  const onEditText = useCallback(() => {
+    replaceState(state => {
+      if (state.selection.size === 1) {
+        for (const [uid, parts] of state.selection) {
+          if (parts.size === 1) {
+            for (const part of parts) {
+              if (part === "text") {
+                beginEdit(uid);
+              }
+            }
+          }
+        }
+      }
+      // we don't actually change the state:
+      return state;
+    })
+  }, [replaceState, beginEdit]);
     
   useShortcuts([
     {keys: ["o"], action: useCallback(() => convertSelection("or"), [convertSelection])},
     {keys: ["a"], action: useCallback(() => convertSelection("and"), [convertSelection])},
     {keys: ["Ctrl", "a"], action: onSelectAll},
+    {keys: ["Enter"], action: onEditText},
   ]);
     
   useEffect(() => {

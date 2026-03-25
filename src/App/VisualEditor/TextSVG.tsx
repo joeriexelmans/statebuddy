@@ -1,6 +1,6 @@
 import { TextDialog } from "@/App/Modals/TextDialog";
 import {getTextFatBBox, Text} from "../../statecharts/concrete_syntax";
-import { CSSProperties, Dispatch, memo, ReactElement, SetStateAction, useMemo } from "react";
+import { CSSProperties, Dispatch, memo, ReactElement, SetStateAction, useCallback, useMemo } from "react";
 import { jsonDeepEqual } from "@/util/util";
 import { BoundingBox } from "./BoundingBox";
 
@@ -24,7 +24,7 @@ const fade = (ranges: RangeWithAnnotation[]) => {
 const em = 79/4;
 const ch = 40/5;
 
-export const TextSVG = memo(function TextSVG(props: {text: Text, selected: boolean, highlight: boolean, onEdit: (text: Text, newText: string) => void, setModal: Dispatch<SetStateAction<ReactElement|null>>, findText: string, error?: TraceableError}) {
+export const TextSVG = memo(function TextSVG(props: {text: Text, selected: boolean, highlight: boolean, findText: string, beginEdit: (uid: string) => void, error?: TraceableError}) {
 
   let {
     ranges,
@@ -63,13 +63,8 @@ export const TextSVG = memo(function TextSVG(props: {text: Text, selected: boole
     <g
       key={props.text.uid}
       transform={`translate(${props.text.topLeft.x} ${props.text.topLeft.y})`}
-      onDoubleClick={() => {
-        props.setModal(<TextDialog setModal={props.setModal} text={props.text.text} done={newText => {
-            if (newText) {
-              props.onEdit(props.text, newText);
-            }
-        }} />)
-      }}>
+      onDoubleClick={() => props.beginEdit(props.text.uid)}
+    >
       <g transform={`translate(${dx} ${dy})`}>
         {/* our syntax-highlighted text */}
         <text
@@ -129,8 +124,7 @@ export const TextSVG = memo(function TextSVG(props: {text: Text, selected: boole
 }, (prevProps, newProps) => {
   return jsonDeepEqual(prevProps.text, newProps)
     && prevProps.highlight === newProps.highlight
-    && prevProps.onEdit === newProps.onEdit
-    && prevProps.setModal === newProps.setModal
+    && prevProps.beginEdit === newProps.beginEdit
     && prevProps.selected === newProps.selected
     && prevProps.findText === newProps.findText
 });

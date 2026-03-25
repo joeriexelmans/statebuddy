@@ -63,10 +63,10 @@ export function BottomPanel({
           &nbsp;
           <Toolbar>
             <Tooltip above tooltip="remove worker">
-              <button onClick={() => setNWorkers(n => Math.max(0, n-1))}>-</button>
+              <button onClick={() => setNWorkers(n => Math.max(0, n-1))} style={{height: 20}}>-</button>
             </Tooltip>
             <Tooltip above tooltip="add worker">
-              <button onClick={() => setNWorkers(n => Math.min(n+1, 8))}>+</button>
+              <button onClick={() => setNWorkers(n => Math.min(n+1, 8))} style={{height: 20}}>+</button>
             </Tooltip>
           </Toolbar>
           &nbsp;
