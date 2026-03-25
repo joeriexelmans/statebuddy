@@ -10,21 +10,21 @@ import AddIcon from '@mui/icons-material/Add';
 
 import { RaisedEvent } from "@/statecharts/runtime_types";
 import { generateRandomHexString, myPureDeepAssign } from "@/util/util";
-import { Tooltip } from "../Components/Tooltip";
-import { useDisposable } from "../../hooks/useDisposable";
-import { SimulatorStuff } from "../hooks/useSimulator";
-import { DeepSetter, makeAllSetters, makePartialArraySetter, makePartialSetter, WithSetters } from "../makePartialSetter";
-import { Toolbar } from "../TopPanel/Toolbar";
 import { useLocalStorage } from "@/hooks/usePersistentState";
-import { TwoStateButton } from "../Components/TwoStateButton";
-import { DoubleClickButton } from "../Components/DoubleClickButton";
-import { ClickToCopy } from "../Components/ClickToCopy";
 import { useKicker } from "@/hooks/useKicker";
-import { StatusType, StatusIndicator, FlickeringStatusIndicator } from "../Components/StatusIndicator";
 import { Statechart } from "@/statecharts/abstract_syntax";
 import { EventTrigger } from "@/statecharts/label_ast";
 import traceStyles from "./Trace.module.css";
-import { MQTTTopicConfig, Event2MQTTMapping, MQTTState } from "../migrations/v1_types";
+import { useDisposable } from "../../../hooks/useDisposable";
+import { ClickToCopy } from "../../Components/ClickToCopy";
+import { DoubleClickButton } from "../../Components/DoubleClickButton";
+import { StatusType, StatusIndicator, FlickeringStatusIndicator } from "../../Components/StatusIndicator";
+import { Tooltip } from "../../Components/Tooltip";
+import { TwoStateButton } from "../../Components/TwoStateButton";
+import { SimulatorStuff } from "../../hooks/useSimulator";
+import { DeepSetter, makePartialArraySetter, WithSetters, makeAllSetters, makePartialSetter } from "../../makePartialSetter";
+import { MQTTTopicConfig, Event2MQTTMapping, MQTTState } from "../../migrations/v1_types";
+import { Toolbar } from "../../TopPanel/Toolbar";
 
 const defaultTopic: MQTTTopicConfig = {
   prefix: "",

@@ -1,16 +1,16 @@
-import { DoubleClickButton } from "../Components/DoubleClickButton";
-import { CoupledState } from "../hooks/useSimulator";
-import { PlantsState } from "../migrations/v1_types";
-import { DeepSetter, WithSetters } from "../makePartialSetter";
-import appStyles from "../App.module.css";
+import appStyles from "../../App.module.css";
 
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import { statebuddyPlants, UniversalPlantState } from "../plants";
-import { Plant } from "../Plant/Plant";
-import { Tooltip } from "../Components/Tooltip";
 import { RaisedEvent } from "@/statecharts/runtime_types";
 import { DEVSTrace } from "@/devs/trace";
 import { memo, useCallback, useMemo } from "react";
+import { DoubleClickButton } from "../../Components/DoubleClickButton";
+import { Tooltip } from "../../Components/Tooltip";
+import { CoupledState } from "../../hooks/useSimulator";
+import { DeepSetter } from "../../makePartialSetter";
+import { PlantsState } from "../../migrations/v1_types";
+import { Plant } from "../../Plant/Plant";
+import { statebuddyPlants, UniversalPlantState } from "../../plants";
 
 type ShowPlantsProps = {
   plantsState: PlantsState,

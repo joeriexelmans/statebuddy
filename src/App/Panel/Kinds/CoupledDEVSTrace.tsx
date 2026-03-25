@@ -1,28 +1,28 @@
 import styles from "./Trace.module.css";
-import appStyles from "../App.module.css";
+import appStyles from "../../App.module.css";
 
 import { SC2DEVSState } from "@/devs/sc2devs";
 import { DEVSTrace, DEVSTraceItem, DEVSTraceItemExtTransition, DEVSTraceItemInit, DEVSTraceItemIntTransition } from "@/devs/trace";
 import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
 import FlareIcon from '@mui/icons-material/Flare';
 import { Dispatch, memo, PropsWithChildren, SetStateAction, useEffect } from "react";
-import { Statechart, stateDescription, Transition } from "../../statecharts/abstract_syntax";
-import { TimeMode } from "../../statecharts/time";
-import { formatTime, jsonDeepEqual, memoizeOne, objectsEqual } from "../../util/util";
-import { Tooltip } from "../Components/Tooltip";
-import { CoupledState, StateBuddyTraceState } from "../hooks/useSimulator";
-import { PlantsState } from "../migrations/v1_types";
-import { DeepSetter, WithSetters } from "../makePartialSetter";
-import { PropertyStatusIndicator } from "./PropertyStatusIndicator";
-import { statebuddyPlants } from "../plants";
+import { Statechart, stateDescription, Transition } from "../../../statecharts/abstract_syntax";
+import { TimeMode } from "../../../statecharts/time";
+import { formatTime, jsonDeepEqual, memoizeOne, objectsEqual } from "../../../util/util";
+import { Tooltip } from "../../Components/Tooltip";
+import { CoupledState, StateBuddyTraceState } from "../../hooks/useSimulator";
+import { PlantsState } from "../../migrations/v1_types";
+import { DeepSetter, WithSetters } from "../../makePartialSetter";
+import { PropertyStatusIndicator } from "../../SideBar/PropertyStatusIndicator";
+import { statebuddyPlants } from "../../plants";
 import { RuntimeError } from "@/statecharts/interpreter";
 import { whoMadeExtTransition, whoMadeIntTransition } from "@/devs/coupled_trace";
 import NotInterestedIcon from '@mui/icons-material/NotInterested';
 import { actionLangValToText } from "@/statecharts/actionlang_prettyprinter";
-import { StatusType } from "../Components/StatusIndicator";
-import { PropertyTrace } from "./prepare_trace_types";
+import { StatusType } from "../../Components/StatusIndicator";
+import { PropertyTrace } from "../../SideBar/prepare_trace_types";
 import { RaisedEvent } from "@/statecharts/runtime_types";
-import { TraceView } from "../migrations/v2_types";
+import { TraceView } from "../../migrations/v2_types";
 
 type TraceProps = WithSetters<{
   currentTrace: StateBuddyTraceState,

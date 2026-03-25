@@ -4,13 +4,18 @@ import { AppState } from "../App.state";
 import { SimulatorStuff } from "../hooks/useSimulator";
 import { DeepSetter } from "../makePartialSetter";
 import { PanelType } from "../migrations/v1_types";
-import { autoConnect, Connect, useConnect } from "../SideBar/Connect";
-import { MQTT } from "../SideBar/MQTT";
-import { PlantsView } from "../SideBar/PlantsView";
 import { PropertyCheckStatus } from "../SideBar/prepare_trace_types";
-import { PropertyEditor } from "../SideBar/PropertyEditor";
-import { ShowAST, ShowInputEvents, ShowInternalEvents, ShowOutputEvents } from "../SideBar/ShowAST";
-import { Traces } from "../SideBar/Traces";
+
+// Panel types:
+import { Connect, useConnect } from "./Kinds/ConnectPanel";
+import { MQTT } from "./Kinds/MQTTPanel";
+import { PlantsView } from "./Kinds/PlantsPanel";
+import { PropertiesPanel } from "./Kinds/PropertiesPanel";
+import { TracesPanel } from "./Kinds/TracesPanel";
+import { InputEventsPanel } from "./Kinds/InputEventsPanel";
+import { InternalEventsPanel } from "./Kinds/InternalEventsPanel";
+import { OutputEventsPanel } from "./Kinds/OutputEventsPanel";
+import { StateTree, StateTreePanel } from "./Kinds/StateTreePanel";
 
 // Union of all the stuff any of the panels need to know about
 export type GlobalProps = {
@@ -52,11 +57,11 @@ export function panelItemInfo({type, globalProps: {appState, abstractSyntax}}: P
 export function PanelItem({type, globalProps: {appState, setAppState, abstractSyntax, simulator, propertyResults}, isExpanded}: PanelItemProps) {
 
   if (type === "state tree") {
-    return <>{abstractSyntax && <ShowAST root={abstractSyntax.root}/>}</>
+    return <>{abstractSyntax && <StateTreePanel root={abstractSyntax.root}/>}</>
   }
   else if (type === "input events") {
     return useMemo(() =>
-      <Columned>{abstractSyntax && <ShowInputEvents
+      <Columned>{abstractSyntax && <InputEventsPanel
         inputEvents={abstractSyntax.inputEvents}
         onRaise={simulator.simulatorCallbacks.onRaise}
         disabled={simulator.trace === undefined}
@@ -66,12 +71,12 @@ export function PanelItem({type, globalProps: {appState, setAppState, abstractSy
       [abstractSyntax?.inputEvents, simulator, appState.syntax.declaredInputs]);
   }
   else if (type === "internal events") {
-    return <Columned>{abstractSyntax && <ShowInternalEvents internalEvents={abstractSyntax.internalEvents}/>}</Columned>
+    return <Columned>{abstractSyntax && <InternalEventsPanel internalEvents={abstractSyntax.internalEvents}/>}</Columned>
   }
   else if (type === "output events") {
     return useMemo(() =>
       <Columned>{abstractSyntax &&
-        <ShowOutputEvents
+        <OutputEventsPanel
           outputEvents={[...abstractSyntax.outputEvents]}
           declaredOutputs={appState.syntax.declaredOutputs}
           setDeclaredOutputs={setAppState.setSyntax.setDeclaredOutputs}
@@ -102,7 +107,7 @@ export function PanelItem({type, globalProps: {appState, setAppState, abstractSy
     />}</>
   }
   else if (type === "properties") {
-    return <PropertyEditor
+    return <PropertiesPanel
       properties={appState.execution.properties}
       setProperties={setAppState.setExecution.setProperties}
       activeProperty={appState.execution.activeProperty}
@@ -116,7 +121,7 @@ export function PanelItem({type, globalProps: {appState, setAppState, abstractSy
     const propResults = propertyResults?.[appState.execution.activeProperty];
     const propTrace = propResults?.kind === "ok" && propResults.result || undefined;
     return <>{abstractSyntax &&
-      <Traces
+      <TracesPanel
         state={appState}
         setState={setAppState}
         abstractSyntax={abstractSyntax}

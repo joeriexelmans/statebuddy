@@ -1,5 +1,5 @@
 import { CSSProperties } from "react";
-import traceStyles from "../SideBar/Trace.module.css";
+import traceStyles from "../Panel/Kinds/Trace.module.css";
 
 export type StatusType = "ok" | "nok" | "pending";
 

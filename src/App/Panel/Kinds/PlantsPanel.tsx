@@ -1,9 +1,9 @@
-import { Tooltip } from "../Components/Tooltip"
-import { PlantsState } from "../migrations/v1_types"
-import { SimulatorStuff } from "../hooks/useSimulator"
-import { DeepSetter } from "../makePartialSetter"
-import { statebuddyPlants } from "../plants"
-import { Toolbar } from "../TopPanel/Toolbar"
+import { Tooltip } from "../../Components/Tooltip"
+import { PlantsState } from "../../migrations/v1_types"
+import { SimulatorStuff } from "../../hooks/useSimulator"
+import { DeepSetter } from "../../makePartialSetter"
+import { statebuddyPlants } from "../../plants"
+import { Toolbar } from "../../TopPanel/Toolbar"
 import { ShowPlants } from "./ShowPlants"
 
 export function PlantsView({plantsState, setPlantsState, simulator}: {plantsState: PlantsState, setPlantsState: DeepSetter<PlantsState>} & {simulator: SimulatorStuff}) {

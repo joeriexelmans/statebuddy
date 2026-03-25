@@ -1,14 +1,4 @@
-
-import { AppState } from "../App.state";
-import { DoubleClickButton } from "../Components/DoubleClickButton";
-import { MoveUpDown } from "../Components/MoveUpDown";
-import { Tooltip } from "../Components/Tooltip";
-import { TwoStateButton } from "../Components/TwoStateButton";
-import { WithSetters } from "../makePartialSetter";
-import { PropertyCheckStatus } from "./prepare_trace_types";
-import { PropertyStatusIndicator } from "./PropertyStatusIndicator";
-
-import styles from "../App.module.css";
+import styles from "../../App.module.css";
 
 // icons
 import AddIcon from '@mui/icons-material/Add';
@@ -16,9 +6,15 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import TableViewIcon from '@mui/icons-material/TableView';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+
 import { Dispatch, memo, SetStateAction } from "react";
-import { StatusType } from "../Components/StatusIndicator";
-import { PropertyCheckResult2 } from "./PropertyCheckResult";
+import { DoubleClickButton } from "../../Components/DoubleClickButton";
+import { MoveUpDown } from "../../Components/MoveUpDown";
+import { Tooltip } from "../../Components/Tooltip";
+import { TwoStateButton } from "../../Components/TwoStateButton";
+import { WithSetters } from "../../makePartialSetter";
+import { PropertyCheckStatus } from "../../SideBar/prepare_trace_types";
+import { PropertyCheckResult2 } from "../../SideBar/PropertyCheckResult";
 
 type PropertyEditorProps = WithSetters<{
   properties: string[],
@@ -28,7 +24,7 @@ type PropertyEditorProps = WithSetters<{
   propertyResults: PropertyCheckStatus[] | undefined;
 }
 
-export function PropertyEditor({
+export function PropertiesPanel({
   properties,
   setProperties,
   activeProperty,

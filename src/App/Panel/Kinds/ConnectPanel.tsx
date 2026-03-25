@@ -3,19 +3,18 @@ import connectStyles from "./Connect.module.css";
 
 import { Model2ModelConn } from "@/devs/coupled_devs"
 import { Statechart } from "@/statecharts/abstract_syntax";
-import { PlantsState } from "../migrations/v1_types";
 import traceStyles from "./Trace.module.css";
 import { memo, useCallback, useMemo } from "react";
-import { DeepSetter, WithSetters } from "../makePartialSetter";
 
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import { DoubleClickButton } from "../Components/DoubleClickButton";
-import { Tooltip } from "../Components/Tooltip";
-import { statebuddyPlants } from "../plants";
 import { objectsEqual } from "@/util/util";
 import { useLocalStorage } from "@/hooks/usePersistentState";
-import { Plant } from "../Plant/Plant";
+import { DoubleClickButton } from "../../Components/DoubleClickButton";
+import { Tooltip } from "../../Components/Tooltip";
+import { DeepSetter } from "../../makePartialSetter";
+import { PlantsState } from "../../migrations/v1_types";
+import { statebuddyPlants } from "../../plants";
 
 type ConnectProps = {
   abstractSyntax: Statechart,

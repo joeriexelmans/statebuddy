@@ -1,25 +1,26 @@
+import appStyles from "../../App.module.css";
+
 import CachedOutlinedIcon from '@mui/icons-material/CachedOutlined';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import FlareIcon from '@mui/icons-material/Flare';
 
-import { Tooltip } from "../Components/Tooltip";
-import { DeepSetter } from "../makePartialSetter";
+import { Tooltip } from "../../Components/Tooltip";
+import { DeepSetter } from "../../makePartialSetter";
 import { saveExtTransitions } from '@/devs/serialize_trace';
-import appStyles from "../App.module.css";
-import { MoveUpDown } from '../Components/MoveUpDown';
-import { DoubleClickButton } from '../Components/DoubleClickButton';
+import { MoveUpDown } from '../../Components/MoveUpDown';
+import { DoubleClickButton } from '../../Components/DoubleClickButton';
 import { Dispatch, memo, SetStateAction, useCallback } from 'react';
 import { getSimTime, } from '@/statecharts/time';
-import { SimulatorStuff, } from '../hooks/useSimulator';
+import { SimulatorStuff, } from '../../hooks/useSimulator';
 import { CoupledDEVSTrace } from './CoupledDEVSTrace';
 import { Statechart } from '@/statecharts/abstract_syntax';
-import { PropertyTrace } from "./prepare_trace_types";
-import { ResizeHandle } from '../Panel/ResizeHandle';
-import { NicelyCentered } from '../Components/NicelyCentered';
-import { AppState } from '../App.state';
-import { ExtTransitionTrace, SavedTraces } from '../migrations/v1_types';
-import { TraceView } from '../migrations/v2_types';
+import { PropertyTrace } from "../../SideBar/prepare_trace_types";
+import { ResizeHandle } from '../ResizeHandle';
+import { NicelyCentered } from '../../Components/NicelyCentered';
+import { AppState } from '../../App.state';
+import { ExtTransitionTrace, SavedTraces } from '../../migrations/v1_types';
+import { TraceView } from '../../migrations/v2_types';
 
 type TracesProps = {
   state: AppState,
@@ -30,7 +31,7 @@ type TracesProps = {
   isExpanded: boolean,
 };
 
-export function Traces({
+export function TracesPanel({
   state,
   setState,
   simulator,

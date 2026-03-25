@@ -273,3 +273,11 @@
   display: inline-block;
   color: var(--text-color);
 }
+
+.App .stateTree ul {
+  padding-left: 16px;
+}
+
+.App .stateTree li:hover:not(:has(li:hover)) {
+  background-color: var(--summary-hover-bg-color);
+}
