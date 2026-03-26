@@ -1,4 +1,4 @@
-import { allArrowParts, allHistoryParts, allRectParts, allTextParts, rountangleMinSize } from "@/statecharts/concrete_syntax";
+import { allArrowParts, allHistoryParts, allRectParts, allTextParts, rountangleMinSize, Text } from "@/statecharts/concrete_syntax";
 import { addV2D, area, isEntirelyWithin, normalizeRect, Rect2D, roundLine2D, roundRect2D, roundVec2D, scaleV2D, subtractV2D, translateLine, translateRect, Vec2D } from "@/util/geometry";
 import { getBBoxInSvgCoords } from "@/util/svg_helper";
 import { Dispatch, RefObject, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -241,7 +241,6 @@ export function useEditor(
   
   const onMouseMove = useCallback((e: {pageX: number, pageY: number}) => {
     const currentPointer = getCurrentPointer(e);
-    // setCursorPos(currentPointer);
     setDragging(prevPointer => {
       if (prevPointer) {
         // user was dragging / resizing
@@ -473,6 +472,19 @@ function dragPointLike(shape: {topLeft: Vec2D, uid: string}, pointerDelta: Vec2D
   }
 }
 
+function dragTexts(texts: Text[], selection: Map<string, Parts>, pointerDelta: Vec2D) {
+  let any = false;
+  const dragged = texts
+    .map(t => {
+      const result = dragPointLike(t, pointerDelta, selection);
+      if (result !== t) { any = true; }
+      return result;
+    })
+    .toSorted((a,b) => a.topLeft.y - b.topLeft.y);
+  if (any) return dragged;
+  return texts;
+}
+
 function drag({rountangles, diamonds, history, arrows, texts, selection, ...rest}: VisualEditorState, pointerDelta: Vec2D) {
   return {
     rountangles: rountangles
@@ -494,9 +506,7 @@ function drag({rountangles, diamonds, history, arrows, texts, selection, ...rest
       }
     }),
 
-    texts: texts
-      .map(t => dragPointLike(t, pointerDelta, selection))
-      .toSorted((a,b) => a.topLeft.y - b.topLeft.y),
+    texts: dragTexts(texts, selection, pointerDelta),
 
     selection,
     ...rest,

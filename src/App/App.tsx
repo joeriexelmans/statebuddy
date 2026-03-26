@@ -175,7 +175,7 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
           }
       }} />);
     }
-  }, [editorState, setModal, historyCallbacks.commit]);
+  }, [editorState.texts, setModal, historyCallbacks.commit]);
 
   const editorStuff = useEditor(
     appState.view.topPanel.mouseMap,

@@ -1,5 +1,5 @@
 import mqtt, { IClientOptions, MqttClient } from "mqtt";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 
 // icons
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
@@ -49,7 +49,7 @@ type MQTTProps = {
 
 const flickerDuration = 60; // ms
 
-export function MQTT({state, setState, simulator, abstractSyntax}: MQTTProps) {
+export const MQTT = memo(function MQTT({state, setState, simulator, abstractSyntax}: MQTTProps) {
   const {on, brokerUrl, topics, baseTopic, authentication, user, password, seePassword, enableCA, ca} = state;
 
   const [status, setStatus] = useState<StatusType>("pending");
@@ -281,7 +281,7 @@ export function MQTT({state, setState, simulator, abstractSyntax}: MQTTProps) {
       <AddIcon fontSize="small"/> add topic
     </button>
   </div>;
-}
+});
 
 function TopicSubscriptionView({fullTopic, client, clientStatus}: {fullTopic: string, client: MqttClient|null, clientStatus: StatusType}) {
   const [status, setStatus] = useState<StatusType>("pending");
