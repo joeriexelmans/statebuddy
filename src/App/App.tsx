@@ -132,7 +132,7 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
   // }, [appState.sideBar, editorState, modelSize, historyCallbacks]);
   const onSave = useCallback((modelName: string) => {
     downloadObjectAsJson(
-      {editorState, ...appState},
+      appState,
       modelName.replaceAll(' ','-')+'_'+formatDateTime(new Date()).replaceAll('/','-').replaceAll(':','-').replaceAll(' ','_')+".statebuddy.json");
   }, [editorState, appState]);
 
@@ -269,7 +269,7 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
                 checkProperty={checkProperty}
               />
             </BelowEditor>}
-          {editorState && appState.view.visibility.find &&
+          {appState.view.visibility.find &&
             <BelowEditor>
               <FindReplace
                 state={appState.find}
