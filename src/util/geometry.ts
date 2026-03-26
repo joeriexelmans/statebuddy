@@ -1,3 +1,4 @@
+import { Parts } from "../App/VisualEditor/VisualEditor.state";
 import { RectSide } from "../statecharts/concrete_syntax";
 
 export type Vec2D = {
@@ -92,7 +93,7 @@ export function lineBBox(line: Line2D, margin=0): Rect2D {
   }
 }
 
-export function translateRect(rect: Rect2D, parts: ReadonlySet<string>, delta: Vec2D): Rect2D {
+export function translateRect(rect: Rect2D, delta: Vec2D, parts: Parts) {
   return {
     topLeft: {
       x: parts.has("left") ? rect.topLeft.x + delta.x : rect.topLeft.x,
@@ -109,11 +110,18 @@ export function translateRect(rect: Rect2D, parts: ReadonlySet<string>, delta: V
   };
 }
 
-export function translateLine(line: Line2D, parts: ReadonlySet<string>, delta: Vec2D): Line2D {
+export function translateLine(line: Line2D, delta: Vec2D, parts: Parts): Line2D {
   return {
     start: parts.has("start") ? addV2D(line.start, delta) : line.start,
     end: parts.has("end") ? addV2D(line.end, delta) : line.end,
   };
+}
+
+export function translateAnchored(shape: {topLeft: Vec2D}, delta: Vec2D, parts: Parts) : {topLeft: Vec2D} {
+  if (parts.size === 0) return shape;
+  return {
+    topLeft: addV2D(shape.topLeft, delta),
+  }
 }
 
 // intersection point of two lines

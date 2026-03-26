@@ -1,17 +1,17 @@
-import { allArrowParts, allHistoryParts, allRectParts, allTextParts, rountangleMinSize, Text } from "@/statecharts/concrete_syntax";
-import { addV2D, area, isEntirelyWithin, normalizeRect, Rect2D, roundLine2D, roundRect2D, roundVec2D, scaleV2D, subtractV2D, translateLine, translateRect, Vec2D } from "@/util/geometry";
+import { ToolMode, ToolSelectState } from "@/App/migrations/v1_types";
+import { useShortcuts } from "@/hooks/useShortcuts";
+import { UndoCallbacks } from "@/hooks/useUndo";
+import { allArrowParts, allHistoryParts, allRectParts, allTextParts, rountangleMinSize } from "@/statecharts/concrete_syntax";
+import { isEntirelyWithin, normalizeRect, Rect2D, scaleV2D, subtractV2D, Vec2D } from "@/util/geometry";
 import { getBBoxInSvgCoords } from "@/util/svg_helper";
 import { Dispatch, RefObject, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { DeepSetter } from "../../makePartialSetter";
 import { MIN_ROUNTANGLE_SIZE } from "../../parameters";
 import { SelectingState } from "../Selection";
-import { useShortcuts } from "@/hooks/useShortcuts";
+import { translateSelection } from "../transformations/translate";
 import styles from "../VisualEditor.module.css";
+import { Selection, VisualEditorState } from "../VisualEditor.state";
 import { CopyPasteCallbacks, useCopyPaste } from "./useCopyPaste";
-import { VisualEditorState, Parts } from "../VisualEditor.state";
-import { Selection } from "../VisualEditor.state";
-import { UndoCallbacks } from "@/hooks/useUndo";
-import { ToolMode, ToolSelectState } from "@/App/migrations/v1_types";
-import { DeepSetter } from "../../makePartialSetter";
 
 export type EditorStuff = {
   onMouseDown: (e: React.MouseEvent<SVGSVGElement, MouseEvent>) => void;
@@ -152,7 +152,7 @@ export function useEditor(
             kind: mode,
           }],
           nextID: state.nextID+1,
-          selection: new Map([[newID, new Parts(["bottom", "right"])]]),
+          selection: new Map([[newID, new Set(["bottom", "right"])]]),
         };
       }
       else if (mode === "pseudo") {
@@ -164,7 +164,7 @@ export function useEditor(
             size: MIN_ROUNTANGLE_SIZE,
           }],
           nextID: state.nextID+1,
-          selection: new Map([[newID, new Parts(["bottom", "right"])]]),
+          selection: new Map([[newID, new Set(["bottom", "right"])]]),
         };
       }
       else if (mode === "shallow" || mode === "deep") {
@@ -176,7 +176,7 @@ export function useEditor(
             topLeft: currentPointer,
           }],
           nextID: state.nextID+1,
-          selection: new Map([[newID, new Parts(["history"])]]),
+          selection: new Map([[newID, new Set(["history"])]]),
         }
       }
       else if (mode === "transition") {
@@ -188,7 +188,7 @@ export function useEditor(
             end: currentPointer,
           }],
           nextID: state.nextID+1,
-          selection: new Map([[newID, new Parts(["end"])]]),
+          selection: new Map([[newID, new Set(["end"])]]),
         }
       }
       else if (mode === "text") {
@@ -200,7 +200,7 @@ export function useEditor(
             topLeft: currentPointer,
           }],
           nextID: state.nextID+1,
-          selection: new Map([[newID, new Parts(["text"])]]),
+          selection: new Map([[newID, new Set(["text"])]]),
         }
       }
       throw new Error("unreachable, mode=" + mode); // shut up typescript
@@ -247,7 +247,7 @@ export function useEditor(
         const pointerDelta = subtractV2D(currentPointer, prevPointer);
         // update state in next event cycle ()
         setTimeout(() => { // <-- bit hacky, but React complains if we call replace directly.
-          replace(state => drag(state, pointerDelta));
+          replace(state => translateSelection(state, pointerDelta));
         });
         return currentPointer;
       }
@@ -437,7 +437,7 @@ function computeSelection(ss: SelectingState, refSVG: {current: SVGSVGElement | 
       const [uid, parts] = eventTargetToParts(shape);
       if (uid) {
         for (const part of parts) {
-          selection.set(uid, (selection.get(uid) as Parts || new Parts()).add(part));
+          selection.set(uid, (selection.get(uid) as Set<string> || new Set()).add(part));
         }
       }
     }
@@ -446,73 +446,7 @@ function computeSelection(ss: SelectingState, refSVG: {current: SVGSVGElement | 
   return new Map();
 }
 
-const getParts = (selection: Selection, uid: string) => {
-  return selection.get(uid) || new Parts();
-}
 
-function dragRectLike(shape: Rect2D & {uid: string}, pointerDelta: Vec2D, selection: Selection) {
-  const parts = getParts(selection, shape.uid);
-  if (parts.size === 0)
-    return shape;
-  const result = {
-    ...shape,
-    ...translateRect(shape, parts, pointerDelta),
-  };
-  return result;
-}
-
-function dragPointLike(shape: {topLeft: Vec2D, uid: string}, pointerDelta: Vec2D, selection: Selection) {
-  if (getParts(selection, shape.uid).size === 0) {
-    return shape; // nothing to move
-  }
-  const {topLeft, ...rest} = shape;
-  return {
-    ...rest,
-    topLeft: addV2D(topLeft, pointerDelta),
-  }
-}
-
-function dragTexts(texts: Text[], selection: Map<string, Parts>, pointerDelta: Vec2D) {
-  let any = false;
-  const dragged = texts
-    .map(t => {
-      const result = dragPointLike(t, pointerDelta, selection);
-      if (result !== t) { any = true; }
-      return result;
-    })
-    .toSorted((a,b) => a.topLeft.y - b.topLeft.y);
-  if (any) return dragged;
-  return texts;
-}
-
-function drag({rountangles, diamonds, history, arrows, texts, selection, ...rest}: VisualEditorState, pointerDelta: Vec2D) {
-  return {
-    rountangles: rountangles
-      .map(r => dragRectLike(r, pointerDelta, selection))
-      .toSorted((a,b) => area(b) - area(a)), // sort: smaller rountangles are drawn on top
-
-    diamonds: diamonds.map(d => dragRectLike(d, pointerDelta, selection)),
-
-    history: history.map(h => dragPointLike(h, pointerDelta, selection)),
-
-    arrows: arrows.map(a => {
-      const selectedParts = getParts(selection, a.uid);
-      if (selectedParts.size === 0) {
-        return a;
-      }
-      return {
-        ...a,
-        ...translateLine(a, selectedParts, pointerDelta),
-      }
-    }),
-
-    texts: dragTexts(texts, selection, pointerDelta),
-
-    selection,
-    ...rest,
-
-  } as VisualEditorState;
-}
 
 function eventTargetToParts(target: EventTarget|null) {
   while (target) {
@@ -522,7 +456,7 @@ function eventTargetToParts(target: EventTarget|null) {
         // @ts-ignore: dataset property unknown to TypeScript
         target.dataset.uid as string,
         // @ts-ignore: dataset property unknown to TypeScript
-        new Parts(target.dataset.parts?.split(' ').filter((p:string) => p!=="") || []),
+        new Set(target.dataset.parts?.split(' ').filter((p:string) => p!=="") || []) as Parts,
         // @ts-ignore: classList unknown
         target.classList.contains(styles.helper) as boolean,
       ] as const;
@@ -530,7 +464,7 @@ function eventTargetToParts(target: EventTarget|null) {
     // @ts-ignore
     target = target.parentNode;
   }
-  return [undefined, new Parts(), false] as const;
+  return [undefined, new Set(), false] as const;
 }
 
 export function mergeSelections(a: Selection, b: Selection) {

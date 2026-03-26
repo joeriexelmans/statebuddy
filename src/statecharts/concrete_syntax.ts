@@ -66,10 +66,10 @@ export function roundCS(cs: ConcreteSyntax): ConcreteSyntax {
 export type RectSide = "left" | "top" | "right" | "bottom";
 export type ArrowPart = "start" | "end";
 
-export const allRectParts: Parts = new Parts(["left", "top", "bottom", "right"]);
-export const allArrowParts: Parts = new Parts(["start", "end"]);
-export const allTextParts: Parts = new Parts(["text"]);
-export const allHistoryParts: Parts = new Parts(["history"]);
+export const allRectParts: Parts = new Set(["left", "top", "bottom", "right"]);
+export const allArrowParts: Parts = new Set(["start", "end"]);
+export const allTextParts: Parts = new Set(["text"]);
+export const allHistoryParts: Parts = new Set(["history"]);
 
 export const initialEditorState: VisualEditorState = {
   rountangles: [{
