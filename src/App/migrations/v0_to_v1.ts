@@ -1,14 +1,13 @@
 import { myPureDeepAssign } from "@/util/util";
 import { AppStateV0 } from "./v0_types";
 import { AppStateV1 } from "./v1_types";
-import { defaultAppStateV1 } from "./v1_default";
 import { DeepPartial } from "@/util/deep_partial";
 import { defaultAppStateV0 } from "./v0_default";
 
-export function v0_to_v1(state: AppStateV0): AppStateV1 {
+export function v0_to_v1(state: DeepPartial<AppStateV0>): DeepPartial<AppStateV1> {
   const v0full = myPureDeepAssign(defaultAppStateV0, state) as AppStateV0;
 
-  if (state.savedTraces.length > 0) {
+  if (state.savedTraces && state.savedTraces.length > 0) {
     alert("Notice: you will lose your saved traces because their migration from StateBuddy v1 to v2 hasn't been implemented yet!");
   }
 
@@ -90,9 +89,6 @@ export function v0_to_v1(state: AppStateV0): AppStateV1 {
     leftPanelWidth: v0full.sidePanelWidth,
     rightPanelWidth: v0full.sidePanelWidth,
   }
-  return myPureDeepAssign(
-    defaultAppStateV1, // <-- fill in missing values
 
-    // try to recover as much as possible from our old state:
-    recoveredState);
+  return recoveredState;
 }

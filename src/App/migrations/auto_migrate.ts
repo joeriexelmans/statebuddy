@@ -7,6 +7,8 @@ import { v1_to_v2 } from "./v1_to_v2";
 import { AppStateV2, VersionedAppState } from "./v2_types";
 import { v2_to_v3 } from "./v2_to_v3";
 import { AppStateV3 } from "./v3_types";
+import { myPureDeepAssign } from "../../util/util";
+import { defaultAppStateV3 } from "./v3_default";
 
 export type AppStateUnknownVersion = AppStateV0 | AppStateV1 | AppStateV2 | AppStateV3;
 
@@ -33,9 +35,12 @@ export function autoMigrate(appState: AppStateUnknownVersion): AppState {
   const version = detectVersion(appState);
   console.log(`detected app state version v${version}`);
   // @ts-ignore
-  return migrations.slice(version).reduce((acc, migrate, i) => {
+  const v3 = migrations.slice(version).reduce((acc, migrate, i) => {
     console.log(`migrating app state v${version+i} -> v${version+i+1}`);
     // @ts-ignore
     return migrate(acc)
   }, appState);
+
+  // finally, add all missing fields
+  return myPureDeepAssign(defaultAppStateV3, v3);
 }

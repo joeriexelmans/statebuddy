@@ -1,11 +1,11 @@
+import { DeepPartial } from "../../util/deep_partial";
 import { myPureDeepAssign } from "../../util/util";
 import { deserializeSelection } from "../VisualEditor/VisualEditor.state";
 import { defaultAppStateV2 } from "./v2_default";
 import { AppStateV2 } from "./v2_types";
-import { defaultAppStateV3 } from "./v3_default";
 import { AppStateV3 } from "./v3_types";
 
-export function v2_to_v3(state: AppStateV2): AppStateV3 {
+export function v2_to_v3(state: DeepPartial<AppStateV2>): DeepPartial<AppStateV3> {
   const {editorState: {selection, ...editorState}, ...fullV2} = myPureDeepAssign(defaultAppStateV2, state) as AppStateV2;
 
   const migrated = {
@@ -22,7 +22,7 @@ export function v2_to_v3(state: AppStateV2): AppStateV3 {
       },
     },
     stateVersion: 3,
-  }
+  } as DeepPartial<AppStateV3>;
 
-  return myPureDeepAssign(defaultAppStateV3, migrated);
+  return migrated
 }

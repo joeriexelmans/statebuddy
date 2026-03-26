@@ -5,7 +5,6 @@ import { Dispatch, PropsWithChildren, ReactElement, SetStateAction, useCallback,
 import { useDisplayTime } from "@/hooks/useDisplayTime";
 import { useLocalStorage } from "@/hooks/usePersistentState";
 import { useMtlWorkerPool } from "@/mtl-checker/useMtlWorkerPool";
-import { initialEditorState } from "@/statecharts/concrete_syntax";
 import { downloadObjectAsJson } from "@/util/download_json";
 import { formatDateTime } from "@/util/util";
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';

@@ -2,9 +2,9 @@ import { myPureDeepAssign } from "@/util/util";
 import { AppStateV1 } from "./v1_types";
 import { AppStateV2 } from "./v2_types";
 import { defaultAppStateV1 } from "./v1_default";
-import { defaultAppStateV2 } from "./v2_default";
+import { DeepPartial } from "../../util/deep_partial";
 
-export function v1_to_v2(state: AppStateV1): AppStateV2 {
+export function v1_to_v2(state: DeepPartial<AppStateV1>): DeepPartial<AppStateV2> {
   const fullV1 = myPureDeepAssign(defaultAppStateV1, state) as AppStateV1;
 
   const migrated = {
@@ -54,7 +54,7 @@ export function v1_to_v2(state: AppStateV1): AppStateV2 {
         height: fullV1.sideBar.traces.height,
       },
     },
-  } as AppStateV2;
+  } as DeepPartial<AppStateV2>;
 
-  return myPureDeepAssign(defaultAppStateV2, migrated);
+  return migrated;
 }
