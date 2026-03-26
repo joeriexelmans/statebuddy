@@ -78,7 +78,6 @@ export function PersistentApp() {
       // const jsonZipBuf = (await deflateString(JSON.stringify(compressed)));
       // console.log('JSON zipped', jsonZipBuf.byteLength, 'bytes');
 
-
       return cborZipBuf;
     },
 
@@ -99,7 +98,9 @@ export function PersistentApp() {
           throw new Error("failed to parse app state (as CBOR or JSON)");
         }
       }
+      console.log({stateUnknown});
       const migrated = autoMigrate(stateUnknown);
+      console.log({migrated});
       return myPureDeepAssign(defaultAppState, migrated);
     },
 

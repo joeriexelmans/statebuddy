@@ -90,7 +90,7 @@ export function useEditor(
       toGrow = state.selection;
     }
     else {
-      toGrow = new Selection();
+      toGrow = new Map();
     }
     const startMakingSelection = () => {
       setDragging(null);
@@ -110,7 +110,7 @@ export function useEditor(
         if (isHelper) {
           // it's only a helper
           // -> update selection by the part and start dragging it
-          commitSelection(() => new Selection([
+          commitSelection(() => new Map([
             ...toGrow,
             [uid, (toGrow.get(uid) || new Set()).union(parts)],
           ]));
@@ -151,7 +151,7 @@ export function useEditor(
             kind: mode,
           }],
           nextID: state.nextID+1,
-          selection: new Selection([[newID, new Parts(["bottom", "right"])]]),
+          selection: new Map([[newID, new Parts(["bottom", "right"])]]),
         };
       }
       else if (mode === "pseudo") {
@@ -163,7 +163,7 @@ export function useEditor(
             size: MIN_ROUNTANGLE_SIZE,
           }],
           nextID: state.nextID+1,
-          selection: new Selection([[newID, new Parts(["bottom", "right"])]]),
+          selection: new Map([[newID, new Parts(["bottom", "right"])]]),
         };
       }
       else if (mode === "shallow" || mode === "deep") {
@@ -175,7 +175,7 @@ export function useEditor(
             topLeft: currentPointer,
           }],
           nextID: state.nextID+1,
-          selection: new Selection([[newID, new Parts(["history"])]]),
+          selection: new Map([[newID, new Parts(["history"])]]),
         }
       }
       else if (mode === "transition") {
@@ -187,7 +187,7 @@ export function useEditor(
             end: currentPointer,
           }],
           nextID: state.nextID+1,
-          selection: new Selection([[newID, new Parts(["end"])]]),
+          selection: new Map([[newID, new Parts(["end"])]]),
         }
       }
       else if (mode === "text") {
@@ -199,7 +199,7 @@ export function useEditor(
             topLeft: currentPointer,
           }],
           nextID: state.nextID+1,
-          selection: new Selection([[newID, new Parts(["text"])]]),
+          selection: new Map([[newID, new Parts(["text"])]]),
         }
       }
       throw new Error("unreachable, mode=" + mode); // shut up typescript
@@ -295,7 +295,7 @@ export function useEditor(
             const [uid, parts] = eventTargetToParts(e.target);
             if (uid) {
               if (uid) {
-                replaceSelection(oldSelection => new Selection([
+                replaceSelection(oldSelection => new Map([
                   ...oldSelection,
                   [uid, (oldSelection.get(uid) || new Set()).union(parts)],
                 ]));
@@ -317,7 +317,7 @@ export function useEditor(
     setDragging(null);
     commit(state => ({
       ...state,
-      selection: new Selection([
+      selection: new Map([
         ...state.rountangles.map(r => [r.uid, allRectParts] as const),
         ...state.diamonds.map(d => [d.uid, allRectParts] as const),
         ...state.arrows.map(a => [a.uid, allArrowParts] as const),
@@ -430,7 +430,7 @@ function computeSelection(ss: SelectingState, refSVG: {current: SVGSVGElement | 
       return isEntirelyWithin(scaledBBox, normalizedSS);
     }).filter(el => !el.classList.contains(styles.corner)); // <-- remove corner elements because they mess up the selection
     
-    const selection: Selection = new Selection();
+    const selection: Selection = new Map();
     for (const shape of shapesInSelection) {
       const [uid, parts] = eventTargetToParts(shape);
       if (uid) {
@@ -441,7 +441,7 @@ function computeSelection(ss: SelectingState, refSVG: {current: SVGSVGElement | 
     }
     return selection;
   }
-  return new Selection();
+  return new Map();
 }
 
 const getParts = (selection: Selection, uid: string) => {
@@ -521,7 +521,7 @@ function eventTargetToParts(target: EventTarget|null) {
 }
 
 export function mergeSelections(a: Selection, b: Selection) {
-  const result = new Selection(a);
+  const result = new Map(a);
   for (const [uid, parts] of b.entries()) {
     result.set(uid, (result.get(uid) || new Set()).union(parts));
   }

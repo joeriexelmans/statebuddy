@@ -1,5 +1,5 @@
 import mqtt, { IClientOptions, MqttClient } from "mqtt";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 // icons
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
@@ -365,7 +365,7 @@ function ScOutEventSubscriptionView({simulator, fullTopic, client, clientStatus,
 }
 
 function TopicView({topic, setTopic, client, clientStatus, baseTopic, onDelete, simulator, abstractSyntax}: WithSetters<{topic: MQTTTopicConfig}> & {client: MqttClient|null, clientStatus: StatusType, baseTopic: string, onDelete: () => void, simulator: SimulatorStuff, abstractSyntax: Statechart}) {
-  const setters = makeAllSetters(setTopic, Object.keys(defaultTopic) as (keyof MQTTTopicConfig)[]);
+  const setters = useMemo(() => makeAllSetters(setTopic, Object.keys(defaultTopic) as (keyof MQTTTopicConfig)[]), [setTopic]);
   const fullPrefix = baseTopic+topic.prefix;
 
   return <fieldset>

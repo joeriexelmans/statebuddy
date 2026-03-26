@@ -4,15 +4,12 @@ import { PropertyCheckStatus } from "@/App/SideBar/prepare_trace_types";
 
 import { checkProperty, initPyodide } from "./mtl_pyodide";
 
-console.log('booting mtl worker...');
-
 const promise = initPyodide();
 
 promise.then(() => {
-  console.log('mtl worker ready');
   postMessage(null);
 }).catch(err => {
-  console.error('error booting pyodide:', err);
+  console.error('mtl worker: error booting:', err);
 });
 
 onmessage = ({data: {reqId, req: {property, trace}}}: {data: WebWorkerRequest<MtlReq>}) => {  
@@ -21,6 +18,6 @@ onmessage = ({data: {reqId, req: {property, trace}}}: {data: WebWorkerRequest<Mt
     const wwRes: WebWorkerResponse<PropertyCheckStatus> = {reqId, res};
     postMessage(wwRes);
   }).catch(err => {
-    console.error('error checking property:', err);
+    console.error('mtl worker: error checking property:', err);
   })
 };

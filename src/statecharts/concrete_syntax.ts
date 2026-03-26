@@ -87,7 +87,7 @@ export const initialEditorState: VisualEditorState = {
   }],
   texts:[],
   nextID: 1,
-  selection: new Selection(),
+  selection: new Map(),
 };
 
 export const emptyEditorState: VisualEditorState = {
@@ -97,7 +97,7 @@ export const emptyEditorState: VisualEditorState = {
   arrows:[],
   texts:[],
   nextID: 1,
-  selection: new Selection(),
+  selection: new Map(),
 }
 
 // used to find which rountangle an arrow connects to (src/tgt)

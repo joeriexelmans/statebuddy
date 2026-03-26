@@ -7,13 +7,12 @@ export type VisualEditorState<SelectionType = Selection> = ConcreteSyntax & {
 
 export class Parts extends Set<string> {}
 
-export class Selection extends Map<string, Parts> {
-}
+export type Selection = Map<string, Parts>;
 
 export type SerializableSelection = (readonly [string, string] | {uid: string, part: string})[];
 
 export function deserializeSelection(selection: SerializableSelection) {
-  const result = new Selection();
+  const result = new Map();
   for (const item of selection) {
     // i kind of fucked things up by introducing over time 2 ways to serialize the selection, meaning that there are two formats that have to be supported (for backwards compatibility):
     let uid, part;

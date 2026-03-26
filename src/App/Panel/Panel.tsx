@@ -60,7 +60,7 @@ type ExpandablePanelItemProps = WithSetters<{
 }
 
 export function ExpandablePanelItem({state, setState, globalProps, extraButtons}: ExpandablePanelItemProps) {
-  const setExpanded = makePartialSetter(setState, 'expanded');
+  const setExpanded = useMemo(() => makePartialSetter(setState, 'expanded'), [setState]);
   const info = panelItemInfo({type: state.type, globalProps, isExpanded: state.expanded});
   return <PersistentDetails
     state={state.expanded}

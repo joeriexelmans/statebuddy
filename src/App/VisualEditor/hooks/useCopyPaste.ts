@@ -57,7 +57,7 @@ export const pasteData = (data: string, where: Vec2D, setState: Dispatch<(v:Visu
             uid: (nextID++).toString(),
             topLeft: addV2D(h.topLeft, offset),
           }))
-          const newSelection = new Selection([
+          const newSelection = new Map([
             ...copiedRountangles.map(r => [r.uid, allRectParts] as const),
             ...copiedDiamonds.map(d => [d.uid, allRectParts] as const),
             ...copiedArrows.map(a => [a.uid, allArrowParts] as const),
@@ -129,7 +129,7 @@ export function useCopyPaste(state: VisualEditorState, commit: Dispatch<(v:Visua
         history: state.history.filter(y => ! es.history.some(x => x.uid === y.uid)),
         arrows: state.arrows.filter(y => ! es.arrows.some(x => x.uid === y.uid)),
         texts: state.texts.filter(y => ! es.texts.some(x => x.uid === y.uid)),
-        selection: new Selection([...state.selection].filter(([uid]) =>
+        selection: new Map([...state.selection].filter(([uid]) =>
             !Object.values(es).some(s => s.some(s => s.uid === uid)))),
       };
     });
