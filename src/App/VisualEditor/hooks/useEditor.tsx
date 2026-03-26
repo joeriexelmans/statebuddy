@@ -1,5 +1,5 @@
 import { allArrowParts, allHistoryParts, allRectParts, allTextParts, rountangleMinSize } from "@/statecharts/concrete_syntax";
-import { addV2D, area, isEntirelyWithin, normalizeRect, Rect2D, roundLine2D, roundRect2D, roundVec2D, scaleV2D, subtractV2D, transformLine, transformRect, Vec2D } from "@/util/geometry";
+import { addV2D, area, isEntirelyWithin, normalizeRect, Rect2D, roundLine2D, roundRect2D, roundVec2D, scaleV2D, subtractV2D, translateLine, translateRect, Vec2D } from "@/util/geometry";
 import { getBBoxInSvgCoords } from "@/util/svg_helper";
 import { Dispatch, RefObject, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MIN_ROUNTANGLE_SIZE } from "../../parameters";
@@ -454,7 +454,7 @@ function dragRectLike(shape: Rect2D & {uid: string}, pointerDelta: Vec2D, select
     return shape;
   const result = {
     ...shape,
-    ...transformRect(shape, parts, pointerDelta),
+    ...translateRect(shape, parts, pointerDelta),
   };
   return result;
 }
@@ -487,7 +487,7 @@ function drag({rountangles, diamonds, history, arrows, texts, selection, ...rest
       }
       return {
         ...a,
-        ...roundLine2D(transformLine(a, selectedParts, pointerDelta)),
+        ...translateLine(a, selectedParts, pointerDelta),
       }
     }),
 

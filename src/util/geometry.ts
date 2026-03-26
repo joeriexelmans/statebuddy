@@ -92,7 +92,7 @@ export function lineBBox(line: Line2D, margin=0): Rect2D {
   }
 }
 
-export function transformRect(rect: Rect2D, parts: ReadonlySet<string>, delta: Vec2D): Rect2D {
+export function translateRect(rect: Rect2D, parts: ReadonlySet<string>, delta: Vec2D): Rect2D {
   return {
     topLeft: {
       x: parts.has("left") ? rect.topLeft.x + delta.x : rect.topLeft.x,
@@ -109,10 +109,10 @@ export function transformRect(rect: Rect2D, parts: ReadonlySet<string>, delta: V
   };
 }
 
-export function transformLine(line: Line2D, parts: ReadonlySet<string>, delta: Vec2D): Line2D {
+export function translateLine(line: Line2D, parts: ReadonlySet<string>, delta: Vec2D): Line2D {
   return {
-    start: parts.has("start") ? addV2D(line.start, {x: delta.x, y: delta.y}) : line.start,
-    end: parts.has("end") ? addV2D(line.end, {x: delta.x, y: delta.y}) : line.end,
+    start: parts.has("start") ? addV2D(line.start, delta) : line.start,
+    end: parts.has("end") ? addV2D(line.end, delta) : line.end,
   };
 }
 
