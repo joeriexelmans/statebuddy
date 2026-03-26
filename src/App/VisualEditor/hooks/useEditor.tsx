@@ -11,6 +11,7 @@ import { VisualEditorState, Parts } from "../VisualEditor.state";
 import { Selection } from "../VisualEditor.state";
 import { UndoCallbacks } from "@/hooks/useUndo";
 import { ToolMode, ToolSelectState } from "@/App/migrations/v1_types";
+import { DeepSetter } from "../../makePartialSetter";
 
 export type EditorStuff = {
   onMouseDown: (e: React.MouseEvent<SVGSVGElement, MouseEvent>) => void;
@@ -20,7 +21,6 @@ export type EditorStuff = {
   copyPasteCallbacks: CopyPasteCallbacks;
 
   newSelection: Selection;
-  selectingState: SelectingState;
   renderSelection: Selection,
 };
 
@@ -28,14 +28,15 @@ export type EditorStuff = {
 export function useEditor(
   mouseMap: ToolSelectState,
   zoomPercentage: number,
-  state: VisualEditorState,  
+  state: VisualEditorState,
+  setState: DeepSetter<VisualEditorState>,
   historyCallbacks: UndoCallbacks<VisualEditorState>,
   beginEdit: (uid: string) => void,
 ) {
   const zoom = zoomPercentage / 100;
   
   // Not null while the user is making a selection (rendered as a transparent dashed-border blue box).
-  const [selectingState, setSelectingState] = useState<SelectingState>(null);
+  const setMakingSelection = setState.setMakingSelection as Dispatch<SetStateAction<Rect2D|undefined>>;
   
   // Whether a bunch of selected shapes are being dragged with the mouse cursor.
   // if not dragging: null
@@ -94,7 +95,7 @@ export function useEditor(
     }
     const startMakingSelection = () => {
       setDragging(null);
-      setSelectingState({
+      setMakingSelection({
         topLeft: currentPointer,
         size: {x: 0, y: 0},
       });
@@ -253,7 +254,7 @@ export function useEditor(
       }
       return null;
     })
-    setSelectingState(ss => {
+    setMakingSelection(ss => {
       if (ss) {
         const selectionSize = subtractV2D(currentPointer, ss!.topLeft);
         return {
@@ -263,55 +264,59 @@ export function useEditor(
       }
       return ss;
     });
-  }, [replace, getCurrentPointer, setSelectingState, setDragging]);
+  }, [replace, getCurrentPointer, setMakingSelection, setDragging]);
   
   const onMouseUp = useCallback((e: {target: any, pageX: number, pageY: number}) => {
-    setDragging(dragging => {
-      if (dragging) {
-        // we were moving / resizing
-        
-        // do not persist sizes smaller than 40x40
-        replace(state => {
-          return {
-            ...state,
-            rountangles: state.rountangles.map(r => ({
-              ...r,
-              size: rountangleMinSize(r.size),
-            })),
-            diamonds: state.diamonds.map(d => ({
-              ...d,
-              size: rountangleMinSize(d.size),
-            }))
-          };
-        });
-      }
-      setSelectingState(selectingState => {
-        if (selectingState) {
-          // we were making a selection
-          if (selectingState.size.x === 0 && selectingState.size.y === 0) {
-            // it was only a click (mouse didn't move)
-            // -> select the clicked part(s)
-            // (btw, this is only here to allow selecting rountangles by clicking inside them, all other shapes can be selected entirely by their 'helpers')
-            const [uid, parts] = eventTargetToParts(e.target);
+    // do not persist sizes smaller than 40x40
+    replace(state => {
+      return {
+        ...state,
+        rountangles: state.rountangles.map(r => ({
+          ...r,
+          size: rountangleMinSize(r.size),
+        })),
+        diamonds: state.diamonds.map(d => ({
+          ...d,
+          size: rountangleMinSize(d.size),
+        }))
+      };
+    });
+    setState._setShallow(state => {
+      const {selection, makingSelection, ...rest} = state;
+      if (makingSelection) {
+        // we were making a selection
+        if (makingSelection.size.x === 0 && makingSelection.size.y === 0) {
+          // it was only a click (mouse didn't move)
+          // -> select the clicked part(s)
+          // (btw, this is only here to allow selecting rountangles by clicking inside them, all other shapes can be selected entirely by their 'helpers')
+          const [uid, parts] = eventTargetToParts(e.target);
+          if (uid) {
             if (uid) {
-              if (uid) {
-                replaceSelection(oldSelection => new Map([
-                  ...oldSelection,
-                  [uid, (oldSelection.get(uid) || new Set()).union(parts)],
-                ]));
+              return {
+                selection: new Map([
+                  ...selection,
+                  [uid, (selection.get(uid) || new Set()).union(parts)],
+                ]),
+                ...rest,
               }
             }
           }
-          else {
-            // user made a 'normal' selection:
-            replaceSelection(oldSelection => mergeSelections(oldSelection, newSelection(selectingState)));
-          }
         }
-        return null; // <-- no longer making a selection
-      })
-      return null; // <-- no longer dragging
-    })
-  }, [replace, replaceSelection, setDragging, setSelectingState, refSVG.current, newSelection]);
+        else {
+          // user made a 'normal' selection:
+          return {
+            selection: mergeSelections(selection, newSelection(makingSelection)),
+            ...rest,
+          };
+        }
+      }
+      return {
+        selection,
+        ...rest,
+      };
+    });
+    setDragging(null); // <-- no longer dragging
+  }, [replace, replaceSelection, setDragging, setMakingSelection, refSVG.current, newSelection]);
 
   const onSelectAll = useCallback(() => {
     setDragging(null);
@@ -333,8 +338,9 @@ export function useEditor(
       rountangles: state.rountangles.map(r => state.selection.has(r.uid) ? ({...r, kind}) : r),
     }));
   }, [commit]);
-  
-  const renderSelection = useMemo(() => mergeSelections(state.selection, newSelection(selectingState)), [state.selection, newSelection, selectingState]);
+
+  const aboutToSelect = useMemo(() => newSelection(state.makingSelection), [state.makingSelection]);
+  const renderSelection = useMemo(() => mergeSelections(state.selection, aboutToSelect), [state.selection, newSelection, aboutToSelect]);
   
   // copy/paste depends on 'useMouse' (it updates the 'dragging' state on paste)
   const copyPasteCallbacks = useCopyPaste(
@@ -391,7 +397,6 @@ export function useEditor(
   //   renderSelection,
   // });
 
-  const returnSelection = useMemo(() => newSelection(selectingState), [selectingState]);
   
   return useMemo(() => ({
     onMouseDown,
@@ -399,8 +404,7 @@ export function useEditor(
     setDragging,
     refSVG,
     copyPasteCallbacks,
-    newSelection: returnSelection,
-    selectingState,
+    newSelection: aboutToSelect,
     renderSelection,
   }), [
     onMouseDown,
@@ -408,8 +412,7 @@ export function useEditor(
     setDragging,
     refSVG,
     copyPasteCallbacks,
-    returnSelection,
-    selectingState,
+    aboutToSelect,
     renderSelection,
   ]);
 };

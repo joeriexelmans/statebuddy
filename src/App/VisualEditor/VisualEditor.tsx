@@ -38,9 +38,9 @@ type VisualEditorProps = {
 
 const viewBox = `0 0 ${EDITOR_WIDTH} ${EDITOR_HEIGHT}`;
 
-export const VisualEditor = memo(function VisualEditor({state, setState, topology, syntaxErrors: errors, highlightActive, highlightTransitions, beginEdit, zoom, findText, editorStuff}: VisualEditorProps) {
+export const VisualEditor = memo(function VisualEditor({state, topology, syntaxErrors: errors, highlightActive, highlightTransitions, beginEdit, zoom, findText, editorStuff}: VisualEditorProps) {
 
-  const {copyPasteCallbacks, dragging, onMouseDown, refSVG, renderSelection, selectingState} = editorStuff;
+  const {copyPasteCallbacks, dragging, onMouseDown, refSVG, renderSelection} = editorStuff;
 
   // uid's of selected rountangles
   const selection = state.selection;
@@ -202,7 +202,7 @@ export const VisualEditor = memo(function VisualEditor({state, setState, topolog
 
     {debugContext.showGrid && <Grid width={EDITOR_WIDTH} height={EDITOR_HEIGHT} />}
 
-    {selectingState && <Selecting {...selectingState}/>}
+    {state.makingSelection && <Selecting {...state.makingSelection}/>}
   </svg>;
 });
 

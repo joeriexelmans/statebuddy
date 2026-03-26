@@ -51,6 +51,7 @@ export function makePartialArraySetter<T>(fullSetter: Dispatch<SetStateAction<T[
 
 export type DeepSetter<T> = 
   T extends any[] ? Dispatch<SetStateAction<T>> : // <-- treat arrays like values
+  T extends undefined ? Dispatch<SetStateAction<T>> :
   T extends object
     ? {
         [K in keyof T as `set${Capitalize<Extract<K, string>>}`]: DeepSetter<T[K]>;

@@ -1,8 +1,10 @@
 import { ConcreteSyntax } from "@/statecharts/concrete_syntax";
+import { Rect2D } from "../../util/geometry";
 
 export type VisualEditorState<SelectionType = Selection> = ConcreteSyntax & {
   nextID: number;
   selection: SelectionType;
+  makingSelection?: Rect2D;
 };
 
 export class Parts extends Set<string> {}

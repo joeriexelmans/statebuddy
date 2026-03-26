@@ -177,7 +177,13 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
     }
   }, [editorState, setModal, historyCallbacks.commit]);
 
-  const editorStuff = useEditor(appState.view.topPanel.mouseMap, appState.view.topPanel.zoom, editorState || initialEditorState, historyCallbacks, beginEdit);
+  const editorStuff = useEditor(
+    appState.view.topPanel.mouseMap,
+    appState.view.topPanel.zoom,
+    editorState,
+    setAppState.setSyntax.setEditorState.setCurrent,
+    historyCallbacks,
+    beginEdit);
 
   const globalProps: GlobalProps = useMemo(() => ({
     appState,

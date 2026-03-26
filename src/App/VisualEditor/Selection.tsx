@@ -1,7 +1,7 @@
 import { normalizeRect, Rect2D } from "@/util/geometry";
 import styles from "./VisualEditor.module.css";
 
-export type SelectingState = Rect2D | null;
+export type SelectingState = Rect2D | undefined;
 
 export function Selecting(props: SelectingState) {
   const normalizedRect = normalizeRect(props!);
