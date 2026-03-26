@@ -3,12 +3,12 @@ import { useShortcuts } from "@/hooks/useShortcuts";
 import HighlightAltSharpIcon from '@mui/icons-material/HighlightAltSharp';
 import TrendingFlatIcon from '@mui/icons-material/TrendingFlat';
 import { memo, ReactElement } from "react";
-import { Tooltip } from "../../Components/Tooltip";
-import { TwoStateButton } from "../../Components/TwoStateButton";
-import { DeepSetter, Setters } from "../../makePartialSetter";
-import { HistoryIcon, PseudoStateIcon, RountangleIcon } from "../Icons";
-import { KeyInfoHidden, KeyInfoVisible } from "../KeyInfo";
-import { MouseIcon } from "../MouseIcon";
+import { Tooltip } from "../../../Components/Tooltip";
+import { TwoStateButton } from "../../../Components/TwoStateButton";
+import { Setters, DeepSetter } from "../../../makePartialSetter";
+import { RountangleIcon, PseudoStateIcon, HistoryIcon } from "../../Icons";
+import { KeyInfoVisible, KeyInfoHidden } from "../../KeyInfo";
+import { MouseIcon } from "../../MouseIcon";
 
 const insertModes: [ToolMode, string, ReactElement, ReactElement][] = [
   ["select", "select, move, resize", <HighlightAltSharpIcon fontSize="small"/>, <></>],

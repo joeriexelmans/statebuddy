@@ -27,7 +27,7 @@ export const CopyPasteButtons = memo(function CopyPasteButtons({
         <button
           disabled={disabled}
           onClick={() => {
-            const item = new ClipboardItem({"text/plain": copySelection(current, current.selection)});
+            const item = new ClipboardItem({"text/plain": copySelection(current)});
             navigator.clipboard.write([item]);
           }}
         >

@@ -11,12 +11,12 @@ export type CopyPasteCallbacks = {
   deleteSelection: () => void;
 }
 
-export const copySelection = (state: VisualEditorState, selection: Selection) => {
-  return JSON.stringify(entirelySelectedShapes(state, selection));
+export const copySelection = (state: VisualEditorState) => {
+  return JSON.stringify(entirelySelectedShapes(state, state.selection));
 };
 
-const copyInternal = (state: VisualEditorState, selection: Selection, e: ClipboardEvent) => {
-  const data = copySelection(state, selection);
+const copyInternal = (state: VisualEditorState, e: ClipboardEvent) => {
+  const data = copySelection(state);
   e.clipboardData?.setData("text/plain", data);
 };
 
@@ -90,8 +90,7 @@ export const pasteData = (data: string, where: Vec2D, setState: Dispatch<(v:Visu
 
 
 const pasteWhere = {x: 500, y: 100};
-export function useCopyPaste(state: VisualEditorState, commit: Dispatch<(v:VisualEditorState) => VisualEditorState>, selection: Selection, startDragging: (where: Vec2D) => void) {
-
+export function useCopyPaste(state: VisualEditorState, commit: Dispatch<(v:VisualEditorState) => VisualEditorState>, startDragging: (where: Vec2D) => void) {
 
   const onPaste = useCallback((e: ClipboardEvent) => {
     console.log('paste...');
@@ -104,20 +103,20 @@ export function useCopyPaste(state: VisualEditorState, commit: Dispatch<(v:Visua
 
   const onCopy = useCallback((e: ClipboardEvent) => {
     console.log('copy...');
-    if (selection.size > 0) {
-      console.log('copy', selection.size, 'shapes...');
+    if (state.selection.size > 0) {
+      console.log('copy', state.selection.size, 'shapes...');
       e.preventDefault();
-      copyInternal(state, selection, e);
+      copyInternal(state, e);
     }
-  }, [state, selection]);
+  }, [state]);
 
   const onCut = useCallback((e: ClipboardEvent) => {
-    if (selection.size > 0) {
-      copyInternal(state, selection, e);
+    if (state.selection.size > 0) {
+      copyInternal(state, e);
       deleteSelection();
       e.preventDefault();
     }
-  }, [state, selection]);
+  }, [state]);
 
   const deleteSelection = useCallback(() => {
     commit(state => {

@@ -21,8 +21,11 @@ function applyTranslation<G, T extends G & {uid: string}>(
   f: (shape: T, delta: Vec2D, parts: Parts) => G,
 ) {
   let anythingChanged = false;
-  return shapes.map(shape => {
+  const translated = shapes.map(shape => {
     const parts = getParts(selection, shape.uid);
+    if (parts.size > 0) {
+      console.log(shape);
+    }
     if (parts.size > 0) {
       anythingChanged = true;
       return {
@@ -31,7 +34,11 @@ function applyTranslation<G, T extends G & {uid: string}>(
       };
     }
     return shape;
-  })
+  });
+  if (anythingChanged) {
+    return translated;
+  }
+  return shapes; // <-- don't break memoization if nothing changed
 }
 
 const getParts = (selection: Selection, uid: string) => {

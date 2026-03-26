@@ -3,13 +3,13 @@ import { Dispatch, FormEvent, SetStateAction, useCallback } from "react";
 import CloseIcon from '@mui/icons-material/Close';
 import SwapVertIcon from '@mui/icons-material/SwapVert';
 import { Tooltip } from "../Components/Tooltip";
-import { FindReplaceState } from "../migrations/v1_types";
+import { FindReplaceStateV1 } from "../migrations/v1_types";
 import { VisualEditorState } from "../VisualEditor/VisualEditor.state";
 
 
 type FindReplaceProps = {
-  state: FindReplaceState,
-  setState: Dispatch<SetStateAction<FindReplaceState>>,
+  state: FindReplaceStateV1,
+  setState: Dispatch<SetStateAction<FindReplaceStateV1>>,
   cs: VisualEditorState,
   setCS: Dispatch<(oldState: VisualEditorState) => VisualEditorState>,
   hide: () => void,

@@ -1,5 +1,5 @@
 import { initialEditorState } from "../../statecharts/concrete_syntax";
-import { AppStateV1, DebugState, MQTTState, SideBarState, ToolSelectState, TracesState } from "./v1_types";
+import { AppStateV1, DebugState, MQTTState, SideBarStateV1, ToolSelectState, TracesState } from "./v1_types";
 
 export const defaultToolSelectState: ToolSelectState = {
   leftMouseMode: 'select',
@@ -56,7 +56,7 @@ export const defaultPlantsState = {
   conns: [],
 };
 
-export const defaultSideBarState: SideBarState = {
+export const defaultSideBarState: SideBarStateV1 = {
   plantsState: defaultPlantsState,
   propertyEditor: defaultPropertyEditorState,
   traces: defaultTracesState,

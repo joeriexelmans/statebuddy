@@ -10,10 +10,10 @@ export type AppStateV1 = {
   editorState: VisualEditorStateV0;
 
   showPlot: boolean;
-  findReplace: FindReplaceState;
-  topPanel: TopPanelState;
-  bottomPanel: BottomPanelState;
-  sideBar: SideBarState;
+  findReplace: FindReplaceStateV1;
+  topPanel: TopPanelStateV1;
+  bottomPanel: BottomPanelStateV1;
+  sideBar: SideBarStateV1;
   plot: PlotState;
   debug: DebugState;
 
@@ -27,14 +27,14 @@ export type AppStateV1 = {
   declaredOutputs: EventTrigger[];
 };
 
-export type SideBarState = {
+export type SideBarStateV1 = {
   plantsState: PlantsState;
   propertyEditor: PropertyEditorState;
   traces: TracesState;
   mqtt: MQTTState;
 };
 
-export type TopPanelState = {
+export type TopPanelStateV1 = {
   mouseMap: ToolSelectState;
   zoom: number; // <-- factor (1 means 100%)
   showKeys: boolean;
@@ -43,7 +43,7 @@ export type TopPanelState = {
   showDebug: boolean;
 };
 
-export type FindReplaceState = {
+export type FindReplaceStateV1 = {
   findText: string;
   replaceText: string;
 };
@@ -138,7 +138,7 @@ export type ExpandablePanelItemState = {
   expanded: boolean;
 };
 
-export type BottomPanelState = {
+export type BottomPanelStateV1 = {
   errorsExpanded: boolean;
 };
 

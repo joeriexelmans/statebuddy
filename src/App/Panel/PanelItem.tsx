@@ -9,7 +9,7 @@ import { PropertyCheckStatus } from "../SideBar/prepare_trace_types";
 // Panel types:
 import { Connect, useConnect } from "./Kinds/ConnectPanel";
 import { MQTT } from "./Kinds/MQTTPanel";
-import { PlantsView } from "./Kinds/PlantsPanel";
+import { PlantsPanel } from "./Kinds/PlantsPanel";
 import { PropertiesPanel } from "./Kinds/PropertiesPanel";
 import { TracesPanel } from "./Kinds/TracesPanel";
 import { InputEventsPanel } from "./Kinds/InputEventsPanel";
@@ -85,7 +85,7 @@ export function PanelItem({type, globalProps: {appState, setAppState, abstractSy
       [abstractSyntax?.outputEvents, appState.syntax.declaredOutputs]);
   }
   else if (type === "plants") {
-    return <PlantsView
+    return <PlantsPanel
       plantsState={appState.execution.plants}
       setPlantsState={setAppState.setExecution.setPlants}
       simulator={simulator}

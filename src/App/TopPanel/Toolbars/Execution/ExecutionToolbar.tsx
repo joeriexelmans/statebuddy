@@ -1,8 +1,6 @@
 import { memo, useCallback, useMemo } from 'react';
 
-import { Toolbar } from '../Toolbar';
 import { Tooltip } from '@/App/Components/Tooltip';
-import { KeyInfoHidden, KeyInfoVisible } from '../KeyInfo';
 import { infinityIfUndefined, SimulatorCallbacks, SimulatorStuff } from '@/App/hooks/useSimulator';
 import { RunPauseButtons } from './RunPauseButtons';
 import { SpeedControl } from './SpeedControl';
@@ -18,6 +16,8 @@ import { formatTime } from '@/util/util';
 import { useLocalStorage } from '@/hooks/usePersistentState';
 import { setPaused, setRealtime } from '@/statecharts/time';
 import { useShortcuts } from '@/hooks/useShortcuts';
+import { KeyInfoVisible, KeyInfoHidden } from '../../KeyInfo';
+import { Toolbar } from '../../Toolbar';
 
 type ExecutionProps = {
   simulator: SimulatorStuff,
@@ -28,7 +28,7 @@ type ExecutionProps = {
 
 const toolbarStyle = {columnGap: '1em'};
 
-export function Execution({simulator, showKeys, refreshDisplayTime, displayTime}: ExecutionProps) {
+export function ExecutionToolbar({simulator, showKeys, refreshDisplayTime, displayTime}: ExecutionProps) {
   const [timescale, setTimescale] = useLocalStorage("timescale", 1);
 
   const nextWakeup = infinityIfUndefined(simulator.nextWakeup);

@@ -2,9 +2,8 @@ import { memo } from "react"
 
 import Rotate90DegreesCcwTwoToneIcon from '@mui/icons-material/Rotate90DegreesCcwTwoTone';
 import Rotate90DegreesCwTwoToneIcon from '@mui/icons-material/Rotate90DegreesCwTwoTone';
-
-import { Tooltip } from "../../Components/Tooltip";
-import { Toolbar } from "../Toolbar";
+import { Tooltip } from "../../../Components/Tooltip";
+import { Toolbar } from "../../Toolbar";
 
 export const RotateButtons = memo(function RotateButtons({disabled, onRotate}: {disabled: boolean, onRotate: (dir: "ccw"|"cw") => void}) {
   return <Toolbar>

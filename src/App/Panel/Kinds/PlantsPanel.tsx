@@ -5,8 +5,9 @@ import { DeepSetter } from "../../makePartialSetter"
 import { statebuddyPlants } from "../../plants"
 import { Toolbar } from "../../TopPanel/Toolbar"
 import { ShowPlants } from "./ShowPlants"
+import { memo } from "react"
 
-export function PlantsView({plantsState, setPlantsState, simulator}: {plantsState: PlantsState, setPlantsState: DeepSetter<PlantsState>} & {simulator: SimulatorStuff}) {
+export const PlantsPanel = memo(function PlantsPanel({plantsState, setPlantsState, simulator}: {plantsState: PlantsState, setPlantsState: DeepSetter<PlantsState>} & {simulator: SimulatorStuff}) {
   const speed = simulator.time.kind === "paused" ? 0 : simulator.time.scale;
   const trace = simulator.trace;
   const coupledState = simulator.currentTraceItem?.newState;
@@ -53,4 +54,4 @@ export function PlantsView({plantsState, setPlantsState, simulator}: {plantsStat
       onRaise={simulator.simulatorCallbacks.onRaise}
     />}
   </>
-}
+});

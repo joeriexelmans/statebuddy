@@ -1,8 +1,8 @@
 import { EventTrigger } from "../../statecharts/label_ast";
 import { UndoState } from "../../hooks/useUndo";
 import { VisualEditorState } from "../VisualEditor/VisualEditor.state";
-import { FindReplaceState, MQTTState, ToolSelectState, PanelState, DebugState } from "./v1_types";
-import { ExecutionState, TraceView } from "./v2_types";
+import { FindReplaceStateV1, MQTTState, ToolSelectState, PanelState, DebugState } from "./v1_types";
+import { ExecutionState, TraceView, ViewState } from "./v2_types";
 
 // In V3 of our app state, we switch to CBOR (instead of JSON).
 // This has important benefits:
@@ -12,42 +12,19 @@ import { ExecutionState, TraceView } from "./v2_types";
 export type AppStateV3 = {
   stateVersion: 3,
 
-  syntax: {
-    declaredInputs: EventTrigger[],
-    declaredOutputs: EventTrigger[],
-    editorState: UndoState<VisualEditorState>; // <-- CBOR serialization allows efficient history encoding :)
-  },
+  syntax: SyntaxStateV3,
 
-  find: FindReplaceState,
+  find: FindReplaceStateV1,
 
   execution: ExecutionState,
 
   mqtt: MQTTState,
 
-  view: {
-    topPanel: {
-      modelName: string,
-      zoom: number, // <-- percentage!!! (100 means 100%)
-      mouseMap: ToolSelectState,
-    },
-    visibility: {
-      plot: boolean,
-      errors: boolean,
-      find: boolean,
-      debug: boolean,
-      keys: boolean,
-      table: boolean,
-    },
-    trace: TraceView,
-    plot: {
-      visible: { [name:string]: boolean },
-    },
-    leftPanel: PanelState & {
-      width: number,
-    },
-    rightPanel: PanelState & {
-      width: number,
-    },
-    debug: DebugState,
-  },
+  view: ViewState,
+};
+
+export type SyntaxStateV3 = {
+  declaredInputs: EventTrigger[],
+  declaredOutputs: EventTrigger[],
+  editorState: UndoState<VisualEditorState>; // <-- CBOR serialization allows efficient history encoding :)
 };

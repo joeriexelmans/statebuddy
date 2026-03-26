@@ -1,5 +1,4 @@
 import { AppState } from "../App.state";
-import { SerializableSelection } from "../VisualEditor/VisualEditor.state";
 import { AppStateV0 } from "./v0_types";
 import { v0_to_v1 } from "./v0_to_v1";
 import { AppStateV1 } from "./v1_types";

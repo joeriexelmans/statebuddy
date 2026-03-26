@@ -4,11 +4,11 @@ import { TimeMode } from "@/statecharts/time";
 
 import PauseIcon from '@mui/icons-material/Pause';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import { KeyInfoHidden, KeyInfoVisible } from "../KeyInfo";
 import { DEVSTraceItem } from "@/devs/trace";
 import { CoupledState } from "@/App/hooks/useSimulator";
 import { objectsEqual } from "@/util/util";
 import { memo } from "react";
+import { KeyInfoVisible, KeyInfoHidden } from "../../KeyInfo";
 
 export type RunPauseButtonsProps = {
   showKeys: boolean;
@@ -42,4 +42,4 @@ export const RunPauseButtons = memo(function RunPauseButtons({showKeys, time, di
       </Tooltip>
     </KeyInfo>
   </>;
-}, objectsEqual);
+});

@@ -1,36 +1,29 @@
 import gitRev from "@/git-rev.txt";
 import { useShortcuts } from "@/hooks/useShortcuts";
 import { Vec2D } from '@/util/geometry';
-import BugReportIcon from '@mui/icons-material/BugReport';
-import FindInPageOutlinedIcon from '@mui/icons-material/FindInPageOutlined';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import InfoOutlineIcon from '@mui/icons-material/InfoOutline';
 import KeyboardIcon from '@mui/icons-material/Keyboard';
 import SaveAltIcon from '@mui/icons-material/SaveAlt';
-import UploadFileIcon from '@mui/icons-material/UploadFile';
-import { Dispatch, memo, useCallback } from "react";
+import { memo } from "react";
+import { useToggle } from "../../hooks/useToggle";
+import { UndoCallbacks } from "../../hooks/useUndo";
+import { ModelSize } from "../../hooks/useUrlHashState";
 import { prettyNumber } from '../../util/pretty';
 import styles from "../App.module.css";
 import { AppState } from "../App.state";
 import { Tooltip } from "../Components/Tooltip";
 import { TwoStateButton } from "../Components/TwoStateButton";
-import { copySelection, pasteData } from '../VisualEditor/hooks/useCopyPaste';
-import { rotateSelection } from '../VisualEditor/transformations/rotate';
+import { VisualEditorState } from "../VisualEditor/VisualEditor.state";
 import { SimulatorStuff } from '../hooks/useSimulator';
 import { Trial } from '../hooks/useTrial';
 import { useUpdater } from '../hooks/useUpdater';
 import { DeepSetter } from "../makePartialSetter";
 import { KeyInfoHidden, KeyInfoVisible } from "./KeyInfo";
 import { Toolbar } from './Toolbar';
-import { Execution } from './Toolbars/Execution';
-import { RotateButtons } from "./Toolbars/RotateButtons";
-import { ToolSelect } from "./Toolbars/ToolSelect";
-import { UndoRedoButtons } from "./Toolbars/UndoRedoButtons";
-import { ZoomButtons } from "./Toolbars/ZoomButtons";
-import { CopyPasteButtons } from "./Toolbars/CopyPasteButtons";
-import { UndoCallbacks, UndoState } from "../../hooks/useUndo";
-import { VisualEditorState } from "../VisualEditor/VisualEditor.state";
-import { ModelSize } from "../../hooks/useUrlHashState";
+import { EditorToolbar } from "./Toolbars/Editor/EditorToolbar";
+import { ExecutionToolbar } from "./Toolbars/Execution/ExecutionToolbar";
+import { ModeToolbar } from "./Toolbars/Mode/ModeToolbar";
 
 export type TopPanelProps = {
   appState: AppState,
@@ -61,10 +54,6 @@ export type TopPanelProps = {
 const ShortcutShowKeys = <kbd>~</kbd>;
 const ShortcutExport = <><kbd>Ctrl</kbd>+<kbd>S</kbd></>;
 
-function toggle(booleanSetter: Dispatch<(state: boolean) => boolean>) {
-  return useCallback(() => booleanSetter(x => !x), [booleanSetter]);
-}
-
 const toolbarGap = {columnGap: '1em'};
 
 export const TopPanel = memo(function TopPanel(props: TopPanelProps) {
@@ -72,19 +61,19 @@ export const TopPanel = memo(function TopPanel(props: TopPanelProps) {
   } = props;
   const {setKeys, setFind} = setAppState.setView.setVisibility;
   const showKeys = appState.view.visibility.keys;
-  const {modelName, zoom, mouseMap} = appState.view.topPanel;
-  const {setModelName, setZoom, setMouseMap} = setAppState.setView.setTopPanel;
-  const toggleKeys = toggle(setKeys);
+  const toggleKeys = useToggle(setKeys);
   const {currentTraceItem, simulatorCallbacks} = simulator;
 
   const updateAvailable = useUpdater();
+
+  const modelName = appState.view.topPanel.modelName;
 
   useShortcuts([
     {keys: ["`"], action: toggleKeys},
     {keys: ["Shift", "~"], action: toggleKeys},
     // {keys: ["Ctrl", "o"], action: () => onOpen(modelName)},
     {keys: ["Ctrl", "s"], action: () => onSave(modelName)},
-    {keys: ["Ctrl", "Shift", "F"], action: toggle(setFind)},
+    {keys: ["Ctrl", "Shift", "F"], action: useToggle(setFind)},
     {keys: ["i"], action: simulatorCallbacks.onInit},
     {keys: ["c"], action: simulatorCallbacks.onClear},
     {keys: ["Backspace"], action: simulatorCallbacks.onBack},
@@ -132,7 +121,7 @@ Refresh the page to get the latest version.` : `about ${trial.appName}`} align="
           placeholder='model name'
           value={modelName}
           style={{width:Math.max(modelName.length*6.5, 100)}}
-          onChange={e => setModelName(e.target.value)}
+          onChange={e => setAppState.setView.setTopPanel.setModelName(e.target.value)}
           className={styles.description}
           />
       </Tooltip>
@@ -145,76 +134,21 @@ Refresh the page to get the latest version.` : `about ${trial.appName}`} align="
       </KeyInfo>
     </Toolbar>
 
-    {/* zoom */}
-    <Toolbar>
-      <ZoomButtons showKeys={showKeys} zoom={zoom} setZoom={setZoom}/>
-    </Toolbar>
+    <EditorToolbar
+      KeyInfo={KeyInfo}
+      syntax={appState.syntax}
+      historyCallbacks={historyCallbacks}
+      startDragging={startDragging}
+    />
 
-    {/* undo / redo */}
-    <Toolbar>
-      <UndoRedoButtons
-        showKeys={showKeys}
-        historyCallbacks={historyCallbacks}
-        historyLength={appState.syntax.editorState.history.length}
-        futureLength={appState.syntax.editorState.future.length}
-      />
-    </Toolbar>
-
-    {/* copy / paste */}
-    <Toolbar>
-      <CopyPasteButtons
-        // @ts-ignore
-        KeyInfo={KeyInfo}
-        current={appState.syntax.editorState.current}
-        commit={historyCallbacks.commit}
-        startDragging={startDragging}
-      />
-    </Toolbar>
-
-    {/* insert rountangle / arrow / ... */}
-    <Toolbar>
-      <ToolSelect
-        mouseMap={mouseMap}
-        setMouseMap={setMouseMap}
-        showKeys={showKeys}
-      />
-    </Toolbar>
-
-    {/* rotate */}
-    <Toolbar>
-      <RotateButtons
-        disabled={appState.syntax.editorState.current.selection.size === 0}
-        onRotate={useCallback((direction: "ccw"|"cw") =>
-          historyCallbacks.commit(editorState =>
-            rotateSelection(editorState, direction)),
-          [historyCallbacks.commit])}
-      />
-    </Toolbar>
-
-    {/* find, replace */}
-    <Toolbar>
-      <KeyInfo keyInfo={<><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd></>}>
-        <Tooltip tooltip="find & replace ...">
-          <TwoStateButton
-            active={appState.view.visibility.find}
-            onClick={toggle(setAppState.setView.setVisibility.setFind)}
-          >
-            <FindInPageOutlinedIcon fontSize="small"/>
-          </TwoStateButton>
-        </Tooltip>
-      </KeyInfo>
-      <Tooltip tooltip="show debug panel">
-        <TwoStateButton
-          active={appState.view.visibility.debug}
-          onClick={toggle(setAppState.setView.setVisibility.setDebug)}
-        >
-          <BugReportIcon fontSize="small"/>
-        </TwoStateButton>
-      </Tooltip>
-    </Toolbar>
+    <ModeToolbar
+      KeyInfo={KeyInfo}
+      view={appState.view}
+      setView={setAppState.setView}
+    />
 
     {/* execution */}
-    <Execution
+    <ExecutionToolbar
       simulator={simulator}
       showKeys={showKeys}
       displayTime={displayTime}
