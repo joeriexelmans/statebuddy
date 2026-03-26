@@ -16,9 +16,7 @@ async function fetchBuffer(url: string) {
 // Spins up an instance of Pyodide with py-mtl loaded and ready to go.
 // Slow!!! You don't want to call this in the main thread!!
 export async function initPyodide() {
-  console.log('pyodide: loading ...');
-  // const path = location.protocol + location.host + location.pathname;
-  // console.log({path});
+  // console.log('pyodide: loading ...');
   const pyodide = await loadPyodide({
     // indexURL: location.protocol + location.port + 
     checkAPIVersion: false,
@@ -39,10 +37,10 @@ export async function initPyodide() {
     stderr: console.log,
   });
 
-  console.log('pyodide: fetching libs ...');
+  // console.log('pyodide: fetching libs ...');
   const buf = await fetchBuffer("assets/pyodide/mtl-libs.zip");
 
-  console.log('pyodide: unpacking libs ...');
+  // console.log('pyodide: unpacking libs ...');
   pyodide.unpackArchive(buf, "zip", {
     extractDir: '/lib/python3.13/site-packages',
   });

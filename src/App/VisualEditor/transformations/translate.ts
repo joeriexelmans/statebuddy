@@ -24,9 +24,6 @@ function applyTranslation<G, T extends G & {uid: string}>(
   const translated = shapes.map(shape => {
     const parts = getParts(selection, shape.uid);
     if (parts.size > 0) {
-      console.log(shape);
-    }
-    if (parts.size > 0) {
       anythingChanged = true;
       return {
         ...shape,

@@ -46,6 +46,7 @@ const CBOR = new Encoder({
 //    - If I want to encode edit histories with structural sharing, CBOR obviously much better
 //         (the question remains if I really want to encode edit histories because even with CBOR they consume a lot of data)
 
+// A wrapper around <App> that persists the app state in URL hash
 export function PersistentApp() {
   const [err, setErr] = useState<any>();
   const [appState, setAppState, modelSize] = useUrlHashState<AppState>(
@@ -98,9 +99,7 @@ export function PersistentApp() {
           throw new Error("failed to parse app state (as CBOR or JSON)");
         }
       }
-      console.log({stateUnknown});
       const migrated = autoMigrate(stateUnknown);
-      console.log({migrated});
       return myPureDeepAssign(defaultAppState, migrated);
     },
 
