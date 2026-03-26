@@ -1,20 +1,24 @@
-import { memo, useCallback, useEffect } from "react";
+import { memo } from "react";
 import { KeyInfoHidden, KeyInfoVisible } from "../KeyInfo";
 
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import UndoIcon from '@mui/icons-material/Undo';
 import RedoIcon from '@mui/icons-material/Redo';
 import { useShortcuts } from "@/hooks/useShortcuts";
 import { Tooltip } from "../../Components/Tooltip";
-import { EditHistoryCallbacks } from "@/App/hooks/useEditHistory";
+import { UndoCallbacks } from "@/hooks/useUndo";
+import { VisualEditorState } from "../../VisualEditor/VisualEditor.state";
+import { DoubleClickButton } from "../../Components/DoubleClickButton";
+import { Toolbar } from "../Toolbar";
 
 export const UndoRedoButtons = memo(function UndoRedoButtons({
   showKeys,
-  historyCallbacks: {undo, redo},
+  historyCallbacks: {undo, redo, forget},
   historyLength,
   futureLength,
 }: {
   showKeys: boolean,
-  historyCallbacks: EditHistoryCallbacks,
+  historyCallbacks: UndoCallbacks<VisualEditorState>,
   historyLength: number,
   futureLength: number,
 }) {
@@ -40,5 +44,11 @@ export const UndoRedoButtons = memo(function UndoRedoButtons({
         </button>
       </Tooltip>
     </KeyInfo>
+    &nbsp;
+    <Toolbar>
+    <DoubleClickButton tooltip="forget undo/redo history (saves you some memory)" onDoubleClick={forget} disabled={historyLength === 0 && futureLength === 0}>
+      <DeleteOutlineIcon fontSize="small"/>
+    </DoubleClickButton>
+    </Toolbar>
   </>;
 });

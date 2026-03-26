@@ -1,50 +1,53 @@
-import { buf2base64, deflateBuffer, inflateJSON, str2buf } from "@/compression/deflate";
-import { useCallback, useLayoutEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { useDelayedEffect } from "./useDelayedEffect";
+import { base642buf, buf2base64 } from "../compression/deflate";
+
+export type ModelSize = {
+  original: number,
+  compressed: number,
+}
 
 // persist state in URL hash
-export function useUrlHashState<T>(recoverCallback: (recoveredState: (T|undefined)) => void) {
-  const [originalSize, setOriginalSize] = useState(0);
-  const [compressedSize, setCompressedSize] = useState(0);
-  const [state, setState] = useState<T|undefined>(undefined);
+export function useUrlHashState<StateType>(
+  delayMs: number,
+  encode: (s: StateType) => Promise<ArrayBuffer>,
+  decode: (h: ArrayBuffer) => Promise<StateType>,
+  onErr: (err: any) => void,
+) {
+  const [state, setState] = useState<StateType|undefined>(undefined);
+  const [size, setSize] = useState<ModelSize>({compressed: 0, original: 0});
 
-  const recover = useCallback(async (compressedState: string) => {
+  // on startup, decompress and JSON-parse the state:
+  useEffect(() => {
+    const str = window.location.hash.slice(1);
     try {
-      const recoveredState = await inflateJSON<T>(compressedState); // may throw
-      recoverCallback(recoveredState);
+      const buf = base642buf(str);
+      decode(buf.buffer)
+        .then(setState)
+        .catch(onErr);
+    } catch (e) {
+      onErr(e);
     }
-    catch (e: any) {
-      console.warn(`failed to recover state!`, e);
-      recoverCallback(undefined);
+  }, []);
+
+  // every time state changes, JSON-serialize and compress the state:
+  useDelayedEffect(() => {
+    if (state) {
+      const {promise: cancelPromise, resolve: cancel} = Promise.withResolvers<undefined>();
+      Promise.race([
+        encode(state),
+        cancelPromise
+      ]).then(buf => {
+        if (buf !== undefined) { // not canceled
+          const str = buf2base64(buf);
+          const hash = '#'+str;
+          window.history.replaceState({}, "", hash);
+          setSize({original: 0, compressed: str.length});
+        }
+      });
+      return cancel;
     }
-  }, [recoverCallback]);
+  }, delayMs, [state])
 
-  // recover editor state from URL - we need an effect here because decompression is asynchronous
-  // layout effect because we want to run it before rendering the first frame
-  useLayoutEffect(() => {
-    recover(window.location.hash.slice(1));
-  }, []); // <-- This effect only runs once, on startup.
-
-  function persist(state: T, cancel: Promise<void>) {
-    const str = JSON.stringify(state);
-    const buf = str2buf(str);
-    Promise.race([
-      deflateBuffer(buf),
-      cancel,
-    ]).then((deflatedJSON)=> {
-      if (deflatedJSON !== undefined) { // not canceled
-        const hash = '#'+buf2base64(deflatedJSON);
-        // if (window.location.hash !== hash) {
-        //   window.history.pushState({}, "", hash);
-        // }
-        window.history.replaceState({}, "", hash);
-        setState(state);
-        setOriginalSize(buf.byteLength);
-        setCompressedSize(deflatedJSON.byteLength);
-      }
-    }).catch(e => {
-      console.error('failed to compress: ', e, '\ndata was:', state);
-    });
-  }
-
-  return [persist, originalSize, compressedSize, state] as const;
+  return [state, setState, size] as const;
 }

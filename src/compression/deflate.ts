@@ -16,16 +16,7 @@ export async function inflateJSON<T>(compressedState: string): Promise<T> {
 export async function inflateString(str: string): Promise<string> {
   const compressedBuffer = base642buf(str);
   const decompressedBuffer = await inflateBuf(compressedBuffer);
-
-  let decoded;
-  try {
-    decoded = new TextDecoder().decode(decompressedBuffer);
-  }
-  catch (e) {
-    // @ts-ignore
-    throw new Error("failed to recover state (could not decode buffer to UTF-8):" + e.toString());
-  }
-
+  const decoded = buf2string(decompressedBuffer);
   return decoded;
 }
 
@@ -64,6 +55,18 @@ export function base642buf(str: string): Uint8Array<ArrayBuffer> {
 
 export function str2buf(str: string): Uint8Array<ArrayBuffer> {
   return new TextEncoder().encode(str);
+}
+
+export function buf2string(buf: ArrayBuffer): string {
+  let decoded;
+  try {
+    decoded = new TextDecoder().decode(buf);
+  }
+  catch (e) {
+    // @ts-ignore
+    throw new Error("failed to recover state (could not decode buffer to UTF-8):" + e.toString());
+  }
+  return decoded;
 }
 
 export async function deflateString(str: string): Promise<ArrayBuffer> {

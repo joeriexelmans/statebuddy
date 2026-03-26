@@ -16,8 +16,6 @@ import { Tooltip } from "../Components/Tooltip";
 import { TwoStateButton } from "../Components/TwoStateButton";
 import { copySelection, pasteData } from '../VisualEditor/hooks/useCopyPaste';
 import { rotateSelection } from '../VisualEditor/transformations/rotate';
-import { EditHistory, EditHistoryCallbacks } from '../hooks/useEditHistory';
-import { ModelSize } from '../hooks/usePersistentAppState';
 import { SimulatorStuff } from '../hooks/useSimulator';
 import { Trial } from '../hooks/useTrial';
 import { useUpdater } from '../hooks/useUpdater';
@@ -30,16 +28,18 @@ import { ToolSelect } from "./Toolbars/ToolSelect";
 import { UndoRedoButtons } from "./Toolbars/UndoRedoButtons";
 import { ZoomButtons } from "./Toolbars/ZoomButtons";
 import { CopyPasteButtons } from "./Toolbars/CopyPasteButtons";
+import { UndoCallbacks, UndoState } from "../../hooks/useUndo";
+import { VisualEditorState } from "../VisualEditor/VisualEditor.state";
+import { ModelSize } from "../../hooks/useUrlHashState";
 
 export type TopPanelProps = {
   appState: AppState,
   setAppState: DeepSetter<AppState>,
 
-  historyCallbacks: EditHistoryCallbacks,
+  historyCallbacks: UndoCallbacks<VisualEditorState>,
 
   // editing
   startDragging: (where: Vec2D) => void,
-  editHistory: EditHistory,
 
   // execution
   simulator: SimulatorStuff,
@@ -68,7 +68,7 @@ function toggle(booleanSetter: Dispatch<(state: boolean) => boolean>) {
 const toolbarGap = {columnGap: '1em'};
 
 export const TopPanel = memo(function TopPanel(props: TopPanelProps) {
-  const {trial, editHistory, displayTime, refreshDisplayTime, modelSize, startDragging, simulator, appState, setAppState, onAboutStateBuddy, onSave, historyCallbacks,
+  const {trial, displayTime, refreshDisplayTime, modelSize, startDragging, simulator, appState, setAppState, onAboutStateBuddy, onSave, historyCallbacks,
   } = props;
   const {setKeys, setFind} = setAppState.setView.setVisibility;
   const showKeys = appState.view.visibility.keys;
@@ -126,8 +126,7 @@ Refresh the page to get the latest version.` : `about ${trial.appName}`} align="
           </button>
         </Tooltip>
       </KeyInfo> */}
-      <Tooltip tooltip={`model size: ${prettyNumber(modelSize.original)} bytes
-compressed: ${prettyNumber(modelSize.compressed)} bytes (${Math.round(modelSize.compressed/modelSize.original*100)}%)`} align='left'>
+      <Tooltip tooltip={`model size (compressed):\n${prettyNumber(modelSize.compressed)} bytes`} align='left'>
         <input
           type="text"
           placeholder='model name'
@@ -156,8 +155,8 @@ compressed: ${prettyNumber(modelSize.compressed)} bytes (${Math.round(modelSize.
       <UndoRedoButtons
         showKeys={showKeys}
         historyCallbacks={historyCallbacks}
-        historyLength={editHistory.history.length}
-        futureLength={editHistory.future.length}
+        historyLength={appState.syntax.editorState.history.length}
+        futureLength={appState.syntax.editorState.future.length}
       />
     </Toolbar>
 
@@ -166,8 +165,8 @@ compressed: ${prettyNumber(modelSize.compressed)} bytes (${Math.round(modelSize.
       <CopyPasteButtons
         // @ts-ignore
         KeyInfo={KeyInfo}
-        current={editHistory.current}
-        commitState={historyCallbacks.commitState}
+        current={appState.syntax.editorState.current}
+        commit={historyCallbacks.commit}
         startDragging={startDragging}
       />
     </Toolbar>
@@ -184,11 +183,11 @@ compressed: ${prettyNumber(modelSize.compressed)} bytes (${Math.round(modelSize.
     {/* rotate */}
     <Toolbar>
       <RotateButtons
-        disabled={editHistory.current.selection.size === 0}
+        disabled={appState.syntax.editorState.current.selection.size === 0}
         onRotate={useCallback((direction: "ccw"|"cw") =>
-          historyCallbacks.commitState(editorState =>
+          historyCallbacks.commit(editorState =>
             rotateSelection(editorState, direction)),
-          [historyCallbacks.commitState])}
+          [historyCallbacks.commit])}
       />
     </Toolbar>
 

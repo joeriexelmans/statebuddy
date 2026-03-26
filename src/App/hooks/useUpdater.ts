@@ -27,14 +27,16 @@ export function useUpdater() {
   }, []);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-    init().then(() => {
-      interval = setInterval(() => {
-        checkForUpdates();
-      }, 60000) // <-- every minute - it's like a 500 byte request so every user generates on average 10 bytes / second
-    })
-    return () => clearInterval(interval);
-  }, []);
+    if (!updateAvailable) { // <-- only give notification once
+      let interval: NodeJS.Timeout;
+      init().then(() => {
+        interval = setInterval(() => {
+          checkForUpdates();
+        }, 60000) // <-- every 10 minutes - it's like a 500 byte request so every user generates on average 10 bytes / second
+      })
+      return () => clearInterval(interval);
+    }
+  }, [updateAvailable]);
 
   return updateAvailable;
 }

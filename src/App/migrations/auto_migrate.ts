@@ -1,11 +1,14 @@
 import { AppState } from "../App.state";
+import { SerializableSelection } from "../VisualEditor/VisualEditor.state";
 import { AppStateV0 } from "./v0_types";
-import { migrateToV1 } from "./v1_migrate";
+import { v0_to_v1 } from "./v0_to_v1";
 import { AppStateV1 } from "./v1_types";
-import { migrateToV2 } from "./v2_migrate";
+import { v1_to_v2 } from "./v1_to_v2";
 import { AppStateV2, VersionedAppState } from "./v2_types";
+import { v2_to_v3 } from "./v2_to_v3";
+import { AppStateV3 } from "./v3_types";
 
-export type AppStateUnknownVersion = AppStateV0 | AppStateV1 | AppStateV2;
+export type AppStateUnknownVersion = AppStateV0 | AppStateV1 | AppStateV2 | AppStateV3;
 
 export function detectVersion(appState: AppStateUnknownVersion): number {
   if (Object.hasOwn(appState, "stateVersion")) {
@@ -21,8 +24,9 @@ export function detectVersion(appState: AppStateUnknownVersion): number {
 }
 
 const migrations = [
-  migrateToV1,
-  migrateToV2,
+  v0_to_v1,
+  v1_to_v2,
+  v2_to_v3,
 ] as const;
 
 export function autoMigrate(appState: AppStateUnknownVersion): AppState {

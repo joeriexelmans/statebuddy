@@ -1,5 +1,7 @@
 // AppState in version 1 of StateBuddy
 
+import { VisualEditorState, SerializableSelection } from "../VisualEditor/VisualEditor.state";
+
 export type ToolModeV0 = "select" | "and" | "or" | "pseudo" | "shallow" | "deep" | "transition" | "text" | "nothing";
 
 type BigStepCause = {
@@ -17,7 +19,10 @@ type BigStepCause = {
 
 type SavedTraces = [string, BigStepCause[]][];
 
+// Our JSON-serialized application state, version 0
 export type AppStateV0 = {
+  editorState: VisualEditorState<SerializableSelection>;
+
   modelName: string;
   showKeys: boolean;
   zoom: number;

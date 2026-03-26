@@ -21,13 +21,12 @@ import { Tooltip } from "./Components/Tooltip";
 import { WithShadow } from "./Components/WithShadow";
 import { useCoupledExecution } from "./hooks/useCoupledExecution";
 import { useDelayedEffect } from "../hooks/useDelayedEffect";
-import { EditHistory, useEditHistory } from "./hooks/useEditHistory";
+import { UndoState, useUndo } from "../hooks/useUndo";
 import { useParser } from "./hooks/useParser";
-import { usePersistentAppState } from "./hooks/usePersistentAppState";
 import { useCheckProperties } from "./hooks/useCheckProperties";
 import { useSimulator } from "./hooks/useSimulator";
 import { useTrial } from "./hooks/useTrial";
-import { makeDeepSetter } from "./makePartialSetter";
+import { DeepSetter, makeDeepSetter, WithSetters } from "./makePartialSetter";
 import { PanelState } from "./migrations/v1_types";
 import { About } from "./Modals/About";
 import { ModalOverlay } from "./Overlays/ModalOverlay";
@@ -36,22 +35,15 @@ import { GlobalProps } from "./Panel/PanelItem";
 import { ResizeHandle } from "./Panel/ResizeHandle";
 import { SizedPanel } from "./Panel/SizedPanel";
 import { prepareTraces } from "./SideBar/prepare_trace";
-import { TopPanel } from "./TopPanel/TopPanel";
 import { DebugContext } from "./VisualEditor/context/DebugContext";
-import { useEditor } from "./VisualEditor/hooks/useEditor";
 import { VisualEditor } from "./VisualEditor/VisualEditor";
 import { TextDialog } from "./Modals/TextDialog";
+import { TopPanel } from "./TopPanel/TopPanel";
+import { useEditor } from "./VisualEditor/hooks/useEditor";
+import { ModelSize } from "../hooks/useUrlHashState";
 
-export function App() {
-  // The entire persisted application state (minus the visual editor state)
-  const [appState, setAppStateShallow] = useState<AppState>(defaultAppState);
+export function App({appState, setAppState: setAppStateShallow, modelSize}: WithSetters<{appState: AppState}> & {modelSize: ModelSize}) {
   const setAppState = useMemo(() => makeDeepSetter(defaultAppState, setAppStateShallow), [setAppStateShallow]);
-
-  // @ts-ignore: useful for debugging
-  window['appState'] = appState;
-
-  // The state of the visual editor (and all previous and future states)
-  const [editHistory, setEditHistory] = useState<EditHistory|undefined>(undefined);
 
   // Wether a modal dialog is being shown or not
   const [modal, setModal] = useState<ReactElement|null>(null);
@@ -62,9 +54,8 @@ export function App() {
   // What the ???
   const trial = useTrial();
 
-  const editorState = editHistory && editHistory.current;
+  const editorState = appState.syntax.editorState.current;
   const {topology, abstractSyntax, syntaxErrors} = useParser(editorState, appState.syntax.declaredInputs, appState.syntax.declaredOutputs);
-  const historyCallbacks = useEditHistory(setEditHistory);
 
   // Show model name and last edit timestamp in document title (useful for bookmarking).
   useDelayedEffect(() => {
@@ -73,10 +64,6 @@ export function App() {
   }, 100, [appState, editorState]);
 
   // Store app state in URL hash:
-  const modelSize = usePersistentAppState({
-    appState, setAppState: setAppStateShallow, editHistory, setEditHistory,
-    delayMs: 100, // <-- only store URL hash if user doesn't do anything for 100 ms.
-  });
 
   const coupledExecution = useCoupledExecution(abstractSyntax, appState.execution.plants);
   const simulator = useSimulator(coupledExecution);
@@ -141,13 +128,16 @@ export function App() {
   //     bytes={modelSize.original}
   //     modelName={modelName}
   //     setProperties={setProperties}
-  //     replaceModel={historyCallbacks.commitState}/>);
+  //     replaceModel={historyCallbacks.commit}/>);
   // }, [appState.sideBar, editorState, modelSize, historyCallbacks]);
   const onSave = useCallback((modelName: string) => {
     downloadObjectAsJson(
       {editorState, ...appState},
       modelName.replaceAll(' ','-')+'_'+formatDateTime(new Date()).replaceAll('/','-').replaceAll(':','-').replaceAll(' ','_')+".statebuddy.json");
   }, [editorState, appState]);
+
+  // The state of the visual editor (and all previous and future states)
+  const historyCallbacks = useUndo(setAppState.setSyntax.setEditorState._setShallow);
 
   // callback to start editing text label (in modal dialog)
   const beginEdit = useCallback((uid: string) => {
@@ -163,14 +153,14 @@ export function App() {
           }
           else if (newText === "") {
             // delete text
-            historyCallbacks.commitState(({texts, ...rest}) => ({
+            historyCallbacks.commit(({texts, ...rest}) => ({
               texts: texts.filter(t => t.uid !== uid),
               ...rest,
             }));
           }
           else {
             // update text
-            historyCallbacks.commitState(oldState => ({
+            historyCallbacks.commit(oldState => ({
               ...oldState,
               texts: oldState.texts.map(t => {
                 if (t.uid === uid) {
@@ -185,7 +175,7 @@ export function App() {
           }
       }} />);
     }
-  }, [editorState, setModal, historyCallbacks.commitState]);
+  }, [editorState, setModal, historyCallbacks.commit]);
 
   const editorStuff = useEditor(appState.view.topPanel.mouseMap, appState.view.topPanel.zoom, editorState || initialEditorState, historyCallbacks, beginEdit);
 
@@ -206,22 +196,19 @@ export function App() {
 
       {/* Top bar */}
       <WithShadow>
-        {editHistory && editorState &&
-          <TopPanel
-            appState={appState}
-            setAppState={setAppState}
-            historyCallbacks={historyCallbacks}
-            startDragging={editorStuff.setDragging}
-            editHistory={editHistory}
-            simulator={simulator}
-            displayTime={displayTime}
-            refreshDisplayTime={refreshDisplayTime}
-            modelSize={modelSize}
-            trial={trial}
-            onAboutStateBuddy={onAboutStateBuddy}
-            // onOpen={() => {}}
-            onSave={onSave}
-          />}
+        <TopPanel
+          appState={appState}
+          setAppState={setAppState}
+          startDragging={editorStuff.setDragging}
+          historyCallbacks={historyCallbacks}
+          simulator={simulator}
+          displayTime={displayTime}
+          refreshDisplayTime={refreshDisplayTime}
+          modelSize={modelSize}
+          trial={trial}
+          onAboutStateBuddy={onAboutStateBuddy}
+          onSave={onSave}
+        />
       </WithShadow>
 
       {/* Between top bar and bottom bar(s), we have, from left to right: panel, editor, panel */}
@@ -251,7 +238,7 @@ export function App() {
                 <VisualEditor
                   state={editorState}
                   // @ts-ignore
-                  setState={historyCallbacks.commitState}
+                  setState={historyCallbacks.commit}
                   topology={topology}
                   editorStuff={editorStuff}
                   findText={appState.view.visibility.find && appState.find.findText || ""}
@@ -282,7 +269,7 @@ export function App() {
                 state={appState.find}
                 setState={setAppState.setFind._setShallow}
                 cs={editorState}
-                setCS={historyCallbacks.commitState}
+                setCS={historyCallbacks.commit}
                 hide={hideFindReplace}/>
             </BelowEditor>
           }

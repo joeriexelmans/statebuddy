@@ -12,12 +12,12 @@ const ShortcutPaste = <><kbd>Ctrl</kbd>+<kbd>V</kbd></>;
 export const CopyPasteButtons = memo(function CopyPasteButtons({
   current,
   KeyInfo,
-  commitState,
+  commit,
   startDragging,
 }: {
   current: VisualEditorState,
   KeyInfo: JSXElementConstructor<PropsWithChildren<{keyInfo: ReactNode}>>,
-  commitState: (callback: (s: VisualEditorState) => VisualEditorState) => void,
+  commit: (callback: (s: VisualEditorState) => VisualEditorState) => void,
   startDragging: (where: Vec2D) => void,
 }) {
   const disabled = current.selection.size === 0;
@@ -43,7 +43,7 @@ export const CopyPasteButtons = memo(function CopyPasteButtons({
               const where = {x: 500, y: 100};
               pasteData(text, // <-- data to decode
                 where, // <-- where on the canvas
-                commitState, // <-- create new entry in edit history
+                commit, // <-- create new entry in edit history
                 () => startDragging(where)); // <-- pasted shapes follow mouse
             });
           }}

@@ -1,3 +1,4 @@
+import { initialEditorState } from "../../statecharts/concrete_syntax";
 import { AppStateV1, DebugState, MQTTState, SideBarState, ToolSelectState, TracesState } from "./v1_types";
 
 export const defaultToolSelectState: ToolSelectState = {
@@ -77,6 +78,10 @@ export const defaultDebugState: DebugState = {
 };
 
 export const defaultAppStateV1: AppStateV1 = {
+  editorState: {
+    ...initialEditorState,
+    selection: [],
+  },
   showPlot: false,
   findReplace: defaultFindReplaceState,
   topPanel: defaultTopPanelState,

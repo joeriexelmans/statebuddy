@@ -1,1 +1,1 @@
-In this directory, React hooks that are quite generic (not specific to StateBuddy).
+In this directory, React hooks that are quite generic (possibly reusable outside of StateBuddy).

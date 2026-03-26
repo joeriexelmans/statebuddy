@@ -3,8 +3,12 @@
 import { EventTrigger } from "@/statecharts/label_ast";
 import { RaisedEvent } from "@/statecharts/runtime_types";
 import { Model2ModelConn } from "@/devs/coupled_devs";
+import { SerializableSelection, VisualEditorState } from "../VisualEditor/VisualEditor.state";
 
+// JSON-serializable app state, version 1
 export type AppStateV1 = {
+  editorState: VisualEditorState<SerializableSelection>;
+
   showPlot: boolean;
   findReplace: FindReplaceState;
   topPanel: TopPanelState;

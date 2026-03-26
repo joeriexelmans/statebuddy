@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { PreparedTrace, PropertyCheckStatus } from "../SideBar/prepare_trace_types";
-import { usePromise } from "./usePromise";
+import { usePromise } from "../../hooks/usePromise";
 import { arrResizeDefault } from "@/util/util";
 import { CheckPropFn } from "@/mtl-checker/useMtlWorkerPool";
 

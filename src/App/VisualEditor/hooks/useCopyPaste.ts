@@ -90,17 +90,17 @@ export const pasteData = (data: string, where: Vec2D, setState: Dispatch<(v:Visu
 
 
 const pasteWhere = {x: 500, y: 100};
-export function useCopyPaste(state: VisualEditorState, commitState: Dispatch<(v:VisualEditorState) => VisualEditorState>, selection: Selection, startDragging: (where: Vec2D) => void) {
+export function useCopyPaste(state: VisualEditorState, commit: Dispatch<(v:VisualEditorState) => VisualEditorState>, selection: Selection, startDragging: (where: Vec2D) => void) {
 
 
   const onPaste = useCallback((e: ClipboardEvent) => {
     console.log('paste...');
     const data = e.clipboardData?.getData("text/plain");
-    pasteData(data, pasteWhere, commitState, () => {
+    pasteData(data, pasteWhere, commit, () => {
       e.preventDefault();
       startDragging(pasteWhere);
     });
-  }, [commitState, startDragging]);
+  }, [commit, startDragging]);
 
   const onCopy = useCallback((e: ClipboardEvent) => {
     console.log('copy...');
@@ -120,7 +120,7 @@ export function useCopyPaste(state: VisualEditorState, commitState: Dispatch<(v:
   }, [state, selection]);
 
   const deleteSelection = useCallback(() => {
-    commitState(state => {
+    commit(state => {
       const es = entirelySelectedShapes(state, state.selection);
       return {
         ...state,
@@ -133,7 +133,7 @@ export function useCopyPaste(state: VisualEditorState, commitState: Dispatch<(v:
             !Object.values(es).some(s => s.some(s => s.uid === uid)))),
       };
     });
-  }, [commitState]);
+  }, [commit]);
 
   useShortcuts([
     {keys: ["Delete"], action: deleteSelection},

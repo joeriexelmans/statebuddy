@@ -4,10 +4,12 @@ import { AppStateV2 } from "./v2_types";
 import { defaultAppStateV1 } from "./v1_default";
 import { defaultAppStateV2 } from "./v2_default";
 
-export function migrateToV2(state: AppStateV1): AppStateV2 {
-  const fullV1 = myPureDeepAssign(defaultAppStateV1, state);
+export function v1_to_v2(state: AppStateV1): AppStateV2 {
+  const fullV1 = myPureDeepAssign(defaultAppStateV1, state) as AppStateV1;
+
   const migrated = {
     stateVersion: 2,
+    editorState: fullV1.editorState,
     syntax: {
       declaredInputs: fullV1.declaredInputs,
       declaredOutputs: fullV1.declaredOutputs,
@@ -53,5 +55,6 @@ export function migrateToV2(state: AppStateV1): AppStateV2 {
       },
     },
   } as AppStateV2;
+
   return myPureDeepAssign(defaultAppStateV2, migrated);
 }

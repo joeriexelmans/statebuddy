@@ -1,6 +1,12 @@
+import { initialEditorState } from "../../statecharts/concrete_syntax";
 import { AppStateV0, ToolModeV0 } from "./v0_types";
 
 export const defaultAppStateV0: AppStateV0 = {
+  editorState: {
+    ...initialEditorState,
+    selection: [],
+  },
+
   modelName: "",
   showKeys: true,
   zoom: 1,

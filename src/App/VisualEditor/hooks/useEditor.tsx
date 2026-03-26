@@ -9,7 +9,7 @@ import styles from "../VisualEditor.module.css";
 import { CopyPasteCallbacks, useCopyPaste } from "./useCopyPaste";
 import { VisualEditorState, Parts } from "../VisualEditor.state";
 import { Selection } from "../VisualEditor.state";
-import { EditHistoryCallbacks } from "@/App/hooks/useEditHistory";
+import { UndoCallbacks } from "@/hooks/useUndo";
 import { ToolMode, ToolSelectState } from "@/App/migrations/v1_types";
 
 export type EditorStuff = {
@@ -29,7 +29,7 @@ export function useEditor(
   mouseMap: ToolSelectState,
   zoomPercentage: number,
   state: VisualEditorState,  
-  historyCallbacks: EditHistoryCallbacks,
+  historyCallbacks: UndoCallbacks<VisualEditorState>,
   beginEdit: (uid: string) => void,
 ) {
   const zoom = zoomPercentage / 100;
@@ -49,17 +49,17 @@ export function useEditor(
   // We keep a ref to the SVG element in order to transform mouse event coordinates to SVG coordinates.
   const refSVG = useRef<SVGSVGElement>(null);
   
-  const {commitState, replaceState} = historyCallbacks;
+  const {commit, replace} = historyCallbacks;
   
   // The set of selected shapes is part of the editor state (and its history)
   // This callback creates a new entry in edit history with the updated selection.
   const commitSelection = useCallback((cb: (oldSelection: Selection) => Selection) => {
-    commitState(oldState => ({...oldState, selection: cb(oldState.selection)}));
-  },[commitState]);
+    commit(oldState => ({...oldState, selection: cb(oldState.selection)}));
+  },[commit]);
   
   // This callback overwrites the last entry in edit history with the updated selection.
   const replaceSelection = useCallback((cb: (oldSelection: Selection) => Selection) =>
-    replaceState(oldState => ({...oldState, selection: cb(oldState.selection)})),[replaceState]);
+    replace(oldState => ({...oldState, selection: cb(oldState.selection)})),[replace]);
   
   // The shapes being currently selected.
   // The shapes in this selection are also rendered as selected. But we keep them seperate in case the user decides to cancel the making of the new selection.
@@ -138,7 +138,7 @@ export function useEditor(
   const startInsert = useCallback((e: React.MouseEvent<SVGSVGElement, MouseEvent>, mode: ToolMode) => {
     const currentPointer = getCurrentPointer(e);
     // ignore selection, right mouse button always inserts
-    commitState(state => {
+    commit(state => {
       const newID = state.nextID.toString();
       if (mode === "and" || mode === "or") {
         // insert rountangle
@@ -207,7 +207,7 @@ export function useEditor(
     // The user can still resize/move the inserted shape as long as the insert mouse button is kept pressed:
     setDragging(currentPointer);
     return;
-  }, [getCurrentPointer, commitState]);
+  }, [getCurrentPointer, commit]);
   
   const modeToAction = useCallback((mode: ToolMode, e: React.MouseEvent<SVGSVGElement, MouseEvent>) => {
     if (mode === "nothing") {
@@ -246,8 +246,8 @@ export function useEditor(
         // user was dragging / resizing
         const pointerDelta = subtractV2D(currentPointer, prevPointer);
         // update state in next event cycle ()
-        setTimeout(() => { // <-- bit hacky, but React complains if we call replaceState directly.
-          replaceState(state => drag(state, pointerDelta));
+        setTimeout(() => { // <-- bit hacky, but React complains if we call replace directly.
+          replace(state => drag(state, pointerDelta));
         });
         return currentPointer;
       }
@@ -263,7 +263,7 @@ export function useEditor(
       }
       return ss;
     });
-  }, [replaceState, getCurrentPointer, setSelectingState, setDragging]);
+  }, [replace, getCurrentPointer, setSelectingState, setDragging]);
   
   const onMouseUp = useCallback((e: {target: any, pageX: number, pageY: number}) => {
     setDragging(dragging => {
@@ -271,7 +271,7 @@ export function useEditor(
         // we were moving / resizing
         
         // do not persist sizes smaller than 40x40
-        replaceState(state => {
+        replace(state => {
           return {
             ...state,
             rountangles: state.rountangles.map(r => ({
@@ -311,11 +311,11 @@ export function useEditor(
       })
       return null; // <-- no longer dragging
     })
-  }, [replaceState, replaceSelection, setDragging, setSelectingState, refSVG.current, newSelection]);
+  }, [replace, replaceSelection, setDragging, setSelectingState, refSVG.current, newSelection]);
 
   const onSelectAll = useCallback(() => {
     setDragging(null);
-    commitState(state => ({
+    commit(state => ({
       ...state,
       selection: new Selection([
         ...state.rountangles.map(r => [r.uid, allRectParts] as const),
@@ -325,27 +325,27 @@ export function useEditor(
         ...state.history.map(h => [h.uid, allHistoryParts] as const),
       ]),
     }));
-  }, [commitState, setDragging]);
+  }, [commit, setDragging]);
   
   const convertSelection = useCallback((kind: "or"|"and") => {
-    commitState(state => ({
+    commit(state => ({
       ...state,
       rountangles: state.rountangles.map(r => state.selection.has(r.uid) ? ({...r, kind}) : r),
     }));
-  }, [commitState]);
+  }, [commit]);
   
   const renderSelection = useMemo(() => mergeSelections(state.selection, newSelection(selectingState)), [state.selection, newSelection, selectingState]);
   
   // copy/paste depends on 'useMouse' (it updates the 'dragging' state on paste)
   const copyPasteCallbacks = useCopyPaste(
     state,
-    commitState,
+    commit,
     renderSelection,
     setDragging, // <-- upon pasting, the pasted shapes follow the mouse cursor until the user clicks at the desired position.
   );
 
   const onEditText = useCallback(() => {
-    replaceState(state => {
+    replace(state => {
       if (state.selection.size === 1) {
         for (const [uid, parts] of state.selection) {
           if (parts.size === 1) {
@@ -360,7 +360,7 @@ export function useEditor(
       // we don't actually change the state:
       return state;
     })
-  }, [replaceState, beginEdit]);
+  }, [replace, beginEdit]);
     
   useShortcuts([
     {keys: ["o"], action: useCallback(() => convertSelection("or"), [convertSelection])},

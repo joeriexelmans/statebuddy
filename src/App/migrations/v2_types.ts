@@ -1,5 +1,6 @@
 import { EventTrigger } from "@/statecharts/label_ast";
 import { DebugState, ExtTransitionTrace, FindReplaceState, MQTTState, PanelState, PlantsState, SavedTraces, ToolSelectState } from "./v1_types";
+import { Selection, SerializableSelection, VisualEditorState } from "../VisualEditor/VisualEditor.state";
 
 export type VersionedAppState = {
   stateVersion: number;
@@ -20,9 +21,12 @@ export type ExecutionState = {
   plants: PlantsState,
 }
 
+// JSON-serializable app state, version 2.
 // From version 2 onwards, AppState is explicit about its state version
-export type AppStateV2 = VersionedAppState & {
+export type AppStateV2<> = VersionedAppState & {
   stateVersion: 2,
+
+  editorState: VisualEditorState<SerializableSelection>;
 
   syntax: {
     declaredInputs: EventTrigger[],

@@ -1,5 +1,5 @@
 import { PreparedTrace, PropertyCheckStatus } from "./prepare_trace_types";
-import { usePromise } from "../hooks/usePromise"
+import { usePromise } from "../../hooks/usePromise"
 import { PropertyStatusIndicator } from "./PropertyStatusIndicator"
 import { useDelayedEffect } from "../../hooks/useDelayedEffect"
 import { useEffect } from "react";

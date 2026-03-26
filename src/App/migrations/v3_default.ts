@@ -1,15 +1,9 @@
 import { initialEditorState } from "../../statecharts/concrete_syntax";
-import { Selection } from "../VisualEditor/VisualEditor.state";
 import { defaultDebugState, defaultFindReplaceState, defaultMQTTState } from "./v1_default";
-import { AppStateV2 } from "./v2_types";
+import { AppStateV3 } from "./v3_types";
 
-export const defaultAppStateV2 = {
-  stateVersion: 2,
-
-  editorState: {
-    ...initialEditorState,
-    selection: [],
-  },
+export const defaultAppStateV3 = {
+  stateVersion: 3,
 
   execution: {
     activeProperty: 0,
@@ -26,6 +20,11 @@ export const defaultAppStateV2 = {
   syntax: {
     declaredInputs: [],
     declaredOutputs: [],
+    editorState: {
+      history: [],
+      current: initialEditorState,
+      future: [],
+    },
   },
   view: {
     visibility: {
@@ -71,4 +70,4 @@ export const defaultAppStateV2 = {
       zoom: 100,
     }
   }
-} as AppStateV2;
+} as AppStateV3;

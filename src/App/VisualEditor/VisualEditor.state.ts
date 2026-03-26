@@ -8,14 +8,9 @@ export type VisualEditorState<SelectionType = Selection> = ConcreteSyntax & {
 export class Parts extends Set<string> {}
 
 export class Selection extends Map<string, Parts> {
-  toJSON() {
-    // we still serialize to our old format, to remain compatible
-    return 
-  }
 }
 
 export type SerializableSelection = (readonly [string, string] | {uid: string, part: string})[];
-
 
 export function deserializeSelection(selection: SerializableSelection) {
   const result = new Selection();
