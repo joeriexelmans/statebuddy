@@ -196,7 +196,7 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
   const hideFindReplace = hide(setAppState.setView.setVisibility.setFind);
   const hideDebug = hide(setAppState.setView.setVisibility.setDebug);
 
-  return <div className={styles.App} style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
+  return <div style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
     <ModalOverlay modal={modal} setModal={setModal}>
 
       {/* Top bar */}

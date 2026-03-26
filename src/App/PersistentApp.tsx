@@ -1,3 +1,4 @@
+import styles from "./App.module.css";
 import { buf2string, deflateBuffer, inflateBuf } from "@/compression/deflate";
 import { Encoder } from "cbor-x";
 import { Dispatch, SetStateAction, useState } from "react";
@@ -8,6 +9,7 @@ import { App } from "./App";
 import { AppState, defaultAppState } from "./App.state";
 import { CrashScreen } from "./CrashScreen";
 import { autoMigrate } from "./migrations/auto_migrate";
+import { ModalOverlay } from "./Overlays/ModalOverlay";
 
 const CBOR = new Encoder({
   structuredClone: true,
@@ -146,10 +148,10 @@ export function PersistentApp() {
     </CrashScreen>;
   }
 
-  if (appState) {
-    return <App appState={appState} setAppState={setAppStateDefined} modelSize={modelSize} />;
-  }
-  else {
-    return <>Loading ...</>;
-  }
+  return <div className={styles.App}>
+    {appState
+      ? <App appState={appState} setAppState={setAppStateDefined} modelSize={modelSize} />
+      : <h3>Loading ...</h3>
+    }
+  </div>
 }

@@ -19,6 +19,14 @@
 }
 
 body {
+  color-scheme: light dark;
+
+  --background-color: light-dark(white, rgb(31, 33, 36));
+  --text-color: light-dark(black, white);
+
+  background-color: var(--background-color);
+  color: var(--text-color);
+
   /* 4. Add accessible line-height */
   line-height: 1.5;
   /* 5. Improve text rendering */
