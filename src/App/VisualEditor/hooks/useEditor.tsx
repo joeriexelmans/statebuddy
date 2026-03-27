@@ -345,7 +345,6 @@ export function useEditor(
   const copyPasteCallbacks = useCopyPaste(
     state,
     commit,
-    renderSelection,
     setDragging, // <-- upon pasting, the pasted shapes follow the mouse cursor until the user clicks at the desired position.
   );
 
