@@ -68,7 +68,9 @@ See the [manual](./docs/readme.md).
     ```
     bun build
     ```
-3. Build artifacts can be found in `dist/` (`index.html` and a bunch of supporting files). Any static file server can host these files. Nothing else is needed.
+3. Build artifacts can be found in `dist/` (`index.html` and a bunch of supporting files). Any static file server can host these files(*). Nothing else is needed.
+
+(*) The only requirement is that the static file server sets the `Content-Type` HTTP header correctly for JS and WASM files.
 
 
 ## Development
