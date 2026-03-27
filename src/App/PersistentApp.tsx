@@ -1,7 +1,7 @@
 import styles from "./App.module.css";
 import { buf2string, deflateBuffer, inflateBuf } from "@/compression/deflate";
 import { Encoder } from "cbor-x";
-import { Dispatch, SetStateAction, useState } from "react";
+import { Dispatch, ReactNode, SetStateAction, useState } from "react";
 import { useUrlHashState } from "../hooks/useUrlHashState";
 import { lossyCompressConcreteSyntax } from "../statecharts/concrete_syntax";
 import { myPureDeepAssign } from "../util/util";
@@ -9,7 +9,6 @@ import { App } from "./App";
 import { AppState, defaultAppState } from "./App.state";
 import { CrashScreen } from "./CrashScreen";
 import { autoMigrate } from "./migrations/auto_migrate";
-import { ModalOverlay } from "./Overlays/ModalOverlay";
 
 const CBOR = new Encoder({
   structuredClone: true,
@@ -48,9 +47,35 @@ const CBOR = new Encoder({
 //    - If I want to encode edit histories with structural sharing, CBOR obviously much better
 //         (the question remains if I really want to encode edit histories because even with CBOR they consume a lot of data)
 
+function PENDING() {
+  return <span style={{fontFamily: 'monospace'}}>[ .. ]</span>;
+}
+function OK() {
+  return <span style={{fontFamily: 'monospace'}}>[<span style={{color: 'var(--status-ok-color)'}}> OK </span>]</span>;
+}
+function FAIL() {
+  return <span style={{fontFamily: 'monospace'}}>[<span style={{color: 'var(--status-nok-color)', fontFamily: 'monospace'}}>FAIL</span>]</span>;
+}
+
+function LoadingSteps({steps}: {steps: [ReactNode, string][]}) {
+  return <div style={{textAlign: 'left', display: 'inline-block'}}>
+    {steps.map(([status, step], i) =>
+      <div>{status} {step}</div>
+    )}
+  </div>;
+}
+
+const msgs = {
+  parseUrlBase64: "base64-decode URL hash",
+  decompress: "DEFLATE-decompress",
+  parseCBOR: "CBOR-decode",
+  parseJSON: "instead try JSON-decode",
+}
+
 // A wrapper around <App> that persists the app state in URL hash
 export function PersistentApp() {
-  const [err, setErr] = useState<any>();
+  
+  const [err, setErr] = useState<ReactNode>();
   const [appState, setAppState, modelSize] = useUrlHashState<AppState>(
     100, // ms of inactivity before state is compressed and persisted in URL hash
 
@@ -86,28 +111,55 @@ export function PersistentApp() {
 
     // decode from URL:
     async buf => {
-      const inflated = await inflateBuf(new Uint8Array(buf));
+      if (buf.byteLength === 0) {
+        // empty URL hash -> initial state
+        // return defaultAppState;
+      }
 
-      let stateUnknown;
       try {
-        stateUnknown = CBOR.decode(new Uint8Array(inflated));
-      }
-      catch (cborErr) {
+        const inflated = await inflateBuf(new Uint8Array(buf));
+
+        let stateUnknown;
         try {
-          const str = buf2string(inflated);
-          stateUnknown = JSON.parse(str);
-        } catch (jsonErr) {
-          console.log({cborErr, jsonErr});
-          throw new Error("failed to parse app state (as CBOR or JSON)");
+          stateUnknown = CBOR.decode(new Uint8Array(inflated));
         }
+        catch (cborErr) {
+          try {
+            const str = buf2string(inflated);
+            stateUnknown = JSON.parse(str);
+          } catch (jsonErr) {
+            console.error({cborErr, jsonErr});
+
+            setErr(<LoadingSteps steps={[
+              [<OK/>, msgs.parseUrlBase64],
+              [<OK/>, msgs.decompress],
+              [<FAIL/>, msgs.parseCBOR],
+              [<FAIL/>, msgs.parseJSON],
+            ]}/>)
+          }
+        }
+        const migrated = autoMigrate(stateUnknown);
+        return myPureDeepAssign(defaultAppState, migrated);
       }
-      const migrated = autoMigrate(stateUnknown);
-      return myPureDeepAssign(defaultAppState, migrated);
+      catch (inflateErr) {
+        console.error({inflateErr});
+
+        setErr(<LoadingSteps steps={[
+          [<OK/>, msgs.parseUrlBase64],
+          [<FAIL/>, msgs.decompress],
+          [<PENDING/>, msgs.parseCBOR],
+        ]}/>)
+      }
     },
 
     err => {
-      setErr(err);
       console.error(err);
+
+      setErr(<LoadingSteps steps={[
+        [<FAIL/>, msgs.parseUrlBase64],
+        [<PENDING/>, msgs.decompress],
+        [<PENDING/>, msgs.parseCBOR],
+      ]}/>);
     },
   );
 
@@ -136,22 +188,19 @@ export function PersistentApp() {
   // @ts-ignore: also useful for debugging!
   window['appState'] = appState;
 
-  if (err) {
-    return <CrashScreen>
-      <h1>Failed to restore state from URL</h1>
-      <h3>{err.message}</h3>
-      <div style={{height: '1em'}}/>
-      <button onClick={() => {
-        setErr(undefined);
-        setAppState(defaultAppState);
-      }}>RESET APP STATE</button>
-    </CrashScreen>;
-  }
-
   return <div className={styles.App}>
-    {appState
-      ? <App appState={appState} setAppState={setAppStateDefined} modelSize={modelSize} />
-      : <h3>Loading ...</h3>
+    {err ? <CrashScreen>
+            <h1>Failed to restore state from URL</h1>
+            <h3>{err}</h3>
+            <div style={{height: '1em'}}/>
+            <button onClick={() => {
+              setErr(undefined);
+              setAppState(defaultAppState);
+            }}>RESET APP</button>
+          </CrashScreen>
+        : appState
+          ? <App appState={appState} setAppState={setAppStateDefined} modelSize={modelSize} />
+          : <>Loading ...</>
     }
   </div>
 }

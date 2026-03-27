@@ -32,7 +32,7 @@ export async function inflateBuf(buf: Uint8Array<ArrayBuffer>): Promise<ArrayBuf
   }
   catch (e) {
     // @ts-ignore
-    throw new Error("failed to recover state (valid base64 but corrupted data):" + e.toString());
+    throw new Error("valid base64, but decompression failed: " + e.toString());
   }
   return decompressedBuffer;
 }
