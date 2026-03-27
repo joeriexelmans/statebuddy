@@ -1,9 +1,10 @@
-import { translateAnchored, translateLine, translateRect, Vec2D } from "../../../util/geometry";
+import { area, translateAnchored, translateLine, translateRect, Vec2D } from "../../../util/geometry";
 import { Parts, Selection, VisualEditorState } from "../VisualEditor.state";
 
 export function translateSelection({rountangles, diamonds, history, arrows, texts, selection, ...rest}: VisualEditorState, delta: Vec2D) {
+  const newRountangles = applyTranslation(rountangles, selection, delta, translateRect);
   return {
-    rountangles: applyTranslation(rountangles, selection, delta, translateRect),
+    rountangles: (newRountangles === rountangles) ? rountangles : newRountangles.sort((a,b) => area(b) - area(a)),
     diamonds: applyTranslation(diamonds, selection, delta, translateRect),
     history: applyTranslation(history, selection, delta, translateAnchored),
     arrows: applyTranslation(arrows, selection, delta, translateLine),
