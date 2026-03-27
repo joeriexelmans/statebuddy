@@ -28,7 +28,7 @@ type ExecutionProps = {
 
 const toolbarStyle = {columnGap: '1em'};
 
-export function ExecutionToolbar({simulator, showKeys, refreshDisplayTime, displayTime}: ExecutionProps) {
+export const ExecutionToolbar = memo(function ExecutionToolbar({simulator, showKeys, refreshDisplayTime, displayTime}: ExecutionProps) {
   const [timescale, setTimescale] = useLocalStorage("timescale", 1);
 
   const nextWakeup = infinityIfUndefined(simulator.nextWakeup);
@@ -142,7 +142,7 @@ export function ExecutionToolbar({simulator, showKeys, refreshDisplayTime, displ
       </Toolbar>
     </Toolbar>
   </Toolbar>;
-}
+});
 
 
 const InitClear = memo(function InitClear({KeyInfo, onInit, onClear, disabled}: {

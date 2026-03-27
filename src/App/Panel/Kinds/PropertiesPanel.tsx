@@ -24,7 +24,7 @@ type PropertyEditorProps = WithSetters<{
   propertyResults: PropertyCheckStatus[] | undefined;
 }
 
-export function PropertiesPanel({
+export const PropertiesPanel = memo(function PropertiesPanel({
   properties,
   setProperties,
   activeProperty,
@@ -72,7 +72,7 @@ export function PropertiesPanel({
       </Tooltip>
     </div>
   </>
-}
+});
 
 const SingleProperty = memo(function SingleProperty({i, state, property, isActive, setActiveProperty, setProperties}: {
   i: number,

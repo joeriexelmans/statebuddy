@@ -208,13 +208,16 @@ export const VisualEditor = memo(function VisualEditor({state, topology, syntaxE
 
 const Rountangles = memo(function Rountangles({rountangles, topology, selection, sidesToHighlight, rountanglesToHighlight, errors, highlightActive}: {rountangles: Rountangle[], topology: Topology, selection: Selection, sidesToHighlight: {[key: string]: RectSide[]}, rountanglesToHighlight: {[key: string]: boolean}, errors: TraceableError[], highlightActive: Mode}) {
   // dirty:
-  const uidToRect = useDelayedMemo(() =>
-    new Map(rountangles.map(r => [r.uid ,r])),
-  [rountangles], 100);
+  // const uidToRect = useDelayedMemo(() => {
+  //   // console.time('uidToRect');
+  //   const result = new Map(rountangles.map(r => [r.uid ,r]));
+  //   // console.timeEnd('uidToRect');
+  //   return result;
+  // }, [rountangles], 100);
   return <>{rountangles.map(rountangle => {
     const parentUID = topology.insidenessMap.get(rountangle.uid);
-    const parent = uidToRect.get(parentUID!);
-    const parentIsOrState = parent ? (parent.kind === "or") : true;
+    const parent = topology.rountangles.get(parentUID!);
+    const parentIsOrState = parent ? (parent === "or") : true;
     return <RountangleSVG
       key={rountangle.uid}
       rountangle={rountangle}

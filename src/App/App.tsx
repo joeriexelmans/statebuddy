@@ -40,6 +40,7 @@ import { TextDialog } from "./Modals/TextDialog";
 import { TopPanel } from "./TopPanel/TopPanel";
 import { useEditor } from "./VisualEditor/hooks/useEditor";
 import { ModelSize } from "../hooks/useUrlHashState";
+import { useDetectChange2 } from "../hooks/useDetectChange";
 
 export function App({appState, setAppState: setAppStateShallow, modelSize}: WithSetters<{appState: AppState}> & {modelSize: ModelSize}) {
   const setAppState = useMemo(() => makeDeepSetter(defaultAppState, setAppStateShallow), [setAppStateShallow]);
@@ -102,7 +103,9 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
     appState.execution.properties,
     checkProperty);
 
-  const tracesAndResults = {
+  // useDetectChange2({abstractSyntax, prepareTraces, propertyResults});
+
+  const tracesAndResults = useMemo(() => ({
     ...(preparedTrace || {}),
     ...Object.fromEntries((propertyResults||[]).flatMap((result, i) => {
       // non-error property check results are included in the traces that can be plotted:
@@ -114,7 +117,7 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
       }
       return [];
     })),
-  }
+  }), [propertyResults, preparedTrace]);
 
   const onAboutStateBuddy = useCallback(() => setModal(<About setModal={setModal} {...trial}/>), [trial]);
   // const onOpen = useCallback((modelName: string) => {
@@ -258,7 +261,7 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
           </div>
           
           {/* <Greeter trial={trial}/> */}
-          
+
           {appState.view.visibility.table && appState.execution.properties.length > 0 && appState.execution.savedTraces.length > 0 && coupledExecution && abstractSyntax &&
             <BelowEditor>
               <PropertyTable

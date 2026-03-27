@@ -3,8 +3,11 @@ import { Parts, Selection, VisualEditorState } from "../VisualEditor.state";
 
 export function translateSelection({rountangles, diamonds, history, arrows, texts, selection, ...rest}: VisualEditorState, delta: Vec2D) {
   const newRountangles = applyTranslation(rountangles, selection, delta, translateRect);
+  // console.time('sort rountangles');
+  const sortWhenNecessary = (newRountangles === rountangles) ? rountangles : newRountangles.sort((a,b) => area(b) - area(a))
+  // console.timeEnd('sort rountangles');
   return {
-    rountangles: (newRountangles === rountangles) ? rountangles : newRountangles.sort((a,b) => area(b) - area(a)),
+    rountangles: sortWhenNecessary,
     diamonds: applyTranslation(diamonds, selection, delta, translateRect),
     history: applyTranslation(history, selection, delta, translateAnchored),
     arrows: applyTranslation(arrows, selection, delta, translateLine),

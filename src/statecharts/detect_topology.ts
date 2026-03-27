@@ -1,7 +1,7 @@
 import { area, isEntirelyWithin, Rect2D, Vec2D } from "@/util/geometry";
-import { Arrow, ConcreteSyntax, Diamond, getArrowFatBBox, getArrowFatBBoxes, getRectFatBBox, getTextFatBBox, Rountangle } from "./concrete_syntax";
+import { Arrow, ConcreteSyntax, Diamond, getArrowFatBBox, getArrowFatBBoxes, getRectFatBBox, getTextFatBBox, History, Rountangle, Text } from "./concrete_syntax";
 import { findNearestArrow, findNearestHistory, findNearestSide, findRountangle, RectSide } from "./concrete_syntax";
-import { arraysEqual, jsonDeepEqual, mapsEqual, memoizeOne } from "@/util/util";
+import { arraysEqual, jsonDeepEqual, mapsEqual, memoizeOne, setsEqual } from "@/util/util";
 import { GRID_CELL_SIZE, HISTORY_RADIUS } from "@/App/parameters";
 
 export type Topology = {
@@ -14,6 +14,13 @@ export type Topology = {
   rountangle2TextMap: Map<string, string[]>,
   history2ArrowMap: Map<string, string[]>,
   insidenessMap: Map<string, string>;
+
+  // all these structures have UIDs as keys:
+  rountangles: Map<string, "and" | "or">,
+  arrows: Set<string>,
+  texts: Map<string, string>,
+  history: Map<string, "deep" | "shallow">,
+  diamonds: Set<string>,
 }
 
 export function topologiesEqual(a: Topology, b: Topology) {
@@ -25,6 +32,11 @@ export function topologiesEqual(a: Topology, b: Topology) {
     && mapsEqual(a.rountangle2TextMap, b.rountangle2TextMap, arraysEqual)
     && mapsEqual(a.history2ArrowMap, b.history2ArrowMap, arraysEqual)
     && mapsEqual(a.insidenessMap, b.insidenessMap)
+    && mapsEqual(a.rountangles, b.rountangles)
+    && setsEqual(a.arrows, b.arrows)
+    && mapsEqual(a.texts, b.texts)
+    && mapsEqual(a.history, b.history)
+    && setsEqual(a.diamonds, b.diamonds)
 }
 
 const detectArrow2History = memoizeOne(function detectArrow2History(concreteSyntax: ConcreteSyntax) {
@@ -215,38 +227,44 @@ export function computeTopology(concreteSyntax: ConcreteSyntax): Topology {
     rountangle2TextMap,
     history2ArrowMap,
     insidenessMap,
+
+    rountangles: new Map(concreteSyntax.rountangles.map(r => [r.uid, r.kind])),
+    arrows: new Set(concreteSyntax.arrows.map(a => a.uid)),
+    diamonds: new Set(concreteSyntax.diamonds.map(d => d.uid)),
+    history: new Map(concreteSyntax.history.map(h => [h.uid, h.kind])),
+    texts: new Map(concreteSyntax.texts.map(t => [t.uid, t.text])),
   };
 }
 
-// Subset of information of concrete syntax.
-export type ReducedConcreteSyntax = {
-    rountangles: {
-      kind: "and" | "or",
-      uid: string,
-    }[];
-    texts: {
-      text: string,
-      uid: string,
-    }[];
-    arrows: {
-      uid: string,
-    }[];
-    diamonds: {
-      uid: string,
-    }[];
-    history: {
-      kind: "deep" | "shallow",
-      uid: string,
-    }[];
-};
+// // Subset of information of concrete syntax.
+// export type ReducedConcreteSyntax = {
+//     rountangles: {
+//       kind: "and" | "or",
+//       uid: string,
+//     }[];
+//     texts: {
+//       text: string,
+//       uid: string,
+//     }[];
+//     arrows: {
+//       uid: string,
+//     }[];
+//     diamonds: {
+//       uid: string,
+//     }[];
+//     history: {
+//       kind: "deep" | "shallow",
+//       uid: string,
+//     }[];
+// };
 
-export function reducedConcreteSyntaxEqual(a: ReducedConcreteSyntax, b: ReducedConcreteSyntax) {
-  return arraysEqual(a.rountangles, b.rountangles, (a,b)=>a.kind===b.kind&&a.uid===b.uid)
-    && arraysEqual(a.texts, b.texts, (a,b)=>a.text===b.text&&a.uid===b.uid)
-    && arraysEqual(a.arrows, b.arrows, (a,b)=>a.uid===b.uid)
-    && arraysEqual(a.diamonds, b.diamonds, (a,b)=>a.uid===b.uid)
-    && arraysEqual(a.history, b.history, (a,b)=>a.kind===b.kind&&a.uid===b.uid);
-}
+// export function reducedConcreteSyntaxEqual(a: ReducedConcreteSyntax, b: ReducedConcreteSyntax) {
+//   return arraysEqual(a.rountangles, b.rountangles, (a,b)=>a.kind===b.kind&&a.uid===b.uid)
+//     && arraysEqual(a.texts, b.texts, (a,b)=>a.text===b.text&&a.uid===b.uid)
+//     && arraysEqual(a.arrows, b.arrows, (a,b)=>a.uid===b.uid)
+//     && arraysEqual(a.diamonds, b.diamonds, (a,b)=>a.uid===b.uid)
+//     && arraysEqual(a.history, b.history, (a,b)=>a.kind===b.kind&&a.uid===b.uid);
+// }
 
 
 function gridCellIdx(x: number) {

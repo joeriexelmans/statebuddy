@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { computeTopology, reducedConcreteSyntaxEqual, topologiesEqual } from "@/statecharts/detect_topology";
+import { computeTopology, topologiesEqual } from "@/statecharts/detect_topology";
 import { parseStatechart } from "@/statecharts/parser";
 import { useCustomMemo } from "@/hooks/useCustomMemo";
 import { VisualEditorState } from "../VisualEditor/VisualEditor.state";
@@ -44,8 +44,7 @@ export function useParser(
       if (nextState === undefined) return false;
       if (prevDeclaredInputs !== nextDeclaredInputs) return false;
       if (prevDeclaredOutputs !== nextDeclaredOutputs) return false;
-      return topologiesEqual(prevTopo, nextTopo)
-        && reducedConcreteSyntaxEqual(prevState, nextState);
+      return topologiesEqual(prevTopo, nextTopo);
   });
 
   return useMemo(() => ({

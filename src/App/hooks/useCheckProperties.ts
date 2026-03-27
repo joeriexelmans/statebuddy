@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { PreparedTrace, PropertyCheckStatus } from "../SideBar/prepare_trace_types";
 import { usePromise } from "../../hooks/usePromise";
 import { arrResizeDefault } from "@/util/util";
@@ -30,12 +30,15 @@ export function useCheckProperties(
     };
   }, [trace, properties]);
 
-  if (results.kind === "pending") {
-    // checking is pending for all properties
-    return properties.map(() => statusPending);
-  }
-  else if (results.kind === "resolved") {
-    return arrResizeDefault(results.result, properties.length, statusPending);
-  }
-  throw new Error("should never happen");
+  return useMemo(() => {
+    if (results.kind === "pending") {
+      // checking is pending for all properties
+      return properties.map(() => statusPending);
+    }
+    else if (results.kind === "resolved") {
+      return arrResizeDefault(results.result, properties.length, statusPending);
+    }
+    throw new Error("should never happen");
+
+  }, [results, properties]);
 }
