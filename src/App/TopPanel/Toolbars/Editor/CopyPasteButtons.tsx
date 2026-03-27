@@ -44,7 +44,8 @@ export const CopyPasteButtons = memo(function CopyPasteButtons({
               pasteData(text, // <-- data to decode
                 where, // <-- where on the canvas
                 commit, // <-- create new entry in edit history
-                () => startDragging(where)); // <-- pasted shapes follow mouse
+                () => {})
+              startDragging(where); // <-- pasted shapes follow mouse
             });
           }}
         >
