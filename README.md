@@ -70,7 +70,7 @@ See the [manual](./docs/readme.md).
     ```
 3. Build artifacts can be found in `dist/` (`index.html` and a bunch of supporting files). Any static file server can host these files(*). Nothing else is needed.
 
-(*) The only requirement is that the static file server sets the `Content-Type` HTTP header correctly for JS and WASM files.
+(*) The only requirement is that the static file server sets the `Content-Type` HTTP header correctly for JS and WASM files. Most servers (e.g., Nginx) do this automatically without any configuration.
 
 
 ## Development
