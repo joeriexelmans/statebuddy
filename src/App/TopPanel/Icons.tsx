@@ -19,7 +19,7 @@ export function PseudoStateIcon(props: {}) {
         ${w / 2} ${1},
         ${w - 1} ${h / 2},
         ${w / 2} ${h - 1},
-        ${1}   ${h / 2},
+        ${1}   ${h / 2}
       `}
       style={{
         fill: 'var(--and-state-bg-color',
