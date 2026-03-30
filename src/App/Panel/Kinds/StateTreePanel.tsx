@@ -63,6 +63,7 @@ export const StateTreePanel = memo(function StateTreePanel({abstractSyntax}: {ab
   </div>
 });
 
+// @ts-ignore
 function removeCycles(state: TransitionSrcTgt) {
   const common = {
     uid: state.uid,
