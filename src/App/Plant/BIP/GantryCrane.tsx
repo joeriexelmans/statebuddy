@@ -8,7 +8,7 @@ import { RT_Statechart } from "@/statecharts/runtime_types";
 
 const gantryCraneConcreteSyntax = model as ConcreteSyntax;
 
-const [abstractSyntax, parseErrors] = parseStatechart(gantryCraneConcreteSyntax, computeTopology(gantryCraneConcreteSyntax));
+const [abstractSyntax, parseErrors] = parseStatechart(computeTopology(gantryCraneConcreteSyntax));
 
 if (parseErrors.length > 0) {
   console.error("errors parsing gantry crane statechart:", parseErrors);

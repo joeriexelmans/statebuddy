@@ -195,8 +195,9 @@ export function PersistentApp() {
   return <div className={styles.App}>
     {err ? <CrashScreen>
             <h1>Failed to restore state from URL</h1>
+            <div style={{height: '2em'}}/>
             <h3>{err}</h3>
-            <div style={{height: '1em'}}/>
+            <div style={{height: '2.5em'}}/>
             <button onClick={() => {
               setErr(undefined);
               setAppState(defaultAppState);

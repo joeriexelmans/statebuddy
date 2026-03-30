@@ -30,7 +30,7 @@ function addEvent(events: EventTrigger[], e: EventTrigger, textUid: string) {
   }
 }
 
-export function parseStatechart(concreteSyntax: ReducedConcreteSyntax, conns: Topology): [Statechart, TraceableError[]] {
+export function parseStatechart(topology: Topology): [Statechart, TraceableError[]] {
   const errors: TraceableError[] = [];
 
   // implicitly, the root is always an Or-state
@@ -54,11 +54,11 @@ export function parseStatechart(concreteSyntax: ReducedConcreteSyntax, conns: To
 
   // step 1: figure out state hierarchy
 
-  for (const rt of concreteSyntax.rountangles) {
-    const parent = uid2State.get(conns.insidenessMap.get(rt.uid)!)! as ConcreteState;
+  for (const [uid, kind] of topology.rountangles.entries()) {
+    const parent = uid2State.get(topology.insidenessMap.get(uid)!)! as ConcreteState;
     const common = {
-      kind: rt.kind,
-      uid: rt.uid,
+      kind,
+      uid,
       comments: [],
       entryActions: [],
       exitActions: [],
@@ -66,7 +66,7 @@ export function parseStatechart(concreteSyntax: ReducedConcreteSyntax, conns: To
       depth: parent.depth + 1,
     };
     let state;
-    if (rt.kind === "or") {
+    if (kind === "or") {
       state = {
         ...common,
         initial: [],
@@ -75,7 +75,7 @@ export function parseStatechart(concreteSyntax: ReducedConcreteSyntax, conns: To
         timers: [],
       };
     }
-    else if (rt.kind === "and") {
+    else if (kind === "and") {
       state = {
         ...common,
         children: [],
@@ -84,28 +84,28 @@ export function parseStatechart(concreteSyntax: ReducedConcreteSyntax, conns: To
       };
     }
     parent.children.push(state as ConcreteState);
-    parentLinks.set(rt.uid, parent.uid);
-    uid2State.set(rt.uid, state as ConcreteState);
+    parentLinks.set(uid, parent.uid);
+    uid2State.set(uid, state as ConcreteState);
   }
-  for (const d of concreteSyntax.diamonds) {
-    const parent = uid2State.get(conns.insidenessMap.get(d.uid)!)! as ConcreteState;
+  for (const uid of topology.diamonds) {
+    const parent = uid2State.get(topology.insidenessMap.get(uid)!)! as ConcreteState;
     const pseudoState = {
       kind: "pseudo" as const,
-      uid: d.uid,
+      uid,
       comments: [],
       depth: parent.depth+1,
       parent,
       entryActions: [],
       exitActions: [],
     };
-    uid2State.set(d.uid, pseudoState);
+    uid2State.set(uid, pseudoState);
     parent.children.push(pseudoState);
   }
-  for (const h of concreteSyntax.history) {
-    const parent = uid2State.get(conns.insidenessMap.get(h.uid)!)! as ConcreteState;
+  for (const [uid, kind] of topology.history) {
+    const parent = uid2State.get(topology.insidenessMap.get(uid)!)! as ConcreteState;
     const historyState = {
-      kind: h.kind,
-      uid: h.uid,
+      kind,
+      uid,
       parent,
       depth: parent.depth+1,
       comments: [],
@@ -119,17 +119,17 @@ export function parseStatechart(concreteSyntax: ReducedConcreteSyntax, conns: To
   const transitions = new Map<string, Transition[]>();
   const uid2Transition = new Map<string, Transition>();
 
-  for (const arr of concreteSyntax.arrows) {
-    const srcUID = conns.arrow2SideMap.get(arr.uid)?.[0]?.uid;
-    const tgtUID = conns.arrow2SideMap.get(arr.uid)?.[1]?.uid;
-    const historyTgtUID = conns.arrow2HistoryMap.get(arr.uid);
+  for (const uid of topology.arrows) {
+    const srcUID = topology.arrow2SideMap.get(uid)?.[0]?.uid;
+    const tgtUID = topology.arrow2SideMap.get(uid)?.[1]?.uid;
+    const historyTgtUID = topology.arrow2HistoryMap.get(uid);
     if (!srcUID) {
       if (historyTgtUID) {
-        errors.push({shapeUid: arr.uid, message: "no source"});
+        errors.push({shapeUid: uid, message: "no source"});
       }
       else if (!tgtUID) {
         // dangling edge
-        errors.push({shapeUid: arr.uid, message: "dangling"});
+        errors.push({shapeUid: uid, message: "dangling"});
       }
       else {
         // target but no source, so we treat is as an 'initial' marking
@@ -137,19 +137,19 @@ export function parseStatechart(concreteSyntax: ReducedConcreteSyntax, conns: To
         if (tgtState.kind === "pseudo") {
           // maybe allow this in the future?
           errors.push({
-            shapeUid: arr.uid,
+            shapeUid: uid,
             message: "pseudo-state cannot be initial state",
           });
         }
         else {
           const ofState = uid2State.get(parentLinks.get(tgtUID)!)!;
           if (ofState.kind === "or") {
-            ofState.initial.push([arr.uid, tgtState]);
+            ofState.initial.push([uid, tgtState]);
           }
           else {
             // and states do not have an 'initial' state
             errors.push({
-              shapeUid: arr.uid,
+              shapeUid: uid,
               message: "AND-state cannot have an initial state",
             });
           }
@@ -168,7 +168,7 @@ export function parseStatechart(concreteSyntax: ReducedConcreteSyntax, conns: To
         }
         const src = uid2State.get(srcUID)!;
         const transition: Transition = {
-          uid: arr.uid,
+          uid: uid,
           src,
           tgt,
           arena: computeArena(src, tgt),
@@ -177,11 +177,11 @@ export function parseStatechart(concreteSyntax: ReducedConcreteSyntax, conns: To
         const existingTransitions = transitions.get(srcUID) || [];
         existingTransitions.push(transition);
         transitions.set(srcUID, existingTransitions);
-        uid2Transition.set(arr.uid, transition);
+        uid2Transition.set(uid, transition);
       }
       else {
         errors.push({
-          shapeUid: arr.uid,
+          shapeUid: uid,
           message: "no target",
         });
       }
@@ -213,28 +213,28 @@ export function parseStatechart(concreteSyntax: ReducedConcreteSyntax, conns: To
   // step 3: figure out labels
 
   // ASSUMPTION: text is sorted by y-coordinate
-  for (const text of concreteSyntax.texts) {
+  for (const [uid, text] of topology.texts) {
     let parsed: ParsedText;
     try {
-      parsed = cachedParseLabel(text.text); // may throw
-      parsed.uid = text.uid;
+      parsed = cachedParseLabel(text); // may throw
+      parsed.uid = uid;
     } catch (e) {
       if (e instanceof SyntaxError) {
         errors.push({
-          shapeUid: text.uid,
+          shapeUid: uid,
           message: 'parser: ' + e.message,
           data: e,
         });
         parsed = {
           kind: "parserError",
-          uid: text.uid,
+          uid: uid,
         }
       }
       else {
         throw e;
       }
     }
-    const belongsToArrowUID = conns.text2ArrowMap.get(text.uid);
+    const belongsToArrowUID = topology.text2ArrowMap.get(uid);
     const belongsToTransition = uid2Transition.get(belongsToArrowUID!);
     if (belongsToTransition) {
       const {src} = belongsToTransition;
@@ -244,7 +244,7 @@ export function parseStatechart(concreteSyntax: ReducedConcreteSyntax, conns: To
         // triggers
         if (parsed.trigger.kind === "event") {
           if (src.kind === "pseudo") {
-            errors.push({shapeUid: text.uid, message: "cannot have trigger"});
+            errors.push({shapeUid: uid, message: "cannot have trigger"});
           }
           else {
             const {event} = parsed.trigger;
@@ -258,7 +258,7 @@ export function parseStatechart(concreteSyntax: ReducedConcreteSyntax, conns: To
         }
         else if (parsed.trigger.kind === "after") {
           if (src.kind === "pseudo") {
-            errors.push({shapeUid: text.uid, message: "cannot have trigger"});
+            errors.push({shapeUid: uid, message: "cannot have trigger"});
           }
           else {
             src.timers.push(parsed.trigger.durationMs);
@@ -266,11 +266,11 @@ export function parseStatechart(concreteSyntax: ReducedConcreteSyntax, conns: To
           }
         }
         else if (["entry", "exit"].includes(parsed.trigger.kind)) {
-          errors.push({shapeUid: text.uid, message: "entry/exit trigger not allowed on transitions"});
+          errors.push({shapeUid: uid, message: "entry/exit trigger not allowed on transitions"});
         }
         else if (parsed.trigger.kind === "triggerless") {
           if (src.kind !== "pseudo") {
-            errors.push({shapeUid: text.uid, message: "needs trigger"});
+            errors.push({shapeUid: uid, message: "needs trigger"});
           }
         }
       }
@@ -278,7 +278,7 @@ export function parseStatechart(concreteSyntax: ReducedConcreteSyntax, conns: To
     else {
       // text does not belong to transition...
       // so it belongs to a rountangle (a state)
-      const rountangleUID = conns.text2RountangleMap.get(text.uid);
+      const rountangleUID = topology.text2RountangleMap.get(uid);
       const belongsToState = uid2State.get(rountangleUID!) as ConcreteState || root;
       if (parsed.kind === "transitionLabel") {
         // labels belonging to a rountangle (= a state) must by entry/exit actions
@@ -291,9 +291,9 @@ export function parseStatechart(concreteSyntax: ReducedConcreteSyntax, conns: To
         }
         else {
           errors.push({
-            shapeUid: text.uid,
+            shapeUid: uid,
             message: "must belong to transition",
-            data: {start: {offset: 0}, end: {offset: text.text.length}},
+            data: {start: {offset: 0}, end: {offset: text.length}},
           });
         }
       }
@@ -302,7 +302,7 @@ export function parseStatechart(concreteSyntax: ReducedConcreteSyntax, conns: To
         if (!label2State.has(parsed.text)) {
           label2State.set(parsed.text, belongsToState);
         }
-        belongsToState.comments.push([text.uid, parsed.text]);
+        belongsToState.comments.push([uid, parsed.text]);
       }
     }
 

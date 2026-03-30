@@ -17,7 +17,7 @@ import { Scope } from "@/statecharts/environment";
 
 export const dwatchConcreteSyntax = dwatchJSON as ConcreteSyntax;
 
-export const [dwatchAbstractSyntax, dwatchErrors] = parseStatechart(dwatchConcreteSyntax, computeTopology(dwatchConcreteSyntax));
+export const [dwatchAbstractSyntax, dwatchErrors] = parseStatechart(computeTopology(dwatchConcreteSyntax));
 
 
 if (dwatchErrors.length > 0) {

@@ -23,7 +23,7 @@ import { objectsEqual } from "@/util/util";
 
 export const microwaveConcreteSyntax = microwaveJSON as ConcreteSyntax;
 
-export const [microwaveAbstractSyntax, microwaveErrors] = parseStatechart(microwaveConcreteSyntax, computeTopology(microwaveConcreteSyntax));
+export const [microwaveAbstractSyntax, microwaveErrors] = parseStatechart(computeTopology(microwaveConcreteSyntax));
 
 if (microwaveErrors.length > 0) {
   console.error({microwaveErrors});

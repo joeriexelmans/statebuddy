@@ -20,7 +20,7 @@ import { dummyTracer } from "@/statecharts/tracer";
 
 export const trafficLightConcreteSyntax = trafficLightJSON as ConcreteSyntax;
 
-export const [trafficLightAbstractSyntax, trafficLightErrors] = parseStatechart(trafficLightConcreteSyntax, computeTopology(trafficLightConcreteSyntax));
+export const [trafficLightAbstractSyntax, trafficLightErrors] = parseStatechart(computeTopology(trafficLightConcreteSyntax));
 
 if (trafficLightErrors.length > 0) {
   console.error({trafficLightErrors});
