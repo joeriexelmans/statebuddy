@@ -113,11 +113,13 @@ export function PersistentApp() {
     async buf => {
       if (buf.byteLength === 0) {
         // empty URL hash -> initial state
-        // return defaultAppState;
+        return defaultAppState;
       }
 
+      let inflated;
+
       try {
-        const inflated = await inflateBuf(new Uint8Array(buf));
+        inflated = await inflateBuf(new Uint8Array(buf));
 
         let stateUnknown;
         try {
@@ -135,7 +137,9 @@ export function PersistentApp() {
               [<OK/>, msgs.decompress],
               [<FAIL/>, msgs.parseCBOR],
               [<FAIL/>, msgs.parseJSON],
-            ]}/>)
+            ]}/>);
+
+            return;
           }
         }
         const migrated = autoMigrate(stateUnknown);
@@ -148,7 +152,7 @@ export function PersistentApp() {
           [<OK/>, msgs.parseUrlBase64],
           [<FAIL/>, msgs.decompress],
           [<PENDING/>, msgs.parseCBOR],
-        ]}/>)
+        ]}/>);
       }
     },
 

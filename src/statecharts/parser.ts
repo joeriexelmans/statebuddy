@@ -1,7 +1,7 @@
 import {  ConcreteState, HistoryState, OrState, UnstableState, Statechart, stateDescription, Transition, computeArena } from "./abstract_syntax";
 import { Action, EventTrigger, Expression, Lhs, ParsedText } from "./label_ast";
 import { parse as parseLabel, SyntaxError } from "./label_parser";
-import { Topology, ReducedConcreteSyntax } from "./detect_topology";
+import { Topology } from "./detect_topology";
 import { memoize } from "@/util/util";
 
 export type TraceableError = {
