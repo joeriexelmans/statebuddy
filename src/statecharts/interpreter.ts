@@ -350,6 +350,9 @@ function getEnabledTransitions(rt: RT_Microstep, sourceState: AbstractState, eve
     .map(([_, newEnvironment, transition, label, msgs]) => [newEnvironment, transition, label, msgs] as const);
 }
 
+// Attempt to make ONE outgoing transition from the given source state.
+// Returns a new runtime configuration if a transition was made. Returns 'undefined' if no transition could be made.
+// If the target of the transition is a pseudo-state, then within this same call, transitions will keep firing until a stable state is reached.
 function attemptSrcState(rt: RT_Microstep, sourceState: AbstractState, event: RT_Event | undefined, statechart: Statechart, trace: Tracer): RT_Microstep | undefined {
   const enabled = getEnabledTransitions(rt, sourceState, event, statechart);
   // trace(`state ${stateDescription(sourceState)} has ${enabled.length} enabled transitions`);
@@ -391,6 +394,7 @@ function attemptSrcState(rt: RT_Microstep, sourceState: AbstractState, event: RT
 }
 
 // A fair step is a response to one (input|internal) event, where possibly multiple transitions are made as long as their arenas do not overlap. A reasonably accurate and more intuitive explanation is that every orthogonal region is allowed to fire at most one transition.
+// This function will attempt to fire outgoing transitions of 'activeParent's children, and recursively, the children of the children. This corresponds to 'parent first' priority semantics.
 function fairStep(rt: RT_Microstep, event: RT_Event, statechart: Statechart, activeParent: StableState, trace: Tracer): RT_Microstep {
   for (const state of activeParent.children) {
     if (rt.mode.has(state.uid)) {
@@ -409,6 +413,7 @@ function fairStep(rt: RT_Microstep, event: RT_Event, statechart: Statechart, act
   return rt;
 }
 
+// Perform a 'big step', AKA run-to-completion (RTC) step. A big step is an atomic response to an input event or timer elapse.
 export function makeBigStep(rt: BigStep, event: RT_Event, statechart: Statechart, trace: Tracer): BigStep {
   if (event.kind === "timer") {
     trace.log(`timer`);
