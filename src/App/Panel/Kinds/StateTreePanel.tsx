@@ -1,8 +1,10 @@
 import styles from "../../App.module.css";
-
+import SaveAltIcon from '@mui/icons-material/SaveAlt';
 import { memo, useState } from "react";
-import { ConcreteState, OrState, UnstableState, stateDescription } from "../../../statecharts/abstract_syntax";
+import { ConcreteState, OrState, Statechart, Transition, TransitionSrcTgt, UnstableState, stateDescription } from "../../../statecharts/abstract_syntax";
 import { PseudoStateIcon, RountangleIcon } from "../../TopPanel/Icons";
+import { Tooltip } from "../../Components/Tooltip";
+import { downloadObjectAsJson } from "../../../util/download_json";
 
 export const StateTree = memo(function StateTree(props: {root: ConcreteState | UnstableState, dashed: boolean}) {
   const description = stateDescription(props.root);
@@ -36,10 +38,63 @@ export const StateTree = memo(function StateTree(props: {root: ConcreteState | U
 });
 
 
-export const StateTreePanel = memo(function StateTreePanel(props: {root: OrState}) {
+export const StateTreePanel = memo(function StateTreePanel({abstractSyntax}: {abstractSyntax: Statechart}) {
   return <div className={styles.stateTree}>
+    <div style={{float: 'right'}}>
+    <Tooltip tooltip="export abstract syntax (JSON)" align="right">
+      <button
+        onClick={() => {
+          downloadObjectAsJson({
+            root: removeCycles(abstractSyntax.root),
+            transitions: [...abstractSyntax.transitions.values()].flatMap(ts => ts.map(removeCyclesT)),
+            inputEvents: abstractSyntax.inputEvents.map(i => i.event),
+            outputEvents: [...abstractSyntax.outputEvents],
+            internalEvents: abstractSyntax.internalEvents.map(i => i.event),
+          }, 'abstract_syntax.json');
+        }}
+      >
+        <SaveAltIcon fontSize="small"/>
+      </button>
+    </Tooltip>
+    </div>
     <ul>
-      <StateTree root={props.root} dashed={false}/>
+      <StateTree root={abstractSyntax.root} dashed={false}/>
     </ul>
   </div>
 });
+
+function removeCycles(state: TransitionSrcTgt) {
+  const common = {
+    uid: state.uid,
+    kind: state.kind,
+    comments: state.comments,
+    depth: state.depth,
+    entryActions: state.entryActions,
+    exitActions: state.exitActions,
+  }
+  if (state.kind === "pseudo") {
+    return common;
+  }
+  else {
+    return {
+      ...common,
+      children: state.children.map(removeCycles),
+      history: state.history.map(h => ({
+        uid: h.uid,
+        kind: h.kind,
+        depth: h.depth,
+      })),
+      timers: state.timers,
+    }
+  }
+}
+
+function removeCyclesT(t: Transition) {
+  return {
+    uid: t.uid,
+    src: t.src.uid,
+    tgt: t.tgt.uid,
+    arena: t.arena.uid,
+    label: t.label,
+  }
+}

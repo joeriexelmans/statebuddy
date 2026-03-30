@@ -15,7 +15,7 @@ import { TracesPanel } from "./Kinds/TracesPanel";
 import { InputEventsPanel } from "./Kinds/InputEventsPanel";
 import { InternalEventsPanel } from "./Kinds/InternalEventsPanel";
 import { OutputEventsPanel } from "./Kinds/OutputEventsPanel";
-import { StateTree, StateTreePanel } from "./Kinds/StateTreePanel";
+import { StateTreePanel } from "./Kinds/StateTreePanel";
 
 // Union of all the stuff any of the panels need to know about
 export type GlobalProps = {
@@ -57,7 +57,7 @@ export function panelItemInfo({type, globalProps: {appState, abstractSyntax}}: P
 export function PanelItem({type, globalProps: {appState, setAppState, abstractSyntax, simulator, propertyResults}, isExpanded}: PanelItemProps) {
 
   if (type === "state tree") {
-    return <>{abstractSyntax && <StateTreePanel root={abstractSyntax.root}/>}</>
+    return <>{abstractSyntax && <StateTreePanel abstractSyntax={abstractSyntax}/>}</>
   }
   else if (type === "input events") {
     return useMemo(() =>
