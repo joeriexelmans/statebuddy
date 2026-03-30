@@ -37,6 +37,8 @@ See also the [comparison with Itemis CREATE](./docs/comparison_itemis.md), the t
 
 ## Try it now!
 
+<span style="color:red">**Use Firefox or Chrome! For instance, Safari is known not to work 100%. I don't have a Mac so I cannot fix this.**</span>
+
 Live version available here:
 [https://deemz.org/public/statebuddy/v2/](https://deemz.org/public/statebuddy/v2)
 
