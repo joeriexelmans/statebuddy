@@ -207,7 +207,14 @@ export function parseStatechart(topology: Topology): [Statechart, TraceableError
 
   let variables = new Set<string>();
   const inputEvents: EventTrigger[] = [];
+
+  // internal events that occur somewhere as an event trigger
+  const internalEventTrigger: EventTrigger[] = [];
+  // internal events that are raised somewhere
+  const internalEventRaised: EventTrigger[] = [];
+  // union of the above two.
   const internalEvents: EventTrigger[] = [];
+
   const outputEvents = new Set<string>();
 
   // step 3: figure out labels
@@ -249,6 +256,7 @@ export function parseStatechart(topology: Topology): [Statechart, TraceableError
           else {
             const {event} = parsed.trigger;
             if (event.startsWith("_")) {
+              errors.push(...addEvent(internalEventTrigger, parsed.trigger, parsed.uid));
               errors.push(...addEvent(internalEvents, parsed.trigger, parsed.uid));
             }
             else {
@@ -312,7 +320,11 @@ export function parseStatechart(topology: Topology): [Statechart, TraceableError
         if (action.kind === "raise") {
           const {event} = action;
           if (event.startsWith("_")) {
-            // internalEvents.add({event: event});
+            const e = {kind: "event", event: event} as EventTrigger;
+            errors.push(...addEvent(internalEventRaised, e, parsed.uid));
+            errors.push(...addEvent(internalEvents, e, parsed.uid));
+            // internalEventRaised.push(e);
+            // internalEvents.push(e);
           }
           else {
             outputEvents.add(event);
@@ -354,6 +366,8 @@ export function parseStatechart(topology: Topology): [Statechart, TraceableError
     transitions,
     variables,
     inputEvents,
+    internalEventTrigger,
+    internalEventRaised,
     internalEvents,
     outputEvents,
     uid2State,

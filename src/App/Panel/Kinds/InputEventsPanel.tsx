@@ -3,6 +3,7 @@ import styles from "./Trace.module.css";
 
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
+import PushPinIcon from '@mui/icons-material/PushPin';
 
 import { memo, useCallback } from "react";
 import { useLocalStorage } from "../../../hooks/usePersistentState";
@@ -21,10 +22,10 @@ import { WithSetters } from "../../makePartialSetter";
 import { codeStyle } from "../../Modals/TextDialog";
 import { KeyInfoVisible, KeyInfoHidden } from "../../TopPanel/KeyInfo";
 import { SyntaxHighlightedText } from "../../VisualEditor/SyntaxHiglightedText";
+import { TwoStateButton } from "@/App/Components/TwoStateButton";
 
 type ShowInputEventsProps = {
   inputEvents: EventTrigger[], // <-- input events from the abstract syntax
-  // simulator: SimulatorStuff,
   onRaise: (bag: RaisedEvent[]) => void,
   disabled: boolean,
 } & WithSetters<{
@@ -89,8 +90,12 @@ export const InputEventsPanel = memo(function ShowInputEvents({
     const undeclare = () => setDeclaredInputs(ins => ins.filter(i => i.event !== event));
     return <div key={key} style={{pageBreakInside: 'avoid', breakInside: 'avoid-column'}}>
       {isDeclared
-        ? <Tooltip tooltip="remove declaration" align='left'><button onClick={undeclare}><RemoveIcon fontSize='small'/></button></Tooltip>
-        : <Tooltip tooltip="add declaration" align='left'><button onClick={declare}><AddIcon fontSize='small'/></button></Tooltip>}
+        ? <Tooltip tooltip={<>unpin input event<br/>(don't keep input event if it doesn't occur in the Statechart model)</>} align='left'>
+            <TwoStateButton onClick={undeclare} active><PushPinIcon fontSize='small'/></TwoStateButton>
+          </Tooltip>
+        : <Tooltip tooltip={<>pin input event<br/>(keep the input event even if it doesn't occur in the Statechart model)</>} align='left'>
+            <TwoStateButton onClick={declare} active={false}><PushPinIcon fontSize='small'/></TwoStateButton>
+          </Tooltip>}
       <KI keyInfo={<kbd>{shortcut}</kbd>} horizontal={true}>
         <Tooltip tooltip='input event - click to raise' align='left'>
           <div

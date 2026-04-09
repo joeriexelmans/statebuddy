@@ -63,6 +63,12 @@ export type Statechart = {
   variables: Set<string>;
 
   inputEvents: EventTrigger[];
+
+  // internal events that serve as a trigger somewhere
+  internalEventTrigger: EventTrigger[];
+  // internal events that are raised somewhere
+  internalEventRaised: EventTrigger[];
+  // union of the above
   internalEvents: EventTrigger[];
   outputEvents: Set<string>;
 
@@ -91,6 +97,8 @@ export const emptyStatechart: Statechart = {
   transitions: new Map(),
   variables: new Set(),
   inputEvents: [],
+  internalEventTrigger: [],
+  internalEventRaised: [],
   internalEvents: [],
   outputEvents: new Set(),
   uid2State: new Map([["root", emptyRoot]]),

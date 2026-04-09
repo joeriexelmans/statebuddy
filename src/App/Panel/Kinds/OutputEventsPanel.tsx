@@ -2,10 +2,12 @@ import styles from "./Trace.module.css";
 
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
+import PushPinIcon from '@mui/icons-material/PushPin';
 
 import { EventTrigger } from "../../../statecharts/label_ast";
 import { Tooltip } from "../../Components/Tooltip";
 import { WithSetters } from "../../makePartialSetter";
+import { TwoStateButton } from "@/App/Components/TwoStateButton";
 
 
 type ShowOutputEventsProps = {
@@ -22,8 +24,12 @@ export function OutputEventsPanel({outputEvents, declaredOutputs, setDeclaredOut
     const undeclare = () => setDeclaredOutputs(os => os.filter(event => event.event !== eventName))
     return <div key={eventName}>
       {isDeclared
-        ? <Tooltip tooltip="remove declaration" align='left'><button onClick={undeclare}><RemoveIcon fontSize='small'/></button></Tooltip>
-        : <Tooltip tooltip="add declaration" align='left'><button onClick={declare}><AddIcon fontSize='small'/></button></Tooltip>}
+        ? <Tooltip tooltip={<>unpin output event<br/>(don't keep output event if it doesn't occur in the Statechart model)</>} align='left'>
+            <TwoStateButton onClick={undeclare} active><PushPinIcon fontSize='small'/></TwoStateButton>
+          </Tooltip>
+        : <Tooltip tooltip={<>pin output event<br/>(keep output event even if it doesn't occur in the Statechart model)</>} align='left'>
+            <TwoStateButton onClick={declare} active={false}><PushPinIcon fontSize='small'/></TwoStateButton>
+          </Tooltip>}
       <Tooltip tooltip='output event' align='left'>
         <div className={styles.outputEvent} >
           &#8599;

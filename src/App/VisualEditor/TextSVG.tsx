@@ -117,11 +117,11 @@ export const TextSVG = memo(function TextSVG(props: {text: Text, selected: boole
         }
 
       {/* text anchor position - useful for debugging */}
-      {props.selected && <>
-        <line x1={-1} x2={1} y1={0} y2={0} stroke="red"/>
-        <line x1={0} x2={0} y1={-1} y2={1} stroke="red"/>
-      </>}
-      {/* {props.selected && <circle cx={0} cy={0} r={1.5} fill="red" />} */}
+      {/* {props.selected && <>
+        <line x1={-2.5} x2={2.5} y1={0} y2={0} stroke="red" strokeWidth={0.5}/>
+        <line x1={0} x2={0} y1={-2.5} y2={2.5} stroke="red" strokeWidth={0.5}/>
+      </>} */}
+      {props.selected && <circle cx={0} cy={0} r={1.5} fill="red" />}
     </g>
   </>;
 }, (prevProps, newProps) => {
