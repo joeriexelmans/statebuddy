@@ -113,6 +113,7 @@ export function PersistentApp() {
     async buf => {
       if (buf.byteLength === 0) {
         // empty URL hash -> initial state
+        setErr(undefined);
         return defaultAppState;
       }
 
@@ -142,6 +143,7 @@ export function PersistentApp() {
             return;
           }
         }
+        setErr(undefined);
         const migrated = autoMigrate(stateUnknown);
         return myPureDeepAssign(defaultAppState, migrated);
       }
