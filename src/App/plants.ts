@@ -8,6 +8,7 @@ import { Statechart } from "@/statecharts/abstract_syntax";
 import { gantryCranePlant } from "./Plant/BIP/GantryCrane";
 import { schedulerPlant } from "./Plant/BIP/Scheduler";
 import { emergencyPanelPlant } from "./Plant/BIP/EmergencyPanel";
+import { lightButtonAbstractSyntax, lightButtonConcreteSyntax, lightButtonPlant } from "./Plant/LightButton/LightButton";
 
 export type UniversalPlantState = {[property: string]: boolean|number};
 
@@ -21,6 +22,11 @@ export type StatebuddyPlantSpec = {
 }
 
 export const statebuddyPlants: {[type: string]: StatebuddyPlantSpec} = {
+  "light button": {
+    plant: lightButtonPlant,
+    cs: lightButtonConcreteSyntax,
+    as: lightButtonAbstractSyntax,
+  },
   "microwave": {
     plant: microwavePlant as unknown as StatechartPlant,
     cs: microwaveConcreteSyntax,
