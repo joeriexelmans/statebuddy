@@ -1,0 +1,61 @@
+Tutorial 0 - What is statebuddy & why was it created?
+----------
+
+
+
+Motivation:
+	- alternative to Yakindu / Itemis
+		- simpler visual editor
+			- doesn't try to 'help' you, no heuristics, no fancy layout algorithms
+			- no hidden information
+		- inspect execution traces + microsteps
+		- rollback execution steps
+		- better testing framework
+		- web-based (no intallation)
+		- integrated solution for teaching (exercises)
+
+Lacking features:
+	- no code generation (e.g., C/C++)
+	- side effects currently only via MQTT
+
+
+Tutorial 1 - Editing and executing a simple statechart
+----------
+
+1. show github page
+
+This will be a brief tutorial on the basic features of StateBuddy, to help you get started.
+
+- statebuddy is a statechart editor and simulator that runs in the browser
+- live version is provided, no need to install anything
+	if you want to host statebuddy yourself, you only need a web server that can host static files
+
+2. open empty model
+
+- give model a name
+- explain that models are stored in the URL
+	benefit: share model by sharing URL
+	drawback:
+		- there's no auto-save feature
+		- URLs can become quite big
+- save model as a bookmark
+	create directory for each model that you're working on
+
+3. edit model
+
+- left mouse button
+	make selection
+	move selection
+	resizing is just moving
+
+- add state
+- add transition
+- add label
+
+	explain colors:
+		Blue: selection
+		Green: 'is connected/belongs to'
+		Red: error
+
+4. execute model
+
