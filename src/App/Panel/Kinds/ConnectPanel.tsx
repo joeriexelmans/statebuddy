@@ -154,7 +154,7 @@ export const ConnectPanel = memo(function Connect({abstractSyntax, plantsState, 
           const conn = suggestions[i];
           const state = suggestionsState[i];
           return <Toolbar>
-            <Tooltip tooltip="keep connection" align="right">
+            <Tooltip tooltip="enable connection" align="right">
               <TwoStateButton
                   onClick={state === "keep"
                     ? () => setConns(conns => removeConnection(conns, conn))
