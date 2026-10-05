@@ -14,6 +14,9 @@ export function prepareTraces(ast: Statechart, plantsState: PlantsState, trace: 
   }
 
   function handleComponentTrace(componentId: string, trace: DEVSTrace<any>) {
+    const plantInstance = plantsState.plants.find(({id}) => id === componentId);
+    const plant = plantInstance && statebuddyPlants[plantInstance.type];
+
     for (const item of trace) {
       if (item.kind === "intTransition") {
         // output event
@@ -44,6 +47,13 @@ export function prepareTraces(ast: Statechart, plantsState: PlantsState, trace: 
             // only show input event if our 
             appendToSignal(result, `↘${name}`, item.simtime, param);
           }
+        }
+      }
+
+      if (plant) {
+        const cleanedState = plant.plant.cleanupState(item.newState); // state as a JSON-like object
+        for (const [key, val] of Object.entries(cleanedState)) {
+          appendToSignal(result, `${displayPrefix(componentId)}${key}`, item.simtime, Boolean(val));
         }
       }
     }
