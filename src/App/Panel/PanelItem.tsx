@@ -7,7 +7,7 @@ import { PanelType } from "../migrations/v1_types";
 import { PropertyCheckStatus } from "../SideBar/prepare_trace_types";
 
 // Panel types:
-import { Connect, useConnect } from "./Kinds/ConnectPanel";
+import { ConnectPanel, useConnect } from "./Kinds/ConnectPanel";
 import { MQTT } from "./Kinds/MQTTPanel";
 import { PlantsPanel } from "./Kinds/PlantsPanel";
 import { PropertiesPanel } from "./Kinds/PropertiesPanel";
@@ -46,9 +46,9 @@ type PanelItemProps = {
 
 export function panelItemInfo({type, globalProps: {appState, abstractSyntax}}: PanelItemProps) {
   if (type === "connect" && abstractSyntax) {
-    const [_, _2, suggestions] = useConnect(abstractSyntax, appState.execution.plants);
-    if (suggestions.length > 0) {
-      return `${suggestions.length} suggested connections`;
+    const {suggestionsState} = useConnect(abstractSyntax, appState.execution.plants);
+    if (suggestionsState.some(s => s === "undecided")) {
+      return `${suggestionsState.filter(s => s === "undecided").length} suggested connections (decide if you want to keep them)`;
     }
   }
   return undefined;
@@ -92,7 +92,7 @@ export function PanelItem({type, globalProps: {appState, setAppState, abstractSy
     />
   }
   else if (type === "connect") {
-    return <>{abstractSyntax && <Connect
+    return <>{abstractSyntax && <ConnectPanel
       abstractSyntax={abstractSyntax}
       plantsState={appState.execution.plants}
       setPlantsState={setAppState.setExecution.setPlants}

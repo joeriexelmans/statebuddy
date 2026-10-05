@@ -28,7 +28,6 @@ import { prefixCoupledInputEvent } from "@/App/hooks/useCoupledExecution";
 
 type ShowInputEventsProps = {
   inputEvents: EventTrigger[], // <-- input events from the abstract syntax
-  plantUIInputs: EventTrigger[], // <-- input events from the 
   onRaise: (bag: RaisedEvent[]) => void,
   disabled: boolean,
 } & WithSetters<{

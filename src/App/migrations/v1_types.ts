@@ -119,7 +119,18 @@ export type Event2MQTTMapping = {
 export type PlantsState = {
   plants: PlantInstance[];
   nextPlantID: number;
-  conns: Model2ModelConn[]; // <-- the user can configure the connections between the different components (meaning: the statechart model and the plant(s))
+  conns: (Model2ModelConn & {
+    suppress?: boolean, // If true, the connection should be treated as non-existent, rather than existent.
+
+    // Full explanation: every connection is either
+    //   (1) auto-detected (when the output event of one DEVS component matches the input even of another component), or
+    //   (2) manually added.
+    // For auto-detected connections, the connection is either
+    //     (a) undecided (the default) -- the user hasn't indicated yet if she wants to keep the connection. The simulator will assume that the connection exists, but a warning will be displayed. Undecided connections will not exist in the 'conns' list.
+    //     (b) accepted -- the user decided they want the connection to exist. The connection will exist in the 'conns' list with the suppress property undefined or set to false.
+    //     (c) suppressed -- the user decided they don't want the connection to exist. The connection will exist in the 'conns' list, with the 'suppress' property set to true.
+    
+  })[]; // <-- the user can configure the connections between the different components (meaning: the statechart model and the plant(s))
 };
 
 // For every plant the user instantiates, we keep the following kind of entry:

@@ -1,5 +1,6 @@
 import { useResizeable } from "@/hooks/useResizeable";
 import { Dispatch, SetStateAction, useCallback } from "react";
+import styles from "../App.module.css";
 
 const thickness = 4;
 
@@ -24,10 +25,11 @@ export function ResizeHandle({setSize, getDelta, horizontal, minSize, maxSize}: 
       flex: '0 0 content',
     }}>
     <div
+      className={styles.resizeHandle}
       style={{
         height: horizontal ? thickness : '100%',
         width: horizontal ? '100%' : thickness,
-        backgroundColor: resizing ? 'var(--tooltip-bg-color)' : 'var(--separator-color)',
+        backgroundColor: resizing ? 'var(--accent-border-color)' : undefined,
         cursor: horizontal ? 'row-resize' : 'col-resize',
       }}
       onMouseDown={beginResize}

@@ -3,6 +3,9 @@
 
   color-scheme: light dark;
 
+
+  --warning-bg-color: light-dark(#ffd666, #756200);
+
   --error-color: light-dark(rgb(204, 0, 0), rgb(255, 82, 82));
   --error-bg-color: light-dark(lightpink, rgb(75, 0, 0));
   --error-hover-bg-color: light-dark(rgb(102, 0, 0), rgb(238, 153, 153));
@@ -278,4 +281,11 @@
 
 .App .stateTree .stateTreeDescription:hover {
   background-color: var(--summary-hover-bg-color);
+}
+
+.resizeHandle {
+  background-color: var(--separator-color);
+}
+.resizeHandle:hover {
+  background-color: var(--light-accent-color);
 }
