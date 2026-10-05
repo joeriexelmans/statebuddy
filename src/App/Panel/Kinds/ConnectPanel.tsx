@@ -9,6 +9,7 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import CheckIcon from '@mui/icons-material/Check';
 import ClearIcon from '@mui/icons-material/Clear';
+import BlockIcon from '@mui/icons-material/Block';
 
 import { objectsEqual } from "@/util/util";
 import { useLocalStorage } from "@/hooks/usePersistentState";
@@ -140,16 +141,55 @@ export const ConnectPanel = memo(function Connect({abstractSyntax, plantsState, 
   const endpointMissing = allInputs[Number(selectedInput)] === undefined || allOutputs[Number(selectedOutput)] === undefined;
   const attemptingSelfConnect = !endpointMissing && allInputs[Number(selectedInput)][0] === allOutputs[Number(selectedOutput)][0];
 
+  const allKeep = suggestionsState.every(s => s === "keep");
+  const allSuppress = suggestionsState.every(s => s === "suppress");
+
   return <>
     <div className={connectStyles.grid} style={{
       display: 'grid',
       gridTemplateColumns: 'minmax(0, 1fr) 20px minmax(0, 1fr) auto',
       alignItems: 'center',
     }}>
+
+      {suggestions.length >= 2 &&
+        <div style={{gridColumn: 4, gridRow: 1}}>
+        <Toolbar>
+          <Tooltip tooltip="enable all" align="right">
+          <TwoStateButton active={allKeep}
+            onClick={() => {
+              setConns(conns => {
+                const filtered = conns.filter(a => !suggestions.find(b => connEqual(a, b)));
+                if (allKeep) {
+                  return filtered;
+                }
+                else {
+                  return [...filtered, ...suggestions];
+                }
+              });
+            }}>
+          <CheckIcon fontSize="small"/></TwoStateButton>
+          </Tooltip>
+          <Tooltip tooltip="disable all" align="right">
+          <TwoStateButton active={allSuppress}
+            onClick={() => {
+              setConns(conns => {
+                const filtered = conns.filter(a => !suggestions.find(b => connEqual(a, b)));
+                if (allSuppress) {
+                  return filtered;
+                }
+                else {
+                  return [...filtered, ...suggestions.map(sugg => ({...sugg, suppress: true}))];
+                }
+              });
+            }}>
+          <BlockIcon fontSize="small"/></TwoStateButton>
+          </Tooltip>
+        </Toolbar>
+      </div>}
       <Connections
         componentNames={names}
         conns={suggestions}
-        startIdx={1}
+        startIdx={2}
         actions={(i: number) => {
           const conn = suggestions[i];
           const state = suggestionsState[i];
@@ -169,7 +209,7 @@ export const ConnectPanel = memo(function Connect({abstractSyntax, plantsState, 
                     ? () => setConns(conns => removeConnection(conns, conn))
                     : () => setConns(conns => [...removeConnection(conns, conn), {...conn, suppress: true}])}
                   active={state === "suppress"}>
-                <ClearIcon fontSize="small"/>
+                <BlockIcon fontSize="small"/>
               </TwoStateButton>
             </Tooltip>
           </Toolbar>;}}
@@ -183,12 +223,12 @@ export const ConnectPanel = memo(function Connect({abstractSyntax, plantsState, 
       <Connections
         conns={manuallyAdded}
         componentNames={names}
-        startIdx={suggestions.length + 1}
+        startIdx={suggestions.length + 2}
         actions={showDeleteButton}
         rowStyles={manuallyAdded.map(() => ({}))}
         cellStyles={manuallyAdded.map(() => ({}))}
       />
-      <div style={{gridColumn: 1, gridRow: manuallyAdded.length + suggestions.length + 1}}>
+      <div style={{gridColumn: 1, gridRow: manuallyAdded.length + suggestions.length + 2}}>
         <select
           className={traceStyles.outputEvent}
           value={selectedOutput}
@@ -206,7 +246,7 @@ export const ConnectPanel = memo(function Connect({abstractSyntax, plantsState, 
             </option>)}
         </select>
       </div>
-      <div style={{gridColumn: 2, gridRow: manuallyAdded.length + suggestions.length + 1, textAlign: 'center'}}>
+      <div style={{gridColumn: 2, gridRow: manuallyAdded.length + suggestions.length + 2, textAlign: 'center'}}>
         {attemptingSelfConnect &&
           <Tooltip tooltip={<>
             Cannot connect component to itself.
@@ -221,7 +261,7 @@ export const ConnectPanel = memo(function Connect({abstractSyntax, plantsState, 
         }
       </div>
 
-      <div style={{gridColumn: 3, gridRow: manuallyAdded.length + suggestions.length + 1}}>
+      <div style={{gridColumn: 3, gridRow: manuallyAdded.length + suggestions.length + 2}}>
         <select
           className={traceStyles.inputEvent}
           value={selectedInput}
@@ -239,8 +279,9 @@ export const ConnectPanel = memo(function Connect({abstractSyntax, plantsState, 
             </option>)}
         </select>
       </div>
-      <div style={{gridColumn: 4, gridRow: manuallyAdded.length + suggestions.length + 1}}>
+      <div style={{gridColumn: 4, gridRow: manuallyAdded.length + suggestions.length + 2}}>
         <Tooltip tooltip="add connection" align="right">
+          <Toolbar>
           <button
             disabled={endpointMissing || attemptingSelfConnect}
             onClick={() => {
@@ -261,6 +302,7 @@ export const ConnectPanel = memo(function Connect({abstractSyntax, plantsState, 
           >
             <AddIcon fontSize="small"/>
           </button>
+          </Toolbar>
         </Tooltip>
       </div>
     </div>
