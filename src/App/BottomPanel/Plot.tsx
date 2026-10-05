@@ -139,7 +139,7 @@ export const Plot = memo(function Plot({visible, setVisible, prepped, trace, dis
     {atLeastOnePlot &&
       <svg style={{height: height+18, backgroundColor: 'var(--background-color)'}} ref={refSVG} viewBox={`0 0 ${width} ${height+18}`} {...rest}>
         {xAxis}
-        <rect x={currentTimeSvgX-2} width={4} y={0} height={height} fill="var(--accent-border-color)" />
+        {/* <rect x={currentTimeSvgX-2} width={4} y={0} height={height} fill="var(--accent-border-color)" /> */}
         {paths}
       </svg>}
       <div style={{

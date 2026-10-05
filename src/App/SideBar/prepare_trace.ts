@@ -6,47 +6,53 @@ import { statebuddyPlants } from "../plants";
 import { PreparedTrace, PropertyTrace } from "./prepare_trace_types";
 
 // Given a coupled DEVS execution trace, turn it into a bunch of signals that our MTL property checker understands.
-export function prepareTraces(ast: Statechart, plantsState: PlantsState, trace: DEVSTrace<CoupledState>): PreparedTrace {  
+export function prepareTraces(ast: Statechart, plantsState: PlantsState, trace: DEVSTrace<CoupledState>): PreparedTrace {
   const result = {} as {[key: string]: PropertyTrace};
 
-  for (const signal of [
-    ...ast.inputEvents.map(e => `in_${e.event}`),
-    ...[...ast.outputEvents].map(e => `out_${e}`),
-    // ...plantsState.plants.flatMap(p => lookupPlant(p.type)?.signals.map(s => p.name+'_'+s) || []),
-  ]) {
-    result[signal] = [[0, false]];
+  function displayPrefix(componentId: string) {
+    return componentId === "sc" ? "" : plantsState.plants.find(p => p.id === componentId)!.name +".";
   }
-  for (const item of trace) {
-    // log output events...
-    if (item.kind === "intTransition") {
-      for (const {name, param} of item.outputEvents) {
-        // add entry to our state for each output event
-        appendToSignal(result, `out_${name}`, item.simtime, param);
-      }
-    }
-    // log input events...
-    else if (item.kind === "extTransition") {
-      for (const {name, param} of item.bagOfInputs) {
-        appendToSignal(result, `in_${name}`, item.simtime, param);
-      }
-    }
 
-    // log plant state...
-    for (const [modelId, modelTrace] of Object.entries(item.newState)) {
-      const plantInstance = plantsState.plants.find(({id}) => id === modelId);
-      if (plantInstance) {
-        const plant = statebuddyPlants[plantInstance.type];
-        if (plant) {
-          const modelState = modelTrace.at(-1)!.newState;
-          const cleanedState = plant.plant.cleanupState(modelState); // state as a JSON-like object
-          // console.log(item.simtime, cleanedState);
-          for (const [key, val] of Object.entries(cleanedState)) {
-            appendToSignal(result, `${plantInstance.name}_${key}`, item.simtime, Boolean(val));
+  function handleComponentTrace(componentId: string, trace: DEVSTrace<any>) {
+    for (const item of trace) {
+      if (item.kind === "intTransition") {
+        // output event
+        for (const {name, param} of item.outputEvents) {
+          const found = plantsState.conns.find(conn => !conn.suppress
+            && conn.outputEvent === name && conn.outputModelName === componentId);
+          if (found) {
+            // our output event connects to another component's input event
+            // -> merge both signals
+            appendToSignal(result, `↗${displayPrefix(componentId) + name} → ↘${displayPrefix(found.inputModelName) + found.inputEvent}`, item.simtime, param);
+          }
+          else {
+            appendToSignal(result, `↗${displayPrefix(componentId) + name}`, item.simtime, param);
+          }
+        }
+      }
+      else if (item.kind === "extTransition") {
+        // input event
+        for (const {name, param} of item.bagOfInputs) {
+          
+          const found = plantsState.conns.find(conn => !conn.suppress &&
+              (conn.outputEvent === name && conn.outputModelName === componentId
+           ||  conn.inputEvent === name  && conn.inputModelName === componentId));
+
+          console.log(name, param, componentId, found);
+
+          if (!found) {
+            // only show input event if our 
+            appendToSignal(result, `↘${name}`, item.simtime, param);
           }
         }
       }
     }
   }
+
+  for (const [name, tr] of Object.entries(trace.at(-1)!.newState)) {
+    handleComponentTrace(name, tr);
+  }
+
   return result;
 }
 
@@ -58,7 +64,7 @@ function appendToSignal(traces: {[key: string]: [number, boolean][]}, key: strin
       traces[key].push([simtime, value]);
     }
     else {
-      traces[key] = [[simtime, value]];
+      traces[key] = [[0, false], [simtime, value]];
     }
   }
 }
