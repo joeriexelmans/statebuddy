@@ -1,8 +1,6 @@
 Tutorial 0 - What is statebuddy & why was it created?
 ----------
 
-
-
 Motivation:
 	- alternative to Yakindu / Itemis
 		- simpler visual editor
@@ -15,6 +13,7 @@ Motivation:
 		- integrated solution for teaching (exercises)
 
 Lacking features:
+	- no multi-state-machine execution
 	- no code generation (e.g., C/C++)
 	- side effects currently only via MQTT
 
@@ -59,3 +58,13 @@ This will be a brief tutorial on the basic features of StateBuddy, to help you g
 
 4. execute model
 
+- observe execution trace
+	- microsteps
+	- rollback
+- (scaled) real-time
+
+
+5. 
+
+Tutorial 2 - ??
+----------

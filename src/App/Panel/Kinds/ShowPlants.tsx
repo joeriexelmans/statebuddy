@@ -11,6 +11,7 @@ import { DeepSetter } from "../../makePartialSetter";
 import { PlantsState } from "../../migrations/v1_types";
 import { Plant } from "../../Plant/Plant";
 import { statebuddyPlants, UniversalPlantState } from "../../plants";
+import { prefixCoupledInputEvent } from "@/App/hooks/useCoupledExecution";
 
 type ShowPlantsProps = {
   plantsState: PlantsState,
@@ -37,7 +38,7 @@ export function ShowPlants({plantsState, setPlantsState: {setPlants}, speed, cou
       type={type}
       onDelete={onDelete[i]}
       onNameChange={onNameChange[i]}
-      onRaise={raiseOneEvent}
+      onRaise={e => raiseOneEvent({name: prefixCoupledInputEvent(id, e.name), param: e.param})}
       plant={statebuddyPlants[type]!.plant}
       speed={speed}
       currentState={coupledState?.[id]}

@@ -23,13 +23,16 @@ import { codeStyle } from "../../Modals/TextDialog";
 import { KeyInfoVisible, KeyInfoHidden } from "../../TopPanel/KeyInfo";
 import { SyntaxHighlightedText } from "../../VisualEditor/SyntaxHiglightedText";
 import { TwoStateButton } from "@/App/Components/TwoStateButton";
+import { Toolbar } from "@/App/TopPanel/Toolbar";
+import { prefixCoupledInputEvent } from "@/App/hooks/useCoupledExecution";
 
 type ShowInputEventsProps = {
   inputEvents: EventTrigger[], // <-- input events from the abstract syntax
+  plantUIInputs: EventTrigger[], // <-- input events from the 
   onRaise: (bag: RaisedEvent[]) => void,
   disabled: boolean,
 } & WithSetters<{
-  declaredInputs: EventTrigger[],
+  declaredInputs: EventTrigger[], // <-- 'pinned' inputs (they remain visible in the panel even if they disappear from abstract syntax and plant UI)
 }>;
 
 export const InputEventsPanel = memo(function ShowInputEvents({
@@ -60,7 +63,7 @@ export const InputEventsPanel = memo(function ShowInputEvents({
         console.warn(e);
         return;
       }
-      raiseOneEvent({name: event, param});
+      raiseOneEvent({name: prefixCoupledInputEvent("sc", event), param});
     };
   });
 
@@ -91,10 +94,14 @@ export const InputEventsPanel = memo(function ShowInputEvents({
     return <div key={key} style={{pageBreakInside: 'avoid', breakInside: 'avoid-column'}}>
       {isDeclared
         ? <Tooltip tooltip={<>unpin input event<br/>(don't keep input event if it doesn't occur in the Statechart model)</>} align='left'>
-            <TwoStateButton onClick={undeclare} active><PushPinIcon fontSize='small'/></TwoStateButton>
+            <Toolbar>
+              <TwoStateButton onClick={undeclare} active><PushPinIcon fontSize='small'/></TwoStateButton>
+            </Toolbar>
           </Tooltip>
         : <Tooltip tooltip={<>pin input event<br/>(keep the input event even if it doesn't occur in the Statechart model)</>} align='left'>
-            <TwoStateButton onClick={declare} active={false}><PushPinIcon fontSize='small'/></TwoStateButton>
+            <Toolbar>
+              <TwoStateButton onClick={declare} active={false}><PushPinIcon fontSize='small'/></TwoStateButton>
+            </Toolbar>
           </Tooltip>}
       <KI keyInfo={<kbd>{shortcut}</kbd>} horizontal={true}>
         <Tooltip tooltip='input event - click to raise' align='left'>

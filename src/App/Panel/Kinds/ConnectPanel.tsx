@@ -160,7 +160,7 @@ export const Connect = memo(function Connect({abstractSyntax, plantsState, setPl
               <AddIcon fontSize="small"/>
             </button>
           </Tooltip>}
-        bgColor="var(--statusbar-bg-color)"
+        //bgColor="var(--statusbar-bg-color)"
       />
       {suggestions.length > 0 &&
         <div style={{gridColumn: '1/5', gridRow: plantsState.conns.length+suggestions.length+3}}>
@@ -201,7 +201,7 @@ export const Connect = memo(function Connect({abstractSyntax, plantsState, setPl
         {attemptingSelfConnect &&
           <Tooltip tooltip={<>
             Cannot connect component to itself.
-            Theory on <a href="https://link.springer.com/content/pdf/10.1007/978-3-030-43946-0_5.pdf">Coupled DEVS</a>, page 136: &quot;A model should not influence itself&quot;.
+            Theory on <a target="_blank" href="https://link.springer.com/content/pdf/10.1007/978-3-030-43946-0_5.pdf">Coupled DEVS</a>, page 136: &quot;A model should not influence itself&quot;.
           </>} showWhen="always" error>
             <span style={{fontWeight: "bold", color: 'var(--error-color)'}}>
             &rarr;
@@ -261,7 +261,7 @@ export const Connect = memo(function Connect({abstractSyntax, plantsState, setPl
 export function autoConnect(allOutputs: (readonly [string, string])[], allInputs: (readonly [string, string])[], alreadyHave: Model2ModelConn[]) {
   return allOutputs.flatMap(([outputModelName, outputEvent]) =>
     allInputs.flatMap(([inputModelName, inputEvent]) =>
-      (outputEvent === inputEvent && !alreadyHave.some(entry => entry.outputModelName === outputModelName && entry.outputEvent === outputEvent && entry.inputModelName === inputModelName && entry.inputEvent === inputEvent)) ? [{
+      (outputModelName !== inputModelName && outputEvent === inputEvent && !alreadyHave.some(entry => entry.outputModelName === outputModelName && entry.outputEvent === outputEvent && entry.inputModelName === inputModelName && entry.inputEvent === inputEvent)) ? [{
         outputModelName, outputEvent, inputModelName, inputEvent
       }] : []))
 }

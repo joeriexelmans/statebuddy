@@ -61,9 +61,9 @@ export function makeCoupledDEVS<T extends CoupledDEVSState<any>>(
       // if (routings.length === 0) {
       //   console.debug(coupledInputEvent.name, 'goes nowhere');
       // }
-      for (const {inputModelName, inputEvent} of routings) {
-        // console.debug(`${coupledInputEvent.name} -> ${inputModelName}.${inputEvent}`);
-      }
+      // for (const {inputModelName, inputEvent} of routings) {
+      //   console.debug(`${coupledInputEvent.name} -> ${inputModelName}.${inputEvent}`);
+      // }
       return routings;
     }));
   };

@@ -91,7 +91,7 @@
 /* Looks */
 .tooltipInner {
   background-color: var(--tooltip-bg-color);
-  color: var(--tooltip-fg-color);
+  color: var(--tooltip-fg-color) !important;
   border-radius: 3px;
   width: max-content;
   white-space: preserve;
