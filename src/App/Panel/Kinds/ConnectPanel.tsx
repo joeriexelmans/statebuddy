@@ -122,18 +122,12 @@ export const ConnectPanel = memo(function Connect({abstractSyntax, plantsState, 
   //   return currIdx;
   // }
 
-  const deleteConnection = useCallback((i: number) => {
-    setConns(conns => conns.toSpliced(i, 1));
-  }, [setConns]);
-  const showDeleteButton = useCallback((i: number) => {
-    return <Toolbar><DoubleClickButton
-      tooltip="delete connection"
-      align="right"
-      onDoubleClick={() => deleteConnection(i)}
-    >
-      <DeleteOutlineIcon fontSize="small"/>
-    </DoubleClickButton></Toolbar>;
-  }, [deleteConnection]);
+  // const deleteConnection = useCallback((i: number) => {
+  //   setConns(conns => conns.toSpliced(i, 1));
+  // }, [setConns]);
+  // const showDeleteButton = useCallback((i: number) => {
+  //   return ;
+  // }, [deleteConnection]);
 
   const {suggestions, suggestionsState, allInputs, allOutputs, manuallyAdded} = useConnect(abstractSyntax, plantsState);
 
@@ -150,7 +144,7 @@ export const ConnectPanel = memo(function Connect({abstractSyntax, plantsState, 
       gridTemplateColumns: 'minmax(0, 1fr) 20px minmax(0, 1fr) auto',
       alignItems: 'center',
     }}>
-
+      {/* Buttons: enable/disable all */}
       {suggestions.length >= 2 &&
         <div style={{gridColumn: 4, gridRow: 1}}>
         <Toolbar>
@@ -186,6 +180,8 @@ export const ConnectPanel = memo(function Connect({abstractSyntax, plantsState, 
           </Tooltip>
         </Toolbar>
       </div>}
+
+      {/* Suggested connections */}
       <Connections
         componentNames={names}
         conns={suggestions}
@@ -220,14 +216,28 @@ export const ConnectPanel = memo(function Connect({abstractSyntax, plantsState, 
           textDecoration: state === "suppress" ? 'line-through' : undefined,
         }))}
       />
+
+      {/* Manually added connections */}
       <Connections
         conns={manuallyAdded}
         componentNames={names}
         startIdx={suggestions.length + 2}
-        actions={showDeleteButton}
+        actions={i => {
+          return <Toolbar>
+            <DoubleClickButton
+              tooltip="delete connection"
+              align="right"
+              onDoubleClick={() => setConns(conns => conns.filter(elem => !connEqual(elem, manuallyAdded[i])))}
+            >
+              <DeleteOutlineIcon fontSize="small"/>
+            </DoubleClickButton>
+          </Toolbar>;
+        }}
         rowStyles={manuallyAdded.map(() => ({}))}
         cellStyles={manuallyAdded.map(() => ({}))}
       />
+
+      {/* Manually add connection: output event select box */}
       <div style={{gridColumn: 1, gridRow: manuallyAdded.length + suggestions.length + 2}}>
         <select
           className={traceStyles.outputEvent}
@@ -246,6 +256,7 @@ export const ConnectPanel = memo(function Connect({abstractSyntax, plantsState, 
             </option>)}
         </select>
       </div>
+      {/* Display error when attempting to self-connect */}
       <div style={{gridColumn: 2, gridRow: manuallyAdded.length + suggestions.length + 2, textAlign: 'center'}}>
         {attemptingSelfConnect &&
           <Tooltip tooltip={<>
@@ -260,7 +271,7 @@ export const ConnectPanel = memo(function Connect({abstractSyntax, plantsState, 
           <>&rarr;</>
         }
       </div>
-
+      {/* Manually add connection: input event select box */}
       <div style={{gridColumn: 3, gridRow: manuallyAdded.length + suggestions.length + 2}}>
         <select
           className={traceStyles.inputEvent}
@@ -279,6 +290,7 @@ export const ConnectPanel = memo(function Connect({abstractSyntax, plantsState, 
             </option>)}
         </select>
       </div>
+      {/* Button to manually add connection */}
       <div style={{gridColumn: 4, gridRow: manuallyAdded.length + suggestions.length + 2}}>
         <Tooltip tooltip="add connection" align="right">
           <Toolbar>
