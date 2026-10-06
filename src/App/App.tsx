@@ -81,12 +81,24 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
 
   // Convert from internal trace format to a format that py-mtl understands.
   // Also, we use this format for plotting our plot.
-  const preparedTrace = useMemo(() => {
+  const preparedTraceForPlot = useMemo(() => {
     if (simulator.trace && abstractSyntax && shouldPrepareTraces) {
       return prepareTraces(
         abstractSyntax,
         appState.execution.plants,
         simulator.trace.trace,
+        true, /* merge traces of signals that are connected in Coupled DEVS (two signals become one) */
+      );
+    }
+  }, [simulator.trace && simulator.trace.trace, appState.execution.plants, abstractSyntax, shouldPrepareTraces]);
+
+  const preparedTraceForMTL = useMemo(() => {
+    if (simulator.trace && abstractSyntax && shouldPrepareTraces) {
+      return prepareTraces(
+        abstractSyntax,
+        appState.execution.plants,
+        simulator.trace.trace,
+        false,
       );
     }
   }, [simulator.trace && simulator.trace.trace, appState.execution.plants, abstractSyntax, shouldPrepareTraces]);
@@ -99,14 +111,14 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
   //  - the property editor
   //  - the execution trace
   const propertyResults = useCheckProperties(
-    preparedTrace,
+    preparedTraceForMTL,
     appState.execution.properties,
     checkProperty);
 
   // useDetectChange2({abstractSyntax, prepareTraces, propertyResults});
 
   const tracesAndResults = useMemo(() => ({
-    ...(preparedTrace || {}),
+    ...(preparedTraceForPlot || {}),
     ...Object.fromEntries((propertyResults||[]).flatMap((result, i) => {
       // non-error property check results are included in the traces that can be plotted:
       if (result.kind === "ok") {
@@ -117,7 +129,7 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
       }
       return [];
     })),
-  }), [propertyResults, preparedTrace]);
+  }), [propertyResults, preparedTraceForPlot]);
 
   const onAboutStateBuddy = useCallback(() => setModal(<About setModal={setModal} {...trial}/>), [trial]);
   // const onOpen = useCallback((modelName: string) => {
@@ -316,7 +328,7 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
                 <HelpOutlineIcon fontSize='small'/>
               </Tooltip>
             </summary>
-            {preparedTrace && simulator.trace && appState.view.visibility.plot &&
+            {preparedTraceForPlot && simulator.trace && appState.view.visibility.plot &&
               <Plot width="100%"
                 prepped={tracesAndResults}
                 trace={simulator.trace}

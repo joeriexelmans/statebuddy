@@ -143,7 +143,9 @@ export const Plot = memo(function Plot({visible, setVisible, prepped, trace, dis
         {paths}
       </svg>}
       <div style={{
-        columnWidth: 220,
+        columnWidth: 250,
+        fontFamily: 'Roboto Condensed',
+        fontSize: '90%',
       }}>
       {checkboxes}
     </div>

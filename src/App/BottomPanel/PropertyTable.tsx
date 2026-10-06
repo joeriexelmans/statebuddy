@@ -41,6 +41,9 @@ export const PropertyTable = memo(function PropertyTable({
     });
   }, [savedTraces]);
 
+  console.log({preparedTrace});
+  
+
   return <div style={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between'}}>
 
     <div style={{overflow: 'auto', display: 'flex', flexDirection: 'row', justifyContent: 'space-between', flexGrow: '1'}}>

@@ -61,7 +61,7 @@ export function useCoupledExecution(ast: Statechart|undefined, plantsState: Plan
         outputs: hardwiredSCOutputs,
 
         // the user-configurable part:
-        model2Model: plantsState.conns,
+        model2Model: plantsState.conns.filter(conn => !conn.suppress),
 
       } as CoupledDEVSConns,
       ast.inputEvents.map(({event}) => event), // <-- every SC input becomes coupled input
