@@ -318,12 +318,12 @@ export function getTextFatBBox(t: Text): Rect2D {
 
 export function getHistoryFatBBox(h: History): Rect2D {
   return {
-    topLeft: addV2D(h.topLeft, snap),
+    topLeft: h.topLeft,
     size: historyBBoxSize,
   };
 }
 
-const historyBBoxSize = addV2D({x: HISTORY_RADIUS*2, y: HISTORY_RADIUS*2}, snapTwice);
+const historyBBoxSize = {x: HISTORY_RADIUS*2, y: HISTORY_RADIUS*2};
 
 export function entirelySelectedShapes(cs: ConcreteSyntax, selection: Selection) {
   const rountangles = cs.rountangles.filter(r => selection.get(r.uid)?.size === 4);
