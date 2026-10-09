@@ -100,8 +100,13 @@ export function useConnect(abstractSyntax: Statechart, plantsState: PlantsState)
       const state = found ? (found.suppress ? "suppress" : "keep") : "undecided";
       return state;
     });
+    const unsuppressedSuggestions = suggestionsState.map((state, i) => [state, i] as const).filter(([state]) => state !== "suppress").map(([_, i]) => suggestions[i]);
     const manuallyAdded = plantsState.conns.filter(a => !suggestions.find(b => connEqual(a, b)));
-    return {suggestions, suggestionsState, allInputs, allOutputs, manuallyAdded};
+    const effectivelyConnected = [
+      ...unsuppressedSuggestions,
+      ...manuallyAdded,
+    ];
+    return {suggestions, suggestionsState, allInputs, allOutputs, manuallyAdded, effectivelyConnected};
   }, [abstractSyntax, plantsState]);
 }
 
