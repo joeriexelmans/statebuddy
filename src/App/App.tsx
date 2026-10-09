@@ -1,5 +1,8 @@
 import styles from "./App.module.css";
 
+import '@fontsource/roboto-condensed';
+import '@fontsource/roboto';
+
 import { Dispatch, PropsWithChildren, ReactElement, SetStateAction, useCallback, useMemo, useState } from "react";
 
 import { useDisplayTime } from "@/hooks/useDisplayTime";
@@ -145,7 +148,7 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
   //     setProperties={setProperties}
   //     replaceModel={historyCallbacks.commit}/>);
   // }, [appState.sideBar, editorState, modelSize, historyCallbacks]);
-  
+
   const onSave = useCallback((modelName: string) => {
     downloadObjectAsJson(
       appState,
