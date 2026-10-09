@@ -152,7 +152,7 @@ function ModelPreview({concreteSyntax}: {concreteSyntax: VisualEditorState}) {
           selectingState: null,
           setDragging: () => {},
         }}
-        syntaxErrors={[]}
+        errors={[]}
         mouseMap={disableMouse}
         setModal={() => {}}
         zoom={10} // <-- percent

@@ -28,7 +28,7 @@ type VisualEditorProps = {
   topology: Topology,
   editorStuff: EditorStuff;
   beginEdit: (uid: string) => void,
-  syntaxErrors: TraceableError[],
+  errors: TraceableError[], // <-- used for displaying syntax and runtime errors
   highlightActive: Set<string>,
   highlightTransitions: string[],
   zoom: number;
@@ -38,7 +38,7 @@ type VisualEditorProps = {
 
 const viewBox = `0 0 ${EDITOR_WIDTH} ${EDITOR_HEIGHT}`;
 
-export const VisualEditor = memo(function VisualEditor({state, topology, syntaxErrors: errors, highlightActive, highlightTransitions, beginEdit, zoom, findText, editorStuff}: VisualEditorProps) {
+export const VisualEditor = memo(function VisualEditor({state, topology, errors: errors, highlightActive, highlightTransitions, beginEdit, zoom, findText, editorStuff}: VisualEditorProps) {
 
   const {copyPasteCallbacks, dragging, onMouseDown, refSVG, renderSelection} = editorStuff;
 

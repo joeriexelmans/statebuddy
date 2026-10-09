@@ -223,11 +223,13 @@ function CoupledDEVSInitialization({item, status, plantsState, showMicroSteps, s
   status: StatusType,
 } & ThingsToPassOn) {
   // just show the initialization of every component:
-  const error = getRuntimeError(item);
+  
+  
   return <>
     <TraceItemHeader hide={false} simtime={0} status={status} />
     {Object.entries(item.newState).map(([componentId, componentTrace]) => {
       const componentTraceItem = componentTrace.at(-1)!;
+      const error = getRuntimeError(componentTraceItem);
       const plant = plantsState.plants.find(({id}) => id === componentId);
       const componentDisplayName = plant?.name || componentId;
       const abstractSyntax = getAbstractSyntax(componentId, plantsState, ast);
@@ -416,6 +418,9 @@ function ShowEnvironment({item, prevItem}: {item: DEVSTraceItem<any>, prevItem?:
 }
 
 function getRuntimeError(item: DEVSTraceItem<any>): (RuntimeError | undefined) {
+
+  console.log(item, item.newState.state, item.newState.state instanceof RuntimeError);
+  
   const e = item.newState.state;
   if (e instanceof RuntimeError) {
     return e;
