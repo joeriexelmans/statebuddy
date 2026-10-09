@@ -94,7 +94,7 @@ function enterState(rt: RT_Microstep, state: TransitionSrcTgt, toEnter: Set<stri
   // add to mode
   rt = {...rt, mode: new Set([...rt.mode, state.uid])};
 
-  tracer.log(`enter ${stateDescription(state)}`);
+  tracer.log(`entering ${stateDescription(state)}`);
 
   // entry actions
   for (const action of state.entryActions) {
@@ -120,24 +120,28 @@ function enterState(rt: RT_Microstep, state: TransitionSrcTgt, toEnter: Set<stri
   return rt;
 }
 
-function exitState(rt: RT_Microstep, state: TransitionSrcTgt, trace: Tracer): RT_Microstep {
+function exitState(rt: RT_Microstep, state: TransitionSrcTgt, tracer: Tracer): RT_Microstep {
+  tracer.log(`exiting ${stateDescription(state)}`);
+
   if (state.kind !== "pseudo") {
-    rt = recordHistory(rt, state, trace);
+    rt = recordHistory(rt, state, tracer);
 
     // exit children first
-    rt = exitChildren(rt, state, trace.indent());
+    rt = exitChildren(rt, state, tracer.indent());
 
     // cancel timers
     const newTimers = rt.timers.filter(([_, {state: s}]) => s !== state.uid);
     rt = {...rt, timers: newTimers};
   }
 
+  const scope = {kind: "state" as const, thing: state};
+
   // exit actions
   for (const action of state.exitActions) {
-    (rt = execAction(rt, action, {kind: "state", thing: state}, [state.uid], trace.indent()));
+    (rt = execAction(rt, action, scope, [state.uid], tracer.indent()));
   }
 
-  trace.log(`exit ${stateDescription(state)}`);
+  rt = deleteVariables(rt, scope, tracer.indent());
 
   // remove from mode
   rt = {...rt, mode: new Set([...rt.mode].filter(s => s !== state.uid))};
@@ -486,12 +490,19 @@ function fire(rt: RT_Microstep, transition: Transition, actions: Action[], trace
 
   rt = enterChildren(rt, transition.arena, toEnter, tracer.indent());
 
-  tracer.log(`delete: ${[...rt.environment.entries(scope)].map(([key]) => key).join(', ')}`);
-  
-  rt = {
-    ...rt,
-    environment: rt.environment.clearScope(scope),
-  }
+  rt = deleteVariables(rt, scope, tracer);
 
+  return rt;
+}
+
+function deleteVariables(rt: RT_Microstep, scope: Scope, tracer: Tracer) {
+  const variablesToDelete = [...rt.environment.entries(scope)];
+  if (variablesToDelete.length > 0) {
+    tracer.log(`delete: ${[...rt.environment.entries(scope)].map(([key]) => key).join(', ')}`);
+    rt = {
+      ...rt,
+      environment: rt.environment.clearScope(scope),
+    }
+  }
   return rt;
 }
