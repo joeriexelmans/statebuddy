@@ -29,9 +29,9 @@ const emptyMicrostep = {
   firedArenas: [],
 }
 
-export function initialize(ast: Statechart, trace: Tracer): BigStep {
-  trace.log('init')
-  const subTrace = trace.indent();
+export function initialize(ast: Statechart, tracer: Tracer): BigStep {
+  tracer.log('init')
+  const subTrace = tracer.indent();
   const rt = enterState({
     simtime: 0,
     environment: initialFlatEnvironment,
@@ -88,15 +88,15 @@ function execAction(rt: RT_Microstep, action: Action, scope: Scope, uids: string
   throw new Error("should never reach here");
 }
 
-function enterState(rt: RT_Microstep, state: TransitionSrcTgt, toEnter: Set<string> = new Set(), trace: Tracer): RT_Microstep {
+function enterState(rt: RT_Microstep, state: TransitionSrcTgt, toEnter: Set<string> = new Set(), tracer: Tracer): RT_Microstep {
   // add to mode
   rt = {...rt, mode: new Set([...rt.mode, state.uid])};
 
-  trace.log(`enter ${stateDescription(state)}`);
+  tracer.log(`enter ${stateDescription(state)}`);
 
   // entry actions
   for (const action of state.entryActions) {
-    rt = execAction(rt, action, {kind: "state", thing: state}, [state.uid], trace.indent());
+    rt = execAction(rt, action, {kind: "state", thing: state}, [state.uid], tracer.indent());
   }
 
   if (state.kind !== "pseudo") {
@@ -112,7 +112,7 @@ function enterState(rt: RT_Microstep, state: TransitionSrcTgt, toEnter: Set<stri
     rt = {...rt, timers: newTimers};
 
     // enter children
-    rt = enterChildren(rt, state, toEnter, trace.indent());
+    rt = enterChildren(rt, state, toEnter, tracer.indent());
   }
 
   return rt;
@@ -145,12 +145,12 @@ function exitState(rt: RT_Microstep, state: TransitionSrcTgt, trace: Tracer): RT
 // recursively enter the given state's children
 // AND-states: all children are entered.
 // OR-states: if one of the children occurs in 'toEnter', this child will be chosen. if not, then the default child is entered.
-function enterChildren(rt: RT_Microstep, parent: ConcreteState, toEnter: Set<string> = new Set(), trace: Tracer): RT_Microstep {
+function enterChildren(rt: RT_Microstep, parent: ConcreteState, toEnter: Set<string> = new Set(), tracer: Tracer): RT_Microstep {
   // enter children...
   if (parent.kind === "and") {
     // every child must be entered
     for (const child of parent.children) {
-      rt = enterState(rt, child, toEnter, trace);
+      rt = enterState(rt, child, toEnter, tracer);
     }
   }
   else if (parent.kind === "or") {
@@ -159,20 +159,20 @@ function enterChildren(rt: RT_Microstep, parent: ConcreteState, toEnter: Set<str
     if (childToEnter.length === 1) {
       // good
       const child = childToEnter[0];
-      rt = enterState(rt, child, toEnter, trace);
+      rt = enterState(rt, child, toEnter, tracer);
     }
     else if (childToEnter.length === 0) {
       // also good, enter default child
       if (parent.initial.length === 0) {
-        trace.log("runtime error");
+        tracer.log("runtime error");
         throw new RuntimeError(`Missing initial state.`, [parent.uid]);
       }
       else if (parent.initial.length > 1) {
-        trace.log("runtime error");
+        tracer.log("runtime error");
         throw new NonDeterminismError(`Non-determinism: multiple initial states.`, [parent.uid, ...parent.initial.map(i => i[0]), parent.uid]);
       }
       const [[arrow, child]] = parent.initial;
-      rt = enterState(rt, child, toEnter, trace);
+      rt = enterState(rt, child, toEnter, tracer);
       rt = {
         ...rt,
         firedTransitions: [...rt.firedTransitions, arrow],  
@@ -190,18 +190,18 @@ function logHistoryValue(v: Set<string>) {
   return '{' + [...v].join(', ') + '}';
 }
 
-function recordDeepHistory(rt: RT_Microstep, state: ConcreteState, h: HistoryState, trace: Tracer): RT_Microstep {
+function recordDeepHistory(rt: RT_Microstep, state: ConcreteState, h: HistoryState, tracer: Tracer): RT_Microstep {
   // horribly inefficient (i don't care)
   const history = new Map(rt.history);
   const historyValue = getDescendants(state)
     .difference(new Set([state.uid]))
     .intersection(rt.mode);
-  trace.log(`record deep history of ${stateDescription(state)} = ${logHistoryValue(historyValue)}`);
+  tracer.log(`record deep history of ${stateDescription(state)} = ${logHistoryValue(historyValue)}`);
   history.set(h.uid, historyValue);
   return {...rt, history};
 }
 
-function recordHistory(rt: RT_Microstep, state: ConcreteState, trace: Tracer): RT_Microstep {
+function recordHistory(rt: RT_Microstep, state: ConcreteState, tracer: Tracer): RT_Microstep {
   if (state.kind === "and") {
     for (const h of state.history) {
       if (h.kind === "shallow") {
@@ -215,12 +215,12 @@ function recordHistory(rt: RT_Microstep, state: ConcreteState, trace: Tracer): R
                 .filter(child => rt.mode.has(child.uid))
                 .map(child => child.uid)
               || [])]);
-        trace.log(`record shallow history of ${stateDescription(state)} = ${logHistoryValue(historyValue)}`);
+        tracer.log(`record shallow history of ${stateDescription(state)} = ${logHistoryValue(historyValue)}`);
         history.set(h.uid, historyValue);
         rt = {...rt, history};
       }
       else { // deep history
-        rt = recordDeepHistory(rt, state, h, trace);
+        rt = recordDeepHistory(rt, state, h, tracer);
       }
     }
   }
@@ -232,12 +232,12 @@ function recordHistory(rt: RT_Microstep, state: ConcreteState, trace: Tracer): R
         const historyValue = new Set(state.children
           .filter(child => rt.mode.has(child.uid))
           .map(child => child.uid));
-        trace.log(`record shallow history of ${stateDescription(state)} = ${logHistoryValue(historyValue)}`);
+        tracer.log(`record shallow history of ${stateDescription(state)} = ${logHistoryValue(historyValue)}`);
         history.set(h.uid, historyValue);
         rt = {...rt, history};
       }
       else { // deep history
-        rt = recordDeepHistory(rt, state, h, trace);
+        rt = recordDeepHistory(rt, state, h, tracer);
       }
     }
   }
@@ -245,19 +245,19 @@ function recordHistory(rt: RT_Microstep, state: ConcreteState, trace: Tracer): R
 }
 
 // exit the given state's active descendants
-export function exitChildren(rt: RT_Microstep, parent: ConcreteState, trace: Tracer): RT_Microstep {
+export function exitChildren(rt: RT_Microstep, parent: ConcreteState, tracer: Tracer): RT_Microstep {
   // exit all active children...
   if (parent.kind === "and") {
     // every child is exited
     for (const child of parent.children) {
-      rt = exitState(rt, child, trace);
+      rt = exitState(rt, child, tracer);
     }
   }
   else if (parent.kind === "or") {
     // exit active child
     for (const child of parent.children) {
       if (rt.mode.has(child.uid)) {
-      rt = exitState(rt, child, trace);
+      rt = exitState(rt, child, tracer);
       }
     }
   }
@@ -353,21 +353,21 @@ function getEnabledTransitions(rt: RT_Microstep, sourceState: AbstractState, eve
 // Attempt to make ONE outgoing transition from the given source state.
 // Returns a new runtime configuration if a transition was made. Returns 'undefined' if no transition could be made.
 // If the target of the transition is a pseudo-state, then within this same call, transitions will keep firing until a stable state is reached.
-function attemptSrcState(rt: RT_Microstep, sourceState: AbstractState, event: RT_Event | undefined, statechart: Statechart, trace: Tracer): RT_Microstep | undefined {
+function attemptSrcState(rt: RT_Microstep, sourceState: AbstractState, event: RT_Event | undefined, statechart: Statechart, tracer: Tracer): RT_Microstep | undefined {
   const enabled = getEnabledTransitions(rt, sourceState, event, statechart);
   // trace(`state ${stateDescription(sourceState)} has ${enabled.length} enabled transitions`);
   if (enabled.length > 0) {
     if (enabled.length > 1) {
-      trace.log("runtime error");
+      tracer.log("runtime error");
       throw new NonDeterminismError(`Non-determinism: multiple enabled transitions.`,
         [...enabled.map(([_, t]) => t.uid), sourceState.uid]);
     }
     const [[newEnvironment, transition, label, msgs]] = enabled; // transition to fire
     // fairness: every arena can only fire once per 'fair step'
     if (sourceState.kind === "pseudo" || allowedToFire(transition.arena, rt.firedArenas)) {
-      msgs.forEach(msg => trace.log(msg));
+      msgs.forEach(msg => tracer.log(msg));
       // fire transition!
-      rt = fire({...rt, environment: newEnvironment}, transition, label.actions, trace);
+      rt = fire({...rt, environment: newEnvironment}, transition, label.actions, tracer);
       rt = {...rt,
         firedTransitions: [...rt.firedTransitions, transition.uid],
         firedArenas: [...rt.firedArenas, transition.arena],
@@ -381,9 +381,9 @@ function attemptSrcState(rt: RT_Microstep, sourceState: AbstractState, event: RT
         if (!activePseudo) {
           break;
         }
-        const newRt = attemptSrcState(rt, activePseudo, undefined, statechart, trace);
+        const newRt = attemptSrcState(rt, activePseudo, undefined, statechart, tracer);
         if (newRt === undefined) {
-          trace.log("runtime error");
+          tracer.log("runtime error");
           throw new RuntimeError("Stuck in choice-state.", [activePseudo.uid]);
         }
         rt = newRt;
@@ -395,17 +395,17 @@ function attemptSrcState(rt: RT_Microstep, sourceState: AbstractState, event: RT
 
 // A fair step is a response to one (input|internal) event, where possibly multiple transitions are made as long as their arenas do not overlap. A reasonably accurate and more intuitive explanation is that every orthogonal region is allowed to fire at most one transition.
 // This function will attempt to fire outgoing transitions of 'activeParent's children, and recursively, the children of the children. This corresponds to 'parent first' priority semantics.
-function fairStep(rt: RT_Microstep, event: RT_Event, statechart: Statechart, activeParent: StableState, trace: Tracer): RT_Microstep {
+function fairStep(rt: RT_Microstep, event: RT_Event, statechart: Statechart, activeParent: StableState, tracer: Tracer): RT_Microstep {
   for (const state of activeParent.children) {
     if (rt.mode.has(state.uid)) {
-      const didFire = attemptSrcState(rt, state, event, statechart, trace);
+      const didFire = attemptSrcState(rt, state, event, statechart, tracer);
       if (didFire) {
         rt = didFire;
       }
       else {
         // no enabled outgoing transitions, try the children:
         if (state.kind !== "pseudo") {
-          rt = fairStep(rt, event, statechart, state, trace);
+          rt = fairStep(rt, event, statechart, state, tracer);
         }
       }
     }
@@ -414,30 +414,30 @@ function fairStep(rt: RT_Microstep, event: RT_Event, statechart: Statechart, act
 }
 
 // Perform a 'big step', AKA run-to-completion (RTC) step. A big step is an atomic response to an input event or timer elapse.
-export function makeBigStep(rt: BigStep, event: RT_Event, statechart: Statechart, trace: Tracer): BigStep {
+export function makeBigStep(rt: BigStep, event: RT_Event, statechart: Statechart, tracer: Tracer): BigStep {
   if (event.kind === "timer") {
-    trace.log(`timer`);
+    tracer.log(`timer`);
   }
   else {
-    trace.log(`input ${event.name}${logEventParam(event.param)}`);
+    tracer.log(`input ${event.name}${logEventParam(event.param)}`);
   }
   const microstep = fairStep({...rt,
     firedArenas: [],
     firedTransitions: [],
     internalEvents: [],
     outputEvents: [],
-  }, event, statechart, statechart.root, trace.indent());
+  }, event, statechart, statechart.root, tracer.indent());
   const result = {
-    ...handleInternalEvents(microstep, statechart, trace),
+    ...handleInternalEvents(microstep, statechart, tracer),
     inputEvent: event,
   };
   return result;
 }
 
-function handleInternalEvents(microstep: RT_Microstep, statechart: Statechart, trace: Tracer): BigStep {
+function handleInternalEvents(microstep: RT_Microstep, statechart: Statechart, tracer: Tracer): BigStep {
   while (microstep.internalEvents.length > 0) {
     const [nextEvent, ...remainingEvents] = microstep.internalEvents;
-    trace.log(`internal ${nextEvent.name}${logEventParam(nextEvent.param)}`);
+    tracer.log(`internal ${nextEvent.name}${logEventParam(nextEvent.param)}`);
     microstep = fairStep(
       {
         ...microstep,
@@ -447,15 +447,15 @@ function handleInternalEvents(microstep: RT_Microstep, statechart: Statechart, t
       {kind: "event", ...nextEvent},
       statechart,
       statechart.root,
-      trace.indent());
+      tracer.indent());
   }
   return microstep;
 }
 
-function resolveHistory(tgt: AbstractState, history: RT_History, trace: Tracer): Set<string> {
+function resolveHistory(tgt: AbstractState, history: RT_History, tracer: Tracer): Set<string> {
   if (tgt.kind === "shallow" || tgt.kind === "deep") {
     const toEnter = history.get(tgt.uid) || new Set();
-    trace.log(`restore ${tgt.kind} history of ${stateDescription(tgt.parent!)} = ${logHistoryValue(toEnter)}`);
+    tracer.log(`restore ${tgt.kind} history of ${stateDescription(tgt.parent!)} = ${logHistoryValue(toEnter)}`);
     return toEnter;
   }
   else {
@@ -464,23 +464,23 @@ function resolveHistory(tgt: AbstractState, history: RT_History, trace: Tracer):
   }
 }
 
-function fire(rt: RT_Microstep, transition: Transition, actions: Action[], trace: Tracer): RT_Microstep {
+function fire(rt: RT_Microstep, transition: Transition, actions: Action[], tracer: Tracer): RT_Microstep {
 
-  trace.log(`fire ${transitionDescription(transition)}`);
+  tracer.log(`fire ${transitionDescription(transition)}`);
 
-  rt = exitChildren(rt, transition.arena, trace.indent());
+  rt = exitChildren(rt, transition.arena, tracer.indent());
 
   // transition actions
   // rt = {...rt, environment: addEventParam(rt.environment, event, transition, label)};
   for (const action of actions) {
-    rt = execAction(rt, action, {kind: "transition", thing: transition}, [transition.uid], trace.indent());
+    rt = execAction(rt, action, {kind: "transition", thing: transition}, [transition.uid], tracer.indent());
   }
 
   const tgtPath = computePath({ancestor: transition.arena, descendant: transition.tgt});
-  const toEnter = resolveHistory(transition.tgt, rt.history, trace)
+  const toEnter = resolveHistory(transition.tgt, rt.history, tracer)
     .union(new Set(tgtPath.map(s=>s.uid)));
 
-  rt = enterChildren(rt, transition.arena, toEnter, trace.indent());
+  rt = enterChildren(rt, transition.arena, toEnter, tracer.indent());
 
   return rt;
 }
