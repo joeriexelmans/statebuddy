@@ -337,8 +337,8 @@ function getEnabledTransitions(rt: RT_Microstep, sourceState: AbstractState, eve
   const enabled = labels.map(([transition, label]) => {
     // 1. match event <-> trigger
     const [matched, newEnvironment, msgs] = matchEventToTrigger(transition, label.trigger, event, rt.environment);
-    // 2. eval guard (in throw-away environment)
-    const guardEnvironment = rt.environment.set(
+    // 2. eval guard (in throw-away environment that possibly extends newEnvironment)
+    const guardEnvironment = newEnvironment.set(
       "inState", inState,
       {kind: "state", thing: statechart.root});
     const isEnabled = matched && evalExpr(label.guard, guardEnvironment, [transition.uid]) as boolean;

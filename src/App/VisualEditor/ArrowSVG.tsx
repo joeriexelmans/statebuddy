@@ -1,10 +1,11 @@
 import { memo } from "react";
 import { Arrow, ArrowPart, getArrowFatBBox, getArrowFatBBoxes } from "../../statecharts/concrete_syntax";
-import { ArcDirection, euclideanDistance } from "../../util/geometry";
+import { addV2D, ArcDirection, euclideanDistance, scaleV2D } from "../../util/geometry";
 import { CORNER_HELPER_RADIUS } from "../parameters";
 import { jsonDeepEqual, setsEqual } from "@/util/util";
 import { BoundingBox } from "./BoundingBox";
 import styles from "./VisualEditor.module.css";
+import { DebugUID } from "./DebugUID";
 
 export const ArrowSVG = memo(function(props: { arrow: Arrow; selected: Set<ArrowPart>; error: string; highlight: boolean; fired: boolean; arc: ArcDirection; initialMarker: boolean }) {
   const { start, end, uid } = props.arrow;
@@ -16,8 +17,9 @@ export const ArrowSVG = memo(function(props: { arrow: Arrow; selected: Set<Arrow
     // largeArc = "0";
     arcOrLine = `A ${radius*2} ${radius*2} 0 0 1`
   }
-  const [startBBox, endBBox] = getArrowFatBBoxes(props.arrow);
+    const [startBBox, endBBox] = getArrowFatBBoxes(props.arrow);
   const bbox = getArrowFatBBox(props.arrow);
+  const center = scaleV2D(addV2D(props.arrow.start, props.arrow.end), 0.5);
   return <g>
     <BoundingBox {...startBBox} />
     <BoundingBox {...endBBox} />
@@ -52,6 +54,10 @@ export const ArrowSVG = memo(function(props: { arrow: Arrow; selected: Set<Arrow
             ${end.x} ${end.y}`}
       data-uid={uid}
       data-parts="start end" />
+
+    <g transform={`translate(${center.x}, ${center.y+16})`}>
+      <DebugUID uid={props.arrow.uid}/>
+    </g>
 
     {/* selection helper circles */}
     <circle

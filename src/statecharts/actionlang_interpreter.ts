@@ -66,7 +66,7 @@ export function evalExpr(expr: Expression, env: Environment, uids: string[] = []
 // Similar to evalExpr, this function recursively does a destructuring assignment of a given value on a given LHS.
 export function execAssignment(
   lhs: Lhs,
-  rhsValue: any, // <-- the already evaluated RHS
+  rhsValue: any, // <-- the already evaluated RHS (a javascript value)
   env: Environment,
   scope: Scope,
   uids: string[] = [],
@@ -78,7 +78,7 @@ export function execAssignment(
       tracer.log('runtime error');
       throw new RuntimeError(`missing value for '${lhs.variable}'`, uids);
     }
-    tracer.log(`assign ${lhs.variable} = ${JSON.stringify(rhsValue)}`);
+    tracer.log(`assign ${lhs.variable} = ${JSON.stringify(rhsValue)} in ${scope.kind} ${scope.thing.uid}`);
     return env.set(lhs.variable, rhsValue, scope);
   }
   else if (lhs.kind === "lhsLiteral") {

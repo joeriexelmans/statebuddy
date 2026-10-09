@@ -33,7 +33,7 @@
   --or-state-bg-color: light-dark(#eee, #000000);
   --and-state-bg-color: light-dark(white, rgb(49, 49, 49));
   --rountangle-stroke-color: light-dark(black, #ffffff);
-  --uid-color: light-dark(lightgrey, rgb(92, 92, 92));
+  --uid-color: light-dark(rgb(255, 0, 255), rgb(255, 0, 255));
   --active-state-bg-color: light-dark(rgb(255, 240, 214), rgb(112, 65, 47));
   --active-state-border-color: light-dark(rgb(205, 133, 0), rgb(255, 165, 105));
   --fired-transition-color: light-dark(rgb(160, 0, 168), rgb(160, 0, 168));
@@ -63,6 +63,8 @@
   --tooltip-arrow-size: 6px;
 
   --button-roundedness: 6px;
+
+
 }
 
 .App a {
