@@ -44,10 +44,10 @@ export const Panel = memo(function Panel({items, setItems, globalProps}: PanelPr
       })}
     </div>
     <select value={0} onChange={e => onAddPanel(e.target.value)}>
-      <option value={0} disabled>add panel...</option>
+      <option key={'add-panel...'} value={0} disabled>add panel...</option>
       {panelTypes
         .filter(t => !items.some(item => item.type === t))
-        .map(t => <option value={t}>{t}</option>)}
+        .map(t => <option value={t} key={t}>{t}</option>)}
     </select>
   </div>;
 });
