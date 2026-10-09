@@ -404,9 +404,10 @@ function getMicroSteps(item: DEVSTraceItem<any>) {
 function ShowEnvironment({item, prevItem}: {item: DEVSTraceItem<any>, prevItem?: DEVSTraceItem<any>}) {
   if (item.newState.state?.environment) {
     return [...item.newState.state.environment.entries()].map(([name, value]) => {
-      if ( name.startsWith('_') // <-- hide hidden variables
+      if ( name.startsWith('(root)._') // <-- hide hidden variables
         // only show changed variables:
-        || prevItem?.newState.state.environment.get(name) === value) {
+        || [...prevItem?.newState.state.environment.entries()||[]].some(([earlierName, earlierValue]) => earlierName === name && earlierValue === value)
+      ) {
         return <div key={name}></div>;
       }
       return <div key={name}>

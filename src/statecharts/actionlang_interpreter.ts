@@ -1,10 +1,11 @@
 // Just a simple recursive interpreter for the action language
 
 import { jsonDeepEqual } from "@/util/util";
-import { Environment, Scope } from "./environment";
+import { Environment, Scope, scopeDescription } from "./environment";
 import { RuntimeError } from "./interpreter";
 import { Assignment, Expression, Lhs } from "./label_ast";
 import { Tracer } from "./tracer";
+import { stateDescription, transitionDescription } from "./abstract_syntax";
 
 const UNARY_OPERATOR_MAP: Map<string, (x: any) => any> = new Map([
   ["!", x => !x],
@@ -26,38 +27,39 @@ const BINARY_OPERATOR_MAP: Map<string, (a: any, b: any) => any> = new Map([
 ]);
 
 // parameter uids: list of UIDs to append to any raised errors
-export function evalExpr(expr: Expression, env: Environment, uids: string[] = []): any {
+export function evalExpr(expr: Expression, env: Environment, scope: Scope, uids: string[] = []): any {
   if (expr.kind === "literal") {
     return expr.value;
   }
   else if (expr.kind === "ref") {
-    // @ts-ignore
-    const found = env.get(expr.variable);
+    const found = env.get(expr.variable, scope);
     if (found === undefined) {
-      console.log({env});
-      throw new RuntimeError(`variable '${expr.variable}' does not exist in environment`, uids);
+      console.log({env, scope});
+      const err = new RuntimeError(`variable '${expr.variable}' does not exist in environment`, uids);
+      console.error(err); // this way we see a stack trace
+      throw err;
     }
     return found;
   }
   else if (expr.kind === "unaryExpr") {
-    const arg = evalExpr(expr.expr, env, uids);
+    const arg = evalExpr(expr.expr, env, scope, uids);
     return UNARY_OPERATOR_MAP.get(expr.operator)!(arg);
   }
   else if (expr.kind === "binaryExpr") {
-    const lhs = evalExpr(expr.lhs, env, uids);
-    const rhs = evalExpr(expr.rhs, env, uids);
+    const lhs = evalExpr(expr.lhs, env, scope, uids);
+    const rhs = evalExpr(expr.rhs, env, scope, uids);
     return BINARY_OPERATOR_MAP.get(expr.operator)!(lhs, rhs);
   }
   else if (expr.kind === "call") {
-    const fn = evalExpr(expr.fn, env, uids);
-    const param = evalExpr(expr.param, env, uids);
+    const fn = evalExpr(expr.fn, env, scope, uids);
+    const param = evalExpr(expr.param, env, scope, uids);
     return fn(param);
   }
   else if (expr.kind === "array") {
-    return expr.elements.map(el => evalExpr(el, env, uids));
+    return expr.elements.map(el => evalExpr(el, env, scope, uids));
   }
   else if (expr.kind === "dict") {
-    return Object.fromEntries(Object.entries(expr.fields).map(([key,val]) => [key, evalExpr(val, env, uids)]));
+    return Object.fromEntries(Object.entries(expr.fields).map(([key,val]) => [key, evalExpr(val, env, scope, uids)]));
   }
   console.error('expr was', expr);
   throw new Error("should never reach here");
@@ -78,7 +80,7 @@ export function execAssignment(
       tracer.log('runtime error');
       throw new RuntimeError(`missing value for '${lhs.variable}'`, uids);
     }
-    tracer.log(`assign ${lhs.variable} = ${JSON.stringify(rhsValue)} in ${scope.kind} ${scope.thing.uid}`);
+    tracer.log(`assign ${scopeDescription(scope)}.${lhs.variable} = ${JSON.stringify(rhsValue)}`);
     return env.set(lhs.variable, rhsValue, scope);
   }
   else if (lhs.kind === "lhsLiteral") {

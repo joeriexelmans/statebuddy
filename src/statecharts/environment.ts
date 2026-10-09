@@ -1,4 +1,4 @@
-import { AbstractState, Transition } from "./abstract_syntax";
+import { AbstractState, stateDescription, Transition, transitionDescription } from "./abstract_syntax";
 
 export type Scope = {
   kind: "transition",
@@ -7,6 +7,10 @@ export type Scope = {
   kind: "state",
   thing: AbstractState,
 };
+
+export function scopeDescription(scope: Scope) {
+  return scope.kind === "state" ? `(${stateDescription(scope.thing)})` : `(${transitionDescription(scope.thing)})`;
+}
 
 export type Environment = {
   // force creation of a new variable in the current scope, even if a variable with the same name already exists in a surrounding scope
@@ -18,7 +22,9 @@ export type Environment = {
   // read variable
   get(key: string, scope: Scope): any;
 
-  entries(): IterableIterator<[string, any]>;
+  entries(scope?: Scope): IterableIterator<[string, any]>;
+
+  clearScope(scope: Scope): Environment;
 }
 
 // non-hierarchical environment with only global variables
@@ -43,9 +49,22 @@ export class FlatEnvironment {
   entries(): IterableIterator<[string, any]> {
     return this.env.entries();
   }
+
+  clearScope(scope: Scope): Environment {
+    return this;
+  }
 }
 
-function pureUpdate<K,V>(m: ReadonlyMap<K,V>, key: K, val: V) {
+function pureUpdate<K,V>(m: ReadonlyMap<K,V>, key: K, val: V|undefined) {
+  if (val === undefined) {
+    // delete key from map
+    const result = new Map([
+      ...m.entries().filter(([k, _]) => k !== key),
+    ]);
+    return result;
+    
+  }
+  // add entry
   return new Map([
     ...m,
     [key, val]
@@ -54,28 +73,36 @@ function pureUpdate<K,V>(m: ReadonlyMap<K,V>, key: K, val: V) {
 
 export class ScopedEnvironment {
   env: ReadonlyMap<string, ReadonlyMap<string, any>>; // (state|transition)-uid -> name -> value
+  scopes: ReadonlyMap<string, Scope>; // (state|transtion)-uid -> Scope
 
-  constructor(env: ReadonlyMap<string, any> = new Map()) {
+  constructor(env: ReadonlyMap<string, any> = new Map(), scopes: ReadonlyMap<string, Scope>) {
     this.env = env;
+    this.scopes = scopes;
   }
 
   newVar(key: string, value: any, scope: Scope) {
     return new ScopedEnvironment(
       pureUpdate(this.env, scope.thing.uid,
         pureUpdate(this.env.get(scope.thing.uid) || new Map(), key, value)
-      ));
+      ),
+      pureUpdate(this.scopes, scope.thing.uid, scope),
+    );
   }
 
   #findScope(key: string, scope: Scope): [Scope, any] | undefined {
     const m = this.env.get(scope.thing.uid);
     if (m !== undefined) {
-      return [scope, m];
+      const val = m.get(key);
+      if (val !== undefined) {
+        return [scope, val];
+      }
     }
     if (scope.kind === "state") {
       const parentState = scope.thing.parent;
       if (parentState) {
         return this.#findScope(key, {kind: "state", thing: parentState});
       }
+      
     }
     else { // transition
       return this.#findScope(key, {kind: "state", thing: scope.thing.arena});
@@ -89,9 +116,11 @@ export class ScopedEnvironment {
     }
     else {
       const [foundScope] = found;
-      return new ScopedEnvironment(pureUpdate(this.env, foundScope.thing.uid,
-        pureUpdate(this.env.get(foundScope.thing.uid) || new Map(), key, value)
-      ));
+      return new ScopedEnvironment(
+        pureUpdate(this.env, foundScope.thing.uid,
+          pureUpdate(this.env.get(foundScope.thing.uid) || new Map(), key, value)),
+        pureUpdate(this.scopes, foundScope.thing.uid, foundScope),
+      );
     }
   }
 
@@ -101,5 +130,28 @@ export class ScopedEnvironment {
       const [_, val] = found;
       return val;
     }
+  }
+
+  *entries(scope?: Scope): IterableIterator<[string, any]> {
+    if (scope) {
+      const uid = scope.thing.uid;
+      for (const [name, value] of (this.env.get(uid)||[]).entries()) {
+        yield [scopeDescription(scope)+'.'+name, value];
+      }
+    }
+    else {
+      for (const [uid, env] of this.env.entries()) {
+        for (const [name, value] of env.entries()) {
+          yield [scopeDescription(this.scopes.get(uid)!)+'.'+name, value];
+        }
+      }
+    }
+  }
+
+  clearScope(scope: Scope) {
+    return new ScopedEnvironment(
+      pureUpdate(this.env, scope.thing.uid, undefined),
+      pureUpdate(this.scopes, scope.thing.uid, undefined),
+    );
   }
 }

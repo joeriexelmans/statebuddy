@@ -1,7 +1,7 @@
 import { AbstractState, computePath, ConcreteState, getDescendants, HistoryState, isOverlapping, OrState, StableState, Statechart, stateDescription, Transition, transitionDescription, TransitionSrcTgt } from "./abstract_syntax";
 import { evalExpr, execAssignment } from "./actionlang_interpreter";
 import { actionLangValToText } from "./actionlang_prettyprinter";
-import { Environment, FlatEnvironment, Scope } from "./environment";
+import { Environment, FlatEnvironment, Scope, ScopedEnvironment } from "./environment";
 import { Action, EventTrigger, TransitionLabel, Trigger } from "./label_ast";
 import { BigStep, RT_Event, RT_History, RT_Microstep, TimerElapseEvent, Timers } from "./runtime_types";
 import { dummyTracer, newTracer, Tracer } from "./tracer";
@@ -16,11 +16,13 @@ export class RuntimeError extends Error {
 
 export class NonDeterminismError extends RuntimeError {}
 
-const initialEnv = new Map<string, any>([
-  ["_log", (str: string) => console.log(str)],
-]);
+const _log = (str: string) => {
+  console.log(str); return str;
+}
 
-const initialFlatEnvironment = new FlatEnvironment(initialEnv);
+const initialFlatEnvironment = new FlatEnvironment(new Map<string, any>([["_log", _log]]));
+
+const initialScopedEnvironment = (root: OrState) => new ScopedEnvironment(new Map([["root", new Map([["_log", _log]])]]), new Map([["root", {kind: "state", thing: root}]]));
 
 const emptyMicrostep = {
   internalEvents: [],
@@ -34,7 +36,7 @@ export function initialize(ast: Statechart, tracer: Tracer): BigStep {
   const subTrace = tracer.indent();
   const rt = enterState({
     simtime: 0,
-    environment: initialFlatEnvironment,
+    environment: initialScopedEnvironment(ast.root),
     mode: new Set(),
     history: new Map(),
     timers: [],
@@ -54,7 +56,7 @@ function logEventParam(param: any) {
 
 function execAction(rt: RT_Microstep, action: Action, scope: Scope, uids: string[], tracer: Tracer): RT_Microstep {
   if (action.kind === "assignment") {
-    const rhsValue = evalExpr(action.rhs, rt.environment, uids);
+    const rhsValue = evalExpr(action.rhs, rt.environment, scope, uids);
     const environment = execAssignment(action.lhs, rhsValue, rt.environment, scope, uids, tracer);
     // const environment = rt.environment.set(action.lhs, rhs, scope);
     // trace.log(`assign ${action.lhs} = ${rhsValue}`);
@@ -66,7 +68,7 @@ function execAction(rt: RT_Microstep, action: Action, scope: Scope, uids: string
   else if (action.kind === "raise") {
     const raisedEvent = {
       name: action.event,
-      param: action.param && evalExpr(action.param, rt.environment),
+      param: action.param && evalExpr(action.param, rt.environment, scope, uids),
     };
     if (action.event.startsWith('_')) {
       // append to internal events
@@ -340,8 +342,8 @@ function getEnabledTransitions(rt: RT_Microstep, sourceState: AbstractState, eve
     // 2. eval guard (in throw-away environment that possibly extends newEnvironment)
     const guardEnvironment = newEnvironment.set(
       "inState", inState,
-      {kind: "state", thing: statechart.root});
-    const isEnabled = matched && evalExpr(label.guard, guardEnvironment, [transition.uid]) as boolean;
+      {kind: "state", thing: statechart.root});    
+    const isEnabled = matched && evalExpr(label.guard, guardEnvironment, {kind: "transition", thing: transition}, [transition.uid]) as boolean;
     // console.log(label.trigger.event?.name, isEnabled);
     return [isEnabled, newEnvironment, transition, label, msgs] as const;
   });
@@ -466,6 +468,8 @@ function resolveHistory(tgt: AbstractState, history: RT_History, tracer: Tracer)
 
 function fire(rt: RT_Microstep, transition: Transition, actions: Action[], tracer: Tracer): RT_Microstep {
 
+  const scope = {kind: "transition" as const, thing: transition};
+
   tracer.log(`fire ${transitionDescription(transition)}`);
 
   rt = exitChildren(rt, transition.arena, tracer.indent());
@@ -473,7 +477,7 @@ function fire(rt: RT_Microstep, transition: Transition, actions: Action[], trace
   // transition actions
   // rt = {...rt, environment: addEventParam(rt.environment, event, transition, label)};
   for (const action of actions) {
-    rt = execAction(rt, action, {kind: "transition", thing: transition}, [transition.uid], tracer.indent());
+    rt = execAction(rt, action, scope, [transition.uid], tracer.indent());
   }
 
   const tgtPath = computePath({ancestor: transition.arena, descendant: transition.tgt});
@@ -481,6 +485,13 @@ function fire(rt: RT_Microstep, transition: Transition, actions: Action[], trace
     .union(new Set(tgtPath.map(s=>s.uid)));
 
   rt = enterChildren(rt, transition.arena, toEnter, tracer.indent());
+
+  tracer.log(`delete: ${[...rt.environment.entries(scope)].map(([key]) => key).join(', ')}`);
+  
+  rt = {
+    ...rt,
+    environment: rt.environment.clearScope(scope),
+  }
 
   return rt;
 }
