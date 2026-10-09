@@ -418,9 +418,6 @@ function ShowEnvironment({item, prevItem}: {item: DEVSTraceItem<any>, prevItem?:
 }
 
 function getRuntimeError(item: DEVSTraceItem<any>): (RuntimeError | undefined) {
-
-  console.log(item, item.newState.state, item.newState.state instanceof RuntimeError);
-  
   const e = item.newState.state;
   if (e instanceof RuntimeError) {
     return e;
