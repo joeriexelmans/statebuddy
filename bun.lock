@@ -9,6 +9,7 @@
         "@emotion/styled": "^11.14.1",
         "@fontsource/roboto": "^5.3.0",
         "@fontsource/roboto-condensed": "^5.3.0",
+        "@fontsource/roboto-mono": "^5.3.0",
         "@mui/icons-material": "^7.3.4",
         "cbor-x": "^1.6.4",
         "mqtt": "^5.15.0",
@@ -88,6 +89,8 @@
     "@fontsource/roboto": ["@fontsource/roboto@5.3.0", "", {}, "sha512-BapRJOWYP+LZ21zp+wBQjfpPYKRoxc4LspJ/RLuI+HSMBD5u/X4O+ESDrSvEqDSy0rAl7GwBJ+09mdc16cVQ1Q=="],
 
     "@fontsource/roboto-condensed": ["@fontsource/roboto-condensed@5.3.0", "", {}, "sha512-Vbh5pesre/M/Jspd10btdKRqLSTe3yn4l6B2tXHGElCeASfA7Pgdpu1mb8wTG8E72J4Xk6FUfqnSe46UN2QAog=="],
+
+    "@fontsource/roboto-mono": ["@fontsource/roboto-mono@5.3.0", "", {}, "sha512-yhwplHMHW9dCk+1pZuERfcJe+K3rosGVZEoK0XktkxRSqQ9qsipSwwiuW2/8Qmtp9lzu3Ixa/ie4BMH3i8CkZQ=="],
 
     "@jridgewell/gen-mapping": ["@jridgewell/gen-mapping@0.3.13", "", { "dependencies": { "@jridgewell/sourcemap-codec": "^1.5.0", "@jridgewell/trace-mapping": "^0.3.24" } }, "sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA=="],
 

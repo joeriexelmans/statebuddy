@@ -131,7 +131,7 @@ text.helper:hover {
   font-size: 10pt;
   font-weight: 550;
   white-space: preserve;
-  font-family: 'Droid Sans Mono', monospace;
+  font-family: 'Roboto Mono', monospace;
   stroke: color-mix(in srgb, var(--and-state-bg-color) 60%, var(--or-state-bg-color) 40%);
   stroke-width: 3.5px;
 }

@@ -8,7 +8,7 @@ import { Overlay } from "../Components/Overlay";
 
 export const codeStyle = {
   padding: 1,
-  fontFamily: "'Droid Sans Mono', monospace",
+  fontFamily: "'Roboto Mono', monospace",
   fontSize: '10pt',
   border: '1px solid var(--separator-color)',
   textAlign: 'left',

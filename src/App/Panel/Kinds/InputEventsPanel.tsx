@@ -134,7 +134,7 @@ export const InputEventsPanel = memo(function ShowInputEvents({
                     width,
                     height: '2em',
                     overflow: 'visible',
-                    fontFamily: "'Droid Sans Mono', monospace",
+                    fontFamily: "'Roboto Mono', monospace",
                     borderRadius: 6,
                     color: value && 'transparent',
                     backgroundColor: value && 'transparent',

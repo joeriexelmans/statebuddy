@@ -2,6 +2,7 @@ import styles from "./App.module.css";
 
 import '@fontsource/roboto-condensed';
 import '@fontsource/roboto';
+import '@fontsource/roboto-mono';
 
 import { Dispatch, PropsWithChildren, ReactElement, SetStateAction, useCallback, useMemo, useState } from "react";
 

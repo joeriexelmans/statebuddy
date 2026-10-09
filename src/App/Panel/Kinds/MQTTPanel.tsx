@@ -239,7 +239,7 @@ export const MQTT = memo(function MQTT({state, setState, simulator, abstractSynt
       </label>
       {enableCA && <textarea
         style={{
-          fontFamily: "'Droid Sans Mono', monospace",
+          fontFamily: "'Roboto Mono', monospace",
           fontSize: '10pt',
           flexGrow: 1,
           height: 60,
@@ -532,7 +532,7 @@ function Payload({payload, setPayload, placeholder}: WithSetters<{payload: strin
   return <textarea
     style={{
       flexGrow: 1,
-      fontFamily: "'Droid Sans Mono', monospace",
+      fontFamily: "'Roboto Mono', monospace",
       fontSize: '10pt',
       resize: 'vertical',
       height: (payload.split('\n').length*1.5) + 0.5 + 'em',
