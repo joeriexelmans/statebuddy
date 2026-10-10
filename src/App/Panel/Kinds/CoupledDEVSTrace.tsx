@@ -435,7 +435,7 @@ function getFiredTransitions(ast: Statechart, item: DEVSTraceItem<SC2DEVSState>)
   if (newState instanceof RuntimeError) {
     return [];
   }
-  const result = all.filter(t => newState.firedTransitions.includes(t.uid));
+  const result = all.filter(t => newState.microsteps.includes(t.uid));
   return result;
 }
 

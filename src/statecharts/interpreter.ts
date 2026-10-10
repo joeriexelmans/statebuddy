@@ -175,7 +175,7 @@ function enterChildren(rt: RT_Microstep, parent: ConcreteState, toEnter: Set<str
       rt = enterState(rt, child, toEnter, trace);
       rt = {
         ...rt,
-        firedTransitions: [...rt.firedTransitions, arrow],  
+        microsteps: [...rt.microsteps, arrow],  
       }
     }
     else {
@@ -369,7 +369,7 @@ function attemptSrcState(rt: RT_Microstep, sourceState: AbstractState, event: RT
       // fire transition!
       rt = fire({...rt, environment: newEnvironment}, transition, label.actions, trace);
       rt = {...rt,
-        firedTransitions: [...rt.firedTransitions, transition.uid],
+        microsteps: [...rt.microsteps, transition.uid],
         firedArenas: [...rt.firedArenas, transition.arena],
       };
 
@@ -423,7 +423,7 @@ export function makeBigStep(rt: BigStep, event: RT_Event, statechart: Statechart
   }
   const microstep = fairStep({...rt,
     firedArenas: [],
-    firedTransitions: [],
+    microsteps: [],
     internalEvents: [],
     outputEvents: [],
   }, event, statechart, statechart.root, trace.indent());
@@ -481,6 +481,14 @@ function fire(rt: RT_Microstep, transition: Transition, actions: Action[], trace
     .union(new Set(tgtPath.map(s=>s.uid)));
 
   rt = enterChildren(rt, transition.arena, toEnter, trace.indent());
+
+  // rt = {
+  //   ...rt,
+  //   microsteps: [...rt.microsteps, {
+  //     transitionUID: transition.uid,
+  //     exited: 
+  //   }],
+  // }
 
   return rt;
 }

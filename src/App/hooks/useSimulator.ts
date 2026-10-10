@@ -104,7 +104,7 @@ export function useSimulator(cE: DEVSComponent<DEVSTrace<CoupledState>> | undefi
     else {
       const currentBigStep = state;
       const highlightActive = (currentBigStep && currentBigStep.mode) || new Set<string>();
-      const highlightTransitions = currentBigStep && currentBigStep.firedTransitions || [];
+      const highlightTransitions = currentBigStep && currentBigStep.microsteps || [];
       return {
         runtimeErrors: [] as TraceableError[],
         highlightActive,
