@@ -72,6 +72,7 @@ export function TracesPanel({
       overflow:'auto',
       height,
       boxShadow: 'inset 0 10px 10px -10px rgba(0,0,0,0.4)',
+      backgroundColor: 'var(--statusbar-bg-color)',
       }}>
         {abstractSyntax && trace && isExpanded &&
           <div>
@@ -87,7 +88,7 @@ export function TracesPanel({
               propertyTrace={activePropertyTrace}
             />
           </div>
-          || <NicelyCentered style={{backgroundColor: 'var(--statusbar-bg-color)'}}>
+          || <NicelyCentered style={{}}>
               <div style={{display: 'flex', justifyContent: 'center', flexDirection: 'column', rowGap: 12}}>
                 <div>Execution trace will appear here.</div>
                 <button onClick={simulator.simulatorCallbacks.onInit}>

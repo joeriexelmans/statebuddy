@@ -223,11 +223,13 @@ function CoupledDEVSInitialization({item, status, plantsState, showMicroSteps, s
   status: StatusType,
 } & ThingsToPassOn) {
   // just show the initialization of every component:
-  const error = getRuntimeError(item);
+  
+  
   return <>
     <TraceItemHeader hide={false} simtime={0} status={status} />
     {Object.entries(item.newState).map(([componentId, componentTrace]) => {
       const componentTraceItem = componentTrace.at(-1)!;
+      const error = getRuntimeError(componentTraceItem);
       const plant = plantsState.plants.find(({id}) => id === componentId);
       const componentDisplayName = plant?.name || componentId;
       const abstractSyntax = getAbstractSyntax(componentId, plantsState, ast);
@@ -402,9 +404,10 @@ function getMicroSteps(item: DEVSTraceItem<any>) {
 function ShowEnvironment({item, prevItem}: {item: DEVSTraceItem<any>, prevItem?: DEVSTraceItem<any>}) {
   if (item.newState.state?.environment) {
     return [...item.newState.state.environment.entries()].map(([name, value]) => {
-      if ( name.startsWith('_') // <-- hide hidden variables
+      if ( name.startsWith('(root)._') // <-- hide hidden variables
         // only show changed variables:
-        || prevItem?.newState.state.environment.get(name) === value) {
+        || [...prevItem?.newState.state.environment.entries()||[]].some(([earlierName, earlierValue]) => earlierName === name && earlierValue === value)
+      ) {
         return <div key={name}></div>;
       }
       return <div key={name}>

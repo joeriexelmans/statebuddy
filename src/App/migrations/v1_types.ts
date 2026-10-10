@@ -129,7 +129,7 @@ export type PlantsState = {
     //     (a) undecided (the default) -- the user hasn't indicated yet if she wants to keep the connection. The simulator will assume that the connection exists, but a warning will be displayed. Undecided connections will not exist in the 'conns' list.
     //     (b) accepted -- the user decided they want the connection to exist. The connection will exist in the 'conns' list with the suppress property undefined or set to false.
     //     (c) suppressed -- the user decided they don't want the connection to exist. The connection will exist in the 'conns' list, with the 'suppress' property set to true.
-    
+
   })[]; // <-- the user can configure the connections between the different components (meaning: the statechart model and the plant(s))
 };
 
@@ -166,8 +166,11 @@ export type PanelType =
   "connect" |
   "mqtt" |
   "properties" |
-  "execution traces";export type DebugState = {
+  "execution traces";
+  
+export type DebugState = {
   showBBox: boolean;
   showGrid: boolean;
   showCells: boolean;
+  showIDs: boolean;
 };

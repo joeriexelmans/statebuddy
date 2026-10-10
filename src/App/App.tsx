@@ -1,5 +1,9 @@
 import styles from "./App.module.css";
 
+import '@fontsource/roboto-condensed';
+import '@fontsource/roboto';
+import '@fontsource/roboto-mono';
+
 import { Dispatch, PropsWithChildren, ReactElement, SetStateAction, useCallback, useMemo, useState } from "react";
 
 import { useDisplayTime } from "@/hooks/useDisplayTime";
@@ -132,6 +136,7 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
   }), [propertyResults, preparedTraceForPlot]);
 
   const onAboutStateBuddy = useCallback(() => setModal(<About setModal={setModal} {...trial}/>), [trial]);
+
   // const onOpen = useCallback((modelName: string) => {
   //   editorState && setModal(<OpenFile
   //     onClose={hideModal}
@@ -144,6 +149,7 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
   //     setProperties={setProperties}
   //     replaceModel={historyCallbacks.commit}/>);
   // }, [appState.sideBar, editorState, modelSize, historyCallbacks]);
+
   const onSave = useCallback((modelName: string) => {
     downloadObjectAsJson(
       appState,
@@ -266,7 +272,7 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
                   mouseMap={appState.view.topPanel.mouseMap}
                   highlightActive={simulator.highlightActive}
                   highlightTransitions={simulator.highlightTransitions}
-                  syntaxErrors={allErrors}
+                  errors={allErrors}
                   beginEdit={beginEdit}
                 />
               </DebugContext>}

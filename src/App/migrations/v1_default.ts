@@ -75,6 +75,7 @@ export const defaultDebugState: DebugState = {
   showBBox: false,
   showGrid: false,
   showCells: false,
+  showIDs: false,
 };
 
 export const defaultAppStateV1: AppStateV1 = {

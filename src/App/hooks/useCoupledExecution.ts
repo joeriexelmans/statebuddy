@@ -5,6 +5,7 @@ import { statebuddyPlants } from "../plants";
 import { Statechart } from "@/statecharts/abstract_syntax";
 import { sc2DEVS } from "@/devs/sc2devs";
 import { PlantsState } from "../migrations/v1_types";
+import { autoConnect, useConnect } from "../Panel/Kinds/ConnectPanel";
 
 // Every plant's UI input events are exposed as global (Coupled DEVS) input events.
 // They must be prefixed with the plant ID, so they don't interact with each other.
@@ -20,6 +21,8 @@ export function useCoupledExecution(ast: Statechart|undefined, plantsState: Plan
   );
 
   const tracedSC2DEVS = useMemo(() => ast && makeTracedDEVS(sc2DEVS(ast)), [ast]);
+
+  const effectivelyConnected = ast && useConnect(ast, plantsState).effectivelyConnected || [];
 
   const coupledExecution = useMemo(() => {
     // Every statechart input event is exposed as a global input event.
@@ -61,7 +64,8 @@ export function useCoupledExecution(ast: Statechart|undefined, plantsState: Plan
         outputs: hardwiredSCOutputs,
 
         // the user-configurable part:
-        model2Model: plantsState.conns.filter(conn => !conn.suppress),
+        
+        model2Model: effectivelyConnected,
 
       } as CoupledDEVSConns,
       ast.inputEvents.map(({event}) => event), // <-- every SC input becomes coupled input

@@ -15,6 +15,9 @@ export function actionLangValToText(val: any): string {
   if (val && typeof val === "object") {
     return `{${Object.entries(val).map(([key, val]) => `${key}: ${actionLangValToText(val)}`).join(', ')}}`;
   }
+  if (typeof val === "function") {
+    return "<function>";
+  }
   console.error('value was', val);
   throw new Error("should never reach here");
 }

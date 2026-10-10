@@ -5,6 +5,8 @@ import { RectHelper } from "./RectHelpers";
 import { memo } from "react";
 import { arraysEqual, jsonDeepEqual, mapsEqual, setsEqual } from "@/util/util";
 import styles from "./VisualEditor.module.css"
+import { BoundingBox } from "./BoundingBox";
+import { DebugUID } from "./DebugUID";
 
 export const DiamondShape = memo(function DiamondShape(props: {size: Vec2D, extraAttrs: object}) {
   const minSize = rountangleMinSize(props.size);
@@ -32,17 +34,21 @@ export const DiamondSVG = memo(function DiamondSVG(props: { diamond: Diamond; se
     "data-uid": props.diamond.uid,
     "data-parts": "left top right bottom",
   };
-  return <g transform={`translate(${props.diamond.topLeft.x} ${props.diamond.topLeft.y})`}>
-    <DiamondShape size={minSize} extraAttrs={extraAttrs}/>
+  return <>
+    <g transform={`translate(${props.diamond.topLeft.x} ${props.diamond.topLeft.y})`}>
+      <DiamondShape size={minSize} extraAttrs={extraAttrs}/>
 
-    <text x={minSize.x/2} y={minSize.y/2}
-      className={styles.uid}
-      textAnchor="middle">{props.diamond.uid}</text>
-    
-    {props.error && <text className="errorHover" x={minSize.x/2} y={minSize.y/2 - 20} textAnchor="middle">{props.error}</text>}
+      <g transform={`translate(${props.diamond.size.x/2} ${props.diamond.size.y/2})`}>
+        <DebugUID uid={props.diamond.uid}/>
+      </g>
+      
+      {props.error && <text className="errorHover" x={minSize.x/2} y={minSize.y/2 - 20} textAnchor="middle">{props.error}</text>}
 
-    <RectHelper uid={props.diamond.uid} size={minSize} highlight={props.highlight} selected={props.selected} />
-  </g>;
+      <RectHelper uid={props.diamond.uid} size={minSize} highlight={props.highlight} selected={props.selected} dashed={false} />
+    </g>
+    <BoundingBox {...props.diamond}/>
+  </>
+;
 }, (prevProps, nextProps) => {
   return jsonDeepEqual(prevProps.diamond, nextProps.diamond)
     && setsEqual(prevProps.selected, nextProps.selected)

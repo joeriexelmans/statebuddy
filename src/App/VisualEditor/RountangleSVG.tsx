@@ -5,6 +5,7 @@ import { RectHelper } from "./RectHelpers";
 import { arraysEqual, jsonDeepEqual, setsEqual } from "@/util/util";
 import { BoundingBox } from "./BoundingBox";
 import styles from "./VisualEditor.module.css";
+import { DebugUID } from "./DebugUID";
 
 export const RountangleSVG = memo(function RountangleSVG(props: {rountangle: Rountangle; selected: Set<RectSide>; highlight: RectSide[]; error?: string; active: boolean; dashed: boolean }) {
   const { topLeft, size, uid } = props.rountangle;
@@ -32,7 +33,9 @@ export const RountangleSVG = memo(function RountangleSVG(props: {rountangle: Rou
       {...extraAttrs}
     />
 
-    <text x={10} y={20} className={styles.uid}>{props.rountangle.uid}</text>
+    <g transform={`translate(8,16)`}>
+      <DebugUID uid={props.rountangle.uid}/>
+    </g>
 
     {props.error &&
       <text className={styles.errorHover} x={30} y={20}>{props.error}</text>}

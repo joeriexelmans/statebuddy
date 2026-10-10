@@ -13,8 +13,8 @@ type DebugProps = {
 };
 
 export function DebugPanel({
-  state: {showBBox, showGrid, showCells},
-  setState: {setShowBBox, setShowCells, setShowGrid},
+  state: {showBBox, showGrid, showCells, showIDs},
+  setState: {setShowBBox, setShowCells, setShowGrid, setShowIDs},
   onHide: hide,
 }: DebugProps) {
   const [crash, setCrash] = useState(false);
@@ -23,13 +23,13 @@ export function DebugPanel({
   }
   return <div className="toolbar" style={{display: 'flex'}}>
     <div className="toolbarGroup">
-      <Tooltip tooltip='The entire canvas is conceptually partitioned into a grid of equally sized cells.' align='left' above>
+      <Tooltip tooltip='Show unique identifiers on shapes.' align='left' above>
         <label>
           <input type="checkbox"
-            checked={showGrid}
-            onChange={e  => setShowGrid(e.target.checked)} 
+            checked={showIDs}
+            onChange={e => setShowIDs(e.target.checked)}
             />
-          grid
+            UIDs
         </label>
       </Tooltip>
       &emsp;
@@ -43,6 +43,16 @@ export function DebugPanel({
       </label>
       </Tooltip>
       &emsp;
+      <Tooltip tooltip='The entire canvas is conceptually partitioned into a grid of equally sized cells. Every shape occupies those cells of the grid that overlap with its fat bounding box. We maintain a (sparse) mapping from every cell to a list of shapes occupying that cell. Only when two shapes occupy the same cell, do we check for interactions (e.g., an arrow connecting to the side of a rountangle). This simple trick greatly speeds up "connectedness" and "insideness" detection compared to naively checking every pair of shapes.' align='left' above>
+        <label>
+          <input type="checkbox"
+            checked={showGrid}
+            onChange={e  => {setShowGrid(e.target.checked); setShowCells(e.target.checked)}} 
+            />
+          grid
+        </label>
+      </Tooltip>
+      {/* &emsp;
       <Tooltip tooltip='Every shape occupies those cells of the grid that overlap with its fat bounding box. We maintain a (sparse) mapping from every cell to a list of shapes occupying that cell. Only when two shapes occupy the same cell, do we check for interactions (e.g., an arrow connecting to the side of a rountangle). This is much more scalable than naively checking every pair of shapes.' align='left' above>
       <label>
         <input type="checkbox"
@@ -51,7 +61,7 @@ export function DebugPanel({
           />
         occupied cells
         </label>
-      </Tooltip>
+      </Tooltip> */}
     </div>
     &emsp;&emsp;
     <div className="toolbarGroup">
