@@ -3,9 +3,9 @@
 import { jsonDeepEqual } from "@/util/util";
 import { Environment, Scope, scopeDescription } from "./environment";
 import { RuntimeError } from "./interpreter";
-import { Assignment, Expression, Lhs } from "./label_ast";
+import { Expression, Lhs } from "./label_ast";
 import { Tracer } from "./tracer";
-import { stateDescription, transitionDescription } from "./abstract_syntax";
+import { ExecutedAssignment } from "./runtime_types";
 
 const UNARY_OPERATOR_MAP: Map<string, (x: any) => any> = new Map([
   ["!", x => !x],
@@ -72,16 +72,16 @@ export function execAssignment(
   env: Environment,
   scope: Scope,
   uids: string[] = [],
-  tracer: Tracer,
-): Environment {
+  // tracer: Tracer,
+): [Environment, ExecutedAssignment[]] {
   if (lhs.kind === "lhsRef") {
     // console.log(`assign ${lhs.variable} = ${JSON.stringify(rhsValue)}`, lhs, rhsValue);
     if (rhsValue === undefined) {
-      tracer.log('runtime error');
+      // tracer.log('runtime error');
       throw new RuntimeError(`missing value for '${lhs.variable}'`, uids);
     }
-    tracer.log(`assign ${scopeDescription(scope)}.${lhs.variable} = ${JSON.stringify(rhsValue)}`);
-    return env.set(lhs.variable, rhsValue, scope);
+    // tracer.log(`assign ${scopeDescription(scope)}.${lhs.variable} = ${JSON.stringify(rhsValue)}`);
+    return [env.set(lhs.variable, rhsValue, scope), [{variableName: lhs.variable, value: rhsValue}]];
   }
   else if (lhs.kind === "lhsLiteral") {
     // when encountering value on LHS, we treat it as an assertion that it must equal the RHS
@@ -89,7 +89,7 @@ export function execAssignment(
       throw new RuntimeError(`assertion failed: ${JSON.stringify(lhs.value)} != ${JSON.stringify(rhsValue)}`, uids);
     }
     // and it doesn't do anything
-    return env;
+    return [env, []];
   }
   else if (lhs.kind === "lhsArray") {
     if (!Array.isArray(rhsValue)) {
@@ -98,24 +98,30 @@ export function execAssignment(
     if (lhs.elements.length > rhsValue.length) {
       throw new RuntimeError(`destructuring array: not enough elements in RHS: ${JSON.stringify(rhsValue)}`, uids);
     }
+    let actions: ExecutedAssignment[] = [];
     for (let i=0; i<lhs.elements.length; i++) {
       // perform nested assignments element-wise
-      env = execAssignment(lhs.elements[i], rhsValue[i], env, scope, uids, tracer);
+      let a;
+      [env, a] = execAssignment(lhs.elements[i], rhsValue[i], env, scope, uids);
+      actions = [...actions, ...a];
     }
-    return env;
+    return [env, actions];
   }
   else if (lhs.kind === "lhsDict") {
     // accidental  complexity of checking if a value is a regular object in JS:
     if (!rhsValue || typeof rhsValue !== "object" || Array.isArray(rhsValue)) {
       throw new RuntimeError(`cannot destructure ${JSON.stringify(rhsValue)} into dictionary`, uids);
     }
+    let actions: ExecutedAssignment[] = [];
     for (const [lhsKey, lhsLhs] of Object.entries(lhs.fields)) {
       if (!Object.hasOwn(rhsValue, lhsKey)) {
         throw new RuntimeError(`destructuring dictionary: missing key '${lhsKey} in RHS: ${JSON.stringify(rhsValue)}'`, uids);
       }
-      env = execAssignment(lhsLhs, rhsValue[lhsKey], env, scope, uids, tracer);
+      let a;
+      [env, a] = execAssignment(lhsLhs, rhsValue[lhsKey], env, scope, uids);
+      actions = [...actions, ...a];
     }
-    return env;
+    return [env, actions];
   }
   console.error("lhs was", lhs);
   throw new Error("should never reach here");

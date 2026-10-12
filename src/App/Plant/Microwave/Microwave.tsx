@@ -8,7 +8,7 @@ import fontDigital from "../DigitalWatch/digital-font.ttf";
 
 import sndBell from "./bell.wav";
 import sndRunning from "./running.wav";
-import { RT_Statechart } from "@/statecharts/runtime_types";
+import { RuntimeConfiguration } from "@/statecharts/runtime_types";
 import { memo, useEffect } from "react";
 
 import "./Microwave.css";
@@ -118,7 +118,7 @@ export const Microwave = memo(function Microwave({state: {bellRinging, magnetron
 
 const microwavePlantSpec: StatechartPlantSpec<MicrowaveState> = {
   ast: microwaveAbstractSyntax,
-  cleanupState: (state: RT_Statechart) => {
+  cleanupState: (state: RuntimeConfiguration) => {
     const bellRinging = state.mode.has(microwaveAbstractSyntax.label2State.get("bell")!.uid);
     const magnetronRunning = state.mode.has(microwaveAbstractSyntax.label2State.get("Magnetron on")!.uid);
     const doorOpen = state.mode.has(microwaveAbstractSyntax.label2State.get("Door opened")!.uid);

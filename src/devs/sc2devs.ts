@@ -1,7 +1,7 @@
 // DEVS adapter for Statecharts
 
 import { Statechart } from "@/statecharts/abstract_syntax";
-import { BigStep, RaisedEvent } from "@/statecharts/runtime_types";
+import { BigStep, FairStep, getOutputEventsFromBigStep, getOutputEventsFromInit, getRaisedEvents, Initialization, RaisedEvent } from "@/statecharts/runtime_types";
 import { DEVSComponent } from "./devs";
 import { initialize, makeBigStep, RuntimeError } from "@/statecharts/interpreter";
 import { newTracer } from "@/statecharts/tracer";
@@ -10,32 +10,27 @@ import { newTracer } from "@/statecharts/tracer";
 export type SC2DEVSState = {
   // The most up-to-date execution state.
   // If there is an error, then this DEVS component is in a special "error" state, where its intTransition is +Inf, and its extTransition doesn't do anything anymore.
-  state: BigStep | RuntimeError,
-
-  // The microsteps that were performed by the last big step.
-  // todo: the microsteps are def a bit 'hacked in'... should clean this up...
-  // they should just be returned by the interpreter itself instead of via this weird 'tracer' construction.
-  microsteps: string[],
+  state: Initialization & {kind: "init"}
+       | BigStep & {kind: "bigstep"}
+       | RuntimeError,
 
   // a Statechart can output events when it responds to an input event, but this is not allowed in an extTransition in DEVS. Therefore, we store all these output events in our internal state, such that we can output them in a follow-up intTransition:
   outputQueue: RaisedEvent[],
 };
 
+
 // Wraps a Statechart in a DEVS component
 export function sc2DEVS(ast: Statechart): DEVSComponent<SC2DEVSState> {
   return {
     initial: () => {
-      const [microsteps, tracer] = newTracer();
       return catchRuntimeError(
-        () => initialize(ast, tracer),
-        bigstep => ({
-          state: bigstep,
-          microsteps,
-          outputQueue: bigstep.outputEvents,
+        () => initialize(ast),
+        init => ({
+          state: {kind: "init", ...init},
+          outputQueue: getOutputEventsFromInit(init),
         }),
         error => ({
           state: error,
-          microsteps,
           outputQueue: [],
         }) as SC2DEVSState,
       );
@@ -46,10 +41,10 @@ export function sc2DEVS(ast: Statechart): DEVSComponent<SC2DEVSState> {
         return Infinity;
       }
       if (c.outputQueue.length > 0) {
-        return c.state.simtime; // immediately (= current simulated time)
+        return c.state.kind === "init" ? 0 : c.state.simtime; // immediately (= current simulated time)
       }
-      if (c.state.timers[0]) {
-        return c.state.timers[0][0];
+      if (c.state.rtconfig.timers[0]) {
+        return c.state.rtconfig.timers[0][0];
       }
       return Infinity;
     },
@@ -65,25 +60,23 @@ export function sc2DEVS(ast: Statechart): DEVSComponent<SC2DEVSState> {
           outputQueue: [],
         }];
       }
-      if (c.state.timers.length === 0) {
+      if (c.state.rtconfig.timers.length === 0) {
         throw new Error("cannot make intTransition - timeAdvance is infinity");
       }
       // pop timer:
-      const [[when, timerElapseEvent], ...remainingTimers] = c.state.timers;
+      const [[when, timerElapseEvent], ...remainingTimers] = c.state.rtconfig.timers;
       // handle timer event:
       const newC = {...c.state, timers: remainingTimers, simtime: when};
-      const [microsteps, tracer] = newTracer();
       // let outputEvents = [] as RaisedEvent[];
       return catchRuntimeError(
         () => {
-          const bigstep = makeBigStep(newC, timerElapseEvent, ast, tracer);
+          const bigstep = makeBigStep(newC.rtconfig, newC.simtime, timerElapseEvent, ast);
           return bigstep;
         },
         bigstep => [
-          bigstep.outputEvents,
+          getOutputEventsFromBigStep(bigstep),
           {
-            state: bigstep,
-            microsteps,
+            state: {kind: "bigstep", ...bigstep},
             outputQueue: [],
           } as SC2DEVSState,
         ] as const,
@@ -91,7 +84,6 @@ export function sc2DEVS(ast: Statechart): DEVSComponent<SC2DEVSState> {
           [] as RaisedEvent[],
           {
             state: error,
-            microsteps,
             outputQueue: [],
           } as SC2DEVSState,
         ] as const,
@@ -107,27 +99,25 @@ export function sc2DEVS(ast: Statechart): DEVSComponent<SC2DEVSState> {
           outputQueue: [],
         };
       }
-      const [microsteps, tracer] = newTracer();
-      let bigstep = c.state as BigStep;
-      let outputs = c.outputQueue;
       // execute one big step for each input event:
+      let state = c.state as (BigStep|Initialization);
+      let outputs = c.outputQueue;
       return catchRuntimeError(
         () => {
           for (const e of bagOfInputs) {
-            bigstep = makeBigStep({...bigstep, simtime}, {kind: "event", ...e}, ast, tracer);
+            const bigstep = makeBigStep(state.rtconfig, simtime, {kind: "event", ...e}, ast);
             // accumulate output events from all big steps
-            outputs = [...outputs, ...bigstep.outputEvents];
+            outputs = [...outputs, ...getOutputEventsFromBigStep(bigstep)];
+            state = bigstep;
           }
-          return bigstep;
+          return {kind: "bigstep", ...state as BigStep};
         },
-        bigstep => ({
-          state: bigstep,
-          microsteps,
+        state => ({
+          state,
           outputQueue: outputs,
         } as SC2DEVSState),
         error => ({
           state: error,
-          microsteps,
           outputQueue: [],
         } as SC2DEVSState),
       );

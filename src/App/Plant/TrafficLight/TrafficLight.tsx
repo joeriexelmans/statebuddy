@@ -12,7 +12,7 @@ import { parseStatechart } from "@/statecharts/parser";
 import { ConcreteSyntax } from "@/statecharts/concrete_syntax";
 import { computeTopology } from "@/statecharts/detect_topology";
 import { makeStatechartPlant, PlantRenderProps, StatechartPlantSpec } from "../Plant";
-import { RT_Statechart } from "@/statecharts/runtime_types";
+import { RuntimeConfiguration } from "@/statecharts/runtime_types";
 import { useAudioContext } from "@/hooks/useAudioContext";
 import { memo, useEffect, useMemo } from "react";
 import { objectsEqual } from "@/util/util";
@@ -105,7 +105,7 @@ export const TrafficLight = memo(function TrafficLight({state: {red, yellow, gre
 
 const trafficLightPlantSpec: StatechartPlantSpec<TrafficLightState> = {
   ast: trafficLightAbstractSyntax,
-  cleanupState: (state: RT_Statechart) => {
+  cleanupState: (state: RuntimeConfiguration) => {
     const red = state.mode.has(trafficLightAbstractSyntax.label2State.get("red on")!.uid);
     const yellow = state.mode.has(trafficLightAbstractSyntax.label2State.get("yellow on")!.uid);
     const green = state.mode.has(trafficLightAbstractSyntax.label2State.get("green on")!.uid);

@@ -4,7 +4,7 @@ import { makeStatechartPlant, Plant, PlantRenderProps, StatechartPlantSpec } fro
 import model from "./GantryCrane.json";
 import { computeTopology } from "@/statecharts/detect_topology";
 import { ConcreteSyntax } from "@/statecharts/concrete_syntax";
-import { RT_Statechart } from "@/statecharts/runtime_types";
+import { RuntimeConfiguration } from "@/statecharts/runtime_types";
 
 const gantryCraneConcreteSyntax = model as ConcreteSyntax;
 
@@ -16,7 +16,7 @@ if (parseErrors.length > 0) {
 
 const gantryCranePlantSpec: StatechartPlantSpec<GantryCraneCleanState> = {
   ast: abstractSyntax,
-  cleanupState: (state: RT_Statechart) => {
+  cleanupState: (state: RuntimeConfiguration) => {
     function isActive(label: string) {
       return state.mode.has(abstractSyntax.label2State.get(label)!.uid);
     }

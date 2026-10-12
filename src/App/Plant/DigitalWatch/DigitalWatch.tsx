@@ -2,7 +2,7 @@ import { useAudioContext } from "@/hooks/useAudioContext";
 import { ConcreteSyntax } from "@/statecharts/concrete_syntax";
 import { computeTopology } from "@/statecharts/detect_topology";
 import { parseStatechart } from "@/statecharts/parser";
-import { RT_Statechart } from "@/statecharts/runtime_types";
+import { RuntimeConfiguration } from "@/statecharts/runtime_types";
 import { memo, useEffect } from "react";
 import { makeStatechartPlant, PlantRenderProps } from "../Plant";
 
@@ -52,7 +52,7 @@ export type DigitalWatchPlantState = {
 
 const rootScope: Scope = {kind: "state", thing: dwatchAbstractSyntax.root};
 
-function dwatchConfigToState(rtConfig: RT_Statechart): DigitalWatchPlantState {
+function dwatchConfigToState(rtConfig: RuntimeConfiguration): DigitalWatchPlantState {
   return {
     alarmEnabled: rtConfig.environment.get("alarmEnabled", rootScope),
     h: rtConfig.environment.get("h", rootScope),

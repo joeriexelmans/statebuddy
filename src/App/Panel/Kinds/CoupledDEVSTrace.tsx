@@ -438,7 +438,15 @@ function getFiredTransitions(ast: Statechart, item: DEVSTraceItem<SC2DEVSState>)
   if (newState instanceof RuntimeError) {
     return [];
   }
-  const result = all.filter(t => newState.microsteps.includes(t.uid));
+  const result = all.filter(t => {
+    if (newState.kind === "init") {
+      // TODO: also add arrows that indicate default states??
+      return newState.fairSteps.flatMap(step => step.fired).some(f => f.transitionUID === t.uid)
+    }
+    else {
+      return newState.fairSteps.flatMap(step => step.fired).some(f => f.transitionUID === t.uid);
+    }
+  });
   return result;
 }
 

@@ -22,7 +22,7 @@ import { parseStatechart } from "@/statecharts/parser";
 import { ConcreteSyntax } from "@/statecharts/concrete_syntax";
 import { computeTopology } from "@/statecharts/detect_topology";
 import { makeStatechartPlant } from "../Plant";
-import { RT_Statechart } from "@/statecharts/runtime_types";
+import { RuntimeConfiguration } from "@/statecharts/runtime_types";
 
 export const lightButtonConcreteSyntax = lightButtonJSON as ConcreteSyntax;
 export const [lightButtonAbstractSyntax, lightButtonErrors] = parseStatechart(computeTopology(lightButtonConcreteSyntax));
@@ -91,7 +91,7 @@ export const LightButton = memo(function LightButton({state, speed, raiseUIEvent
 const lightButtonSpec: StatechartPlantSpec<LightButtonState> = {
   ast: lightButtonAbstractSyntax,
   render: LightButton,
-  cleanupState: (state: RT_Statechart) => {
+  cleanupState: (state: RuntimeConfiguration) => {
     const lightsOn = state.mode.has(lightButtonAbstractSyntax.label2State.get("LightsOn")!.uid);
     return {lightsOn};
   },

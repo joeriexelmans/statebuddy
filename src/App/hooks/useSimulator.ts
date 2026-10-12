@@ -103,8 +103,8 @@ export function useSimulator(cE: DEVSComponent<DEVSTrace<CoupledState>> | undefi
     }
     else {
       const currentBigStep = state;
-      const highlightActive = (currentBigStep && currentBigStep.mode) || new Set<string>();
-      const highlightTransitions = currentBigStep && currentBigStep.microsteps || [];
+      const highlightActive = (currentBigStep && currentBigStep.rtconfig.mode) || new Set<string>();
+      const highlightTransitions = currentBigStep && currentBigStep.kind === "bigstep" && currentBigStep.fairSteps.flatMap(step => step.fired.map(t => t.transitionUID)) || [];
       return {
         runtimeErrors: [] as TraceableError[],
         highlightActive,
