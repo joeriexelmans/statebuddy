@@ -109,7 +109,7 @@ export const CoupledDEVSTrace = memo(function CoupledDEVSTrace({
           style={{display: (isPlantStep && !plantSteps) ? 'none' : undefined}}
         >
         <div style={{display: 'flex', gap: '1em'}}>
-          #{i}
+          <div style={{minWidth: 22, textAlign: 'right'}}>#{i}</div>
           <CoupledDEVSTraceItem
             item={item}
             prevItem={prevItem}
@@ -154,7 +154,7 @@ function TraceItemHeader({status, simtime, hide}: {status: StatusType, simtime: 
     </div>
 
     {/* timestamp */}
-    <div style={{visibility: hide ? "hidden" : undefined}}>
+    <div style={{visibility: hide ? "hidden" : undefined, minWidth: 38, textAlign: 'center'}}>
       <Tooltip tooltip="timestamp">
         <div style={{textAlign: 'right'}}>
           {formatTime(simtime)}
