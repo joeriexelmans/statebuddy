@@ -17,6 +17,7 @@ import { useAudioContext } from "@/hooks/useAudioContext";
 import { memo, useEffect, useMemo } from "react";
 import { objectsEqual } from "@/util/util";
 import { dummyTracer } from "@/statecharts/tracer";
+import { SC2DEVSNonError, SC2DEVSState } from "@/devs/sc2devs";
 
 export const trafficLightConcreteSyntax = trafficLightJSON as ConcreteSyntax;
 
@@ -105,12 +106,12 @@ export const TrafficLight = memo(function TrafficLight({state: {red, yellow, gre
 
 const trafficLightPlantSpec: StatechartPlantSpec<TrafficLightState> = {
   ast: trafficLightAbstractSyntax,
-  cleanupState: (state: RuntimeConfiguration) => {
-    const red = state.mode.has(trafficLightAbstractSyntax.label2State.get("red on")!.uid);
-    const yellow = state.mode.has(trafficLightAbstractSyntax.label2State.get("yellow on")!.uid);
-    const green = state.mode.has(trafficLightAbstractSyntax.label2State.get("green on")!.uid);
-    const timerGreen = state.mode.has(trafficLightAbstractSyntax.label2State.get("timer green")!.uid);
-    const timerValue = state.environment.get("t", {kind: "state", thing: trafficLightAbstractSyntax.root});
+  cleanupState: (state: SC2DEVSNonError) => {
+    const red = state.rtconfig.mode.has(trafficLightAbstractSyntax.label2State.get("red on")!.uid);
+    const yellow = state.rtconfig.mode.has(trafficLightAbstractSyntax.label2State.get("yellow on")!.uid);
+    const green = state.rtconfig.mode.has(trafficLightAbstractSyntax.label2State.get("green on")!.uid);
+    const timerGreen = state.rtconfig.mode.has(trafficLightAbstractSyntax.label2State.get("timer green")!.uid);
+    const timerValue = state.rtconfig.environment.get("t", {kind: "state", thing: trafficLightAbstractSyntax.root});
     return { red, yellow, green, timerGreen, timerValue };
   },
   render: TrafficLight,

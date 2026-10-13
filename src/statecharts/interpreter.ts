@@ -188,13 +188,12 @@ function enterChildren(simtime: number, rt: RuntimeConfiguration, parent: Concre
         throw new NonDeterminismError(`Non-determinism: multiple initial states.`, [parent.uid, ...parent.initial.map(i => i[0]), parent.uid]);
       }
       const [[arrow, child]] = parent.initial;
-      let entered;
       [rt, entered] = enterState(simtime, rt, child, toEnter);
     }
     else {
       throw new Error("can only enter one child of an OR-state, stupid!");
     }
-    return [rt, [entered!]];
+    return [rt, [entered]];
   }
   throw new Error("should never reach here");
 }
@@ -407,8 +406,8 @@ function fireUntilStable(simtime: number, alreadyFired: FiredTransition[], rtcon
 
 // A fair step is a response to one (input|internal) event, where possibly multiple transitions are made as long as their arenas do not overlap. A reasonably accurate and more intuitive explanation is that every orthogonal region is allowed to fire at most one transition.
 // This function will attempt to fire outgoing transitions of 'activeParent's children, and recursively, the children of the children. This corresponds to 'parent first' priority semantics.
-function fairStep(simtime: number, rtconfig: RuntimeConfiguration, event: RT_Event, statechart: Statechart, activeParent: StableState): [FiredTransition[], RuntimeConfiguration] {
-  let alreadyFired = [] as FiredTransition[];
+function fairStep(simtime: number, rtconfig: RuntimeConfiguration, event: RT_Event, statechart: Statechart, activeParent: StableState, alreadyFired = [] as FiredTransition[]): [FiredTransition[], RuntimeConfiguration] {
+  // let alreadyFired = [] as FiredTransition[];
   function addStep([fired, cfg]: [FiredTransition[], RuntimeConfiguration]) {
     alreadyFired = [...alreadyFired, ...fired];
     rtconfig = cfg;
@@ -422,7 +421,7 @@ function fairStep(simtime: number, rtconfig: RuntimeConfiguration, event: RT_Eve
       else {
         // no enabled outgoing transitions, try the children:
         if (state.kind !== "pseudo") {
-          addStep(fairStep(simtime, rtconfig, event, statechart, state));
+          addStep(fairStep(simtime, rtconfig, event, statechart, state, alreadyFired));
         }
       }
     }
@@ -445,19 +444,28 @@ export function makeBigStep(rtconfig: RuntimeConfiguration, simtime: number, eve
 
 // handle internal events after handling input event or after entering default state(s).
 export function handleInternalEvents(simtime: number, rtconfig: RuntimeConfiguration, internalEvents: RaisedEvent[], statechart: Statechart): [FairStep[], RuntimeConfiguration] {
-  const result = [];
-  const remaining = [...internalEvents]; // defensive copy
-  while (internalEvents.length > 0) {
-    const next = remaining.shift()!; // get next event
+  const trace = [];
+  let remaining = [...internalEvents]; // defensive copy
+  let i=0;
+  while (remaining.length > 0) {
+    console.log({remaining});
+    let next;
+    [next, ...remaining] = remaining;
+    // const next = remaining.shift()!; // get next event
     const event = {kind: "event" as const, ...next};
     let fired;
     [fired, rtconfig] = fairStep(simtime, rtconfig, event, statechart, statechart.root);
     // the just-performed fair step may add new internal events:
-    remaining.push(...getRaisedEvents(fired, "raisedInternal"));
-    result.push({event, fired});
+    remaining = [...remaining, ...getRaisedEvents(fired, "raisedInternal")];
+    console.log({remaining});
+    trace.push({event, fired});
+    i++;
+    if (i > 10000) {
+      throw new RuntimeError("Too many steps (reached 10,000)", []);
+    }
   }
 
-  return [result, rtconfig];
+  return [trace, rtconfig];
 }
 
 function resolveHistory(tgt: AbstractState, history: RT_History): Set<string> {

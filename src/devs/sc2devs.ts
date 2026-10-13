@@ -6,12 +6,15 @@ import { DEVSComponent } from "./devs";
 import { initialize, makeBigStep, RuntimeError } from "@/statecharts/interpreter";
 import { newTracer } from "@/statecharts/tracer";
 
+export type SC2DEVSNonError =
+    Initialization & {kind: "init"}
+  | BigStep & {kind: "bigstep"};
+
 // When we wrap a Statechart in an atomic DEVS, this is the type of its DEVS-state:
 export type SC2DEVSState = {
   // The most up-to-date execution state.
   // If there is an error, then this DEVS component is in a special "error" state, where its intTransition is +Inf, and its extTransition doesn't do anything anymore.
-  state: Initialization & {kind: "init"}
-       | BigStep & {kind: "bigstep"}
+  state: SC2DEVSNonError
        | RuntimeError,
 
   // a Statechart can output events when it responds to an input event, but this is not allowed in an extTransition in DEVS. Therefore, we store all these output events in our internal state, such that we can output them in a follow-up intTransition:

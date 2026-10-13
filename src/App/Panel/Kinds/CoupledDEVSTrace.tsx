@@ -12,7 +12,7 @@ import { formatTime, jsonDeepEqual, memoizeOne, objectsEqual } from "../../../ut
 import { Tooltip } from "../../Components/Tooltip";
 import { CoupledState, StateBuddyTraceState } from "../../hooks/useSimulator";
 import { PlantsState } from "../../migrations/v1_types";
-import { DeepSetter, WithSetters } from "../../makePartialSetter";
+import { WithSetters } from "../../makePartialSetter";
 import { PropertyStatusIndicator } from "../../SideBar/PropertyStatusIndicator";
 import { statebuddyPlants } from "../../plants";
 import { RuntimeError } from "@/statecharts/interpreter";
@@ -21,7 +21,7 @@ import NotInterestedIcon from '@mui/icons-material/NotInterested';
 import { actionLangValToText } from "@/statecharts/actionlang_prettyprinter";
 import { StatusType } from "../../Components/StatusIndicator";
 import { PropertyTrace } from "../../SideBar/prepare_trace_types";
-import { RaisedEvent } from "@/statecharts/runtime_types";
+import { BigStep, EnteredState, ExecutedAction, ExitedState, FiredTransition, RaisedEvent, RT_Event } from "@/statecharts/runtime_types";
 import { TraceView } from "../../migrations/v2_types";
 
 type TraceProps = WithSetters<{
@@ -323,7 +323,7 @@ function DEVSExternalTransitions({components, plantsState, showMicroSteps, showT
     return <Column key={componentId}>
       <div>{lookupName(plantsState, componentId)}</div>
       <DEVSStepCause item={item}/>
-      {showMicroSteps && <MicroSteps microsteps={getMicroSteps(item)}/>}
+      {showMicroSteps && <ShowBigStepMicroSteps bigstep={item.newState.state}/>}
       {abstractSyntax && showTransitions &&
         <Column>
           <ShowFiredTransitions firedTransitions={getFiredTransitions(abstractSyntax, item)} />
@@ -385,6 +385,55 @@ function DEVSStepCause({item}: {item: DEVSTraceItem<any>}) {
 function EventParam(props: {param?: any}) {
   return <>{props.param !== undefined && <>({actionLangValToText(props.param)})</>}</>;
 }
+
+function ShowBigStepMicroSteps({bigstep}: {bigstep: BigStep}) {
+  return bigstep.fairSteps.map(step => <>
+    <ShowRTEvent rt_event={step.event}/>
+    {step.fired.map(fired => <ShowFiredTransition fired={fired}/>)}
+  </>);
+}
+
+function ShowRTEvent({rt_event}: {rt_event: RT_Event}) {
+  if (rt_event.kind === "event") {
+    return <>input {rt_event.name}<EventParam param={rt_event.param}/><br/></>;
+  }
+  else {
+    return <>timer <br/></>;
+  }
+}
+
+function ShowFiredTransition({fired}: {fired: FiredTransition}) {
+  return <>
+    <ShowExited exited={fired.exited} />
+    <ShowEntered entered={fired.entered} />
+  </>;
+}
+
+function ShowExited({exited}: {exited: ExitedState}) {
+  return <>
+    {exited.childrenExited.map(child => <ShowExited exited={child} />)}
+    {exited.exitActions.map(action => <ShowExecutedAction action={action}/>)}
+    exit {exited.stateUID} <br/>
+  </>
+}
+
+function ShowEntered({entered}: {entered: EnteredState}) {
+  return <>
+    enter {entered.stateUID} <br/>
+    {entered.enterActions.map(action => <><ShowExecutedAction action={action}/></>)}
+    {entered.childrenEntered.map(child => <ShowEntered entered={child}/>)} 
+  </>
+}
+
+function ShowExecutedAction({action}: {action: ExecutedAction}) {
+  if (action.kind === "assigned") {
+    return <>assign {action.variableName} = {action.value}<br/></>;
+  }
+  else {
+    return <>raise {action.name}<EventParam param={action.param}/><br/></>;
+  }
+}
+
 
 function MicroSteps({microsteps}: {microsteps: string[]}) {
   return <div style={{

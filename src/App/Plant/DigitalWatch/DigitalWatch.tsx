@@ -14,6 +14,7 @@ import imgNote from "./noteSmall.png";
 import imgWatch from "./watch.webp";
 import { jsonDeepEqual } from "@/util/util";
 import { Scope } from "@/statecharts/environment";
+import { SC2DEVSNonError } from "@/devs/sc2devs";
 
 export const dwatchConcreteSyntax = dwatchJSON as ConcreteSyntax;
 
@@ -52,28 +53,28 @@ export type DigitalWatchPlantState = {
 
 const rootScope: Scope = {kind: "state", thing: dwatchAbstractSyntax.root};
 
-function dwatchConfigToState(rtConfig: RuntimeConfiguration): DigitalWatchPlantState {
+function dwatchConfigToState({rtconfig}: SC2DEVSNonError): DigitalWatchPlantState {
   return {
-    alarmEnabled: rtConfig.environment.get("alarmEnabled", rootScope),
-    h: rtConfig.environment.get("h", rootScope),
-    m: rtConfig.environment.get("m", rootScope),
-    s: rtConfig.environment.get("s", rootScope),
-    ah: rtConfig.environment.get("ah", rootScope),
-    am: rtConfig.environment.get("am", rootScope),
-    as: rtConfig.environment.get("as", rootScope),
-    cm: rtConfig.environment.get("cm", rootScope),
-    cs: rtConfig.environment.get("cs", rootScope),
-    chs: rtConfig.environment.get("chs", rootScope),
+    alarmEnabled: rtconfig.environment.get("alarmEnabled", rootScope),
+    h: rtconfig.environment.get("h", rootScope),
+    m: rtconfig.environment.get("m", rootScope),
+    s: rtconfig.environment.get("s", rootScope),
+    ah: rtconfig.environment.get("ah", rootScope),
+    am: rtconfig.environment.get("am", rootScope),
+    as: rtconfig.environment.get("as", rootScope),
+    cm: rtconfig.environment.get("cm", rootScope),
+    cs: rtconfig.environment.get("cs", rootScope),
+    chs: rtconfig.environment.get("chs", rootScope),
 
-    light: rtConfig.mode.has(dwatchAbstractSyntax.label2State.get("lightOn")!.uid),
-    beep: rtConfig.mode.has(dwatchAbstractSyntax.label2State.get("beep")!.uid),
-    displayingTime: rtConfig.mode.has(dwatchAbstractSyntax.label2State.get("displayingTime")!.uid),
-    displayingAlarm: rtConfig.mode.has(dwatchAbstractSyntax.label2State.get("displayingAlarm")!.uid),
-    displayingChrono: rtConfig.mode.has(dwatchAbstractSyntax.label2State.get("displayingChrono")!.uid),
-    editing: rtConfig.mode.has(dwatchAbstractSyntax.label2State.get("editing")!.uid),
-    hideH: rtConfig.mode.has(dwatchAbstractSyntax.label2State.get("hideH")!.uid),
-    hideM: rtConfig.mode.has(dwatchAbstractSyntax.label2State.get("hideM")!.uid),
-    hideS: rtConfig.mode.has(dwatchAbstractSyntax.label2State.get("hideS")!.uid),
+    light: rtconfig.mode.has(dwatchAbstractSyntax.label2State.get("lightOn")!.uid),
+    beep: rtconfig.mode.has(dwatchAbstractSyntax.label2State.get("beep")!.uid),
+    displayingTime: rtconfig.mode.has(dwatchAbstractSyntax.label2State.get("displayingTime")!.uid),
+    displayingAlarm: rtconfig.mode.has(dwatchAbstractSyntax.label2State.get("displayingAlarm")!.uid),
+    displayingChrono: rtconfig.mode.has(dwatchAbstractSyntax.label2State.get("displayingChrono")!.uid),
+    editing: rtconfig.mode.has(dwatchAbstractSyntax.label2State.get("editing")!.uid),
+    hideH: rtconfig.mode.has(dwatchAbstractSyntax.label2State.get("hideH")!.uid),
+    hideM: rtconfig.mode.has(dwatchAbstractSyntax.label2State.get("hideM")!.uid),
+    hideS: rtconfig.mode.has(dwatchAbstractSyntax.label2State.get("hideS")!.uid),
   }
 }
 

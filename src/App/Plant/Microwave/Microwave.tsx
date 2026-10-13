@@ -20,6 +20,7 @@ import { parseStatechart } from "@/statecharts/parser";
 import microwaveJSON from "./model.json";
 import { ConcreteSyntax } from "@/statecharts/concrete_syntax";
 import { objectsEqual } from "@/util/util";
+import { SC2DEVSNonError } from "@/devs/sc2devs";
 
 export const microwaveConcreteSyntax = microwaveJSON as ConcreteSyntax;
 
@@ -118,11 +119,11 @@ export const Microwave = memo(function Microwave({state: {bellRinging, magnetron
 
 const microwavePlantSpec: StatechartPlantSpec<MicrowaveState> = {
   ast: microwaveAbstractSyntax,
-  cleanupState: (state: RuntimeConfiguration) => {
-    const bellRinging = state.mode.has(microwaveAbstractSyntax.label2State.get("bell")!.uid);
-    const magnetronRunning = state.mode.has(microwaveAbstractSyntax.label2State.get("Magnetron on")!.uid);
-    const doorOpen = state.mode.has(microwaveAbstractSyntax.label2State.get("Door opened")!.uid);
-    const timeDisplay = state.environment.get("timeDisplay", {kind: "state", thing: microwaveAbstractSyntax.root});
+  cleanupState: (state: SC2DEVSNonError) => {
+    const bellRinging = state.rtconfig.mode.has(microwaveAbstractSyntax.label2State.get("bell")!.uid);
+    const magnetronRunning = state.rtconfig.mode.has(microwaveAbstractSyntax.label2State.get("Magnetron on")!.uid);
+    const doorOpen = state.rtconfig.mode.has(microwaveAbstractSyntax.label2State.get("Door opened")!.uid);
+    const timeDisplay = state.rtconfig.environment.get("timeDisplay", {kind: "state", thing: microwaveAbstractSyntax.root});
     return {bellRinging, magnetronRunning, doorOpen, timeDisplay};
   },
   render: Microwave,

@@ -5,6 +5,7 @@ import model from "./GantryCrane.json";
 import { computeTopology } from "@/statecharts/detect_topology";
 import { ConcreteSyntax } from "@/statecharts/concrete_syntax";
 import { RuntimeConfiguration } from "@/statecharts/runtime_types";
+import { SC2DEVSNonError } from "@/devs/sc2devs";
 
 const gantryCraneConcreteSyntax = model as ConcreteSyntax;
 
@@ -16,9 +17,9 @@ if (parseErrors.length > 0) {
 
 const gantryCranePlantSpec: StatechartPlantSpec<GantryCraneCleanState> = {
   ast: abstractSyntax,
-  cleanupState: (state: RuntimeConfiguration) => {
+  cleanupState: (state: SC2DEVSNonError) => {
     function isActive(label: string) {
-      return state.mode.has(abstractSyntax.label2State.get(label)!.uid);
+      return state.rtconfig.mode.has(abstractSyntax.label2State.get(label)!.uid);
     }
     return {
       idle: isActive("IDLE"),

@@ -1,9 +1,9 @@
 import { ReactNode } from "react";
 import { Statechart } from "@/statecharts/abstract_syntax";
 import { EventTrigger } from "@/statecharts/label_ast";
-import { FairStep, RaisedEvent } from "@/statecharts/runtime_types";
+import { BigStep, FairStep, RaisedEvent } from "@/statecharts/runtime_types";
 import { DEVSComponent } from "@/devs/devs";
-import { sc2DEVS, SC2DEVSState } from "@/devs/sc2devs";
+import { sc2DEVS, SC2DEVSNonError, SC2DEVSState } from "@/devs/sc2devs";
 import { RuntimeError } from "@/statecharts/interpreter";
 
 export type PlantRenderProps<CleanStateType> = {
@@ -33,7 +33,7 @@ export type Plant<StateType, CleanStateType> = {
 export type StatechartPlantSpec<CleanStateType> = {
   uiEvents: EventTrigger[],
   ast: Statechart,
-  cleanupState: (state: FairStep) => CleanStateType,
+  cleanupState: (state: SC2DEVSNonError) => CleanStateType,
   render: (props: PlantRenderProps<CleanStateType>) => ReactNode,
   signals: string[],
 }
@@ -45,13 +45,14 @@ export function makeStatechartPlant<CleanStateType>({uiEvents, ast, cleanupState
     // outputEvents: [...ast.outputEvents].map(e => ({kind: "event" as const, event: e})),
     execution: sc2DEVS(ast),
     cleanupState: (state: SC2DEVSState) => {
-      if (state.state instanceof RuntimeError) {
-        console.error(state.state, state.state.highlight.map(uid => ast.uid2State.get(uid)?.comments));
-        const e = new Error("unexpected runtime error in plant: " + state.state.message);
+      const s = state.state;
+      if (s instanceof RuntimeError) {
+        console.error(s, s.highlight.map(uid => ast.uid2State.get(uid)?.comments));
+        const e = new Error("unexpected runtime error in plant: " + s.message);
         throw e; // <-- crash StateBuddy
       }
       else {
-        return cleanupState(state.state);
+        return cleanupState(s);
       }
     },
     render,
