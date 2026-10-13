@@ -5,7 +5,7 @@ import { Environment, Scope, scopeDescription } from "./environment";
 import { RuntimeError } from "./interpreter";
 import { Expression, Lhs } from "./label_ast";
 import { Tracer } from "./tracer";
-import { ExecutedAssignment } from "./runtime_types";
+import { TraceAssign } from "./runtime_types";
 
 const UNARY_OPERATOR_MAP: Map<string, (x: any) => any> = new Map([
   ["!", x => !x],
@@ -73,7 +73,7 @@ export function execAssignment(
   scope: Scope,
   uids: string[] = [],
   // tracer: Tracer,
-): [Environment, ExecutedAssignment[]] {
+): [Environment, TraceAssign[]] {
   if (lhs.kind === "lhsRef") {
     // console.log(`assign ${lhs.variable} = ${JSON.stringify(rhsValue)}`, lhs, rhsValue);
     if (rhsValue === undefined) {
@@ -98,7 +98,7 @@ export function execAssignment(
     if (lhs.elements.length > rhsValue.length) {
       throw new RuntimeError(`destructuring array: not enough elements in RHS: ${JSON.stringify(rhsValue)}`, uids);
     }
-    let actions: ExecutedAssignment[] = [];
+    let actions: TraceAssign[] = [];
     for (let i=0; i<lhs.elements.length; i++) {
       // perform nested assignments element-wise
       let a;
@@ -112,7 +112,7 @@ export function execAssignment(
     if (!rhsValue || typeof rhsValue !== "object" || Array.isArray(rhsValue)) {
       throw new RuntimeError(`cannot destructure ${JSON.stringify(rhsValue)} into dictionary`, uids);
     }
-    let actions: ExecutedAssignment[] = [];
+    let actions: TraceAssign[] = [];
     for (const [lhsKey, lhsLhs] of Object.entries(lhs.fields)) {
       if (!Object.hasOwn(rhsValue, lhsKey)) {
         throw new RuntimeError(`destructuring dictionary: missing key '${lhsKey} in RHS: ${JSON.stringify(rhsValue)}'`, uids);

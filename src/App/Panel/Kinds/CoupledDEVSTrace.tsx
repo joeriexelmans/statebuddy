@@ -5,7 +5,7 @@ import { SC2DEVSState } from "@/devs/sc2devs";
 import { DEVSTrace, DEVSTraceItem, DEVSTraceItemExtTransition, DEVSTraceItemInit, DEVSTraceItemIntTransition } from "@/devs/trace";
 import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
 import FlareIcon from '@mui/icons-material/Flare';
-import { Dispatch, memo, PropsWithChildren, SetStateAction, useEffect } from "react";
+import { Dispatch, memo, PropsWithChildren, ReactNode, SetStateAction, useEffect, useState } from "react";
 import { Statechart, stateDescription, Transition } from "../../../statecharts/abstract_syntax";
 import { TimeMode } from "../../../statecharts/time";
 import { formatTime, jsonDeepEqual, memoizeOne, objectsEqual } from "../../../util/util";
@@ -21,8 +21,9 @@ import NotInterestedIcon from '@mui/icons-material/NotInterested';
 import { actionLangValToText } from "@/statecharts/actionlang_prettyprinter";
 import { StatusType } from "../../Components/StatusIndicator";
 import { PropertyTrace } from "../../SideBar/prepare_trace_types";
-import { BigStep, EnteredState, ExecutedAction, ExitedState, FiredTransition, RaisedEvent, RT_Event } from "@/statecharts/runtime_types";
+import { TraceBigStep, TraceEnter, TraceAction, TraceExit, TraceFairStep, TraceSmallStep, TraceInit, RaisedEvent, RT_Event, getRaisedEvents, getOutputEventsFromInit } from "@/statecharts/runtime_types";
 import { TraceView } from "../../migrations/v2_types";
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 
 type TraceProps = WithSetters<{
   currentTrace: StateBuddyTraceState,
@@ -46,8 +47,6 @@ export const CoupledDEVSTrace = memo(function CoupledDEVSTrace({
   setTime,
   ast,
   traceView: {
-    microSteps,
-    transitions,
     plantSteps,
     autoScroll,
   },
@@ -117,8 +116,8 @@ export const CoupledDEVSTrace = memo(function CoupledDEVSTrace({
             status={propertyStatus}
             plantsState={plantsState}
             // only show micro-steps of currently selected item:
-            showMicroSteps={microSteps && i === currentTrace.idx}
-            showTransitions={transitions}
+            // showMicroSteps={microSteps /*&& i === currentTrace.idx*/}
+            // showTransitions={transitions}
             ast={ast}
           />
         </div>
@@ -171,8 +170,8 @@ function lookupName(plantsState: PlantsState, plantId: string) {
 
 type ThingsToPassOn = {
   // status: StatusType,
-  showMicroSteps: boolean,
-  showTransitions: boolean,
+  // showMicroSteps: boolean,
+  // showTransitions: boolean,
   plantsState: PlantsState,
   ast: Statechart,
 }
@@ -218,13 +217,11 @@ function ShowRuntimeError({error}: {error: RuntimeError}) {
   </>;
 }
 
-function CoupledDEVSInitialization({item, status, plantsState, showMicroSteps, showTransitions, ast}: {
+function CoupledDEVSInitialization({item, status, plantsState, ast}: {
   item: DEVSTraceItemInit<CoupledState>,
   status: StatusType,
 } & ThingsToPassOn) {
   // just show the initialization of every component:
-  
-  
   return <>
     <TraceItemHeader hide={false} simtime={0} status={status} />
     {Object.entries(item.newState).map(([componentId, componentTrace]) => {
@@ -233,23 +230,23 @@ function CoupledDEVSInitialization({item, status, plantsState, showMicroSteps, s
       const plant = plantsState.plants.find(({id}) => id === componentId);
       const componentDisplayName = plant?.name || componentId;
       const abstractSyntax = getAbstractSyntax(componentId, plantsState, ast);
-      return <Column key={componentId}>
+      return <Row key={componentId}>
         <div>{componentDisplayName}</div>
-        <DEVSStepCause item={componentTraceItem} />
+        {/* <DEVSStepCause item={componentTraceItem} /> */}
         {<>
-          {showMicroSteps && <MicroSteps microsteps={getMicroSteps(componentTraceItem)}/>}
-          {abstractSyntax && showTransitions && <ShowFiredTransitions
-            firedTransitions={getFiredTransitions(abstractSyntax, componentTraceItem)} />}
+          {<ShowInitializationMicroSteps init={componentTraceItem.newState.state}/>}
+          {/* {abstractSyntax && showTransitions && <ShowFiredTransitions
+            firedTransitions={getFiredTransitions(abstractSyntax, componentTraceItem)} />} */}
           <ShowEnvironment item={componentTraceItem} />
           {error && <ShowRuntimeError error={error} />}
         </>}
-      </Column>;
+      </Row>;
     })}
   </>;
 }
 
 // An internal transition step made by Coupled DEVS
-function CoupledDEVSInternalTransition({item, prevItem, status, showMicroSteps, showTransitions, plantsState, ast}: {
+function CoupledDEVSInternalTransition({item, prevItem, status, plantsState, ast}: {
   item: DEVSTraceItemIntTransition<CoupledState>,
   prevItem: DEVSTraceItem<CoupledState>,
   status: StatusType,
@@ -261,6 +258,7 @@ function CoupledDEVSInternalTransition({item, prevItem, status, showMicroSteps, 
   const blessedAs = getAbstractSyntax(componentMadeIntTransition, plantsState, ast);
 
   const isOutputStep = isOutputStepHeuristic(blessedTrace);
+  // const isOutputStep = false;
   const error = getRuntimeError(blessedItem);
 
   return <>
@@ -268,15 +266,17 @@ function CoupledDEVSInternalTransition({item, prevItem, status, showMicroSteps, 
     <TraceItemHeader hide={isOutputStep} simtime={item.simtime} status={status}/>
 
     {/* first we show the component that made the intTransition */}
-    <Column>
+    {!isOutputStep && <Row>
       <div>{lookupName(plantsState, componentMadeIntTransition)}</div>
-      {!isOutputStep && <DEVSStepCause item={blessedItem} />}
-      {blessedItem.outputEvents.map(o => <RaisedOutputEvent event={o}/>)}
-      {showMicroSteps && <MicroSteps microsteps={isOutputStep && ["(output from previous step)"] || getMicroSteps(blessedItem)}/>}
-      {blessedAs && showTransitions && !isOutputStep && <ShowFiredTransitions firedTransitions={getFiredTransitions(blessedAs, blessedItem)}/>}
+      {/* {!isOutputStep && <DEVSStepCause item={blessedItem} />} */}
+      {/* {blessedItem.outputEvents.map(o => <RaisedOutputEvent event={o}/>)} */}
+      <ShowBigStepMicroSteps bigstep={blessedItem.newState.state}/>
+      {/* {isOutputStep && blessedItem.outputEvents.map(o => <RaisedOutputEvent event={o}/>)
+                    || <ShowBigStepMicroSteps bigstep={blessedItem.newState.state}/>} */}
+      {/* {blessedAs && showTransitions && !isOutputStep && <ShowFiredTransitions firedTransitions={getFiredTransitions(blessedAs, blessedItem)}/>} */}
       <ShowEnvironment item={blessedItem} prevItem={blessedTrace.at(-2)} />
       {error && <ShowRuntimeError error={error} />}
-    </Column>
+    </Row> || <><div>{lookupName(plantsState, componentMadeIntTransition)}</div>→</>}
 
     {/* then we show the components that made an extTransition */}
     <DEVSExternalTransitions
@@ -291,7 +291,7 @@ function CoupledDEVSInternalTransition({item, prevItem, status, showMicroSteps, 
         }
         return true;
       })}
-      {...{ast, plantsState, showMicroSteps, showTransitions}}
+      {...{ast, plantsState}}
     />
   </>;
 }
@@ -313,24 +313,25 @@ function Column({children}: PropsWithChildren<{}>) {
   </div>;
 }
 
-function DEVSExternalTransitions({components, plantsState, showMicroSteps, showTransitions, ast}: {
+function Row({children}: PropsWithChildren<{}>) {
+  return <div style={{display: 'flex', flexDirection: 'row', alignItems: 'start', gap: '1em'}}>
+    {children}
+  </div>;
+}
+
+function DEVSExternalTransitions({components, plantsState, ast}: {
   components: [string, DEVSTrace<any>][],
 } & ThingsToPassOn) {
   return components.map(([componentId, componentTrace]) => {
     const item = componentTrace.at(-1)!;
     const abstractSyntax = getAbstractSyntax(componentId, plantsState, ast);
     const error = getRuntimeError(item);
-    return <Column key={componentId}>
+    return <Row key={componentId}>
       <div>{lookupName(plantsState, componentId)}</div>
-      <DEVSStepCause item={item}/>
-      {showMicroSteps && <ShowBigStepMicroSteps bigstep={item.newState.state}/>}
-      {abstractSyntax && showTransitions &&
-        <Column>
-          <ShowFiredTransitions firedTransitions={getFiredTransitions(abstractSyntax, item)} />
-        </Column>}
+      {<ShowBigStepMicroSteps bigstep={item.newState.state}/>}
       <ShowEnvironment item={item} prevItem={componentTrace.at(-2)}/>
       {error && <ShowRuntimeError error={error} />}
-    </Column>;
+    </Row>;
   });
 }
 
@@ -349,7 +350,7 @@ function CoupledDEVSExternalTransition({item, prevItem, status, ...rest}: {
           <Tooltip tooltip="ignored inputs">
             <NotInterestedIcon fontSize="small"/>
           </Tooltip>
-          <DEVSStepCause item={item}/>
+          {/* <DEVSStepCause item={item}/> */}
         </Column>
     }
   </>;
@@ -357,28 +358,49 @@ function CoupledDEVSExternalTransition({item, prevItem, status, ...rest}: {
 
 function DEVSStepCause({item}: {item: DEVSTraceItem<any>}) {
   if (item.kind === "init") {
-    return <div className={styles.inputEvent}>
-      <Tooltip tooltip="initialization" align="left">
-        <FlareIcon fontSize="small"/>
+    return <InitCause/>;
+  }
+  else if (item.kind === "intTransition") {
+    return <TimerCause/>;
+  }
+  else if (item.kind === "extTransition") {
+    return item.bagOfInputs.map((e, i) => <InputCause e={e} key={i}/>);
+  }
+}
+
+function InitCause() {
+  return <div className={styles.inputEvent}>
+    <Tooltip tooltip="initialization" align="left">
+      <FlareIcon fontSize="small"/>
+    </Tooltip>
+  </div>;
+}
+
+function TimerCause() {
+  return <div className={styles.inputEvent}>
+    <Tooltip tooltip="timer elapse" align="left">
+      <AccessAlarmIcon fontSize="small"/>
+    </Tooltip>
+  </div>;
+}
+
+function InputCause({e}: {e: RaisedEvent}) {
+  if (e.name.startsWith('_')) {
+    return <div className={styles.internalEvent}>
+      <Tooltip tooltip="handled internal event" align="left">
+        {e.name}
+        <EventParam param={e.param}/>
       </Tooltip>
     </div>;
   }
-  else if (item.kind === "intTransition") {
+  else {
     return <div className={styles.inputEvent}>
-      <Tooltip tooltip="timer elapse" align="left">
-        <AccessAlarmIcon fontSize="small"/>
-      </Tooltip>
-    </div>
-  }
-  else if (item.kind === "extTransition") {
-    return item.bagOfInputs.map((e, i) =>
-      <div key={i} className={styles.inputEvent}>
-        <Tooltip tooltip="input event" align="left">
+      <Tooltip tooltip="handled input event" align="left">
         &#8600;
         {e.name}
         <EventParam param={e.param}/>
       </Tooltip>
-      </div>);
+    </div>;
   }
 }
 
@@ -386,69 +408,139 @@ function EventParam(props: {param?: any}) {
   return <>{props.param !== undefined && <>({actionLangValToText(props.param)})</>}</>;
 }
 
-function ShowBigStepMicroSteps({bigstep}: {bigstep: BigStep}) {
-  return bigstep.fairSteps.map(step => <>
-    <ShowRTEvent rt_event={step.event}/>
-    {step.fired.map(fired => <ShowFiredTransition fired={fired}/>)}
-  </>);
+function ShowInitializationMicroSteps({init}: {init: TraceInit}) {
+  return <div style={microstepStyle}>
+    <MyDetails>{open => <>
+      <summary>
+        <InitCause/>
+        {!open && getOutputEventsFromInit(init).map(event => <ShowRaisedEvent action={{...event, kind: "raisedOutput"}}/>)}
+      </summary>
+      <ShowEntered entered={init.enteredRoot} />
+    </>}</MyDetails>
+    {/* <ol style={hiddenListStyle}> */}
+      {init.fairSteps.map(step => <ShowFairStep fairstep={step}/>)}
+    {/* </ol> */}
+  </div>;
+}
+
+function ShowBigStepMicroSteps({bigstep}: {bigstep: TraceBigStep}) {
+  console.log({bigstep});
+  
+  return <div style={microstepStyle}>
+    <ol style={hiddenListStyle}>
+      {bigstep.fairSteps.map(step => <li><ShowFairStep fairstep={step}/></li>)}
+    </ol>
+  </div>;
+}
+
+const microstepStyle = {
+}
+
+const hiddenListStyle = {
+  listStyleType: 'none',
+  paddingLeft: 10,
+}
+
+// Custom details, fixes a bug where a toggle event would also close all parent-<details> nodes.
+function MyDetails({children}: {children: (open: boolean) => ReactNode}) {
+  const [open, setOpen] = useState(false);
+  return <details open={open} onToggle={e => {setOpen(o => !o); e.stopPropagation()}}>
+    {children(open)}
+  </details>;
+}
+
+function ShowFairStep({fairstep}: {fairstep: TraceFairStep}) {
+  return <MyDetails>{open => <>
+    <summary>
+      <ShowRTEvent rt_event={fairstep.event}/>
+      {!open && getRaisedEvents(fairstep.fired, "raisedOutput").map(event => <ShowRaisedEvent action={{...event, kind: "raisedOutput"}}/>)}
+    </summary>
+    <ol style={hiddenListStyle}>
+      {fairstep.fired.map(fired => <li><ShowFiredTransition fired={fired}/></li>)}
+    </ol>
+  </>}</MyDetails>;
 }
 
 function ShowRTEvent({rt_event}: {rt_event: RT_Event}) {
   if (rt_event.kind === "event") {
-    return <>input {rt_event.name}<EventParam param={rt_event.param}/><br/></>;
+    return <InputCause e={rt_event}/>;
   }
   else {
-    return <>timer <br/></>;
+    return <TimerCause/>;
   }
 }
 
-function ShowFiredTransition({fired}: {fired: FiredTransition}) {
-  return <>
-    <ShowExited exited={fired.exited} />
-    <ShowEntered entered={fired.entered} />
-  </>;
+function ShowFiredTransition({fired}: {fired: TraceSmallStep}) {
+  return <div>
+    <div style={inactiveStyle}>
+      fire {fired.transitionUID}
+    </div>
+    <ol style={hiddenListStyle}>
+      <li><ShowExited exited={fired.exited} /></li>
+      {fired.transitionActions.map(action => <li><ShowExecutedAction action={action}/></li>)}
+      <li><ShowEntered entered={fired.entered} /></li>
+    </ol>
+  </div>;
 }
 
-function ShowExited({exited}: {exited: ExitedState}) {
-  return <>
-    {exited.childrenExited.map(child => <ShowExited exited={child} />)}
-    {exited.exitActions.map(action => <ShowExecutedAction action={action}/>)}
-    exit {exited.stateUID} <br/>
-  </>
+const inactiveStyle = {color: 'light-dark(#666, #aaa)'};
+
+function ShowExited({exited}: {exited: TraceExit}) {
+  return <div>
+    <div style={inactiveStyle}>
+      exit <span style={{borderRadius: 7, border: '1px solid black'}}>{exited.stateUID}</span>
+    </div>
+    <ol style={hiddenListStyle}>
+      <li>{exited.childrenExited.map(child => <ShowExited exited={child} />)}</li>
+      {exited.exitActions.map(action => <li><ShowExecutedAction action={action}/></li>)}
+    </ol>
+  </div>;
 }
 
-function ShowEntered({entered}: {entered: EnteredState}) {
-  return <>
-    enter {entered.stateUID} <br/>
-    {entered.enterActions.map(action => <><ShowExecutedAction action={action}/></>)}
-    {entered.childrenEntered.map(child => <ShowEntered entered={child}/>)} 
-  </>
+// function Show
+
+function ShowEntered({entered}: {entered: TraceEnter}) {
+  return <div>
+    <div style={inactiveStyle}>
+    enter <span style={{borderRadius: 7, border: '1px solid black'}}>{entered.stateUID}</span>
+    </div>
+    <ol style={hiddenListStyle}>
+      {entered.enterActions.map(action => <li><ShowExecutedAction action={action}/></li>)}
+      <li>{entered.childrenEntered.map(child => <ShowEntered entered={child}/>)}</li>
+    </ol>
+  </div>;
 }
 
-function ShowExecutedAction({action}: {action: ExecutedAction}) {
+function ShowExecutedAction({action}: {action: TraceAction}) {
   if (action.kind === "assigned") {
-    return <>assign {action.variableName} = {action.value}<br/></>;
+    return <>assign {action.variableName} ← {actionLangValToText(action.value)}</>;
   }
   else {
-    return <>raise {action.name}<EventParam param={action.param}/><br/></>;
+    return <>raise <ShowRaisedEvent action={action}/></>
   }
 }
 
-
-function MicroSteps({microsteps}: {microsteps: string[]}) {
-  return <div style={{
-    paddingLeft: 4,
-    paddingRight: 4,
-    whiteSpace: 'preserve',
-    backgroundColor: 'var(--statusbar-bg-color)', // <-- just make it stand out a bit
-    borderRadius: '4px', // <-- make it look pretty
-    marginTop: 4,
-  }}>{microsteps.map((x,i) => <div key={i} >{x}</div>)}</div>;
+function ShowRaisedEvent({action}: {action: RaisedEvent & {kind: "raisedOutput" | "raisedInternal"}}) {
+  return <div className={action.kind === "raisedOutput" ?  styles.outputEvent : styles.internalEvent}>
+    {action.kind === "raisedOutput" ? '↗' : ''}
+    {action.name}<EventParam param={action.param}/>
+  </div>;
 }
 
-function getMicroSteps(item: DEVSTraceItem<any>) {
-  return item.newState.microsteps as string[] || [];
-}
+// function MicroSteps({microsteps}: {microsteps: string[]}) {
+//   return <div style={{
+//     paddingLeft: 4,
+//     paddingRight: 4,
+//     whiteSpace: 'preserve',
+//     backgroundColor: 'var(--statusbar-bg-color)', // <-- just make it stand out a bit
+//     borderRadius: '4px', // <-- make it look pretty
+//     marginTop: 4,
+//   }}>{microsteps.map((x,i) => <div key={i} >{x}</div>)}</div>;
+// }
+
+// function getMicroSteps(item: DEVSTraceItem<any>) {
+//   return item.newState.microsteps as string[] || [];
+// }
 
 function ShowEnvironment({item, prevItem}: {item: DEVSTraceItem<any>, prevItem?: DEVSTraceItem<any>}) {
   if (item.newState.state?.environment) {
@@ -499,28 +591,28 @@ function getFiredTransitions(ast: Statechart, item: DEVSTraceItem<SC2DEVSState>)
   return result;
 }
 
-function ShowFiredTransitions({firedTransitions}: {firedTransitions: Transition[]}) {
-  return <>
-    {firedTransitions.map((t, i) => <><ShowTransition key={i} transition={t}/></>)}
-  </>
-}
+// function ShowFiredTransitions({firedTransitions}: {firedTransitions: Transition[]}) {
+//   return <>
+//     {firedTransitions.map((t, i) => <><ShowTransition key={i} transition={t}/></>)}
+//   </>
+// }
 
-function ShowTransition({transition}: {transition: Transition}) {
-  if (transition.src === transition.tgt) {
-    return <span>
-      <span className={appStyles.activeState}>{stateDescription(transition.src)}</span>
-      &#x21BA;
-    </span>
-  }
-  else {
-    return <span>
-      <span className="" style={{border: '1px solid var(--rountangle-stroke-color)', borderRadius: 4, paddingLeft: 2, paddingRight: 2, marginLeft: 2, marginRight: 2}}>{stateDescription(transition.src)}</span>
-      &#x21B7;
-      <span className={appStyles.activeState}>{stateDescription(transition.tgt)}</span>
-      &emsp;
-    </span>;
-  }
-}
+// function ShowTransition({transition}: {transition: Transition}) {
+//   if (transition.src === transition.tgt) {
+//     return <span>
+//       <span className={appStyles.activeState}>{stateDescription(transition.src)}</span>
+//       &#x21BA;
+//     </span>
+//   }
+//   else {
+//     return <span>
+//       <span className="" style={{border: '1px solid var(--rountangle-stroke-color)', borderRadius: 4, paddingLeft: 2, paddingRight: 2, marginLeft: 2, marginRight: 2}}>{stateDescription(transition.src)}</span>
+//       &#x21B7;
+//       <span className={appStyles.activeState}>{stateDescription(transition.tgt)}</span>
+//       &emsp;
+//     </span>;
+//   }
+// }
 
 // An 'output step' is when a Statechart performs an intTransition immediately after handling an input event (extTransition), with the purpose of only outputting some events.
 // If a Statechart makes an output step, we render that step slightly differently (we hide the timer icon), so it becomes a bit clearer that in the world of Statecharts, the output step was caused by (or even stronger: is part of) the previous step.

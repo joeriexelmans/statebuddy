@@ -23,6 +23,8 @@ export type Mode = Set<string>; // set of active states
 
 export type RT_History = Map<string, Set<string>>;
 
+export type Timers = [number, TimerElapseEvent][];
+
 // The runtime state of a statechart.
 export type RuntimeConfiguration = {
   mode: Mode;
@@ -31,92 +33,88 @@ export type RuntimeConfiguration = {
   timers: Timers;
 };
 
-export type Initialization = {
+
+export type TraceInit = {
   // the produced runtime configuration after initialization
   rtconfig: RuntimeConfiguration,
 
   // micro-step traceability
-  enteredRoot: EnteredState,
-  fairSteps: FairStep[], // <-- internal event handling
+  enteredRoot: TraceEnter,
+  fairSteps: TraceFairStep[], // <-- internal event handling
 }
 
-export type BigStep = {
+export type TraceBigStep = {
   simtime: number,
 
   // the newly produced runtime configuration.
   rtconfig: RuntimeConfiguration,
 
   // micro-step traceability
-  fairSteps: FairStep[],
+  fairSteps: TraceFairStep[],
 };
 
-export type Timers = [number, TimerElapseEvent][];
 
-export type FairStep = {
+export type TraceFairStep = {
   // the cause of the fair step: a timed event.
   event: RT_Event,
 
   // for traceability/debugging, the microsteps that produced the runtime configuration.
   // all raised events are also recorded here.
-  fired: FiredTransition[],
+  fired: TraceSmallStep[],
 };
 
 // For micro-step traceability, we record all the stuff that happened when a transition was fired.
-export type FiredTransition = {
+export type TraceSmallStep = {
   transitionUID: string,
   arenaUID: string, // UID of arena of the transition
-  exited: ExitedState, // the highest state in the hierarchy that was exited
-  entered: EnteredState, // the highest state in the hierarchy that was entered
-  transitionActions: ExecutedAction[],
+  exited: TraceExit, // the highest state in the hierarchy that was exited
+  entered: TraceEnter, // the highest state in the hierarchy that was entered
+  transitionActions: TraceAction[],
 };
 
-export type ExitedState = {
+export type TraceExit = {
   stateUID: string,
-  childrenExited: ExitedState[],
-  exitActions: ExecutedAction[],
+  childrenExited: TraceExit[],
+  exitActions: TraceAction[],
 }
 
-export type EnteredState = {
+export type TraceEnter = {
   stateUID: string,
-  childrenEntered: EnteredState[],
-  enterActions: ExecutedAction[],
+  childrenEntered: TraceEnter[],
+  enterActions: TraceAction[],
 }
 
-export type ExecutedAction = 
-   {kind: "assigned"} & ExecutedAssignment
- | {kind: "raisedOutput"} & RaisedEvent
+export type TraceAction = 
+   {kind: "assigned"} & TraceAssign
+ | TraceRaisedEvent;
+
+export type TraceRaisedEvent =
+   {kind: "raisedOutput"} & RaisedEvent
  | {kind: "raisedInternal"} & RaisedEvent;
 
-export type ExecutedAssignment = {
-  // kind: "assignment",
+export type TraceAssign = {
   variableName: string,
   value: any,
 }
 
-// export type ExecutedRaiseEvent = {
-//   // kind: "raiseInternal" | "raiseOutput",
-//   eventName: string,
-//   parameter: any,
-// }
-
-export function visitExitActions(e: ExitedState, fn: (action: ExecutedAction) => void) {
+export function visitExitActions(e: TraceExit, fn: (action: TraceAction) => void) {
   e.childrenExited.forEach(child => visitExitActions(child, fn));
   e.exitActions.forEach(fn);
 }
 
-export function visitEnterActions(e: EnteredState, fn: (action: ExecutedAction) => void) {
+export function visitEnterActions(e: TraceEnter, fn: (action: TraceAction) => void) {
   e.enterActions.forEach(fn);
   e.childrenEntered.forEach(child => visitEnterActions(child, fn));
 }
 
-export function visitTransitionActions(t: FiredTransition, fn: (action: ExecutedAction) => void) {
+export function visitTransitionActions(t: TraceSmallStep, fn: (action: TraceAction) => void) {
   visitExitActions(t.exited, fn);
   t.transitionActions.forEach(fn);
   visitEnterActions(t.entered, fn);
 }
 
-export function getRaisedEvents(fired: FiredTransition[], kind: "raisedOutput" | "raisedInternal"): RaisedEvent[] {
-  const result: RaisedEvent[] = [];
+export function getRaisedEvents(fired: TraceSmallStep[], kind: "raisedOutput" | "raisedInternal"): TraceRaisedEvent[] {
+  const result: TraceRaisedEvent[] = [];
   fired.forEach(f => visitTransitionActions(f, action => {
     if (action.kind === kind) {
       result.push(action)
@@ -125,11 +123,11 @@ export function getRaisedEvents(fired: FiredTransition[], kind: "raisedOutput" |
   return result;
 }
 
-function getOutputEventsFromFairSteps(fairsteps: FairStep[]) {
+function getOutputEventsFromFairSteps(fairsteps: TraceFairStep[]) {
   return fairsteps.flatMap(step => getRaisedEvents(step.fired, "raisedOutput"));
 }
 
-export function getOutputEventsFromInit(init: Initialization) {
+export function getOutputEventsFromInit(init: TraceInit) {
   let enterDefaultOutputs = [] as RaisedEvent[];
   visitEnterActions(init.enteredRoot, a => {
     if (a.kind === "raisedOutput") {
@@ -140,6 +138,6 @@ export function getOutputEventsFromInit(init: Initialization) {
   return [...enterDefaultOutputs, ...internalEventOutputs];
 }
 
-export function getOutputEventsFromBigStep(bigstep: BigStep) {
+export function getOutputEventsFromBigStep(bigstep: TraceBigStep) {
   return getOutputEventsFromFairSteps(bigstep.fairSteps);
 }

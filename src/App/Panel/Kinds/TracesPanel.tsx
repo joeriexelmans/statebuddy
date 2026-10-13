@@ -75,7 +75,7 @@ export function TracesPanel({
       backgroundColor: 'var(--statusbar-bg-color)',
       }}>
         {abstractSyntax && trace && isExpanded &&
-          <div>
+          <div style={{fontFamily: 'Roboto Condensed'}}>
             <CoupledDEVSTrace
               ast={abstractSyntax}
               setTime={simulator.setTime}
@@ -167,18 +167,6 @@ const Checkboxes = memo(function Checkboxes({state, setState, disableSave, onSav
         show plant steps
       </label>
     </Tooltip>
-    <label>
-      <input type="checkbox"
-        checked={state.microSteps}
-        onChange={e => setState.setMicroSteps(e.target.checked)}/>
-        show microsteps
-    </label>
-    <label>
-      <input type="checkbox"
-        checked={state.transitions}
-        onChange={e => setState.setTransitions(e.target.checked)}/>
-        show transitions
-    </label>
     <Tooltip tooltip="scroll down upon new events" align="left">
       <input id="checkbox-autoscroll" type="checkbox" checked={state.autoScroll} onChange={e => setState.setAutoScroll(e.target.checked)}/>
       <label htmlFor="checkbox-autoscroll">auto-scroll</label>

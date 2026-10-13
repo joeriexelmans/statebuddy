@@ -1,14 +1,14 @@
 // DEVS adapter for Statecharts
 
 import { Statechart } from "@/statecharts/abstract_syntax";
-import { BigStep, FairStep, getOutputEventsFromBigStep, getOutputEventsFromInit, getRaisedEvents, Initialization, RaisedEvent } from "@/statecharts/runtime_types";
+import { TraceBigStep, TraceFairStep, getOutputEventsFromBigStep, getOutputEventsFromInit, getRaisedEvents, TraceInit, RaisedEvent } from "@/statecharts/runtime_types";
 import { DEVSComponent } from "./devs";
 import { initialize, makeBigStep, RuntimeError } from "@/statecharts/interpreter";
 import { newTracer } from "@/statecharts/tracer";
 
 export type SC2DEVSNonError =
-    Initialization & {kind: "init"}
-  | BigStep & {kind: "bigstep"};
+    TraceInit & {kind: "init"}
+  | TraceBigStep & {kind: "bigstep"};
 
 // When we wrap a Statechart in an atomic DEVS, this is the type of its DEVS-state:
 export type SC2DEVSState = {
@@ -94,6 +94,8 @@ export function sc2DEVS(ast: Statechart): DEVSComponent<SC2DEVSState> {
     },
     // Small mismatch here: A Statechart will only handle one input event at a time, but DEVS supports a bag of inputs. We just handle all the inputs sequentially (one RTC step per input event). So an extTransition can actually consist of more than one RTC step.
     extTransition: (simtime: number, c: SC2DEVSState, bagOfInputs: RaisedEvent[]) => {
+      console.log({bagOfInputs});
+      
       if (c.state instanceof RuntimeError) {
          // ignore
         return {
@@ -103,17 +105,20 @@ export function sc2DEVS(ast: Statechart): DEVSComponent<SC2DEVSState> {
         };
       }
       // execute one big step for each input event:
-      let state = c.state as (BigStep|Initialization);
+      let rtconfig = c.state.rtconfig;
+      let fairSteps = [] as TraceFairStep[];
       let outputs = c.outputQueue;
       return catchRuntimeError(
         () => {
           for (const e of bagOfInputs) {
-            const bigstep = makeBigStep(state.rtconfig, simtime, {kind: "event", ...e}, ast);
+            const bigstep = makeBigStep(rtconfig, simtime, {kind: "event", ...e}, ast);
+            rtconfig = bigstep.rtconfig;
+            fairSteps = [...fairSteps, ...bigstep.fairSteps];
+
             // accumulate output events from all big steps
             outputs = [...outputs, ...getOutputEventsFromBigStep(bigstep)];
-            state = bigstep;
           }
-          return {kind: "bigstep", ...state as BigStep};
+          return {kind: "bigstep", simtime, rtconfig, fairSteps} as TraceBigStep;
         },
         state => ({
           state,
