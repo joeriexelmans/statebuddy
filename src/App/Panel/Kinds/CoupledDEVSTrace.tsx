@@ -5,7 +5,7 @@ import { SC2DEVSState } from "@/devs/sc2devs";
 import { DEVSTrace, DEVSTraceItem, DEVSTraceItemExtTransition, DEVSTraceItemInit, DEVSTraceItemIntTransition } from "@/devs/trace";
 import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
 import FlareIcon from '@mui/icons-material/Flare';
-import { Dispatch, memo, PropsWithChildren, ReactNode, SetStateAction, useEffect, useState } from "react";
+import { CSSProperties, Dispatch, memo, PropsWithChildren, ReactNode, SetStateAction, useEffect, useState } from "react";
 import { Statechart, stateDescription, Transition } from "../../../statecharts/abstract_syntax";
 import { TimeMode } from "../../../statecharts/time";
 import { formatTime, jsonDeepEqual, memoizeOne, objectsEqual } from "../../../util/util";
@@ -276,7 +276,7 @@ function CoupledDEVSInternalTransition({item, prevItem, status, plantsState, ast
       {/* {blessedAs && showTransitions && !isOutputStep && <ShowFiredTransitions firedTransitions={getFiredTransitions(blessedAs, blessedItem)}/>} */}
       <ShowEnvironment item={blessedItem} prevItem={blessedTrace.at(-2)} />
       {error && <ShowRuntimeError error={error} />}
-    </Row> || <><div>{lookupName(plantsState, componentMadeIntTransition)}</div>→</>}
+    </Row> || <>{/*<div>{lookupName(plantsState, componentMadeIntTransition)}</div><>→</>*/}</>}
 
     {/* then we show the components that made an extTransition */}
     <DEVSExternalTransitions
@@ -313,8 +313,8 @@ function Column({children}: PropsWithChildren<{}>) {
   </div>;
 }
 
-function Row({children}: PropsWithChildren<{}>) {
-  return <div style={{display: 'flex', flexDirection: 'row', alignItems: 'start', gap: '1em'}}>
+function Row({children, style}: PropsWithChildren<{style?: CSSProperties}>) {
+  return <div style={{display: 'flex', flexDirection: 'row', alignItems: 'start', ...(style||{})}}>
     {children}
   </div>;
 }
@@ -409,31 +409,30 @@ function EventParam(props: {param?: any}) {
 }
 
 function ShowInitializationMicroSteps({init}: {init: TraceInit}) {
-  return <div style={microstepStyle}>
-    <MyDetails>{open => <>
+  return <ol style={hiddenListStyle}>
+    <li><MyDetails>{open => <>
       <summary>
-        <InitCause/>
-        {!open && getOutputEventsFromInit(init).map(event => <ShowRaisedEvent action={{...event, kind: "raisedOutput"}}/>)}
+        <div style={{display: 'inline-block'}}>
+          <Row>
+            <InitCause/>
+            <Column>
+              {!open && getOutputEventsFromInit(init).map(event => <ShowRaisedEvent action={{...event, kind: "raisedOutput"}}/>)}
+            </Column>
+          </Row>
+        </div>
       </summary>
       <ShowEntered entered={init.enteredRoot} />
-    </>}</MyDetails>
-    {/* <ol style={hiddenListStyle}> */}
-      {init.fairSteps.map(step => <ShowFairStep fairstep={step}/>)}
-    {/* </ol> */}
-  </div>;
+    </>}</MyDetails></li>
+    {init.fairSteps.map(step => <li><ShowFairStep fairstep={step}/></li>)}
+  </ol>;
 }
 
 function ShowBigStepMicroSteps({bigstep}: {bigstep: TraceBigStep}) {
-  console.log({bigstep});
-  
-  return <div style={microstepStyle}>
+  return <div>
     <ol style={hiddenListStyle}>
       {bigstep.fairSteps.map(step => <li><ShowFairStep fairstep={step}/></li>)}
     </ol>
   </div>;
-}
-
-const microstepStyle = {
 }
 
 const hiddenListStyle = {
@@ -452,8 +451,14 @@ function MyDetails({children}: {children: (open: boolean) => ReactNode}) {
 function ShowFairStep({fairstep}: {fairstep: TraceFairStep}) {
   return <MyDetails>{open => <>
     <summary>
-      <ShowRTEvent rt_event={fairstep.event}/>
-      {!open && getRaisedEvents(fairstep.fired, "raisedOutput").map(event => <ShowRaisedEvent action={{...event, kind: "raisedOutput"}}/>)}
+      <div style={{display: 'inline-block'}}>
+        <Row>
+          <ShowRTEvent rt_event={fairstep.event}/>
+          <Column>
+            {!open && getRaisedEvents(fairstep.fired, "raisedOutput").map(event => <ShowRaisedEvent action={{...event, kind: "raisedOutput"}}/>)}
+          </Column>
+        </Row>
+      </div>
     </summary>
     <ol style={hiddenListStyle}>
       {fairstep.fired.map(fired => <li><ShowFiredTransition fired={fired}/></li>)}
