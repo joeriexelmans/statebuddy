@@ -170,4 +170,3 @@ export function isSCOutputStep(trace: DEVSTrace<SC2DEVSState, RaisedEvent>) {
     && newState.outputQueue?.length === 0; // <-- our current output queue is empty (because we outputted all of our outputs)
   return isOutputStep;
 }
-

@@ -5,18 +5,19 @@ import { Plant } from "./Plant/Plant";
 import { trafficLightAbstractSyntax, trafficLightConcreteSyntax, trafficLightPlant } from "./Plant/TrafficLight/TrafficLight";
 import { SC2DEVSState } from "@/devs/sc2devs";
 import { Statechart } from "@/statecharts/abstract_syntax";
-import { gantryCranePlant } from "./Plant/BIP/GantryCrane";
+import { gantryCraneAbstractSyntax, gantryCraneConcreteSyntax, gantryCranePlant } from "./Plant/BIP/GantryCrane";
 import { schedulerPlant } from "./Plant/BIP/Scheduler";
 import { emergencyPanelPlant } from "./Plant/BIP/EmergencyPanel";
 import { lightButtonAbstractSyntax, lightButtonConcreteSyntax, lightButtonPlant } from "./Plant/LightButton/LightButton";
+import { RaisedEvent } from "@/statecharts/runtime_types";
 
 export type UniversalPlantState = {[property: string]: boolean|number};
 
 // A plant that is implemented as a Statechart
-type StatechartPlant = Plant<SC2DEVSState, UniversalPlantState>;
+type StatechartPlant = Plant<SC2DEVSState, RaisedEvent, UniversalPlantState>;
 
 export type StatebuddyPlantSpec = {
-  plant: Plant<any, any>,
+  plant: Plant<any, any, any>,
   cs?: ConcreteSyntax,
   as?: Statechart,
 }
@@ -44,6 +45,8 @@ export const statebuddyPlants: {[type: string]: StatebuddyPlantSpec} = {
   },
   "bip-gantry-crane": {
     plant: gantryCranePlant,
+    cs: gantryCraneConcreteSyntax,
+    as: gantryCraneAbstractSyntax,
   },
   "bip-scheduler": {
     plant: schedulerPlant,

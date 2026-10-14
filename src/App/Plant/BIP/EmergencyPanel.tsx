@@ -13,16 +13,16 @@ function EmergencyPanelView({raiseUIEvent}: PlantRenderProps<{}>) {
   </div>;
 }
 
-export const emergencyPanelPlant: Plant<{}, {}> = {
+export const emergencyPanelPlant: Plant<[number, any[]], any, {}> = {
   execution: {
-    initial: () => ({}),
-    timeAdvance: () => Infinity,
-    intTransition: () => { throw new Error("emergency panel doesn't make intTransition")},
-    extTransition: (simtime, s, bagOfInputs) => s,
+    initial: () => ([0, []]),
+    timeAdvance: ([simtime, outputs]) => outputs.length > 0 ? simtime : Infinity,
+    intTransition: ([simtime, outputs]) => [outputs, [simtime, []]],
+    extTransition: (simtime: number, s: any, bagOfInputs: any[]) => [simtime, bagOfInputs],
     inputs: [],
     outputs: [],
   },
-  cleanupState: x => x,
+  cleanupState: _ => ({}),
   render: EmergencyPanelView,
   uiEvents: [
     {event: "beginEmergency", kind: "event"},

@@ -16,13 +16,13 @@ export type PlantRenderProps<CleanStateType> = {
 // A Plant is a DEVS component that additionally:
 //  - can be rendered to DOM (with React)
 //  - exposes some of its internal state (basically a JSON object) (for MTL property checking)
-export type Plant<StateType, CleanStateType> = {
+export type Plant<StateType, EventType, CleanStateType> = {
   uiEvents: EventTrigger[];
 
   signals: string[]; // signal names. all signals are booleans.
 
   // DEVS primitives
-  execution: DEVSComponent<StateType>;
+  execution: DEVSComponent<StateType, EventType>;
 
   // Extra processing step on 'state', before (1) passing it to the 'render' function and also (2) for MTL property checking.
   cleanupState: (state: StateType) => CleanStateType;
@@ -39,7 +39,7 @@ export type StatechartPlantSpec<CleanStateType> = {
   signals: string[],
 }
 
-export function makeStatechartPlant<CleanStateType>({uiEvents, ast, cleanupState, render, signals}: StatechartPlantSpec<CleanStateType>): Plant<SC2DEVSState, CleanStateType> {
+export function makeStatechartPlant<CleanStateType>({uiEvents, ast, cleanupState, render, signals}: StatechartPlantSpec<CleanStateType>): Plant<SC2DEVSState, RaisedEvent, CleanStateType> {
   return {
     uiEvents,
     // inputEvents: ast.inputEvents,

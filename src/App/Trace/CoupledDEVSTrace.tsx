@@ -4,6 +4,7 @@ import { whoMadeExtTransition, whoMadeIntTransition } from "@/devs/coupled_trace
 import { DEVSTrace, DEVSTraceItem, DEVSTraceItemExtTransition, DEVSTraceItemInit, DEVSTraceItemIntTransition } from "@/devs/trace";
 import { actionLangValToText } from "@/statecharts/actionlang_prettyprinter";
 import { RuntimeError } from "@/statecharts/interpreter";
+import { TraceInit } from "@/statecharts/microstep_trace_types";
 import { RaisedEvent } from "@/statecharts/runtime_types";
 import NotInterestedIcon from '@mui/icons-material/NotInterested';
 import { Dispatch, memo, SetStateAction, useEffect } from "react";
@@ -21,9 +22,8 @@ import { TraceView } from "../migrations/v2_types";
 import { statebuddyPlants } from "../plants";
 import { PropertyTrace } from "../SideBar/prepare_trace_types";
 import { PropertyStatusIndicator } from "../SideBar/PropertyStatusIndicator";
-import { isSCOutputStep, SCBigStepTrace, SCInitializationTrace } from "./SC2DEVSTrace";
-import { TraceInit } from "@/statecharts/microstep_trace_types";
 import { InitCause, InputCause, TimerCause } from "./Common";
+import { isSCOutputStep, SCBigStepTrace, SCInitializationTrace } from "./SC2DEVSTrace";
 
 type TraceProps = WithSetters<{
   currentTrace: StateBuddyTraceState,
@@ -304,8 +304,9 @@ function CoupledDEVSExternalTransition({item, prevItem, status, ...rest}: {
       ? <DEVSExternalTransitions components={components} {...rest} />
       // if there was an extTransition, but no component made extTransition, just display the (ignored) bag of inputs:
       : <Column>
-          <Tooltip tooltip="ignored inputs">
+          <Tooltip tooltip="External inputs were received, but all components ignored it.">
             <NotInterestedIcon fontSize="small"/>
+            {item.bagOfInputs.map(e => <InputCause e={e}/>)}
           </Tooltip>
         </Column>
     }
