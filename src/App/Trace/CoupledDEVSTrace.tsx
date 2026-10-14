@@ -195,7 +195,7 @@ function isComponentStatechart(componentId: string, plantsState: PlantsState, as
   }
 }
 
-function ShowRuntimeError({error}: {error: RuntimeError}) {
+function DEVSRuntimeError({error}: {error: RuntimeError}) {
   return <>
     <span style={{
       backgroundColor: 'var(--error-bg-color',
@@ -225,9 +225,9 @@ function CoupledDEVSInitialization({item, status, plantsState, ast}: {
       return <Row key={componentId}>
         <div>{componentDisplayName}</div>
         <Column>
-          {statechart && <SCInitializationTrace init={componentTraceItem.newState.state as TraceInit}/>
-                      || <InitCause/>}
-          {error && <ShowRuntimeError error={error} />}
+          {error && <DEVSRuntimeError error={error} />
+                 || (statechart && <SCInitializationTrace init={componentTraceItem.newState.state as TraceInit}/>
+                                || <InitCause/>)}
         </Column>
       </Row>;
     })}
@@ -256,18 +256,12 @@ function CoupledDEVSInternalTransition({item, prevItem, status, plantsState, ast
     {/* first we show the component that made the intTransition */}
     <Row>
       <div>{lookupName(plantsState, componentMadeIntTransition)}</div>
-      <Column>
-        <Row>
-          {blessedStatechart && <SCBigStepTrace bigstep={blessedItem.newState.state} hideOutputEvents={true}/>
-                             || <TimerCause/>}
-          <Column>
-            {/* <ShowEnvironment item={blessedItem} prevItem={blessedTrace.at(-2)} /> */}
-            {blessedItem.outputEvents.map(o => <RaisedOutputEvent event={o}/>)}
-          </Column>
-        </Row>
-        
-        {error && <ShowRuntimeError error={error} />}
-      </Column>
+      {error && <DEVSRuntimeError error={error} />
+             || <>
+                  {blessedStatechart && <SCBigStepTrace bigstep={blessedItem.newState.state}/>
+                                      || <TimerCause/>}
+                  {blessedItem.outputEvents.map(o => <DEVSRaisedOutputEvent event={o}/>)}
+                </>}
     </Row>
 
     {/* then we show the components that made an extTransition */}
@@ -288,7 +282,7 @@ function CoupledDEVSInternalTransition({item, prevItem, status, plantsState, ast
   </>;
 }
 
-function RaisedOutputEvent({event: {name, param}}: {event: RaisedEvent}) {
+function DEVSRaisedOutputEvent({event: {name, param}}: {event: RaisedEvent}) {
   return <Tooltip tooltip='output event' align='left'>
     <div className={styles.outputEvent} >
       &#8599;
@@ -308,12 +302,9 @@ function DEVSExternalTransitions({components, plantsState, ast}: {
     const error = getRuntimeError(item);
     return <Row key={componentId}>
       <div>{lookupName(plantsState, componentId)}</div>
-      <Column>
-        {statechart && <SCBigStepTrace bigstep={item.newState.state} hideOutputEvents={true}/>
-                    || item.bagOfInputs.map(e => <InputCause e={e}/>)}
-        {/* <ShowEnvironment item={item} prevItem={componentTrace.at(-2)}/> */}
-      </Column>
-      {error && <ShowRuntimeError error={error} />}
+      {error && <DEVSRuntimeError error={error} />
+             || (statechart && <SCBigStepTrace bigstep={item.newState.state}/>
+                            || item.bagOfInputs.map(e => <InputCause e={e}/>))}
     </Row>
   });
 }

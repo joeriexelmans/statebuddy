@@ -2,18 +2,14 @@
 
 import styles from "./Trace.module.css";
 import { actionLangValToText } from "@/statecharts/actionlang_prettyprinter";
-import { TraceBigStep, TraceFairStep, getRaisedEvents, TraceSmallStep, TraceExit, TraceEnter, TraceAction, TraceInit } from "@/statecharts/microstep_trace_types";
+import { TraceBigStep, TraceFairStep, TraceSmallStep, TraceExit, TraceEnter, TraceAction, TraceInit } from "@/statecharts/microstep_trace_types";
 import { RT_Event, RaisedEvent } from "@/statecharts/runtime_types";
-import { ReactNode, useState } from "react";
+import { PropsWithChildren, ReactNode, useState } from "react";
 import { Row } from "../Components/Row";
-import { Column } from "../Components/Column";
 import { EventParam, InitCause, InputCause, TimerCause } from "./Common";
-import { DEVSTraceItem } from "@/devs/trace";
-import { SC2DEVSState } from "@/devs/sc2devs";
-import { RuntimeError } from "@/statecharts/interpreter";
 
 export function SCInitializationTrace({init}: {init: TraceInit}) {
-  return <ol style={hiddenListStyle}>
+  return <TraceList>
     <li><MyDetails>{open => <>
       <summary>
         <div style={{display: 'inline-block'}}>
@@ -24,21 +20,16 @@ export function SCInitializationTrace({init}: {init: TraceInit}) {
       </summary>
       <SCEntered entered={init.enteredRoot} />
     </>}</MyDetails></li>
-    {init.fairSteps.map(step => <li><SCFairStep fairstep={step} hideOutputEvents={true}/></li>)}
-  </ol>;
+    {init.fairSteps.map(step => <li><SCFairStep fairstep={step}/></li>)}
+  </TraceList>;
 }
 
-export function SCBigStepTrace({bigstep, hideOutputEvents}: {bigstep: TraceBigStep, hideOutputEvents: boolean}) {
+export function SCBigStepTrace({bigstep}: {bigstep: TraceBigStep}) {
   return <div>
-    <ol style={hiddenListStyle}>
-      {bigstep.fairSteps.map(step => <li><SCFairStep fairstep={step} hideOutputEvents={hideOutputEvents}/></li>)}
-    </ol>
+    <TraceList>
+      {bigstep.fairSteps.map(step => <li><SCFairStep fairstep={step}/></li>)}
+    </TraceList>
   </div>;
-}
-
-const hiddenListStyle = {
-  listStyleType: 'none',
-  paddingLeft: 10,
 }
 
 // Custom details, fixes a bug where a toggle event would also close all parent-<details> nodes.
@@ -49,21 +40,16 @@ function MyDetails({children}: {children: (open: boolean) => ReactNode}) {
   </details>;
 }
 
-function SCFairStep({fairstep, hideOutputEvents}: {fairstep: TraceFairStep, hideOutputEvents: boolean}) {
+function SCFairStep({fairstep}: {fairstep: TraceFairStep}) {
   return <MyDetails>{open => <>
     <summary>
       <div style={{display: 'inline-block'}}>
-        <Row>
-          <ShowRTEvent rt_event={fairstep.event}/>
-          <Column>
-            {!hideOutputEvents && getRaisedEvents(fairstep.fired, "raisedOutput").map(event => <SCRaisedEvent action={{...event, kind: "raisedOutput"}}/>)}
-          </Column>
-        </Row>
+        <ShowRTEvent rt_event={fairstep.event}/>
       </div>
     </summary>
-    <ol style={hiddenListStyle}>
+    <TraceList>
       {fairstep.fired.map(fired => <li><SCFiredTransition fired={fired}/></li>)}
-    </ol>
+    </TraceList>
   </>}</MyDetails>;
 }
 
@@ -83,11 +69,11 @@ function SCFiredTransition({fired}: {fired: TraceSmallStep}) {
     <div style={greyStyle}>
       fire {fired.transitionUID}
     </div>
-    <ol style={hiddenListStyle}>
+    <TraceList>
       <li><SCExited exited={fired.exited} /></li>
       {fired.transitionActions.map(action => <li><SCExecutedAction action={action}/></li>)}
       <li><SCEntered entered={fired.entered} /></li>
-    </ol>
+    </TraceList>
   </div>;
 }
 
@@ -96,10 +82,10 @@ function SCExited({exited}: {exited: TraceExit}) {
     <div style={greyStyle}>
       exit <span style={{borderRadius: 7, border: '1px solid black'}}>{exited.stateUID}</span>
     </div>
-    <ol style={hiddenListStyle}>
+    <TraceList>
       <li>{exited.childrenExited.map(child => <SCExited exited={child} />)}</li>
       {exited.exitActions.map(action => <li><SCExecutedAction action={action}/></li>)}
-    </ol>
+    </TraceList>
   </div>;
 }
 
@@ -108,10 +94,10 @@ function SCEntered({entered}: {entered: TraceEnter}) {
     <div style={greyStyle}>
     enter <span style={{borderRadius: 7, border: '1px solid black'}}>{entered.stateUID}</span>
     </div>
-    <ol style={hiddenListStyle}>
+    <TraceList>
       {entered.enterActions.map(action => <li><SCExecutedAction action={action}/></li>)}
       <li>{entered.childrenEntered.map(child => <SCEntered entered={child}/>)}</li>
-    </ol>
+    </TraceList>
   </div>;
 }
 
@@ -131,26 +117,37 @@ function SCRaisedEvent({action}: {action: RaisedEvent & {kind: "raisedOutput" | 
   </div>;
 }
 
-function SCEnvironment({item, prevItem}: {item: DEVSTraceItem<SC2DEVSState, RaisedEvent>, prevItem?: DEVSTraceItem<SC2DEVSState, RaisedEvent>}) {
-  const state = item.newState.state;
-  const prevState = prevItem?.newState.state;
-  if (state instanceof RuntimeError || prevState instanceof RuntimeError) {
-    return <></>;
-  }
-  const prevEnvironment = prevState?.rtconfig?.environment || new Map();
-  const environment = state.rtconfig?.environment;
-  if (environment) {
-    return [...environment.entries()].map(([name, value]) => {
-      if ( name.startsWith('(root)._') // <-- hide hidden variables
-        // only show changed variables:
-        || [...prevEnvironment.entries()||[]].some(([earlierName, earlierValue]) => earlierName === name && earlierValue === value)
-      ) {
-        return <div key={name}></div>;
-      }
-      return <div key={name}>
-        {name} = {actionLangValToText(value)}
-      </div>
-    })
-  }
-  else return <></>;
+// function SCEnvironment({item, prevItem}: {item: DEVSTraceItem<SC2DEVSState, RaisedEvent>, prevItem?: DEVSTraceItem<SC2DEVSState, RaisedEvent>}) {
+//   const state = item.newState.state;
+//   const prevState = prevItem?.newState.state;
+//   if (state instanceof RuntimeError || prevState instanceof RuntimeError) {
+//     return <></>;
+//   }
+//   const prevEnvironment = prevState?.rtconfig?.environment || new Map();
+//   const environment = state.rtconfig?.environment;
+//   if (environment) {
+//     return [...environment.entries()].map(([name, value]) => {
+//       if ( name.startsWith('(root)._') // <-- hide hidden variables
+//         // only show changed variables:
+//         || [...prevEnvironment.entries()||[]].some(([earlierName, earlierValue]) => earlierName === name && earlierValue === value)
+//       ) {
+//         return <div key={name}></div>;
+//       }
+//       return <div key={name}>
+//         {name} = {actionLangValToText(value)}
+//       </div>
+//     })
+//   }
+//   else return <></>;
+// }
+
+const hiddenListStyle = {
+  listStyleType: 'none',
+  paddingLeft: 10,
+}
+
+function TraceList({children}: PropsWithChildren<{}>) {
+  return <ol style={hiddenListStyle}>
+    {children}
+  </ol>;
 }
