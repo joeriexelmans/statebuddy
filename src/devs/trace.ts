@@ -1,6 +1,4 @@
-import { RuntimeError } from "@/statecharts/interpreter";
 import { DEVSComponent } from "./devs";
-import { RaisedEvent } from "@/statecharts/runtime_types";
 
 type Common<T> = {
   simtime: number,
@@ -11,23 +9,23 @@ export type DEVSTraceItemInit<T> = {
   kind: "init",
 } & Common<T>
 
-export type DEVSTraceItemExtTransition<T> = {
+export type DEVSTraceItemExtTransition<T,E> = {
   kind: "extTransition",
-  bagOfInputs: RaisedEvent[],
+  bagOfInputs: E[],
 } & Common<T>
 
-export type DEVSTraceItemIntTransition<T> = {
+export type DEVSTraceItemIntTransition<T,E> = {
   kind: "intTransition",
-  outputEvents: RaisedEvent[], // <-- empty if `result.ok` is false
+  outputEvents: E[], // <-- empty if `result.ok` is false
 } & Common<T>
 
-export type DEVSTraceItem<T> = DEVSTraceItemInit<T> | DEVSTraceItemExtTransition<T> | DEVSTraceItemIntTransition<T>;
+export type DEVSTraceItem<T,E> = DEVSTraceItemInit<T> | DEVSTraceItemExtTransition<T,E> | DEVSTraceItemIntTransition<T,E>;
 
-export type DEVSTrace<T> = DEVSTraceItem<T>[]; // <-- always at least one item
+export type DEVSTrace<T,E> = DEVSTraceItem<T,E>[]; // <-- always at least one item
 
 // Transforms a DEVS component with state-type T into a DEVS component with state-type DEVSTract<T>.
 // The behavior remains exactly the same, except that runtime errors are caught and appended to the end of the trace.
-export function makeTracedDEVS<T>(devs: DEVSComponent<T>): DEVSComponent<DEVSTrace<T>> {
+export function makeTracedDEVS<T,E>(devs: DEVSComponent<T,E>): DEVSComponent<DEVSTrace<T,E>,E> {
   return {
     initial: () => {
       // initial is trace with one item:
@@ -39,11 +37,11 @@ export function makeTracedDEVS<T>(devs: DEVSComponent<T>): DEVSComponent<DEVSTra
         }
       ];
     },
-    timeAdvance: (trace: DEVSTrace<T>) => {
+    timeAdvance: (trace: DEVSTrace<T,E>) => {
       const lastState = trace.at(-1)!.newState;
       return devs.timeAdvance(lastState);
     },
-    intTransition: (trace: DEVSTrace<T>) => {
+    intTransition: (trace: DEVSTrace<T,E>) => {
       const lastState = trace.at(-1)!.newState;
       const simtime = devs.timeAdvance(lastState);
       const [outputEvents, newState] = devs.intTransition(lastState);
@@ -56,11 +54,11 @@ export function makeTracedDEVS<T>(devs: DEVSComponent<T>): DEVSComponent<DEVSTra
             simtime,
             newState,
             outputEvents,
-          } as DEVSTraceItem<T>,
+          } as DEVSTraceItem<T,E>,
         ]
       ];
     },
-    extTransition: (simtime: number, trace: DEVSTrace<T>, bagOfInputs: RaisedEvent[]) => {
+    extTransition: (simtime: number, trace: DEVSTrace<T,E>, bagOfInputs: E[]) => {
       const lastState = trace.at(-1)!.newState;
       const newState = devs.extTransition(simtime, lastState, bagOfInputs);
       return [
@@ -70,7 +68,7 @@ export function makeTracedDEVS<T>(devs: DEVSComponent<T>): DEVSComponent<DEVSTra
           simtime,
           bagOfInputs,
           newState,
-        } as DEVSTraceItem<T>,
+        } as DEVSTraceItem<T,E>,
       ];
     },
     inputs: devs.inputs,

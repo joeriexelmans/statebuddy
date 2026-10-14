@@ -14,7 +14,7 @@ import { useLocalStorage } from "@/hooks/usePersistentState";
 import { useKicker } from "@/hooks/useKicker";
 import { Statechart } from "@/statecharts/abstract_syntax";
 import { EventTrigger } from "@/statecharts/label_ast";
-import traceStyles from "./Trace.module.css";
+import traceStyles from "../../Trace/Trace.module.css";
 import { useDisposable } from "../../../hooks/useDisposable";
 import { ClickToCopy } from "../../Components/ClickToCopy";
 import { DoubleClickButton } from "../../Components/DoubleClickButton";

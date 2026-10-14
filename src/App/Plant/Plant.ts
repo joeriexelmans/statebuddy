@@ -1,7 +1,8 @@
 import { ReactNode } from "react";
 import { Statechart } from "@/statecharts/abstract_syntax";
 import { EventTrigger } from "@/statecharts/label_ast";
-import { TraceBigStep, TraceFairStep, RaisedEvent } from "@/statecharts/runtime_types";
+import { RaisedEvent } from "@/statecharts/runtime_types";
+import { TraceBigStep, TraceFairStep } from "@/statecharts/microstep_trace_types";
 import { DEVSComponent } from "@/devs/devs";
 import { sc2DEVS, SC2DEVSNonError, SC2DEVSState } from "@/devs/sc2devs";
 import { RuntimeError } from "@/statecharts/interpreter";

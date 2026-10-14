@@ -13,7 +13,7 @@ import { DoubleClickButton } from '../../Components/DoubleClickButton';
 import { Dispatch, memo, SetStateAction, useCallback } from 'react';
 import { getSimTime, } from '@/statecharts/time';
 import { SimulatorStuff, } from '../../hooks/useSimulator';
-import { CoupledDEVSTrace } from './CoupledDEVSTrace';
+import { CoupledDEVSTrace } from '../../Trace/CoupledDEVSTrace';
 import { Statechart } from '@/statecharts/abstract_syntax';
 import { PropertyTrace } from "../../SideBar/prepare_trace_types";
 import { ResizeHandle } from '../ResizeHandle';

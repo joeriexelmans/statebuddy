@@ -3,7 +3,9 @@ import { evalExpr, execAssignment } from "./actionlang_interpreter";
 import { actionLangValToText } from "./actionlang_prettyprinter";
 import { Environment, Scope, ScopedEnvironment } from "./environment";
 import { Action,  TransitionLabel, Trigger } from "./label_ast";
-import { TraceFairStep, TraceEnter, TraceAction, TraceAssign, TraceExit, getRaisedEvents, TraceInit, Mode, RT_Event, RT_History, RuntimeConfiguration, TimerElapseEvent, Timers, TraceSmallStep, TraceBigStep, visitEnterActions, RaisedEvent } from "./runtime_types";
+import { Mode, RT_Event, RT_History, RuntimeConfiguration, TimerElapseEvent, Timers, RaisedEvent } from "./runtime_types";
+import { getRaisedEvents, visitEnterActions } from "./microstep_trace_types";
+import { TraceFairStep, TraceEnter, TraceAction, TraceAssign, TraceExit, TraceInit, TraceSmallStep, TraceBigStep } from "./microstep_trace_types";
 
 export class RuntimeError extends Error {
   highlight: string[];

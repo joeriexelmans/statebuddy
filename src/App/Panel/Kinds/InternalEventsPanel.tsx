@@ -1,4 +1,4 @@
-import styles from "./Trace.module.css";
+import styles from "../../Trace/Trace.module.css";
 
 import { EventTrigger } from "../../../statecharts/label_ast";
 import { Tooltip } from "../../Components/Tooltip";

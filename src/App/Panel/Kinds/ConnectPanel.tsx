@@ -2,7 +2,7 @@ import connectStyles from "./Connect.module.css";
 
 import { Model2ModelConn } from "@/devs/coupled_devs"
 import { Statechart } from "@/statecharts/abstract_syntax";
-import traceStyles from "./Trace.module.css";
+import traceStyles from "../../Trace/Trace.module.css";
 import { memo, useCallback, useMemo } from "react";
 
 import AddIcon from '@mui/icons-material/Add';

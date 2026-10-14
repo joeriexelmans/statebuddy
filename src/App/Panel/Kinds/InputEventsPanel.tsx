@@ -1,5 +1,5 @@
 import appStyles from "../../App.module.css";
-import styles from "./Trace.module.css";
+import styles from "../../Trace/Trace.module.css";
 
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
@@ -54,7 +54,7 @@ export const InputEventsPanel = memo(function ShowInputEvents({
         if (exprText) {
           // funny trick to invoke our action language parser: our parser has only one entry point, so to make it parse an expression we must put that expression in a transition label...
           const {guard: exprParsed} = cachedParseLabel(`after 1s [${exprText}]`) as TransitionLabel; // may throw
-          param = evalExpr(exprParsed, new FlatEnvironment(), []); // may throw
+          param = evalExpr(exprParsed, new FlatEnvironment(), undefined); // may throw
         }
       }
       catch (e) {

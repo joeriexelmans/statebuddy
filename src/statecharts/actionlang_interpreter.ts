@@ -5,7 +5,7 @@ import { Environment, Scope, scopeDescription } from "./environment";
 import { RuntimeError } from "./interpreter";
 import { Expression, Lhs } from "./label_ast";
 import { Tracer } from "./tracer";
-import { TraceAssign } from "./runtime_types";
+import { TraceAssign } from "./microstep_trace_types";
 
 const UNARY_OPERATOR_MAP: Map<string, (x: any) => any> = new Map([
   ["!", x => !x],

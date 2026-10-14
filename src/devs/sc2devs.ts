@@ -1,12 +1,13 @@
 // DEVS adapter for Statecharts
 
 import { Statechart } from "@/statecharts/abstract_syntax";
-import { TraceBigStep, TraceFairStep, getOutputEventsFromBigStep, getOutputEventsFromInit, getRaisedEvents, TraceInit, RaisedEvent } from "@/statecharts/runtime_types";
+import { RaisedEvent } from "@/statecharts/runtime_types";
+import { getRaisedEvents, visitEnterActions } from "@/statecharts/microstep_trace_types";
+import { TraceBigStep, TraceFairStep, TraceInit } from "@/statecharts/microstep_trace_types";
 import { DEVSComponent } from "./devs";
 import { initialize, makeBigStep, RuntimeError } from "@/statecharts/interpreter";
-import { newTracer } from "@/statecharts/tracer";
 
-export type SC2DEVSNonError =
+export type SC2DEVSNonError = 
     TraceInit & {kind: "init"}
   | TraceBigStep & {kind: "bigstep"};
 
@@ -23,7 +24,7 @@ export type SC2DEVSState = {
 
 
 // Wraps a Statechart in a DEVS component
-export function sc2DEVS(ast: Statechart): DEVSComponent<SC2DEVSState> {
+export function sc2DEVS(ast: Statechart): DEVSComponent<SC2DEVSState, RaisedEvent> {
   return {
     initial: () => {
       return catchRuntimeError(
@@ -55,28 +56,31 @@ export function sc2DEVS(ast: Statechart): DEVSComponent<SC2DEVSState> {
       if (c.state instanceof RuntimeError) {
         throw new Error("cannot make intTransition - the Statechart has crashed");
       }
+      const rtconfig = c.state.rtconfig;
       if (c.outputQueue.length > 0) {
         // Perform an 'output step' -- output our output events and do nothing else:
         return [c.outputQueue, {
-          state: {fairSteps: [], rtconfig: c.state.rtconfig, simtime: c.state.simtime},
-          outputQueue: [],
+          state: {
+            kind: "bigstep",
+            fairSteps: [], // <-- produce an empty big step
+            rtconfig, // <-- rtconfig remains the same
+            simtime: c.state.kind === "init" ? 0 : c.state.simtime, // <-- simtime remains the same
+          },
+          outputQueue: [], // <-- reset output queue to empty
         }];
       }
-      if (c.state.rtconfig.timers.length === 0) {
+      if (rtconfig.timers.length === 0) {
         throw new Error("cannot make intTransition - timeAdvance is infinity");
       }
       // pop timer:
-      const [[when, timerElapseEvent], ...remainingTimers] = c.state.rtconfig.timers;
+      const [[when, timerElapseEvent], ...remainingTimers] = rtconfig.timers;
       // handle timer event:
-      const newC = {...c.state, timers: remainingTimers, simtime: when};
-      // let outputEvents = [] as RaisedEvent[];
       return catchRuntimeError(
         () => {
-          const bigstep = makeBigStep(newC.rtconfig, newC.simtime, timerElapseEvent, ast);
-          return bigstep;
+          return makeBigStep({...rtconfig, timers: remainingTimers}, when, timerElapseEvent, ast);
         },
         bigstep => [
-          getOutputEventsFromBigStep(bigstep),
+          getOutputEventsFromFairSteps(bigstep.fairSteps),
           {
             state: {kind: "bigstep", ...bigstep},
             outputQueue: [],
@@ -113,9 +117,8 @@ export function sc2DEVS(ast: Statechart): DEVSComponent<SC2DEVSState> {
             const bigstep = makeBigStep(rtconfig, simtime, {kind: "event", ...e}, ast);
             rtconfig = bigstep.rtconfig;
             fairSteps = [...fairSteps, ...bigstep.fairSteps];
-
-            // accumulate output events from all big steps
-            outputs = [...outputs, ...getOutputEventsFromBigStep(bigstep)];
+            // accumulate output events
+            outputs = [...outputs, ...getOutputEventsFromFairSteps(bigstep.fairSteps)];
           }
           return {kind: "bigstep", simtime, rtconfig, fairSteps} as TraceBigStep;
         },
@@ -152,3 +155,19 @@ function catchRuntimeError<IntermediaryResultType, ResultType>(
     }
   }
 };
+
+export function getOutputEventsFromInit(init: TraceInit) {
+  let enterDefaultOutputs = [] as RaisedEvent[];
+  visitEnterActions(init.enteredRoot, a => {
+    if (a.kind === "raisedOutput") {
+      enterDefaultOutputs.push(a);
+    }
+  });
+  const internalEventOutputs = getOutputEventsFromFairSteps(init.fairSteps);
+  return [...enterDefaultOutputs, ...internalEventOutputs];
+}
+
+function getOutputEventsFromFairSteps(fairsteps: TraceFairStep[]) {
+  return fairsteps.flatMap(step => getRaisedEvents(step.fired, "raisedOutput"));
+}
+
