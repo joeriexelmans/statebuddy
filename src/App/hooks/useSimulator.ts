@@ -15,15 +15,15 @@ import { useDetectChange2 } from "@/hooks/useDetectChange";
 // In StateBuddy, currently, the state of our simulation is always a CoupledDEVS state of our statechart model (with a DEVS adapter around it) and a bunch of 'plants'.
 // Perhaps in the future, we could let the user arbitrarily configure this setup (anything on the spectrum from a single Statechart Atomic DEVS to many nested Coupled DEVS ...), but for now, it is what it is.
 export type CoupledState = {
-  sc: DEVSTrace<SC2DEVSState>, // <-- there's always our Statechart execution state ...
+  sc: DEVSTrace<SC2DEVSState, RaisedEvent>, // <-- there's always our Statechart execution state ...
 } & {
   // ... and a bunch (0..*) of plants:
-  [plantName: string]: DEVSTrace<any>, // <-- plant state is a black box?
+  [plantName: string]: DEVSTrace<any, any>, // <-- plant state is a black box?
 };
 
 // The 'state' of the currently active trace.
 export type StateBuddyTraceState = {
-  trace: DEVSTrace<CoupledState>, // <-- the execution trace
+  trace: DEVSTrace<CoupledState, RaisedEvent>, // <-- the execution trace
   idx: number, // <-- currently selected trace item
 };
 
@@ -45,7 +45,7 @@ export type SimulatorStuff = WithSetters<{
   trace?: StateBuddyTraceState;
 }> & {
   // derived from state (shorthand)
-  currentTraceItem?: DEVSTraceItem<CoupledState>;
+  currentTraceItem?: DEVSTraceItem<CoupledState, RaisedEvent>;
   nextWakeup?: number;
   runtimeErrors: TraceableError[],
   highlightActive: Mode, // <-- active states
@@ -57,7 +57,7 @@ export type SimulatorStuff = WithSetters<{
 
 type OutputListener = (bagOfOutputs: RaisedEvent[]) => void;
 
-export function useSimulator(cE: DEVSComponent<DEVSTrace<CoupledState>> | undefined): SimulatorStuff {
+export function useSimulator(cE: DEVSComponent<DEVSTrace<CoupledState, RaisedEvent>, RaisedEvent> | undefined): SimulatorStuff {
   // time mode of the simulator
   const [time, setTime] = useState<TimeMode>({kind: "paused", simtime: 0});
   // trace is 'null' when there is no ongoing execution
@@ -84,7 +84,7 @@ export function useSimulator(cE: DEVSComponent<DEVSTrace<CoupledState>> | undefi
   const currentTraceItem = trace && trace.trace[trace.idx];
   
   // the timeAdvance of the currently selected item in the trace
-  const nextWakeup = infinityIfUndefined(trace && cE?.timeAdvance(trace.trace.slice(0, trace.idx+1) as DEVSTrace<CoupledState>));
+  const nextWakeup = infinityIfUndefined(trace && cE?.timeAdvance(trace.trace.slice(0, trace.idx+1) as DEVSTrace<CoupledState, RaisedEvent>));
 
   const currentSC = currentTraceItem?.newState.sc.at(-1)!.newState;
 
@@ -169,7 +169,7 @@ export function useSimulator(cE: DEVSComponent<DEVSTrace<CoupledState>> | undefi
         const simtime = getSimTime(time, Math.round(performance.now()));
         const newTrace = cE.extTransition(
           simtime,
-          trace.trace.slice(0, trace.idx + 1) as DEVSTrace<CoupledState>,
+          trace.trace.slice(0, trace.idx + 1) as DEVSTrace<CoupledState, RaisedEvent>,
           bagOfInputs,
         );
         return makeImminentTransitions({
@@ -245,7 +245,7 @@ export function useSimulator(cE: DEVSComponent<DEVSTrace<CoupledState>> | undefi
     let timeout: NodeJS.Timeout | undefined;
     if (trace && currentTraceItem && cE) {
       if (time.kind === "realtime") {
-        const nextTimeout = cE.timeAdvance(trace.trace.slice(0, trace.idx+1) as DEVSTrace<CoupledState>);
+        const nextTimeout = cE.timeAdvance(trace.trace.slice(0, trace.idx+1) as DEVSTrace<CoupledState, RaisedEvent>);
         const wallclkDelay = getWallClkDelay(time, nextTimeout, Math.round(performance.now()));
         if (wallclkDelay !== Infinity) {
           timeout = setTimeout(makeNextTimedTransition, wallclkDelay);

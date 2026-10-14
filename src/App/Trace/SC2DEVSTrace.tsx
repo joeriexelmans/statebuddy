@@ -8,6 +8,9 @@ import { ReactNode, useState } from "react";
 import { Row } from "../Components/Row";
 import { Column } from "../Components/Column";
 import { EventParam, InitCause, InputCause, TimerCause } from "./Common";
+import { DEVSTraceItem } from "@/devs/trace";
+import { SC2DEVSState } from "@/devs/sc2devs";
+import { RuntimeError } from "@/statecharts/interpreter";
 
 export function SCInitializationTrace({init}: {init: TraceInit}) {
   return <ol style={hiddenListStyle}>
@@ -16,9 +19,6 @@ export function SCInitializationTrace({init}: {init: TraceInit}) {
         <div style={{display: 'inline-block'}}>
           <Row>
             <InitCause/>
-            <Column>
-              {/* {false && !open && getOutputEventsFromInit(init).map(event => <ShowRaisedEvent action={{...event, kind: "raisedOutput"}}/>)} */}
-            </Column>
           </Row>
         </div>
       </summary>
@@ -56,7 +56,7 @@ function SCFairStep({fairstep, hideOutputEvents}: {fairstep: TraceFairStep, hide
         <Row>
           <ShowRTEvent rt_event={fairstep.event}/>
           <Column>
-            {!open && !hideOutputEvents && getRaisedEvents(fairstep.fired, "raisedOutput").map(event => <SCRaisedEvent action={{...event, kind: "raisedOutput"}}/>)}
+            {!hideOutputEvents && getRaisedEvents(fairstep.fired, "raisedOutput").map(event => <SCRaisedEvent action={{...event, kind: "raisedOutput"}}/>)}
           </Column>
         </Row>
       </div>
@@ -76,9 +76,11 @@ function ShowRTEvent({rt_event}: {rt_event: RT_Event}) {
   }
 }
 
+const greyStyle = {color: 'light-dark(#666, #aaa)'};
+
 function SCFiredTransition({fired}: {fired: TraceSmallStep}) {
   return <div>
-    <div style={inactiveStyle}>
+    <div style={greyStyle}>
       fire {fired.transitionUID}
     </div>
     <ol style={hiddenListStyle}>
@@ -89,11 +91,9 @@ function SCFiredTransition({fired}: {fired: TraceSmallStep}) {
   </div>;
 }
 
-const inactiveStyle = {color: 'light-dark(#666, #aaa)'};
-
 function SCExited({exited}: {exited: TraceExit}) {
   return <div>
-    <div style={inactiveStyle}>
+    <div style={greyStyle}>
       exit <span style={{borderRadius: 7, border: '1px solid black'}}>{exited.stateUID}</span>
     </div>
     <ol style={hiddenListStyle}>
@@ -105,7 +105,7 @@ function SCExited({exited}: {exited: TraceExit}) {
 
 function SCEntered({entered}: {entered: TraceEnter}) {
   return <div>
-    <div style={inactiveStyle}>
+    <div style={greyStyle}>
     enter <span style={{borderRadius: 7, border: '1px solid black'}}>{entered.stateUID}</span>
     </div>
     <ol style={hiddenListStyle}>
@@ -129,4 +129,28 @@ function SCRaisedEvent({action}: {action: RaisedEvent & {kind: "raisedOutput" | 
     {action.kind === "raisedOutput" ? '↗' : ''}
     {action.name}<EventParam param={action.param}/>
   </div>;
+}
+
+function SCEnvironment({item, prevItem}: {item: DEVSTraceItem<SC2DEVSState, RaisedEvent>, prevItem?: DEVSTraceItem<SC2DEVSState, RaisedEvent>}) {
+  const state = item.newState.state;
+  const prevState = prevItem?.newState.state;
+  if (state instanceof RuntimeError || prevState instanceof RuntimeError) {
+    return <></>;
+  }
+  const prevEnvironment = prevState?.rtconfig?.environment || new Map();
+  const environment = state.rtconfig?.environment;
+  if (environment) {
+    return [...environment.entries()].map(([name, value]) => {
+      if ( name.startsWith('(root)._') // <-- hide hidden variables
+        // only show changed variables:
+        || [...prevEnvironment.entries()||[]].some(([earlierName, earlierValue]) => earlierName === name && earlierValue === value)
+      ) {
+        return <div key={name}></div>;
+      }
+      return <div key={name}>
+        {name} = {actionLangValToText(value)}
+      </div>
+    })
+  }
+  else return <></>;
 }

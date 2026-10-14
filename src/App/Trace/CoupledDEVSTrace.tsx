@@ -1,33 +1,29 @@
 import styles from "./Trace.module.css";
-import appStyles from "../../App.module.css";
 
-import { getOutputEventsFromInit, SC2DEVSState } from "@/devs/sc2devs";
-import { DEVSTrace, DEVSTraceItem, DEVSTraceItemExtTransition, DEVSTraceItemInit, DEVSTraceItemIntTransition } from "@/devs/trace";
-import { CSSProperties, Dispatch, memo, PropsWithChildren, ReactNode, SetStateAction, useEffect, useState } from "react";
-import { Statechart, stateDescription, Transition } from "../../statecharts/abstract_syntax";
-import { TimeMode } from "../../statecharts/time";
-import { formatTime, jsonDeepEqual, memoizeOne, objectsEqual } from "../../util/util";
-import { Tooltip } from "../Components/Tooltip";
-import { CoupledState, StateBuddyTraceState } from "../hooks/useSimulator";
-import { PlantsState } from "../migrations/v1_types";
-import { WithSetters } from "../makePartialSetter";
-import { PropertyStatusIndicator } from "../SideBar/PropertyStatusIndicator";
-import { statebuddyPlants } from "../plants";
-import { RuntimeError } from "@/statecharts/interpreter";
 import { whoMadeExtTransition, whoMadeIntTransition } from "@/devs/coupled_trace";
-import NotInterestedIcon from '@mui/icons-material/NotInterested';
+import { DEVSTrace, DEVSTraceItem, DEVSTraceItemExtTransition, DEVSTraceItemInit, DEVSTraceItemIntTransition } from "@/devs/trace";
 import { actionLangValToText } from "@/statecharts/actionlang_prettyprinter";
-import { StatusType } from "../Components/StatusIndicator";
-import { PropertyTrace } from "../SideBar/prepare_trace_types";
-import { RaisedEvent, RT_Event } from "@/statecharts/runtime_types";
-import { getRaisedEvents } from "@/statecharts/microstep_trace_types";
-import { TraceBigStep, TraceEnter, TraceAction, TraceExit, TraceFairStep, TraceSmallStep, TraceInit } from "@/statecharts/microstep_trace_types";
-import { TraceView } from "../migrations/v2_types";
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import SubdirectoryArrowRightIcon from '@mui/icons-material/SubdirectoryArrowRight';
+import { RuntimeError } from "@/statecharts/interpreter";
+import { RaisedEvent } from "@/statecharts/runtime_types";
+import NotInterestedIcon from '@mui/icons-material/NotInterested';
+import { Dispatch, memo, SetStateAction, useEffect } from "react";
+import { Statechart } from "../../statecharts/abstract_syntax";
+import { TimeMode } from "../../statecharts/time";
+import { formatTime, jsonDeepEqual, objectsEqual } from "../../util/util";
 import { Column } from "../Components/Column";
 import { Row } from "../Components/Row";
+import { StatusType } from "../Components/StatusIndicator";
+import { Tooltip } from "../Components/Tooltip";
+import { CoupledState, StateBuddyTraceState } from "../hooks/useSimulator";
+import { WithSetters } from "../makePartialSetter";
+import { PlantsState } from "../migrations/v1_types";
+import { TraceView } from "../migrations/v2_types";
+import { statebuddyPlants } from "../plants";
+import { PropertyTrace } from "../SideBar/prepare_trace_types";
+import { PropertyStatusIndicator } from "../SideBar/PropertyStatusIndicator";
 import { SCBigStepTrace, SCInitializationTrace } from "./SC2DEVSTrace";
+import { TraceInit } from "@/statecharts/microstep_trace_types";
+import { InitCause, InputCause, TimerCause } from "./Common";
 
 type TraceProps = WithSetters<{
   currentTrace: StateBuddyTraceState,
@@ -58,9 +54,6 @@ export const CoupledDEVSTrace = memo(function CoupledDEVSTrace({
   propertyTrace,
   plantsState,
 }: TraceProps) {
-
-  // console.log({currentTrace});
-  
   // Auto-scroll when trace item changes
   useEffect(() => {
     if (autoScroll) {
@@ -119,9 +112,6 @@ export const CoupledDEVSTrace = memo(function CoupledDEVSTrace({
             prevItem={prevItem}
             status={propertyStatus}
             plantsState={plantsState}
-            // only show micro-steps of currently selected item:
-            // showMicroSteps={microSteps /*&& i === currentTrace.idx*/}
-            // showTransitions={transitions}
             ast={ast}
           />
         </div>
@@ -178,8 +168,8 @@ type ThingsToPassOn = {
 }
 
 const CoupledDEVSTraceItem = memo(function CoupledDEVSTraceItem({item, prevItem, status, ...thingsToPassOn}: {
-  item: DEVSTraceItem<CoupledState>,
-  prevItem: DEVSTraceItem<CoupledState>,
+  item: DEVSTraceItem<CoupledState, RaisedEvent>,
+  prevItem: DEVSTraceItem<CoupledState, RaisedEvent>,
   status: StatusType,
 } & ThingsToPassOn) {
   const commonArgs = {status, ...thingsToPassOn};
@@ -194,7 +184,8 @@ const CoupledDEVSTraceItem = memo(function CoupledDEVSTraceItem({item, prevItem,
   }
 }, objectsEqual); // <-- just a shallow comparison already saves us a lot of re-renders
 
-function getAbstractSyntax(componentId: string, plantsState: PlantsState, ast: Statechart) {
+// DEVS components can be statechart instances (white-box -> we show microsteps), or generic (black-box)
+function isComponentStatechart(componentId: string, plantsState: PlantsState, ast: Statechart) {
   if (componentId === "sc") {
     return ast;
   }
@@ -230,12 +221,12 @@ function CoupledDEVSInitialization({item, status, plantsState, ast}: {
       const error = getRuntimeError(componentTraceItem);
       const plant = plantsState.plants.find(({id}) => id === componentId);
       const componentDisplayName = plant?.name || componentId;
-      const abstractSyntax = getAbstractSyntax(componentId, plantsState, ast);
+      const statechart = isComponentStatechart(componentId, plantsState, ast);
       return <Row key={componentId}>
         <div>{componentDisplayName}</div>
         <Column>
-          {<SCInitializationTrace init={componentTraceItem.newState.state}/>}
-          {/* <ShowEnvironment item={componentTraceItem} /> */}
+          {statechart && <SCInitializationTrace init={componentTraceItem.newState.state as TraceInit}/>
+                      || <InitCause/>}
           {error && <ShowRuntimeError error={error} />}
         </Column>
       </Row>;
@@ -245,15 +236,15 @@ function CoupledDEVSInitialization({item, status, plantsState, ast}: {
 
 // An internal transition step made by Coupled DEVS
 function CoupledDEVSInternalTransition({item, prevItem, status, plantsState, ast}: {
-  item: DEVSTraceItemIntTransition<CoupledState>,
-  prevItem: DEVSTraceItem<CoupledState>,
+  item: DEVSTraceItemIntTransition<CoupledState, RaisedEvent>,
+  prevItem: DEVSTraceItem<CoupledState, RaisedEvent>,
   status: StatusType,
 } & ThingsToPassOn) {
   // one component will have made 1 intTransition, and some other components may have made 1 extTransition.
   const componentMadeIntTransition = whoMadeIntTransition([prevItem, item]);
   const blessedTrace = item.newState[componentMadeIntTransition];
-  const blessedItem = blessedTrace.at(-1)! as DEVSTraceItemIntTransition<any>;
-  const blessedAs = getAbstractSyntax(componentMadeIntTransition, plantsState, ast);
+  const blessedItem = blessedTrace.at(-1)! as DEVSTraceItemIntTransition<any, RaisedEvent>;
+  const blessedStatechart = isComponentStatechart(componentMadeIntTransition, plantsState, ast);
 
   const isOutputStep = isOutputStepHeuristic(blessedTrace);
   const error = getRuntimeError(blessedItem);
@@ -267,7 +258,8 @@ function CoupledDEVSInternalTransition({item, prevItem, status, plantsState, ast
       <div>{lookupName(plantsState, componentMadeIntTransition)}</div>
       <Column>
         <Row>
-          <SCBigStepTrace bigstep={blessedItem.newState.state} hideOutputEvents={true}/>
+          {blessedStatechart && <SCBigStepTrace bigstep={blessedItem.newState.state} hideOutputEvents={true}/>
+                             || <TimerCause/>}
           <Column>
             {/* <ShowEnvironment item={blessedItem} prevItem={blessedTrace.at(-2)} /> */}
             {blessedItem.outputEvents.map(o => <RaisedOutputEvent event={o}/>)}
@@ -308,16 +300,17 @@ function RaisedOutputEvent({event: {name, param}}: {event: RaisedEvent}) {
 
 
 function DEVSExternalTransitions({components, plantsState, ast}: {
-  components: [string, DEVSTrace<any>][],
+  components: [string, DEVSTrace<any, any>][],
 } & ThingsToPassOn) {
   return components.map(([componentId, componentTrace]) => {
-    const item = componentTrace.at(-1)!;
-    const abstractSyntax = getAbstractSyntax(componentId, plantsState, ast);
+    const item = componentTrace.at(-1)! as DEVSTraceItemExtTransition<any, any>;
+    const statechart = isComponentStatechart(componentId, plantsState, ast);
     const error = getRuntimeError(item);
     return <Row key={componentId}>
       <div>{lookupName(plantsState, componentId)}</div>
       <Column>
-        {<SCBigStepTrace bigstep={item.newState.state} hideOutputEvents={true}/>}
+        {statechart && <SCBigStepTrace bigstep={item.newState.state} hideOutputEvents={true}/>
+                    || item.bagOfInputs.map(e => <InputCause e={e}/>)}
         {/* <ShowEnvironment item={item} prevItem={componentTrace.at(-2)}/> */}
       </Column>
       {error && <ShowRuntimeError error={error} />}
@@ -326,8 +319,8 @@ function DEVSExternalTransitions({components, plantsState, ast}: {
 }
 
 function CoupledDEVSExternalTransition({item, prevItem, status, ...rest}: {
-  item: DEVSTraceItemExtTransition<CoupledState>,
-  prevItem: DEVSTraceItem<CoupledState>,
+  item: DEVSTraceItemExtTransition<CoupledState, RaisedEvent>,
+  prevItem: DEVSTraceItem<CoupledState, RaisedEvent>,
   status: StatusType,
 } & ThingsToPassOn) {
   const components = whoMadeExtTransition([prevItem, item]);
@@ -345,39 +338,7 @@ function CoupledDEVSExternalTransition({item, prevItem, status, ...rest}: {
   </>;
 }
 
-// function DEVSStepCause({item}: {item: DEVSTraceItem<any>}) {
-//   if (item.kind === "init") {
-//     return <InitCause/>;
-//   }
-//   else if (item.kind === "intTransition") {
-//     return <TimerCause/>;
-//   }
-//   else if (item.kind === "extTransition") {
-//     return item.bagOfInputs.map((e, i) => <InputCause e={e} key={i}/>);
-//   }
-// }
-
-
-function ShowEnvironment({item, prevItem}: {item: DEVSTraceItem<any>, prevItem?: DEVSTraceItem<any>}) {
-  const prevEnvironment = prevItem?.newState.state?.rtconfig?.environment || new Map();
-  const environment = item.newState.state?.rtconfig?.environment;
-  if (environment) {
-    return [...environment.entries()].map(([name, value]) => {
-      if ( name.startsWith('(root)._') // <-- hide hidden variables
-        // only show changed variables:
-        || [...prevEnvironment.entries()||[]].some(([earlierName, earlierValue]) => earlierName === name && earlierValue === value)
-      ) {
-        return <div key={name}></div>;
-      }
-      return <div key={name}>
-        {name} = {actionLangValToText(value)}
-      </div>
-    })
-  }
-  else return <></>;
-}
-
-function getRuntimeError(item: DEVSTraceItem<any>): (RuntimeError | undefined) {
+function getRuntimeError(item: DEVSTraceItem<any, any>): (RuntimeError | undefined) {
   const e = item.newState.state;
   if (e instanceof RuntimeError) {
     return e;
@@ -387,7 +348,7 @@ function getRuntimeError(item: DEVSTraceItem<any>): (RuntimeError | undefined) {
 // An 'output step' is when a Statechart performs an intTransition immediately after handling an input event (extTransition), with the purpose of only outputting some events.
 // If a Statechart makes an output step, we render that step slightly differently (we hide the timer icon), so it becomes a bit clearer that in the world of Statecharts, the output step was caused by (or even stronger: is part of) the previous step.
 // This heuristic (hopefully) works for our Statechart and also for plants that are implemented as a Statechart.
-function isOutputStepHeuristic(trace: DEVSTrace<any>) {
+function isOutputStepHeuristic(trace: DEVSTrace<any, any>) {
   const itemState = trace.at(-1)!;
   const prevItemState = trace.at(-2);
   const prevState = prevItemState?.newState;

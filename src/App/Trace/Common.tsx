@@ -7,7 +7,7 @@ import { actionLangValToText } from "@/statecharts/actionlang_prettyprinter";
 
 export function InitCause() {
   return <div className={styles.inputEvent}>
-    <Tooltip tooltip="initialization" align="left">
+    <Tooltip tooltip="initialized" align="left">
       <FlareIcon fontSize="small"/>
     </Tooltip>
   </div>;
@@ -15,7 +15,7 @@ export function InitCause() {
 
 export function TimerCause() {
   return <div className={styles.inputEvent}>
-    <Tooltip tooltip="timer elapse" align="left">
+    <Tooltip tooltip="elapsed timer" align="left">
       <AccessAlarmIcon fontSize="small"/>
     </Tooltip>
   </div>;
