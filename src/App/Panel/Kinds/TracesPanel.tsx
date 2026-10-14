@@ -83,7 +83,6 @@ export function TracesPanel({
               // @ts-ignore
               setCurrentTrace={simulator.setTrace}
               traceView={state.view.trace}
-              setMicroSteps={setState.setView.setTrace.setMicroSteps}
               plantsState={plants}
               propertyTrace={activePropertyTrace}
             />
@@ -159,14 +158,6 @@ const Checkboxes = memo(function Checkboxes({state, setState, disableSave, onSav
   onSaveTrace: () => void,
 }) {
   return <div className={appStyles.toolbar} style={{justifyContent: 'space-around', columnGap: '1em'}}>
-    <Tooltip tooltip="plant steps are steps where only the state of a plant changed" align="left">
-      <label>
-        <input type="checkbox"
-        checked={state.plantSteps}
-        onChange={e => setState.setPlantSteps(e.target.checked)}/>
-        show plant steps
-      </label>
-    </Tooltip>
     <Tooltip tooltip="scroll down upon new events" align="left">
       <input id="checkbox-autoscroll" type="checkbox" checked={state.autoScroll} onChange={e => setState.setAutoScroll(e.target.checked)}/>
       <label htmlFor="checkbox-autoscroll">auto-scroll</label>

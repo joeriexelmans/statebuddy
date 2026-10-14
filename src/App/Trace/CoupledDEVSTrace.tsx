@@ -21,7 +21,7 @@ import { TraceView } from "../migrations/v2_types";
 import { statebuddyPlants } from "../plants";
 import { PropertyTrace } from "../SideBar/prepare_trace_types";
 import { PropertyStatusIndicator } from "../SideBar/PropertyStatusIndicator";
-import { isOutputStep, SCBigStepTrace, SCInitializationTrace } from "./SC2DEVSTrace";
+import { isSCOutputStep, SCBigStepTrace, SCInitializationTrace } from "./SC2DEVSTrace";
 import { TraceInit } from "@/statecharts/microstep_trace_types";
 import { InitCause, InputCause, TimerCause } from "./Common";
 
@@ -29,7 +29,6 @@ type TraceProps = WithSetters<{
   currentTrace: StateBuddyTraceState,
 }> & {
   traceView: TraceView,
-  setMicroSteps: Dispatch<SetStateAction<boolean>>,
 
   // clicking on an item in the trace will jump to it so we need to set the time to that point.
   setTime: Dispatch<SetStateAction<TimeMode>>,
@@ -47,10 +46,8 @@ export const CoupledDEVSTrace = memo(function CoupledDEVSTrace({
   setTime,
   ast,
   traceView: {
-    plantSteps,
     autoScroll,
   },
-  setMicroSteps,
   propertyTrace,
   plantsState,
 }: TraceProps) {
@@ -73,11 +70,6 @@ export const CoupledDEVSTrace = memo(function CoupledDEVSTrace({
     {currentTrace.trace.map((item, i) => {
       const prevItem = currentTrace.trace[i-1];
 
-      // in every step of the Coupled DEVS, each component can step at most once
-      const whichPlantsStepped = Object.entries(item.newState).flatMap(([plantId, s]) => (s !== prevItem?.newState[plantId]) ? [plantId] : []);
-
-      const isPlantStep = !whichPlantsStepped.includes("sc");
-
       let satisfied;
       [j, satisfied] = lookupPropertyStatus(item.simtime, propertyTrace || [], j);
       let propertyStatus: StatusType = "pending";
@@ -90,20 +82,13 @@ export const CoupledDEVSTrace = memo(function CoupledDEVSTrace({
           id={`traceItem-${i}`}
           className={styles.traceItem
                     + ' ' + ((currentTrace.idx === i) ? styles.active : "")
-                    + ' ' + (isPlantStep ? styles.plantStep : "")}
-          onDoubleClick={e => {
-            // toggle microsteps visibility
-            setMicroSteps(x => !x);
-            e.preventDefault();
-            e.stopPropagation();
-          }}
+                    }
           onMouseDown={e => {
             if (e.button === 0) {
               setCurrentTrace(trace => ({trace: trace.trace, idx: i}));
               setTime(_ => ({kind: "paused", simtime: item.simtime}));
             }
           }}
-          style={{display: (isPlantStep && !plantSteps) ? 'none' : undefined}}
         >
         <div style={{display: 'flex', gap: '1em'}}>
           <div style={{minWidth: 22, textAlign: 'right'}}>#{i}</div>
@@ -148,7 +133,7 @@ function TraceItemHeader({status, simtime, isOutputStep}: {status: StatusType, s
     </div>
 
     {/* timestamp */}
-    <div style={{/*visibility: isOutputStep ? "hidden" : undefined,*/ minWidth: 38, textAlign: 'center'}}>
+    <div style={{minWidth: 38, textAlign: 'center'}}>
       <Tooltip align="left" tooltip={isOutputStep ? "In the previous step, a DEVS component wanted to output events while making an external transition (not possible in DEVS). Therefore, in this step, the same component makes an internal transition to output those events." : "timestamp"}>
         <div style={{textAlign: 'right'}}>
           {isOutputStep ? '＝' : formatTime(simtime)}
@@ -245,7 +230,7 @@ function CoupledDEVSInternalTransition({item, prevItem, status, plantsState, ast
   const blessedTrace = item.newState[componentMadeIntTransition];
   const blessedItem = blessedTrace.at(-1)! as DEVSTraceItemIntTransition<any, RaisedEvent>;
   const blessedStatechart = isComponentStatechart(componentMadeIntTransition, plantsState, ast);
-  const isOutputStep = Boolean(blessedStatechart && isOutputStep(blessedTrace));
+  const isOutputStep = Boolean(blessedStatechart && isSCOutputStep(blessedTrace));
   const error = getRuntimeError(blessedItem);
 
   return <>

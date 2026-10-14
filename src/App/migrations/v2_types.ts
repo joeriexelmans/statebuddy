@@ -13,10 +13,7 @@ export type TopPanelState = {
 }
 
 export type TraceView = {
-  microSteps: boolean,
-  transitions: boolean,
   autoScroll: boolean,
-  plantSteps: boolean,
   height: number,
 }
 
