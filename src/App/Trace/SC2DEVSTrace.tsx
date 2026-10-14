@@ -7,6 +7,9 @@ import { RT_Event, RaisedEvent } from "@/statecharts/runtime_types";
 import { PropsWithChildren, ReactNode, useState } from "react";
 import { Row } from "../Components/Row";
 import { EventParam, InitCause, InputCause, TimerCause } from "./Common";
+import { SC2DEVSState } from "@/devs/sc2devs";
+import { DEVSTrace } from "@/devs/trace";
+import { jsonDeepEqual } from "@/util/util";
 
 export function SCInitializationTrace({init}: {init: TraceInit}) {
   return <TraceList>
@@ -151,3 +154,20 @@ function TraceList({children}: PropsWithChildren<{}>) {
     {children}
   </ol>;
 }
+
+// An 'output step' is when a Statechart performs an intTransition immediately after handling an input event (extTransition), with the purpose of only outputting some events.
+// If a Statechart makes an output step, we render that step slightly differently (we hide the timer icon), so it becomes a bit clearer that in the world of Statecharts, the output step was caused by (or even stronger: is part of) the previous step.
+// This heuristic (hopefully) works for our Statechart and also for plants that are implemented as a Statechart.
+export function isOutputStep(trace: DEVSTrace<SC2DEVSState, RaisedEvent>) {
+  const itemState = trace.at(-1)!;
+  const prevItemState = trace.at(-2);
+  const prevState = prevItemState?.newState;
+  const newState = itemState.newState;
+  const prevScheduledOutputs = prevState?.outputQueue; // <-- could also be undefined if newState does not have property 'outputQueue'...
+  const curOutputs = itemState.kind === "intTransition" && itemState.outputEvents;
+  const isOutputStep = jsonDeepEqual(prevScheduledOutputs, curOutputs) // the scheduled outputs of previous SC step are equal to the current outputs
+    && prevItemState?.simtime === itemState.simtime // <-- time didn't change
+    && newState.outputQueue?.length === 0; // <-- our current output queue is empty (because we outputted all of our outputs)
+  return isOutputStep;
+}
+

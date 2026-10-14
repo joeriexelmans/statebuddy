@@ -9,7 +9,7 @@ import NotInterestedIcon from '@mui/icons-material/NotInterested';
 import { Dispatch, memo, SetStateAction, useEffect } from "react";
 import { Statechart } from "../../statecharts/abstract_syntax";
 import { TimeMode } from "../../statecharts/time";
-import { formatTime, jsonDeepEqual, objectsEqual } from "../../util/util";
+import { formatTime, objectsEqual } from "../../util/util";
 import { Column } from "../Components/Column";
 import { Row } from "../Components/Row";
 import { StatusType } from "../Components/StatusIndicator";
@@ -21,7 +21,7 @@ import { TraceView } from "../migrations/v2_types";
 import { statebuddyPlants } from "../plants";
 import { PropertyTrace } from "../SideBar/prepare_trace_types";
 import { PropertyStatusIndicator } from "../SideBar/PropertyStatusIndicator";
-import { SCBigStepTrace, SCInitializationTrace } from "./SC2DEVSTrace";
+import { isOutputStep, SCBigStepTrace, SCInitializationTrace } from "./SC2DEVSTrace";
 import { TraceInit } from "@/statecharts/microstep_trace_types";
 import { InitCause, InputCause, TimerCause } from "./Common";
 
@@ -245,8 +245,7 @@ function CoupledDEVSInternalTransition({item, prevItem, status, plantsState, ast
   const blessedTrace = item.newState[componentMadeIntTransition];
   const blessedItem = blessedTrace.at(-1)! as DEVSTraceItemIntTransition<any, RaisedEvent>;
   const blessedStatechart = isComponentStatechart(componentMadeIntTransition, plantsState, ast);
-
-  const isOutputStep = isOutputStepHeuristic(blessedTrace);
+  const isOutputStep = Boolean(blessedStatechart && isOutputStep(blessedTrace));
   const error = getRuntimeError(blessedItem);
 
   return <>
@@ -292,7 +291,6 @@ function DEVSRaisedOutputEvent({event: {name, param}}: {event: RaisedEvent}) {
   </Tooltip>
 }
 
-
 function DEVSExternalTransitions({components, plantsState, ast}: {
   components: [string, DEVSTrace<any, any>][],
 } & ThingsToPassOn) {
@@ -334,23 +332,4 @@ function getRuntimeError(item: DEVSTraceItem<any, any>): (RuntimeError | undefin
   if (e instanceof RuntimeError) {
     return e;
   }
-}
-
-// An 'output step' is when a Statechart performs an intTransition immediately after handling an input event (extTransition), with the purpose of only outputting some events.
-// If a Statechart makes an output step, we render that step slightly differently (we hide the timer icon), so it becomes a bit clearer that in the world of Statecharts, the output step was caused by (or even stronger: is part of) the previous step.
-// This heuristic (hopefully) works for our Statechart and also for plants that are implemented as a Statechart.
-function isOutputStepHeuristic(trace: DEVSTrace<any, any>) {
-  const itemState = trace.at(-1)!;
-  const prevItemState = trace.at(-2);
-  const prevState = prevItemState?.newState;
-  const newState = itemState.newState;
-  // if (prevState?.state instanceof RuntimeError || newState.state instanceof RuntimeError) {
-  //   return false;
-  // }
-  const prevScheduledOutputs = prevState?.outputQueue; // <-- could also be undefined if newState does not have property 'outputQueue'...
-  const curOutputs = itemState.kind === "intTransition" && itemState.outputEvents;
-  const isOutputStep = jsonDeepEqual(prevScheduledOutputs, curOutputs) // the scheduled outputs of previous SC step are equal to the current outputs
-    && prevItemState?.simtime === itemState.simtime // <-- time didn't change
-    && newState.outputQueue?.length === 0; // <-- our current output queue is empty (because we outputted all of our outputs)
-  return isOutputStep;
 }
