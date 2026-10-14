@@ -24,6 +24,7 @@ import { PropertyTrace } from "../../SideBar/prepare_trace_types";
 import { TraceBigStep, TraceEnter, TraceAction, TraceExit, TraceFairStep, TraceSmallStep, TraceInit, RaisedEvent, RT_Event, getRaisedEvents, getOutputEventsFromInit } from "@/statecharts/runtime_types";
 import { TraceView } from "../../migrations/v2_types";
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import SubdirectoryArrowRightIcon from '@mui/icons-material/SubdirectoryArrowRight';
 
 type TraceProps = WithSetters<{
   currentTrace: StateBuddyTraceState,
@@ -146,18 +147,18 @@ function lookupPropertyStatus(simtime: number, propertyTrace: PropertyTrace, sta
   return [i, propertyTrace[i] && propertyTrace[i][1]];
 }
 
-function TraceItemHeader({status, simtime, hide}: {status: StatusType, simtime: number, hide: boolean}) {
+function TraceItemHeader({status, simtime, isOutputStep}: {status: StatusType, simtime: number, isOutputStep: boolean}) {
   return <>
     {/* property check result */}
-    <div style={{visibility: hide ? "hidden" : undefined}}>
+    <div style={{visibility: isOutputStep ? "hidden" : undefined}}>
       <PropertyStatusIndicator status={status}/>
     </div>
 
     {/* timestamp */}
-    <div style={{visibility: hide ? "hidden" : undefined, minWidth: 38, textAlign: 'center'}}>
-      <Tooltip tooltip="timestamp">
+    <div style={{/*visibility: isOutputStep ? "hidden" : undefined,*/ minWidth: 38, textAlign: 'center'}}>
+      <Tooltip align="left" tooltip={isOutputStep ? "In the previous step, a DEVS component wanted to output events while making an external transition (not possible in DEVS). Therefore, in this step, the same component makes an internal transition to output those events." : "timestamp"}>
         <div style={{textAlign: 'right'}}>
-          {formatTime(simtime)}
+          {isOutputStep ? '＝' : formatTime(simtime)}
         </div>
       </Tooltip>
     </div>
@@ -223,7 +224,7 @@ function CoupledDEVSInitialization({item, status, plantsState, ast}: {
 } & ThingsToPassOn) {
   // just show the initialization of every component:
   return <>
-    <TraceItemHeader hide={false} simtime={0} status={status} />
+    <TraceItemHeader isOutputStep={false} simtime={0} status={status} />
     {Object.entries(item.newState).map(([componentId, componentTrace]) => {
       const componentTraceItem = componentTrace.at(-1)!;
       const error = getRuntimeError(componentTraceItem);
@@ -258,25 +259,30 @@ function CoupledDEVSInternalTransition({item, prevItem, status, plantsState, ast
   const blessedAs = getAbstractSyntax(componentMadeIntTransition, plantsState, ast);
 
   const isOutputStep = isOutputStepHeuristic(blessedTrace);
-  // const isOutputStep = false;
   const error = getRuntimeError(blessedItem);
 
   return <>
     {/* header */}
-    <TraceItemHeader hide={isOutputStep} simtime={item.simtime} status={status}/>
+    <TraceItemHeader isOutputStep={isOutputStep} simtime={item.simtime} status={status}/>
 
     {/* first we show the component that made the intTransition */}
-    {!isOutputStep && <Row>
+    {<Row>
       <div>{lookupName(plantsState, componentMadeIntTransition)}</div>
       {/* {!isOutputStep && <DEVSStepCause item={blessedItem} />} */}
       {/* {blessedItem.outputEvents.map(o => <RaisedOutputEvent event={o}/>)} */}
-      <ShowBigStepMicroSteps bigstep={blessedItem.newState.state}/>
+      <ShowBigStepMicroSteps bigstep={blessedItem.newState.state} hideOutputEvents={true}/>
       {/* {isOutputStep && blessedItem.outputEvents.map(o => <RaisedOutputEvent event={o}/>)
                     || <ShowBigStepMicroSteps bigstep={blessedItem.newState.state}/>} */}
       {/* {blessedAs && showTransitions && !isOutputStep && <ShowFiredTransitions firedTransitions={getFiredTransitions(blessedAs, blessedItem)}/>} */}
       <ShowEnvironment item={blessedItem} prevItem={blessedTrace.at(-2)} />
       {error && <ShowRuntimeError error={error} />}
-    </Row> || <>{/*<div>{lookupName(plantsState, componentMadeIntTransition)}</div><>→</>*/}</>}
+      <Column>{blessedItem.outputEvents.map(o => <RaisedOutputEvent event={o}/>)}</Column>
+    </Row>}
+
+    {/*isOutputStep && <Row style={{gap: '1em'}}>
+      <div>{lookupName(plantsState, componentMadeIntTransition)}</div>
+      <Column>{blessedItem.outputEvents.map(o => <RaisedOutputEvent event={o}/>)}</Column>
+    </Row>*/}
 
     {/* then we show the components that made an extTransition */}
     <DEVSExternalTransitions
@@ -328,7 +334,7 @@ function DEVSExternalTransitions({components, plantsState, ast}: {
     const error = getRuntimeError(item);
     return <Row key={componentId}>
       <div>{lookupName(plantsState, componentId)}</div>
-      {<ShowBigStepMicroSteps bigstep={item.newState.state}/>}
+      {<ShowBigStepMicroSteps bigstep={item.newState.state} hideOutputEvents={true}/>}
       <ShowEnvironment item={item} prevItem={componentTrace.at(-2)}/>
       {error && <ShowRuntimeError error={error} />}
     </Row>;
@@ -342,7 +348,7 @@ function CoupledDEVSExternalTransition({item, prevItem, status, ...rest}: {
 } & ThingsToPassOn) {
   const components = whoMadeExtTransition([prevItem, item]);
   return <>
-    <TraceItemHeader hide={false} simtime={item.simtime} status={status} />
+    <TraceItemHeader isOutputStep={false} simtime={item.simtime} status={status} />
     {(components.length > 0)
       ? <DEVSExternalTransitions components={components} {...rest} />
       // if there was an extTransition, but no component made extTransition, just display the (ignored) bag of inputs:
@@ -416,21 +422,21 @@ function ShowInitializationMicroSteps({init}: {init: TraceInit}) {
           <Row>
             <InitCause/>
             <Column>
-              {!open && getOutputEventsFromInit(init).map(event => <ShowRaisedEvent action={{...event, kind: "raisedOutput"}}/>)}
+              {false && !open && getOutputEventsFromInit(init).map(event => <ShowRaisedEvent action={{...event, kind: "raisedOutput"}}/>)}
             </Column>
           </Row>
         </div>
       </summary>
       <ShowEntered entered={init.enteredRoot} />
     </>}</MyDetails></li>
-    {init.fairSteps.map(step => <li><ShowFairStep fairstep={step}/></li>)}
+    {init.fairSteps.map(step => <li><ShowFairStep fairstep={step} hideOutputEvents={true}/></li>)}
   </ol>;
 }
 
-function ShowBigStepMicroSteps({bigstep}: {bigstep: TraceBigStep}) {
+function ShowBigStepMicroSteps({bigstep, hideOutputEvents}: {bigstep: TraceBigStep, hideOutputEvents: boolean}) {
   return <div>
     <ol style={hiddenListStyle}>
-      {bigstep.fairSteps.map(step => <li><ShowFairStep fairstep={step}/></li>)}
+      {bigstep.fairSteps.map(step => <li><ShowFairStep fairstep={step} hideOutputEvents={hideOutputEvents}/></li>)}
     </ol>
   </div>;
 }
@@ -443,19 +449,19 @@ const hiddenListStyle = {
 // Custom details, fixes a bug where a toggle event would also close all parent-<details> nodes.
 function MyDetails({children}: {children: (open: boolean) => ReactNode}) {
   const [open, setOpen] = useState(false);
-  return <details open={open} onToggle={e => {setOpen(o => !o); e.stopPropagation()}}>
+  return <details open={open} onMouseDown={e => e.stopPropagation()} onToggle={e => {setOpen(o => !o); e.stopPropagation()}}>
     {children(open)}
   </details>;
 }
 
-function ShowFairStep({fairstep}: {fairstep: TraceFairStep}) {
+function ShowFairStep({fairstep, hideOutputEvents}: {fairstep: TraceFairStep, hideOutputEvents: boolean}) {
   return <MyDetails>{open => <>
     <summary>
       <div style={{display: 'inline-block'}}>
         <Row>
           <ShowRTEvent rt_event={fairstep.event}/>
           <Column>
-            {!open && getRaisedEvents(fairstep.fired, "raisedOutput").map(event => <ShowRaisedEvent action={{...event, kind: "raisedOutput"}}/>)}
+            {!open && !hideOutputEvents && getRaisedEvents(fairstep.fired, "raisedOutput").map(event => <ShowRaisedEvent action={{...event, kind: "raisedOutput"}}/>)}
           </Column>
         </Row>
       </div>

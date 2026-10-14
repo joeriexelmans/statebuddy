@@ -56,10 +56,9 @@ export function sc2DEVS(ast: Statechart): DEVSComponent<SC2DEVSState> {
         throw new Error("cannot make intTransition - the Statechart has crashed");
       }
       if (c.outputQueue.length > 0) {
-        // output our output events and do nothing else:
+        // Perform an 'output step' -- output our output events and do nothing else:
         return [c.outputQueue, {
-          state: c.state,
-          microsteps: ["(produce output from previous step)"],
+          state: {fairSteps: [], rtconfig: c.state.rtconfig, simtime: c.state.simtime},
           outputQueue: [],
         }];
       }
