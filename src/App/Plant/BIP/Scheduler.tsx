@@ -1,3 +1,4 @@
+import { RaisedEvent } from "@/statecharts/runtime_types";
 import { Plant, PlantRenderProps } from "../Plant";
 
 type ScheduledMove = {
@@ -29,7 +30,7 @@ function SchedulerView({state, speed, raiseUIEvent}: PlantRenderProps<SchedulerS
   </div>
 }
 
-export const schedulerPlant: Plant<SchedulerState, SchedulerState> = {
+export const schedulerPlant: Plant<SchedulerState, RaisedEvent, SchedulerState> = {
   execution: {
     initial: () => initialState,
     timeAdvance: (s) => {
