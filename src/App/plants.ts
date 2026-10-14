@@ -23,11 +23,11 @@ export type StatebuddyPlantSpec = {
 }
 
 export const statebuddyPlants: {[type: string]: StatebuddyPlantSpec} = {
-  "light button": {
-    plant: lightButtonPlant,
-    cs: lightButtonConcreteSyntax,
-    as: lightButtonAbstractSyntax,
-  },
+  // "light button": {
+  //   plant: lightButtonPlant,
+  //   cs: lightButtonConcreteSyntax,
+  //   as: lightButtonAbstractSyntax,
+  // },
   "microwave": {
     plant: microwavePlant as unknown as StatechartPlant,
     cs: microwaveConcreteSyntax,
@@ -43,15 +43,15 @@ export const statebuddyPlants: {[type: string]: StatebuddyPlantSpec} = {
     cs: trafficLightConcreteSyntax,
     as: trafficLightAbstractSyntax,
   },
-  "bip-gantry-crane": {
-    plant: gantryCranePlant,
-    cs: gantryCraneConcreteSyntax,
-    as: gantryCraneAbstractSyntax,
-  },
-  "bip-scheduler": {
-    plant: schedulerPlant,
-  },
-  "bip-emergency-panel": {
-    plant: emergencyPanelPlant,
-  }
+  // "bip-gantry-crane": {
+  //   plant: gantryCranePlant,
+  //   cs: gantryCraneConcreteSyntax,
+  //   as: gantryCraneAbstractSyntax,
+  // },
+  // "bip-scheduler": {
+  //   plant: schedulerPlant,
+  // },
+  // "bip-emergency-panel": {
+  //   plant: emergencyPanelPlant,
+  // }
 };
