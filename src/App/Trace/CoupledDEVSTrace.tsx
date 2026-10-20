@@ -243,8 +243,10 @@ function CoupledDEVSInternalTransition({item, prevItem, status, plantsState, ast
       {error && <DEVSRuntimeError error={error} />
              || <>
                   {blessedStatechart && <SCBigStepTrace bigstep={blessedItem.newState.state}/>
-                                      || <TimerCause/>}
-                  {blessedItem.outputEvents.map(o => <DEVSRaisedOutputEvent event={o}/>)}
+                                     || <TimerCause/>}
+                  <Column>
+                    {blessedItem.outputEvents.map(o => <DEVSRaisedOutputEvent event={o}/>)}
+                  </Column>
                 </>}
     </Row>
 
