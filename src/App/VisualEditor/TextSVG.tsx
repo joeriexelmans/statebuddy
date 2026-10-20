@@ -5,7 +5,7 @@ import { BoundingBox } from "./BoundingBox";
 
 import styles from "./VisualEditor.module.css";
 import { RangeWithAnnotation, syntaxHighlight } from "@/statecharts/syntax_higlight";
-import { SyntaxHighlightedText, TextWithLineBreaks } from "./SyntaxHiglightedText";
+import { SyntaxHighlightedText, TSpanWithLineBreaks } from "./SyntaxHiglightedText";
 import { TextRange } from "@/statecharts/label_ast";
 import { TraceableError } from "@/statecharts/parser";
 
@@ -104,7 +104,7 @@ export const TextSVG = memo(function TextSVG(props: {text: Text, selected: boole
           style={{whiteSpace: "preserve"}}
           dominantBaseline="middle"
         >
-          <TextWithLineBreaks text={props.text.text}/>
+          <TSpanWithLineBreaks text={props.text.text} whatWasTrimmed={{newlines: 0, spaces: 0}}/>
         </text>
 
       </g>
