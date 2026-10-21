@@ -39,7 +39,7 @@ type VisualEditorProps = {
 
 const viewBox = `0 0 ${EDITOR_WIDTH} ${EDITOR_HEIGHT}`;
 
-export const VisualEditor = memo(function VisualEditor({state, topology, errors: errors, highlightActive, highlightTransitions, beginEdit, zoom, findText, editorStuff}: VisualEditorProps) {
+export const VisualEditor = memo(function VisualEditor({state, topology, errors, highlightActive, highlightTransitions, beginEdit, zoom, findText, editorStuff}: VisualEditorProps) {
 
   const {copyPasteCallbacks, dragging, onMouseDown, refSVG, renderSelection} = editorStuff;
 

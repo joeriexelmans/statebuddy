@@ -74,7 +74,12 @@ export const TextSVG = memo(function TextSVG(props: {text: Text, selected: boole
         >
           <SyntaxHighlightedText
             text={props.text.text}
-            ranges={ranges}
+            
+            ranges={errMessage
+              // if there is an error, then don't syntax-highlight and just render everything in red
+              && [{start: 0, end: props.text.text.length, style: {fill: 'var(--error-color)'}}]
+              // otherwise just syntax-highlight
+              || ranges}
             tspan
             disableTooltips
           />

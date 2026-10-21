@@ -40,14 +40,15 @@ export function BottomPanel({
             + ' ' + appStyles.statusBar
             + ' ' + (errors.length ? appStyles.error : ""
             // + ' ' + (pyodideStatus === "loading" ? appStyles.pyodideLoading : "")
-          )}>
+          )}
+          style={{alignItems: 'end'}}>
       <div style={{flexGrow:1}}>
       <PersistentDetails state={errorsExpanded} setState={setErrorsExpanded}>
           <summary>{errors.length} errors</summary>
           <div style={{maxHeight: '20vh', overflow: 'auto'}}>
-          {errors.map(({message, shapes: shapeUid})=>
+          {errors.map(({message, shapes})=>
             <div>
-              {shapeUid}: {message}
+              {shapes.join(', ')}: {message}
             </div>)}
           </div>
         </PersistentDetails>

@@ -34,7 +34,7 @@ export function parseStatechart(topology: Topology): [AbstractSyntax, TraceableE
 
   const uid2State = new Map<string, ConcreteState|UnstableState>([["root", root]]);
 
-  const tag2States = new Map<string, ConcreteState[]>();
+  const tag2States = new Map<string, [string, ConcreteState][]>(); // tag -> (text-uid, state)
 
   const historyStates: HistoryState[] = [];
   const parentLinks = new Map<string, string>();
@@ -292,10 +292,9 @@ export function parseStatechart(topology: Topology): [AbstractSyntax, TraceableE
         belongsToState.comments.push([uid, parsed.text]);
       }
       else if (parsed.kind === "tag") {
-        const alreadyHave = tag2States.get(parsed.text) || [];
-        alreadyHave.push(belongsToState);
-        tag2States.set(parsed.text, alreadyHave);
-        belongsToState.tags.push([uid, parsed.text]);
+        const states = tag2States.get(parsed.text) || [];
+        states.push([parsed.uid, belongsToState]);
+        tag2States.set(parsed.text, states);
       }
     }
 
@@ -343,20 +342,21 @@ export function parseStatechart(topology: Topology): [AbstractSyntax, TraceableE
   }
 
   for (const [tag, states] of tag2States) {
-    if (states.length > 2) {
+    if (states.length >= 2) {
       errors.push({
         message: "duplicate ID",
-        shapes: states.flatMap(state =>
-          state.tags
-            .filter(([_, tagText]) => tagText === tag)
-            .map(([textUid]) => textUid)),
+        shapes: states.map(([textUid, _state]) => textUid),
       });
+    }
+    else {
+      const [[textUid, state]] = states;
+      state.tags.push([textUid, tag]);
     }
   }
 
   const tag2State = new Map([...tag2States]
     .filter(([_, states]) => states.length === 1)
-    .map(([tag, [state]]) => [tag, state] as const));
+    .map(([tag, [[textUid, state]]]) => [tag, state] as const));
   
   return [{
     root,
