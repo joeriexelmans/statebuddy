@@ -29,9 +29,16 @@ type VisualEditorProps = {
   topology: Topology,
   editorStuff: EditorStuff;
   beginEdit: (uid: string) => void,
+
   errors: TraceableError[], // <-- used for displaying syntax and runtime errors
-  highlightActive: Set<string>,
-  highlightTransitions: string[],
+
+  
+
+  highlightActive: Set<string>, // <-- active states (to render in seperate color)
+  highlightTransitions: string[], // <-- fired transitions (different color, thicker)
+
+  extraHighlightShapes: Set<string>,
+
   zoom: number;
   findText: string;
   mouseMap: ToolSelectState;

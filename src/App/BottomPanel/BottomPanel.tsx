@@ -46,8 +46,8 @@ export function BottomPanel({
       <PersistentDetails state={errorsExpanded} setState={setErrorsExpanded}>
           <summary>{errors.length} errors</summary>
           <div style={{maxHeight: '20vh', overflow: 'auto'}}>
-          {errors.map(({message, shapes})=>
-            <div>
+          {errors.map(({message, shapes}, i)=>
+            <div key={`${i}-${message}`}>
               {shapes.join(', ')}: {message}
             </div>)}
           </div>

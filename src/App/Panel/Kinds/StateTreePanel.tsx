@@ -37,7 +37,6 @@ export const StateTree = memo(function StateTree(props: {root: ConcreteState | U
   </li>;
 });
 
-
 export const StateTreePanel = memo(function StateTreePanel({abstractSyntax}: {abstractSyntax: AbstractSyntax}) {
   return <div className={styles.stateTree}>
     <div style={{float: 'right'}}>
@@ -47,9 +46,9 @@ export const StateTreePanel = memo(function StateTreePanel({abstractSyntax}: {ab
           downloadObjectAsJson({
             root: removeCycles(abstractSyntax.root),
             transitions: [...abstractSyntax.transitions.values()].flatMap(ts => ts.map(removeCyclesT)),
-            inputEvents: abstractSyntax.inputEventTriggers.map(i => i.event),
+            inputEvents: [...abstractSyntax.inputEvents],
             outputEvents: [...abstractSyntax.outputEvents],
-            internalEvents: abstractSyntax.internalEvents.map(i => i.event),
+            internalEvents: [...abstractSyntax.internalEvents],
           }, 'abstract_syntax.json');
         }}
       >
@@ -69,6 +68,7 @@ function removeCycles(state: TransitionSrcTgt) {
     uid: state.uid,
     kind: state.kind,
     comments: state.comments,
+    tags: state.tags,
     depth: state.depth,
     entryActions: state.entryActions,
     exitActions: state.exitActions,
