@@ -1,5 +1,5 @@
 import { HISTORY_RADIUS } from "@/App/parameters";
-import { entirelySelectedShapes, shapesBBox } from "@/statecharts/concrete_syntax";
+import { entirelySelectedShapes, shapesBBox } from "@/languages/statecharts/concrete_syntax";
 import { centerOf, rotateRect90CCW, rotateRect90CW, rotateLine90CCW, rotateLine90CW, rotatePoint90CCW, rotatePoint90CW, subtractV2D, addV2D } from "@/util/geometry";
 import { VisualEditorState } from "../VisualEditor.state";
 

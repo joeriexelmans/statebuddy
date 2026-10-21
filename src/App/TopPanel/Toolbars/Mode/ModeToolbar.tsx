@@ -4,7 +4,7 @@ import { ToolSelect } from "./ToolSelect";
 import { ToggleView } from "./ToggleView";
 import { ZoomButtons } from "./ZoomButtons";
 import { ViewState } from "../../../migrations/v2_types";
-import { DeepSetter } from "../../../makePartialSetter";
+import { DeepSetter } from "../../../../util/partial_setter";
 
 const toolbarGap = {columnGap: '1em'};
 

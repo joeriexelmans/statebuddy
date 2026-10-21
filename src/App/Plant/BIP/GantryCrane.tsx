@@ -1,11 +1,11 @@
-import { parseStatechart } from "@/statecharts/parser";
+import { parseStatechart } from "@/languages/statecharts/parser/parser";
 import { makeStatechartPlant, Plant, PlantRenderProps, StatechartPlantSpec } from "../Plant"
 
 import model from "./GantryCrane.json";
-import { computeTopology } from "@/statecharts/detect_topology";
-import { ConcreteSyntax } from "@/statecharts/concrete_syntax";
-import { RuntimeConfiguration } from "@/statecharts/runtime_types";
-import { SC2DEVSNonError } from "@/devs/sc2devs";
+import { computeTopology } from "@/languages/statecharts/parser/detect_topology";
+import { ConcreteSyntax } from "@/languages/statecharts/concrete_syntax";
+import { RuntimeConfiguration } from "@/languages/statecharts/interpreter/runtime_types";
+import { SC2DEVSNonError } from "@/languages/devs/sc2devs";
 
 export const gantryCraneConcreteSyntax = model as ConcreteSyntax;
 
@@ -19,14 +19,14 @@ const gantryCranePlantSpec: StatechartPlantSpec<GantryCraneCleanState> = {
   ast: gantryCraneAbstractSyntax,
   cleanupState: (state: SC2DEVSNonError) => {
     function isActive(label: string) {
-      return state.rtconfig.mode.has(gantryCraneAbstractSyntax.label2State.get(label)!.uid);
+      return state.rtconfig.mode.has(gantryCraneAbstractSyntax.tag2State.get(label)!.uid);
     }
     return {
-      idle: isActive("IDLE"),
-      moving: isActive("MOVING"),
-      hoisting: isActive("HOISTING"),
-      freezing: isActive("FREEZING"),
-      magnet: isActive("Magnet ON"),
+      idle: isActive("#idle"),
+      moving: isActive("#moving"),
+      hoisting: isActive("#hoisting"),
+      freezing: isActive("#freezing"),
+      magnet: isActive("#magnetOn"),
     };
   },
   render: GantryCraneView,

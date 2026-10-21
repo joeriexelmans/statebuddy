@@ -1,6 +1,6 @@
-import { EventTrigger } from "@/statecharts/label_ast";
 import { DebugState, FindReplaceStateV1, MQTTState, PanelState, PlantsState, SavedTraces, ToolSelectState } from "./v1_types";
 import { VisualEditorStateV0 } from "./v0_types";
+import { EventTrigger } from "@/languages/statecharts/transitionlabel/abstract_syntax";
 
 export type VersionedAppState = {
   stateVersion: number;

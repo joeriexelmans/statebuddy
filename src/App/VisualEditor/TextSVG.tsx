@@ -1,13 +1,13 @@
-import {getTextFatBBox, Text} from "../../statecharts/concrete_syntax";
+import {getTextFatBBox, Text} from "../../languages/statecharts/concrete_syntax";
 import { CSSProperties, memo, useMemo } from "react";
 import { jsonDeepEqual } from "@/util/util";
 import { BoundingBox } from "./BoundingBox";
 
 import styles from "./VisualEditor.module.css";
-import { RangeWithAnnotation, syntaxHighlight } from "@/statecharts/syntax_higlight";
+import { RangeWithAnnotation, syntaxHighlight } from "@/languages/statecharts/transitionlabel/syntax_higlight";
 import { SyntaxHighlightedText, TSpanWithLineBreaks } from "./SyntaxHiglightedText";
-import { TextRange } from "@/statecharts/label_ast";
-import { TraceableError } from "@/statecharts/parser";
+import { TextRange } from "@/languages/actionlang/abstract_syntax";
+import { TraceableError } from "@/languages/statecharts/parser/parser";
 
 const foundStyle = {
   fill: 'light-dark( #f00 , #f00 )',

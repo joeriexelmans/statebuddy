@@ -1,11 +1,10 @@
 // Just a simple recursive interpreter for the action language
 
 import { jsonDeepEqual } from "@/util/util";
-import { Environment, Scope, scopeDescription } from "./environment";
-import { RuntimeError } from "./interpreter";
-import { Expression, Lhs } from "./label_ast";
-import { Tracer } from "./tracer";
-import { TraceAssign } from "./microstep_trace_types";
+import { Environment, Scope } from "../statecharts/interpreter/environment";
+import { RuntimeError } from "../statecharts/interpreter/interpreter";
+import { Expression, Lhs } from "./abstract_syntax";
+import { TraceAssign } from "../statecharts/interpreter/trace_types";
 
 const UNARY_OPERATOR_MAP: Map<string, (x: any) => any> = new Map([
   ["!", x => !x],
@@ -60,6 +59,9 @@ export function evalExpr(expr: Expression, env: Environment, scope: Scope, uids:
   }
   else if (expr.kind === "dict") {
     return Object.fromEntries(Object.entries(expr.fields).map(([key,val]) => [key, evalExpr(val, env, scope, uids)]));
+  }
+  else if (expr.kind === "tag") {
+    return expr.text;
   }
   console.error('expr was', expr);
   throw new Error("should never reach here");

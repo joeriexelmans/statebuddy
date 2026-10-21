@@ -6,7 +6,7 @@ import { Tooltip } from "../../../Components/Tooltip";
 import { TwoStateButton } from "../../../Components/TwoStateButton";
 import { Toolbar } from "../../Toolbar";
 import { VisibilityState } from "../../../migrations/v2_types";
-import { DeepSetter } from '../../../makePartialSetter';
+import { DeepSetter } from '../../../../util/partial_setter';
 
 type ToggleViewProps = {
   KeyInfo: any,

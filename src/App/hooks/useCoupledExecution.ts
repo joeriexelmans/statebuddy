@@ -1,11 +1,13 @@
-import { CoupledDEVSConns, makeCoupledDEVS } from "@/devs/coupled_devs";
-import { makeTracedDEVS } from "@/devs/trace";
+import { CoupledDEVSConns, makeCoupledDEVS } from "@/languages/devs/coupled_devs";
+import { makeTracedDEVS } from "@/languages/devs/trace";
 import { useMemo } from "react";
 import { statebuddyPlants } from "../plants";
-import { Statechart } from "@/statecharts/abstract_syntax";
-import { sc2DEVS } from "@/devs/sc2devs";
+import { AbstractSyntax } from "@/languages/statecharts/abstract_syntax";
+import { sc2DEVS } from "@/languages/devs/sc2devs";
 import { PlantsState } from "../migrations/v1_types";
-import { autoConnect, useConnect } from "../Panel/Kinds/ConnectPanel";
+import { useConnect } from "../Panel/Kinds/ConnectPanel";
+import { RaisedEvent } from "@/languages/statecharts/interpreter/runtime_types";
+import { CoupledState } from "./useSimulator";
 
 // Every plant's UI input events are exposed as global (Coupled DEVS) input events.
 // They must be prefixed with the plant ID, so they don't interact with each other.
@@ -14,7 +16,7 @@ export function prefixCoupledInputEvent(componentId: string, eventName: string) 
   return "$" + componentId + "_" + eventName;
 }
 
-export function useCoupledExecution(ast: Statechart|undefined, plantsState: PlantsState) {
+export function useCoupledExecution(ast: AbstractSyntax|undefined, plantsState: PlantsState) {
   const plantInstances = useMemo(() =>
     plantsState.plants.map(({id, type}) => [id, statebuddyPlants[type]!] as const),
     [plantsState]
@@ -27,7 +29,7 @@ export function useCoupledExecution(ast: Statechart|undefined, plantsState: Plan
   const coupledExecution = useMemo(() => {
     // Every statechart input event is exposed as a global input event.
     // This way, statechart input events can be raised interactively (by clicking on them in the 'input events' panel).
-    const hardwiredSCInputs = ast?.inputEvents.map(({event}) => ({
+    const hardwiredSCInputs = [...ast?.inputEvents || []].map((event) => ({
         coupledInputEvent: prefixCoupledInputEvent("sc", event),
         inputModelName: "sc",
         inputEvent: event,
@@ -50,7 +52,7 @@ export function useCoupledExecution(ast: Statechart|undefined, plantsState: Plan
         coupledOutputEvent: event,
       })) || [];
 
-    return ast && makeTracedDEVS(makeCoupledDEVS(
+    return ast && makeTracedDEVS<CoupledState, RaisedEvent>(makeCoupledDEVS(
       {
         sc: tracedSC2DEVS!,
         ...Object.fromEntries(plantInstances.map(([id, plant]) => [id, makeTracedDEVS(plant.plant.execution)])),
@@ -68,7 +70,7 @@ export function useCoupledExecution(ast: Statechart|undefined, plantsState: Plan
         model2Model: effectivelyConnected,
 
       } as CoupledDEVSConns,
-      ast.inputEvents.map(({event}) => event), // <-- every SC input becomes coupled input
+      [...ast.inputEvents].map((event) => event), // <-- every SC input becomes coupled input
       [...ast.outputEvents], // <-- every SC output becomes coupled output
     ));
   }, [ast, plantsState]);

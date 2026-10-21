@@ -29,7 +29,7 @@ import { useParser } from "./hooks/useParser";
 import { useCheckProperties } from "./hooks/useCheckProperties";
 import { useSimulator } from "./hooks/useSimulator";
 import { useTrial } from "./hooks/useTrial";
-import { DeepSetter, makeDeepSetter, WithSetters } from "./makePartialSetter";
+import { DeepSetter, makeDeepSetter, WithSetters } from "../util/partial_setter";
 import { PanelState } from "./migrations/v1_types";
 import { About } from "./Modals/About";
 import { ModalOverlay } from "./Overlays/ModalOverlay";

@@ -1,37 +1,21 @@
-import {  ConcreteState, HistoryState, OrState, UnstableState, Statechart, stateDescription, Transition, computeArena } from "./abstract_syntax";
-import { Action, EventTrigger, Expression, Lhs, ParsedText } from "./label_ast";
-import { parse as parseLabel, SyntaxError } from "./label_parser";
+import {  ConcreteState, HistoryState, OrState, UnstableState, AbstractSyntax, stateDescription, Transition, computeArena } from "../abstract_syntax";
+import { parse as parseLabel, SyntaxError } from "../transitionlabel/parser";
 import { Topology } from "./detect_topology";
 import { memoize } from "@/util/util";
+import { Expression, Lhs } from "../../actionlang/abstract_syntax";
+import { ParsedText, Action } from "../transitionlabel/abstract_syntax";
 
 export type TraceableError = {
-  shapeUid: string;
+  shapes: string[]; // the shape(s) in concrete syntax to which the error is related.
   message: string;
-  data?: any;
+  data?: any; // optional auxilliary data the error can carry.
 }
 
 export const cachedParseLabel = memoize(parseLabel);
 
-function addEvent(events: EventTrigger[], e: EventTrigger, textUid: string) {
-  const haveEvent = events.find(({event}) => event === e.event);
-  if (haveEvent) {
-  //   if (haveEvent.param !== e.param === undefined) {
-  //     return [{
-  //         shapeUid: textUid,
-  //         message: "inconsistent event parameter",
-  //     }];
-  //   }
-    return [];
-  }
-  else {
-    events.push(e);
-    events.sort((a,b) => a.event.localeCompare(b.event));
-    return [];
-  }
-}
-
-export function parseStatechart(topology: Topology): [Statechart, TraceableError[]] {
+export function parseStatechart(topology: Topology): [AbstractSyntax, TraceableError[]] {
   const errors: TraceableError[] = [];
+  const warnings: TraceableError[] = [];
 
   // implicitly, the root is always an Or-state
   const root: OrState = {
@@ -41,6 +25,7 @@ export function parseStatechart(topology: Topology): [Statechart, TraceableError
     history: [],
     initial: [],
     comments: [],
+    tags: [],
     entryActions: [],
     exitActions: [],
     depth: 0,
@@ -48,7 +33,9 @@ export function parseStatechart(topology: Topology): [Statechart, TraceableError
   }
 
   const uid2State = new Map<string, ConcreteState|UnstableState>([["root", root]]);
-  const label2State = new Map<string, ConcreteState>();
+
+  const tag2States = new Map<string, ConcreteState[]>();
+
   const historyStates: HistoryState[] = [];
   const parentLinks = new Map<string, string>();
 
@@ -60,6 +47,7 @@ export function parseStatechart(topology: Topology): [Statechart, TraceableError
       kind,
       uid,
       comments: [],
+      tags: [],
       entryActions: [],
       exitActions: [],
       parent,
@@ -93,6 +81,7 @@ export function parseStatechart(topology: Topology): [Statechart, TraceableError
       kind: "pseudo" as const,
       uid,
       comments: [],
+      tags: [],
       depth: parent.depth+1,
       parent,
       entryActions: [],
@@ -109,6 +98,7 @@ export function parseStatechart(topology: Topology): [Statechart, TraceableError
       parent,
       depth: parent.depth+1,
       comments: [],
+      tags: [],
     };
     parent.history.push(historyState);
     historyStates.push(historyState);
@@ -125,11 +115,11 @@ export function parseStatechart(topology: Topology): [Statechart, TraceableError
     const historyTgtUID = topology.arrow2HistoryMap.get(uid);
     if (!srcUID) {
       if (historyTgtUID) {
-        errors.push({shapeUid: uid, message: "no source"});
+        errors.push({shapes: [uid], message: "no source"});
       }
       else if (!tgtUID) {
         // dangling edge
-        errors.push({shapeUid: uid, message: "dangling"});
+        errors.push({shapes: [uid], message: "dangling"});
       }
       else {
         // target but no source, so we treat is as an 'initial' marking
@@ -137,7 +127,7 @@ export function parseStatechart(topology: Topology): [Statechart, TraceableError
         if (tgtState.kind === "pseudo") {
           // maybe allow this in the future?
           errors.push({
-            shapeUid: uid,
+            shapes: [uid],
             message: "pseudo-state cannot be initial state",
           });
         }
@@ -149,7 +139,7 @@ export function parseStatechart(topology: Topology): [Statechart, TraceableError
           else {
             // and states do not have an 'initial' state
             errors.push({
-              shapeUid: uid,
+              shapes: [uid],
               message: "AND-state cannot have an initial state",
             });
           }
@@ -181,7 +171,7 @@ export function parseStatechart(topology: Topology): [Statechart, TraceableError
       }
       else {
         errors.push({
-          shapeUid: uid,
+          shapes: [uid],
           message: "no target",
         });
       }
@@ -191,14 +181,14 @@ export function parseStatechart(topology: Topology): [Statechart, TraceableError
   for (const state of uid2State.values()) {
     if (state.kind === "or") {
       if (state.initial.length > 1) {
-        errors.push(...state.initial.map(([uid,childState]) => ({
-          shapeUid: uid,
+        errors.push({
+          shapes: state.initial.map(([uid]) => uid),
           message: "multiple initial states",
-        })));
+        });
       }
       else if (state.initial.length === 0) {
         errors.push({
-          shapeUid: state.uid, 
+          shapes: [state.uid], 
           message: "needs initial state",
         });
       }
@@ -206,15 +196,8 @@ export function parseStatechart(topology: Topology): [Statechart, TraceableError
   }
 
   let variables = new Set<string>();
-  const inputEvents: EventTrigger[] = [];
-
-  // internal events that occur somewhere as an event trigger
-  const internalEventTrigger: EventTrigger[] = [];
-  // internal events that are raised somewhere
-  const internalEventRaised: EventTrigger[] = [];
-  // union of the above two.
-  const internalEvents: EventTrigger[] = [];
-
+  const inputEvents = new Set<string>();
+  const internalEvents = new Set<string>();
   const outputEvents = new Set<string>();
 
   // step 3: figure out labels
@@ -228,7 +211,7 @@ export function parseStatechart(topology: Topology): [Statechart, TraceableError
     } catch (e) {
       if (e instanceof SyntaxError) {
         errors.push({
-          shapeUid: uid,
+          shapes: [uid],
           message: 'parser: ' + e.message,
           data: e,
         });
@@ -251,22 +234,21 @@ export function parseStatechart(topology: Topology): [Statechart, TraceableError
         // triggers
         if (parsed.trigger.kind === "event") {
           if (src.kind === "pseudo") {
-            errors.push({shapeUid: uid, message: "cannot have trigger"});
+            errors.push({shapes: [uid], message: "cannot have trigger"});
           }
           else {
             const {event} = parsed.trigger;
             if (event.startsWith("_")) {
-              errors.push(...addEvent(internalEventTrigger, parsed.trigger, parsed.uid));
-              errors.push(...addEvent(internalEvents, parsed.trigger, parsed.uid));
+              internalEvents.add(event);
             }
             else {
-              errors.push(...addEvent(inputEvents, parsed.trigger, parsed.uid));
+              inputEvents.add(event);
             }
           }
         }
         else if (parsed.trigger.kind === "after") {
           if (src.kind === "pseudo") {
-            errors.push({shapeUid: uid, message: "cannot have trigger"});
+            errors.push({shapes: [uid], message: "cannot have trigger"});
           }
           else {
             src.timers.push(parsed.trigger.durationMs);
@@ -274,11 +256,11 @@ export function parseStatechart(topology: Topology): [Statechart, TraceableError
           }
         }
         else if (["entry", "exit"].includes(parsed.trigger.kind)) {
-          errors.push({shapeUid: uid, message: "entry/exit trigger not allowed on transitions"});
+          errors.push({shapes: [uid], message: "entry/exit trigger not allowed on transitions"});
         }
         else if (parsed.trigger.kind === "triggerless") {
           if (src.kind !== "pseudo") {
-            errors.push({shapeUid: uid, message: "needs trigger"});
+            errors.push({shapes: [uid], message: "needs trigger"});
           }
         }
       }
@@ -299,7 +281,7 @@ export function parseStatechart(topology: Topology): [Statechart, TraceableError
         }
         else {
           errors.push({
-            shapeUid: uid,
+            shapes: [uid],
             message: "must belong to transition",
             data: {start: {offset: 0}, end: {offset: text.length}},
           });
@@ -307,10 +289,13 @@ export function parseStatechart(topology: Topology): [Statechart, TraceableError
       }
       else if (parsed.kind === "comment") {
         // just append comments to their respective states
-        if (!label2State.has(parsed.text)) {
-          label2State.set(parsed.text, belongsToState);
-        }
         belongsToState.comments.push([uid, parsed.text]);
+      }
+      else if (parsed.kind === "tag") {
+        const alreadyHave = tag2States.get(parsed.text) || [];
+        alreadyHave.push(belongsToState);
+        tag2States.set(parsed.text, alreadyHave);
+        belongsToState.tags.push([uid, parsed.text]);
       }
     }
 
@@ -320,11 +305,7 @@ export function parseStatechart(topology: Topology): [Statechart, TraceableError
         if (action.kind === "raise") {
           const {event} = action;
           if (event.startsWith("_")) {
-            const e = {kind: "event", event: event} as EventTrigger;
-            errors.push(...addEvent(internalEventRaised, e, parsed.uid));
-            errors.push(...addEvent(internalEvents, e, parsed.uid));
-            // internalEventRaised.push(e);
-            // internalEvents.push(e);
+            internalEvents.add(event);
           }
           else {
             outputEvents.add(event);
@@ -342,13 +323,13 @@ export function parseStatechart(topology: Topology): [Statechart, TraceableError
   for (const transition of uid2Transition.values()) {
     if (transition.label.length === 0) {
       errors.push({
-        shapeUid: transition.uid,
+        shapes: [transition.uid],
         message: "no label",
       });
     }
     else if (transition.label.length > 1) {
       errors.push({
-        shapeUid: transition.uid,
+        shapes: [transition.uid],
         message: "multiple labels",
       });
     }
@@ -361,17 +342,31 @@ export function parseStatechart(topology: Topology): [Statechart, TraceableError
     }
   }
 
+  for (const [tag, states] of tag2States) {
+    if (states.length > 2) {
+      errors.push({
+        message: "duplicate ID",
+        shapes: states.flatMap(state =>
+          state.tags
+            .filter(([_, tagText]) => tagText === tag)
+            .map(([textUid]) => textUid)),
+      });
+    }
+  }
+
+  const tag2State = new Map([...tag2States]
+    .filter(([_, states]) => states.length === 1)
+    .map(([tag, [state]]) => [tag, state] as const));
+  
   return [{
     root,
     transitions,
     variables,
     inputEvents,
-    internalEventTrigger,
-    internalEventRaised,
     internalEvents,
     outputEvents,
     uid2State,
-    label2State,
+    tag2State,
     historyStates,
   }, errors];
 }

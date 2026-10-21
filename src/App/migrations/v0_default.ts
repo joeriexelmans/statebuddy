@@ -1,4 +1,4 @@
-import { initialEditorState } from "../../statecharts/concrete_syntax";
+import { initialEditorState } from "../../languages/statecharts/concrete_syntax";
 import { AppStateV0, ToolModeV0 } from "./v0_types";
 
 export const defaultAppStateV0: AppStateV0 = {

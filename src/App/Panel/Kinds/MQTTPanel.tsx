@@ -8,12 +8,10 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import AddIcon from '@mui/icons-material/Add';
 
-import { RaisedEvent } from "@/statecharts/runtime_types";
 import { generateRandomHexString, myPureDeepAssign } from "@/util/util";
 import { useLocalStorage } from "@/hooks/usePersistentState";
 import { useKicker } from "@/hooks/useKicker";
-import { Statechart } from "@/statecharts/abstract_syntax";
-import { EventTrigger } from "@/statecharts/label_ast";
+import { AbstractSyntax } from "@/languages/statecharts/abstract_syntax";
 import traceStyles from "../../Trace/Trace.module.css";
 import { useDisposable } from "../../../hooks/useDisposable";
 import { ClickToCopy } from "../../Components/ClickToCopy";
@@ -22,9 +20,11 @@ import { StatusType, StatusIndicator, FlickeringStatusIndicator } from "../../Co
 import { Tooltip } from "../../Components/Tooltip";
 import { TwoStateButton } from "../../Components/TwoStateButton";
 import { SimulatorStuff } from "../../hooks/useSimulator";
-import { DeepSetter, makePartialArraySetter, WithSetters, makeAllSetters, makePartialSetter } from "../../makePartialSetter";
+import { DeepSetter, makePartialArraySetter, WithSetters, makeAllSetters, makePartialSetter } from "../../../util/partial_setter";
 import { MQTTTopicConfig, Event2MQTTMapping, MQTTState } from "../../migrations/v1_types";
 import { Toolbar } from "../../TopPanel/Toolbar";
+import { RaisedEvent } from "@/languages/statecharts/interpreter/runtime_types";
+import { EventTrigger } from "@/languages/statecharts/transitionlabel/abstract_syntax";
 
 const defaultTopic: MQTTTopicConfig = {
   prefix: "",
@@ -42,7 +42,7 @@ type MQTTProps = {
   state: MQTTState; // <-- the user-configurable MQTT setup
   setState: DeepSetter<MQTTState>,
   simulator: SimulatorStuff;  // <-- needed for subscribing to output events and raising input events
-  abstractSyntax: Statechart; // <-- needed for list of in/out events
+  abstractSyntax: AbstractSyntax; // <-- needed for list of in/out events
 };
 
 // const us = generateRandomHexString(128);
@@ -364,7 +364,7 @@ function ScOutEventSubscriptionView({simulator, fullTopic, client, clientStatus,
   </ClickToCopy>;
 }
 
-function TopicView({topic, setTopic, client, clientStatus, baseTopic, onDelete, simulator, abstractSyntax}: WithSetters<{topic: MQTTTopicConfig}> & {client: MqttClient|null, clientStatus: StatusType, baseTopic: string, onDelete: () => void, simulator: SimulatorStuff, abstractSyntax: Statechart}) {
+function TopicView({topic, setTopic, client, clientStatus, baseTopic, onDelete, simulator, abstractSyntax}: WithSetters<{topic: MQTTTopicConfig}> & {client: MqttClient|null, clientStatus: StatusType, baseTopic: string, onDelete: () => void, simulator: SimulatorStuff, abstractSyntax: AbstractSyntax}) {
   const setters = useMemo(() => makeAllSetters(setTopic, Object.keys(defaultTopic) as (keyof MQTTTopicConfig)[]), [setTopic]);
   const fullPrefix = baseTopic+topic.prefix;
 
@@ -474,7 +474,7 @@ function TopicView({topic, setTopic, client, clientStatus, baseTopic, onDelete, 
   </fieldset>;
 }
 
-function InputMapping({mapping, setMapping, events}: WithSetters<{mapping: Event2MQTTMapping}> & {events: EventTrigger[]}) {
+function InputMapping({mapping, setMapping, events}: WithSetters<{mapping: Event2MQTTMapping}> & {events: Set<string>}) {
   return <Toolbar style={{flex: '1 1 60px', gap: 6}}>
     <input
       style={{flex: '1 1 60px', width: 60}}
@@ -496,7 +496,7 @@ function InputMapping({mapping, setMapping, events}: WithSetters<{mapping: Event
       onChange={(e) => setMapping(m => ({...m, eventName: e.target.value}))}
     >
       <option value=""></option>
-      {events.map(e => <option key={e.event }value={e.event}>↘{e.event}</option>)}
+      {[...events].map(e => <option key={e} value={e}>↘{e}</option>)}
     </select>
   </Toolbar>;
 }

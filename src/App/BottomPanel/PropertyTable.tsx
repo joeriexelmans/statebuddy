@@ -5,18 +5,18 @@ import { Tooltip } from "../Components/Tooltip";
 import { TwoStateButton } from "../Components/TwoStateButton";
 import { prepareTraces } from '../SideBar/prepare_trace';
 import styles from "@/App/App.module.css";
-import { restoreTrace } from '@/devs/serialize_trace';
-import { DEVSComponent } from '@/devs/devs';
+import { restoreTrace } from '@/languages/devs/serialize_trace';
+import { DEVSComponent } from '@/languages/devs/devs';
 import { CoupledState } from '../hooks/useSimulator';
-import { Statechart } from '@/statecharts/abstract_syntax';
-import { DEVSTrace } from '@/devs/trace';
+import { AbstractSyntax } from '@/languages/statecharts/abstract_syntax';
+import { DEVSTrace } from '@/languages/devs/trace';
 import { objectsEqual } from '@/util/util';
 import { ExecutionState } from '../migrations/v2_types';
 import { PropertyCheckResult } from '../SideBar/PropertyCheckResult';
 import { CheckPropFn } from '@/mtl-checker/useMtlWorkerPool';
 
 type PropertyTableProps = {
-  abstractSyntax: Statechart,
+  abstractSyntax: AbstractSyntax,
   execution: ExecutionState,
   cE: DEVSComponent<DEVSTrace<CoupledState>>,
   onClose: () => void,

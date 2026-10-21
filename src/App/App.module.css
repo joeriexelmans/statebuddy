@@ -11,7 +11,7 @@
   --error-hover-bg-color: light-dark(rgb(102, 0, 0), rgb(238, 153, 153));
   --light-accent-color: light-dark(#1b45ff62, rgba(28, 71, 100, 0.377));
   --accent-border-color: light-dark(rgb(69, 48, 255), rgb(64, 185, 255));
-  --accent-opaque-color: light-dark(#bbc0f8, #1e3d4d);
+  --accent-opaque-color: light-dark(#bbc0f8, #325668);
 
   --statusbar-bg-color: light-dark(rgb(225, 229, 235), rgb(48, 48, 68));
   --statusbar-fg-color: light-dark(rgb(0, 0, 0), white);
@@ -34,19 +34,19 @@
   --and-state-bg-color: light-dark(white, rgb(49, 49, 49));
   --rountangle-stroke-color: light-dark(black, #ffffff);
   --uid-color: light-dark(rgb(255, 0, 255), rgb(255, 0, 255));
-  --active-state-bg-color: light-dark(rgb(255, 240, 214), rgb(112, 65, 47));
-  --active-state-border-color: light-dark(rgb(205, 133, 0), rgb(255, 165, 105));
-  --fired-transition-color: light-dark(rgb(160, 0, 168), rgb(160, 0, 168));
-  --firing-transition-color: light-dark(rgba(255, 128, 9, 1), rgba(255, 128, 9, 1));
+  --active-state-bg-color: light-dark(rgb(255, 223, 214), rgb(85, 72, 112));
+  --active-state-border-color: var(--fired-transition-color);
+  --fired-transition-color: light-dark(rgb(150, 81, 150), rgb(255, 128, 196));
+  --firing-transition-color: light-dark(rgb(217, 167, 236), rgb(255, 202, 244));
   --associated-color: light-dark(rgb(72, 160, 0), rgb(186, 245, 119));
   --greeter-bg-color: light-dark(rgb(255, 249, 235), rgb(24, 40, 70));
   /* --bottom-panel-bg-color: light-dark(rgb(219, 219, 219), rgb(31, 33, 36)); */
   --summary-hover-bg-color: light-dark(#eee, #2e2f35);
-  --internal-event-bg-color: light-dark(rgb(255, 218, 252), rgb(167, 0, 155));
-  --input-event-bg-color: light-dark(rgb(224, 247, 209), rgb(70, 128, 34));
-  --input-event-hover-bg-color: light-dark(rgb(195, 224, 176), rgb(59, 88, 40));
+  --internal-event-bg-color: light-dark(rgb(255, 218, 252), rgb(139, 66, 134));
+  --input-event-bg-color: light-dark(rgb(224, 247, 209), rgb(103, 123, 89));
+  --input-event-hover-bg-color: light-dark(rgb(195, 224, 176), rgb(101, 120, 87));
   --input-event-active-bg-color: light-dark(rgb(176, 204, 158), rgb(77, 117, 53));
-  --output-event-bg-color: light-dark(rgb(230, 249, 255), rgb(0, 95, 158));
+  --output-event-bg-color: light-dark(rgb(230, 249, 255), rgb(79, 115, 140));
   
   --foundtext-color: rgb(255, 0, 255);
 

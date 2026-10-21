@@ -1,6 +1,6 @@
 // Basically the inverse of our parser
 
-import { Expression, Lhs } from "./label_ast";
+import { Expression, Lhs } from "./abstract_syntax";
 
 export function actionLangValToText(val: any): string {
   if (typeof val === "string" || typeof val === "number") {

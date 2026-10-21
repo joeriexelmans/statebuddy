@@ -1,4 +1,4 @@
-import { initialEditorState } from "../../statecharts/concrete_syntax";
+import { initialEditorState } from "../../languages/statecharts/concrete_syntax";
 import { Selection } from "../VisualEditor/VisualEditor.state";
 import { defaultDebugState, defaultFindReplaceState, defaultMQTTState } from "./v1_default";
 import { AppStateV2 } from "./v2_types";

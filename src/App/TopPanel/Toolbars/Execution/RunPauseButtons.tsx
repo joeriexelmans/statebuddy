@@ -1,10 +1,10 @@
 import { Tooltip } from "@/App/Components/Tooltip";
 import { TwoStateButton } from "@/App/Components/TwoStateButton";
-import { TimeMode } from "@/statecharts/time";
+import { TimeMode } from "@/App/time";
 
 import PauseIcon from '@mui/icons-material/Pause';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import { DEVSTraceItem } from "@/devs/trace";
+import { DEVSTraceItem } from "@/languages/devs/trace";
 import { CoupledState } from "@/App/hooks/useSimulator";
 import { objectsEqual } from "@/util/util";
 import { memo } from "react";

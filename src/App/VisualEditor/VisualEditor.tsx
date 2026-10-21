@@ -1,10 +1,11 @@
+import "./VisualEditor.css";
+
 import { Dispatch, memo, ReactElement, SetStateAction, useCallback, useContext, useEffect, useMemo } from "react";
 
-import { Mode } from "@/statecharts/runtime_types";
 import { arraysEqual, mapsEqual, objectsEqual, setsEqual } from "@/util/util";
-import { ArrowPart, Diamond, RectSide, Rountangle, Text } from "../../statecharts/concrete_syntax";
-import { Topology } from "../../statecharts/detect_topology";
-import { TraceableError } from "../../statecharts/parser";
+import { ArrowPart, Diamond, RectSide, Rountangle, Text } from "../../languages/statecharts/concrete_syntax";
+import { Topology } from "../../languages/statecharts/parser/detect_topology";
+import { TraceableError } from "../../languages/statecharts/parser/parser";
 import { ArcDirection, arcDirection } from "../../util/geometry";
 import { EDITOR_HEIGHT, EDITOR_WIDTH } from "../parameters";
 import { ArrowSVG } from "./ArrowSVG";
@@ -20,7 +21,7 @@ import { Selection, VisualEditorState } from "./VisualEditor.state";
 import { DebugContext } from "./context/DebugContext";
 import { EditorStuff } from "./hooks/useEditor";
 import { ToolSelectState } from "../migrations/v1_types";
-import { useDelayedMemo } from "../hooks/useDelayedMemo";
+import { Mode } from "@/languages/statecharts/interpreter/runtime_types";
 
 type VisualEditorProps = {
   state: VisualEditorState,
@@ -107,7 +108,7 @@ export const VisualEditor = memo(function VisualEditor({state, topology, errors:
     }
   }
 
-  const rootErrors = errors.filter(({shapeUid}) => shapeUid === "root").map(({message}) => message);
+  const rootErrors = errors.filter(({shapes}) => shapes.includes("root")).map(({message}) => message);
 
   const size = EDITOR_WIDTH*zoom/100;
 
@@ -186,7 +187,7 @@ export const VisualEditor = memo(function VisualEditor({state, topology, errors:
         arrow={arrow}
         selected={renderSelection.get(arrow.uid) as Set<ArrowPart> || new Set()}
         error={errors
-          .filter(({shapeUid}) => shapeUid === arrow.uid)
+          .filter(({shapes}) => shapes.includes(arrow.uid))
           .map(({message}) => message).join(', ')}
         highlight={arrowsToHighlight.hasOwnProperty(arrow.uid)}
         fired={highlightTransitions.includes(arrow.uid)}
@@ -224,7 +225,7 @@ const Rountangles = memo(function Rountangles({rountangles, topology, selection,
       selected={selection.get(rountangle.uid) as Set<RectSide> || new Set()}
       highlight={[...(sidesToHighlight[rountangle.uid] || []), ...(rountanglesToHighlight[rountangle.uid]?["left","right","top","bottom"]:[]) as RectSide[]]}
       error={errors
-        .filter(({shapeUid}) => shapeUid === rountangle.uid)
+        .filter(({shapes}) => shapes.includes(rountangle.uid))
         .map(({message}) => message).join(', ')}
       active={highlightActive.has(rountangle.uid)}
       dashed={!parentIsOrState}
@@ -240,17 +241,15 @@ const Rountangles = memo(function Rountangles({rountangles, topology, selection,
 });
 
 const Diamonds = memo(function Diamonds({diamonds, selection, sidesToHighlight, rountanglesToHighlight, errors}: {diamonds: Diamond[], selection: Selection, sidesToHighlight: {[key: string]: RectSide[]}, rountanglesToHighlight: {[key: string]: boolean}, errors: TraceableError[]}) {
-  return <>{diamonds.map(diamond => <>
-    <DiamondSVG
+  return <>{diamonds.map(diamond => <DiamondSVG
       key={diamond.uid}
       diamond={diamond}
       selected={selection.get(diamond.uid) as Set<RectSide> || new Set()}
       highlight={[...(sidesToHighlight[diamond.uid] || []), ...(rountanglesToHighlight[diamond.uid]?["left","right","top","bottom"]:[]) as RectSide[]]}
       error={errors
-        .filter(({shapeUid}) => shapeUid === diamond.uid)
+        .filter(({shapes}) => shapes.includes(diamond.uid))
         .map(({message}) => message).join(', ')}
-      active={false}/>
-  </>)}</>;
+      active={false}/>)}</>;
 }, (p, n) => {
   return arraysEqual(p.diamonds, n.diamonds)
     && mapsEqual(p.selection, n.selection)
@@ -263,7 +262,7 @@ const Texts = memo(function Texts({texts, selection, textsToHighlight, errors, b
   return <>{texts.map(txt => {
     return <TextSVG
       key={txt.uid}
-      error={errors.find(({shapeUid}) => txt.uid === shapeUid)}
+      error={errors.find(({shapes}) => shapes.includes(txt.uid))}
       text={txt}
       selected={selection.has(txt.uid)}
       highlight={textsToHighlight.hasOwnProperty(txt.uid)}

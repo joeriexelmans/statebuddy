@@ -1,40 +1,48 @@
 import { CSSProperties } from "react";
-import { Expression, Lhs, ParsedText, TextRange, visitExpression, visitLhs } from "./label_ast";
-import { SyntaxError } from "./label_parser";
-import { cachedParseLabel } from "./parser";
+import { Expression, Lhs, TextRange, visitExpression, visitLhs } from "../../actionlang/abstract_syntax";
+import { SyntaxError } from "./parser";
+import { cachedParseLabel } from "../parser/parser";
+import { ParsedText } from "./abstract_syntax";
 
 export type RangeWithAnnotation = TextRange & {
   style: CSSProperties;
   tooltip?: string;
 }
 
-export const keywordStyle = {
+export const keywordStyle: CSSProperties = {
   color: 'light-dark( #8800adff , #efb4ffff)',
   fill: 'light-dark( #8800adff , #efb4ffff)',
   // fontWeight: 'bold',
 } as CSSProperties;
 
-export const errorStyle = {
+export const errorStyle: CSSProperties = {
   color: 'red',
   fill: 'red',
   fontWeight: 'bold',
 } as CSSProperties;
 
-export const refStyle = {
+export const refStyle: CSSProperties = {
   color: 'light-dark( #008064ff , #3becc6ff)',
   fill: 'light-dark( #008064ff , #3becc6ff)',
 } as CSSProperties;
 
-export const literalStyle = {
+export const literalStyle: CSSProperties = {
   color: 'light-dark( #855b0eff , #fcc96bff)',
   fill: 'light-dark( #855b0eff , #fcc96bff)',
 } as CSSProperties;
 
-export const commentStyle = {
+export const commentStyle: CSSProperties = {
   color: 'light-dark( #1f7a00ff , #aef597ff)',
   fill: 'light-dark( #1f7a00ff , #aef597ff)',
   fontStyle: 'italic',
 } as CSSProperties;
+
+export const tagStyle: CSSProperties = {
+  color: 'light-dark( rgb(0, 146, 209) , rgb(151, 202, 224))',
+  fill: 'light-dark( rgb(0, 146, 209) , rgb(151, 202, 224))',
+  // fontWeight: 800,
+  // fontStyle: 'italic',
+}
 
 function addAndCheck(ranges: TextRange[], range: TextRange | RangeWithAnnotation) {
   // if (range.start === range.end) {
@@ -65,6 +73,7 @@ export function syntaxHighlight(text: string) {
   let literalRanges: TextRange[] = [];
   let refRanges: TextRange[] = [];
   let commentRanges: TextRange[] = [];
+  let tagRanges: TextRange[] = [];
 
   const visitLiterals = (thing: Expression | Lhs) => {
     if (thing.kind === "literal" || thing.kind === "lhsLiteral") {
@@ -77,13 +86,17 @@ export function syntaxHighlight(text: string) {
         addAndCheck(refRanges, thing.range);
       }
     }
+    else if (thing.kind === "tag") {
+      if (thing.range) {
+        addAndCheck(tagRanges, thing.range);
+      }
+    }
   };
 
   if (parsed) {
     if (parsed.kind === "transitionLabel") {
       if (parsed.trigger.kind === "after") {
         addAndCheck(keywordRanges, parsed.trigger.rangeAfter)
-        // addAndCheck(keywordRanges, parsed.trigger.rangeUnit);
       }
       else if (parsed.trigger.kind === "event") {
         if (parsed.trigger.param) {
@@ -109,14 +122,18 @@ export function syntaxHighlight(text: string) {
     else if (parsed.kind === "comment") {
       addAndCheck(commentRanges, parsed.range);
     }
+    else if (parsed.kind === "tag") {
+      addAndCheck(tagRanges, parsed.range)
+    }
   }
 
   return {
     ranges: [
       ...keywordRanges.map(r => ({...r, style: keywordStyle, fragment: text.slice(r.start, r.end)})),
       ...literalRanges.map(l => ({...l, style: literalStyle, fragment: text.slice(l.start, l.end)})),
-      ...refRanges.map(r => ({...r, style: refStyle, fragment: text.slice(r.start, r.end)})),
+      ...refRanges.map(r => ({...r, style: tagStyle, fragment: text.slice(r.start, r.end)})),
       ...commentRanges.map(c => ({...c, style: commentStyle, fragment: text.slice(c.start, c.end)})),
+      ...tagRanges.map(r => ({...r, style: tagStyle, fragment: text.slice(r.start, r.end)})),
       ...errorRanges,
     ].sort((a,b) => (a.start - b.start)) as RangeWithAnnotation[],
     parseError,

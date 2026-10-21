@@ -6,15 +6,15 @@ import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import FlareIcon from '@mui/icons-material/Flare';
 
 import { Tooltip } from "../../Components/Tooltip";
-import { DeepSetter } from "../../makePartialSetter";
-import { saveExtTransitions } from '@/devs/serialize_trace';
+import { DeepSetter } from "../../../util/partial_setter";
+import { saveExtTransitions } from '@/languages/devs/serialize_trace';
 import { MoveUpDown } from '../../Components/MoveUpDown';
 import { DoubleClickButton } from '../../Components/DoubleClickButton';
 import { Dispatch, memo, SetStateAction, useCallback } from 'react';
-import { getSimTime, } from '@/statecharts/time';
+import { getSimTime, } from '@/App/time';
 import { SimulatorStuff, } from '../../hooks/useSimulator';
 import { CoupledDEVSTrace } from '../../Trace/CoupledDEVSTrace';
-import { Statechart } from '@/statecharts/abstract_syntax';
+import { AbstractSyntax } from '@/languages/statecharts/abstract_syntax';
 import { PropertyTrace } from "../../SideBar/prepare_trace_types";
 import { ResizeHandle } from '../ResizeHandle';
 import { NicelyCentered } from '../../Components/NicelyCentered';
@@ -26,7 +26,7 @@ type TracesProps = {
   state: AppState,
   setState: DeepSetter<AppState>,
   simulator: SimulatorStuff,
-  abstractSyntax: Statechart,
+  abstractSyntax: AbstractSyntax,
   activePropertyTrace?: PropertyTrace;
   isExpanded: boolean,
 };

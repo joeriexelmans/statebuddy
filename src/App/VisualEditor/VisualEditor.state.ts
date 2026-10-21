@@ -1,4 +1,4 @@
-import { ConcreteSyntax } from "@/statecharts/concrete_syntax";
+import { ConcreteSyntax } from "@/languages/statecharts/concrete_syntax";
 import { Rect2D } from "../../util/geometry";
 
 export type VisualEditorState = ConcreteSyntax & {

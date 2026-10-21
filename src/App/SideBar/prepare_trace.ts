@@ -1,14 +1,15 @@
 import { CoupledState } from "../hooks/useSimulator";
 import { PlantsState } from "../migrations/v1_types";
-import { DEVSTrace } from "@/devs/trace";
-import { Statechart } from "@/statecharts/abstract_syntax";
+import { DEVSTrace } from "@/languages/devs/trace";
+import { AbstractSyntax } from "@/languages/statecharts/abstract_syntax";
 import { statebuddyPlants } from "../plants";
 import { PreparedTrace, PropertyTrace } from "./prepare_trace_types";
+import { RaisedEvent } from "@/languages/statecharts/interpreter/runtime_types";
 
 // Given a coupled DEVS execution trace, turn it into a bunch of signals that our MTL property checker understands.
 // The same signal traces are also displayed in the plot view.
 // parameter mergeConnected: whether to merge two signals that are connected to each other in Coupled DEVS. They can effectively be treated as one and the same signal. This reduces clutter when listing all the signals.
-export function prepareTraces(ast: Statechart, plantsState: PlantsState, trace: DEVSTrace<CoupledState>, mergeConnected = false): PreparedTrace {
+export function prepareTraces(ast: AbstractSyntax, plantsState: PlantsState, trace: DEVSTrace<CoupledState, RaisedEvent>, mergeConnected = false): PreparedTrace {
   const result = {} as {[key: string]: PropertyTrace};
 
   function displayPrefix(componentId: string) {
@@ -44,17 +45,17 @@ export function prepareTraces(ast: Statechart, plantsState: PlantsState, trace: 
     appendOutEvent("sc", e, false, 0);
   }
   for (const e of ast.inputEvents) {
-    appendInEvent("sc", e.event, false, 0);
+    appendInEvent("sc", e, false, 0);
   }
   for (const p of plantsState.plants) {
     const plantInstance = plantsState.plants.find(({id}) => id === p.id);
     const plant = plantInstance && statebuddyPlants[plantInstance.type];
-    plant?.as?.inputEvents.forEach(i => appendInEvent(p.id, i.event, false, 0));
+    plant?.as?.inputEvents.forEach(i => appendInEvent(p.id, i, false, 0));
     plant?.as?.outputEvents.forEach(o => appendOutEvent(p.id, o, false, 0));
     plant?.plant.signals.forEach(s => appendToSignal(result, `${displayPrefix(p.id)}${s}`, 0, false));
   }
 
-  function handleComponentTrace(componentId: string, trace: DEVSTrace<any>) {
+  function handleComponentTrace(componentId: string, trace: DEVSTrace<any, any>) {
     const plantInstance = plantsState.plants.find(({id}) => id === componentId);
     const plant = plantInstance && statebuddyPlants[plantInstance.type];
 

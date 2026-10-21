@@ -1,9 +1,9 @@
 // AppState in version 2 of StateBuddy
 
-import { EventTrigger } from "@/statecharts/label_ast";
-import { RaisedEvent } from "@/statecharts/runtime_types";
-import { Model2ModelConn } from "@/devs/coupled_devs";
+import { Model2ModelConn } from "@/languages/devs/coupled_devs";
 import { VisualEditorStateV0 } from "./v0_types";
+import { EventTrigger } from "@/languages/statecharts/transitionlabel/abstract_syntax";
+import { RaisedEvent } from "@/languages/statecharts/interpreter/runtime_types";
 
 // JSON-serializable app state, version 1
 export type AppStateV1 = {

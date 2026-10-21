@@ -1,5 +1,5 @@
 import { Parts } from "../App/VisualEditor/VisualEditor.state";
-import { RectSide } from "../statecharts/concrete_syntax";
+import { RectSide } from "../languages/statecharts/concrete_syntax";
 
 export type Vec2D = {
   x: number;

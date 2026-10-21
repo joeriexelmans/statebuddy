@@ -1,7 +1,7 @@
 import { memo, ReactNode, useMemo } from "react";
 import { MoveUpDown } from "../Components/MoveUpDown";
 import { PersistentDetails } from "../Components/PersistentDetails";
-import { DeepSetter, makePartialArraySetter, makePartialSetter, WithSetters } from "../makePartialSetter"
+import { DeepSetter, makePartialArraySetter, makePartialSetter, WithSetters } from "../../util/partial_setter"
 import { GlobalProps, PanelItem, panelItemInfo, panelTypes } from "./PanelItem"
 import { PanelType } from "../migrations/v1_types";
 import CloseIcon from '@mui/icons-material/Close';

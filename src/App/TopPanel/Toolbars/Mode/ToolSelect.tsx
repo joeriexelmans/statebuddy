@@ -5,7 +5,7 @@ import TrendingFlatIcon from '@mui/icons-material/TrendingFlat';
 import { memo, ReactElement } from "react";
 import { Tooltip } from "../../../Components/Tooltip";
 import { TwoStateButton } from "../../../Components/TwoStateButton";
-import { Setters, DeepSetter } from "../../../makePartialSetter";
+import { Setters, DeepSetter } from "../../../../util/partial_setter";
 import { RountangleIcon, PseudoStateIcon, HistoryIcon } from "../../Icons";
 import { KeyInfoVisible, KeyInfoHidden } from "../../KeyInfo";
 import { MouseIcon } from "../../MouseIcon";

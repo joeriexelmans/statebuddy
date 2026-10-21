@@ -1,4 +1,4 @@
-import { AbstractState, stateDescription, Transition, transitionDescription } from "./abstract_syntax";
+import { AbstractState, stateDescription, Transition, transitionDescription } from "../abstract_syntax";
 
 export type Scope = {
   kind: "transition",

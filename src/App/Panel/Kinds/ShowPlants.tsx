@@ -1,17 +1,17 @@
 import appStyles from "../../App.module.css";
 
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import { RaisedEvent } from "@/statecharts/runtime_types";
-import { DEVSTrace } from "@/devs/trace";
+import { DEVSTrace } from "@/languages/devs/trace";
 import { memo, useCallback, useMemo } from "react";
 import { DoubleClickButton } from "../../Components/DoubleClickButton";
 import { Tooltip } from "../../Components/Tooltip";
 import { CoupledState } from "../../hooks/useSimulator";
-import { DeepSetter } from "../../makePartialSetter";
+import { DeepSetter } from "../../../util/partial_setter";
 import { PlantsState } from "../../migrations/v1_types";
 import { Plant } from "../../Plant/Plant";
 import { statebuddyPlants, UniversalPlantState } from "../../plants";
 import { prefixCoupledInputEvent } from "@/App/hooks/useCoupledExecution";
+import { RaisedEvent } from "@/languages/statecharts/interpreter/runtime_types";
 
 type ShowPlantsProps = {
   plantsState: PlantsState,
@@ -51,9 +51,9 @@ export function ShowPlant({id, name, type, onDelete, onNameChange, plant, speed,
   type: string,
   onDelete: () => void,
   onNameChange: (newName: string) => void,
-  plant: Plant<any, UniversalPlantState>,
+  plant: Plant<any, any, UniversalPlantState>,
   speed: number,
-  currentState?: DEVSTrace<any>,
+  currentState?: DEVSTrace<any, any>,
   onRaise: (e: RaisedEvent) => void,
 }) {
   const state = plant.cleanupState(currentState?.at(-1)?.newState || plant.execution.initial());

@@ -1,4 +1,4 @@
-import { EventTrigger } from "../../statecharts/label_ast";
+import { EventTrigger } from "../../languages/actionlang/abstract_syntax";
 import { UndoState } from "../../hooks/useUndo";
 import { VisualEditorState } from "../VisualEditor/VisualEditor.state";
 import { FindReplaceStateV1, MQTTState, ToolSelectState, PanelState, DebugState } from "./v1_types";

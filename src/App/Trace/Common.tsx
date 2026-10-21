@@ -1,9 +1,9 @@
 import styles from "./Trace.module.css";
 import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
 import FlareIcon from '@mui/icons-material/Flare';
-import { RaisedEvent } from "@/statecharts/runtime_types";
 import { Tooltip } from "../Components/Tooltip";
-import { actionLangValToText } from "@/statecharts/actionlang_prettyprinter";
+import { actionLangValToText } from "@/languages/actionlang/prettyprinter";
+import { RaisedEvent } from "@/languages/statecharts/interpreter/runtime_types";
 
 export function InitCause() {
   return <div className={styles.inputEvent}>

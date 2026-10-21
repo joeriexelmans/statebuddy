@@ -18,12 +18,12 @@ import sndRelay from "./relay.wav";
 
 import lightButtonJSON from "./model.json";
 
-import { parseStatechart } from "@/statecharts/parser";
-import { ConcreteSyntax } from "@/statecharts/concrete_syntax";
-import { computeTopology } from "@/statecharts/detect_topology";
+import { parseStatechart } from "@/languages/statecharts/parser/parser";
+import { ConcreteSyntax } from "@/languages/statecharts/concrete_syntax";
+import { computeTopology } from "@/languages/statecharts/parser/detect_topology";
 import { makeStatechartPlant } from "../Plant";
-import { RuntimeConfiguration } from "@/statecharts/runtime_types";
-import { SC2DEVSNonError } from "@/devs/sc2devs";
+import { RuntimeConfiguration } from "@/languages/statecharts/interpreter/runtime_types";
+import { SC2DEVSNonError } from "@/languages/devs/sc2devs";
 
 export const lightButtonConcreteSyntax = lightButtonJSON as ConcreteSyntax;
 export const [lightButtonAbstractSyntax, lightButtonErrors] = parseStatechart(computeTopology(lightButtonConcreteSyntax));
@@ -93,7 +93,7 @@ const lightButtonSpec: StatechartPlantSpec<LightButtonState> = {
   ast: lightButtonAbstractSyntax,
   render: LightButton,
   cleanupState: (state: SC2DEVSNonError) => {
-    const lightsOn = state.rtconfig.mode.has(lightButtonAbstractSyntax.label2State.get("LightsOn")!.uid);
+    const lightsOn = state.rtconfig.mode.has(lightButtonAbstractSyntax.tag2State.get("LightsOn")!.uid);
     return {lightsOn};
   },
   uiEvents: [

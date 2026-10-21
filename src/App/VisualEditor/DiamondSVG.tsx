@@ -1,5 +1,5 @@
-import { Diamond, RectSide } from "@/statecharts/concrete_syntax";
-import { rountangleMinSize } from "@/statecharts/concrete_syntax";
+import { Diamond, RectSide } from "@/languages/statecharts/concrete_syntax";
+import { rountangleMinSize } from "@/languages/statecharts/concrete_syntax";
 import { Vec2D } from "../../util/geometry";
 import { RectHelper } from "./RectHelpers";
 import { memo } from "react";

@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { Arrow, ArrowPart, getArrowFatBBox, getArrowFatBBoxes } from "../../statecharts/concrete_syntax";
+import { Arrow, ArrowPart, getArrowFatBBox, getArrowFatBBoxes } from "../../languages/statecharts/concrete_syntax";
 import { addV2D, ArcDirection, euclideanDistance, scaleV2D } from "../../util/geometry";
 import { CORNER_HELPER_RADIUS } from "../parameters";
 import { jsonDeepEqual, setsEqual } from "@/util/util";

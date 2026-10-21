@@ -4,9 +4,9 @@ import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import PushPinIcon from '@mui/icons-material/PushPin';
 
-import { EventTrigger } from "../../../statecharts/label_ast";
+import { EventTrigger } from "../../../languages/actionlang/abstract_syntax";
 import { Tooltip } from "../../Components/Tooltip";
-import { WithSetters } from "../../makePartialSetter";
+import { WithSetters } from "../../../util/partial_setter";
 import { TwoStateButton } from "@/App/Components/TwoStateButton";
 import { Toolbar } from "@/App/TopPanel/Toolbar";
 

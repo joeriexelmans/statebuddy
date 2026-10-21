@@ -8,19 +8,19 @@ import fontDigital from "../DigitalWatch/digital-font.ttf";
 
 import sndBell from "./bell.wav";
 import sndRunning from "./running.wav";
-import { RuntimeConfiguration } from "@/statecharts/runtime_types";
+import { RuntimeConfiguration } from "@/languages/statecharts/interpreter/runtime_types";
 import { memo, useEffect } from "react";
 
 import "./Microwave.css";
 import { useAudioContext } from "../../../hooks/useAudioContext";
 import { makeStatechartPlant, PlantRenderProps, StatechartPlantSpec } from "../Plant";
-import { computeTopology } from "@/statecharts/detect_topology";
-import { parseStatechart } from "@/statecharts/parser";
+import { computeTopology } from "@/languages/statecharts/parser/detect_topology";
+import { parseStatechart } from "@/languages/statecharts/parser/parser";
 
 import microwaveJSON from "./model.json";
-import { ConcreteSyntax } from "@/statecharts/concrete_syntax";
+import { ConcreteSyntax } from "@/languages/statecharts/concrete_syntax";
 import { objectsEqual } from "@/util/util";
-import { SC2DEVSNonError } from "@/devs/sc2devs";
+import { SC2DEVSNonError } from "@/languages/devs/sc2devs";
 
 export const microwaveConcreteSyntax = microwaveJSON as ConcreteSyntax;
 
@@ -120,9 +120,9 @@ export const Microwave = memo(function Microwave({state: {bellRinging, magnetron
 const microwavePlantSpec: StatechartPlantSpec<MicrowaveState> = {
   ast: microwaveAbstractSyntax,
   cleanupState: (state: SC2DEVSNonError) => {
-    const bellRinging = state.rtconfig.mode.has(microwaveAbstractSyntax.label2State.get("bell")!.uid);
-    const magnetronRunning = state.rtconfig.mode.has(microwaveAbstractSyntax.label2State.get("Magnetron on")!.uid);
-    const doorOpen = state.rtconfig.mode.has(microwaveAbstractSyntax.label2State.get("Door opened")!.uid);
+    const bellRinging = state.rtconfig.mode.has(microwaveAbstractSyntax.tag2State.get("#bell")!.uid);
+    const magnetronRunning = state.rtconfig.mode.has(microwaveAbstractSyntax.tag2State.get("#magnetronOn")!.uid);
+    const doorOpen = state.rtconfig.mode.has(microwaveAbstractSyntax.tag2State.get("#doorOpened")!.uid);
     const timeDisplay = state.rtconfig.environment.get("timeDisplay", {kind: "state", thing: microwaveAbstractSyntax.root});
     return {bellRinging, magnetronRunning, doorOpen, timeDisplay};
   },

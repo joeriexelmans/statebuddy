@@ -2,7 +2,7 @@ import { memo } from "react";
 import { Vec2D } from "../../util/geometry";
 import { HISTORY_RADIUS } from "../parameters";
 import { BoundingBox } from "./BoundingBox";
-import { getHistoryFatBBox } from "@/statecharts/concrete_syntax";
+import { getHistoryFatBBox } from "@/languages/statecharts/concrete_syntax";
 import styles from "./VisualEditor.module.css";
 
 export const HistorySVG = memo(function HistorySVG(props: {uid: string, topLeft: Vec2D, kind: "shallow"|"deep", selected: boolean, highlight: boolean}) {

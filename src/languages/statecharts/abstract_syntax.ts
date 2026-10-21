@@ -1,4 +1,4 @@
-import { Action, EventTrigger, ParsedText } from "./label_ast";
+import { Action, EventTrigger, ParsedText } from "./transitionlabel/abstract_syntax";
 
 export type AbstractState = {
   kind: string;
@@ -6,6 +6,7 @@ export type AbstractState = {
   parent?: ConcreteState;
   depth: number;
   comments: [string, string][]; // array of tuple (text-uid, text-text)
+  tags: [string, string][]; // array of tuple (text-uid, text-text)
 }
 
 export type EntryExitState = AbstractState & {
@@ -44,7 +45,6 @@ export type HistoryState = AbstractState & {
   kind: "shallow" | "deep";
 }
 
-
 export type Transition = {
   uid: string; // uid of arrow in concrete syntax
   src: ConcreteState | UnstableState;
@@ -54,57 +54,53 @@ export type Transition = {
 }
 
 // Abstract syntax for our Statechart language
-export type Statechart = {
+export type AbstractSyntax = {
   root: OrState;
-
 
   transitions: Map<string, Transition[]>; // mapping from source state (uid) to outgoing transitions
 
   variables: Set<string>;
 
-  inputEvents: EventTrigger[];
-
-  // internal events that serve as a trigger somewhere
-  internalEventTrigger: EventTrigger[];
-  // internal events that are raised somewhere
-  internalEventRaised: EventTrigger[];
-  // union of the above
-  internalEvents: EventTrigger[];
+  inputEvents: Set<string>;
+  internalEvents: Set<string>;
   outputEvents: Set<string>;
 
+  // maps every state from its unique identifier to the state-object in abstract syntax.
   uid2State: Map<string, ConcreteState|UnstableState>;
 
-  label2State: Map<string, ConcreteState>;
+  // maps ids/tags (human-assigned names) to states, transitions, ...
+  tag2State: Map<string, ConcreteState>;
 
   historyStates: HistoryState[];
 }
 
-const emptyRoot: OrState = {
-  uid: "root",
-  kind: "or",
-  depth: 0,
-  initial: [],
-  children:[],
-  history: [],
-  comments: [],
-  entryActions: [],
-  exitActions: [],
-  timers: [],
-};
+// const emptyRoot: OrState = {
+//   uid: "root",
+//   kind: "or",
+//   depth: 0,
+//   initial: [],
+//   children:[],
+//   history: [],
+//   comments: [],
+//   entryActions: [],
+//   exitActions: [],
+//   timers: [],
+// };
 
-export const emptyStatechart: Statechart = {
-  root: emptyRoot,
-  transitions: new Map(),
-  variables: new Set(),
-  inputEvents: [],
-  internalEventTrigger: [],
-  internalEventRaised: [],
-  internalEvents: [],
-  outputEvents: new Set(),
-  uid2State: new Map([["root", emptyRoot]]),
-  label2State: new Map([]),
-  historyStates: [],
-};
+// export const emptyStatechart: AbstractSyntax = {
+//   root: emptyRoot,
+//   transitions: new Map(),
+//   variables: new Set(),
+//   inputEvents: [],
+//   internalEventTrigger: [],
+//   internalEventRaised: [],
+//   internalEvents: [],
+//   outputEvents: new Set(),
+//   uid2State: new Map([["root", emptyRoot]]),
+//   tag2State: new Map([]),
+//   tag2Transition: new Map([]),
+//   historyStates: [],
+// };
 
 // reflexive, transitive relation
 export function isAncestorOf({ancestor, descendant}: {ancestor: ConcreteState, descendant: ConcreteState}): ConcreteState[] | false {
@@ -185,11 +181,11 @@ export function stateDescription(state: AbstractState): string {
   else if (state.kind === "deep") {
     return `deep(${stateDescription(state.parent!)})`;
   }
-  else if (state.comments.length > 0) {
-    return state.comments[0][1];
+  else if (state.tags.length > 0) {
+    return state.tags[0][1];
   }
   else {
-    return state.uid;
+    return '#' + state.uid;
   }
 }
 

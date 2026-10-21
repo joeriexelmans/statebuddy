@@ -8,26 +8,26 @@ import PushPinIcon from '@mui/icons-material/PushPin';
 import { memo, useCallback } from "react";
 import { useLocalStorage } from "../../../hooks/usePersistentState";
 import { useShortcuts } from "../../../hooks/useShortcuts";
-import { evalExpr } from "../../../statecharts/actionlang_interpreter";
-import { actionLangLhsToText } from "../../../statecharts/actionlang_prettyprinter";
-import { FlatEnvironment } from "../../../statecharts/environment";
-import { EventTrigger, TransitionLabel } from "../../../statecharts/label_ast";
-import { cachedParseLabel } from "../../../statecharts/parser";
-import { RaisedEvent } from "../../../statecharts/runtime_types";
-import { syntaxHighlight } from "../../../statecharts/syntax_higlight";
+import { evalExpr } from "../../../languages/actionlang/interpreter";
+import { actionLangLhsToText } from "../../../languages/actionlang/prettyprinter";
+import { FlatEnvironment } from "../../../languages/statecharts/interpreter/environment";
+import { cachedParseLabel } from "../../../languages/statecharts/parser/parser";
+import { syntaxHighlight } from "../../../languages/statecharts/transitionlabel/syntax_higlight";
 import { objectsEqual, jsonDeepEqual } from "../../../util/util";
 import { Overlay } from "../../Components/Overlay";
 import { Tooltip } from "../../Components/Tooltip";
-import { WithSetters } from "../../makePartialSetter";
+import { WithSetters } from "../../../util/partial_setter";
 import { codeStyle } from "../../Modals/TextDialog";
 import { KeyInfoVisible, KeyInfoHidden } from "../../TopPanel/KeyInfo";
 import { SyntaxHighlightedText } from "../../VisualEditor/SyntaxHiglightedText";
 import { TwoStateButton } from "@/App/Components/TwoStateButton";
 import { Toolbar } from "@/App/TopPanel/Toolbar";
 import { prefixCoupledInputEvent } from "@/App/hooks/useCoupledExecution";
+import { RaisedEvent } from "@/languages/statecharts/interpreter/runtime_types";
+import { EventTrigger, TransitionLabel } from "@/languages/statecharts/transitionlabel/abstract_syntax";
 
 type ShowInputEventsProps = {
-  inputEvents: EventTrigger[], // <-- input events from the abstract syntax
+  inputEvents: Set<string>, // <-- input events from the abstract syntax
   onRaise: (bag: RaisedEvent[]) => void,
   disabled: boolean,
 } & WithSetters<{
@@ -45,7 +45,7 @@ export const InputEventsPanel = memo(function ShowInputEvents({
 
   const raiseOneEvent = useCallback((e: RaisedEvent) => onRaise([e]), [onRaise]);
 
-  const raiseHandlers = inputEvents.map(({event}) => {
+  const raiseHandlers = [...inputEvents].map((event) => {
     return () => {
       // @ts-ignore
       const exprText = document.getElementById(`input-${event}-param`)?.value;
@@ -54,6 +54,7 @@ export const InputEventsPanel = memo(function ShowInputEvents({
         if (exprText) {
           // funny trick to invoke our action language parser: our parser has only one entry point, so to make it parse an expression we must put that expression in a transition label...
           const {guard: exprParsed} = cachedParseLabel(`after 1s [${exprText}]`) as TransitionLabel; // may throw
+          // @ts-ignore
           param = evalExpr(exprParsed, new FlatEnvironment(), undefined); // may throw
         }
       }
@@ -77,20 +78,21 @@ export const InputEventsPanel = memo(function ShowInputEvents({
   }));
 
 
-  return inputEvents.map(({event, param}, i) => {
-    const paramTxt = param && actionLangLhsToText(param) || "";
-    const key = event+'/'+paramTxt;
+  return [...inputEvents].map((event, i) => {
+    // const paramTxt = param && actionLangLhsToText(param) || "";
+    const paramTxt = "param";
+    const key = event;
     const value = inputParams[key] || "";
     const highlight = syntaxHighlight(`[${value}]`);
     const ranges = highlight.ranges.map(r => ({...r, start: r.start-1, end: r.end-1})) || [];
     const width = ((value.length || paramTxt.length) +1.5)+'ch';
     const shortcut = (i+1)%10;
     const KI = (i < 10) ? KeyInfoVisible : KeyInfoHidden; // <-- keyboard shortcuts on first 10 input events
-    const disableOurselves = disabled || param && Boolean(highlight.parseError);
+    const disableOurselves = disabled || (value !== "" && Boolean(highlight.parseError));
     const isDeclared = declaredInputs.some(i => i.event === event);
-    const declare = () => setDeclaredInputs(ins => [...ins, {kind: "event", event, param}]);
+    const declare = () => setDeclaredInputs(ins => [...ins, {kind: "event", event}]);
     const undeclare = () => setDeclaredInputs(ins => ins.filter(i => i.event !== event));
-    return <div key={key} style={{pageBreakInside: 'avoid', breakInside: 'avoid-column'}}>
+    return <div key={key} style={{breakInside: 'avoid'}}>
       {isDeclared
         ? <Tooltip tooltip={<>unpin input event<br/>(don't keep input event if it doesn't occur in the Statechart model)</>} align='left'>
             <Toolbar>
@@ -110,12 +112,13 @@ export const InputEventsPanel = memo(function ShowInputEvents({
             style={{
               color: disableOurselves ? 'var(--inactive-fg-color)' : undefined,
               cursor: 'default',
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'center',
             }}
           >
-            &#8600;
-            {event}
-            {param && <>
-              &nbsp;
+            ↘ {event} &nbsp;
+            {<div>
               {/* syntax highlight overlay */}
               <Overlay background={value &&
                   <pre style={{
@@ -149,8 +152,7 @@ export const InputEventsPanel = memo(function ShowInputEvents({
                   }}
                 />
               </Overlay>
-              <div style={{height: 2}}/>
-            </>}
+            </div>}
           </div>
         </Tooltip>
       </KI>

@@ -1,6 +1,6 @@
 import plotStyles from "./Plot.module.css";
 import { Dispatch, memo, SetStateAction, SVGAttributes, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { WithSetters } from "../makePartialSetter";
+import { WithSetters } from "../../util/partial_setter";
 import { PreparedTrace } from "../SideBar/prepare_trace_types";
 import { objectsEqual } from "@/util/util";
 import { StateBuddyTraceState } from "../hooks/useSimulator";
@@ -104,7 +104,7 @@ export const Plot = memo(function Plot({visible, setVisible, prepped, trace, dis
         return <path key={name} d={renderSignal(name, i++)} className={plotStyles.plotLine} style={{stroke: color}} />;
       }
       else {
-        return <></>;
+        return <g key={name}></g>;
       }
     });
   })();
@@ -122,7 +122,7 @@ export const Plot = memo(function Plot({visible, setVisible, prepped, trace, dis
           && <br/>
           || <div style={{breakAfter: 'column'}}></div>))}
           {/*             ^ doesn't yet work in Firefox :( */}
-        <label key={name} htmlFor={`checkbox-trace-${name}`} style={{breakInside: 'avoid'}}>
+        <label htmlFor={`checkbox-trace-${name}`} style={{breakInside: 'avoid'}}>
           <input type="checkbox" id={`checkbox-trace-${name}`} checked={visible[name]} onChange={e =>
             setVisible(v => ({
                 ...v,

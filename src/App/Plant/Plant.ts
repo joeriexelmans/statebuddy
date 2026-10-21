@@ -1,11 +1,11 @@
 import { ReactNode } from "react";
-import { Statechart } from "@/statecharts/abstract_syntax";
-import { EventTrigger } from "@/statecharts/label_ast";
-import { RaisedEvent } from "@/statecharts/runtime_types";
-import { TraceBigStep, TraceFairStep } from "@/statecharts/microstep_trace_types";
-import { DEVSComponent } from "@/devs/devs";
-import { sc2DEVS, SC2DEVSNonError, SC2DEVSState } from "@/devs/sc2devs";
-import { RuntimeError } from "@/statecharts/interpreter";
+import { AbstractSyntax } from "@/languages/statecharts/abstract_syntax";
+import { RaisedEvent } from "@/languages/statecharts/interpreter/runtime_types";
+import { TraceBigStep, TraceFairStep } from "@/languages/statecharts/interpreter/trace_types";
+import { DEVSComponent } from "@/languages/devs/devs";
+import { sc2DEVS, SC2DEVSNonError, SC2DEVSState } from "@/languages/devs/sc2devs";
+import { RuntimeError } from "@/languages/statecharts/interpreter/interpreter";
+import { EventTrigger } from "@/languages/statecharts/transitionlabel/abstract_syntax";
 
 export type PlantRenderProps<CleanStateType> = {
   state: CleanStateType,
@@ -33,7 +33,7 @@ export type Plant<StateType, EventType, CleanStateType> = {
 
 export type StatechartPlantSpec<CleanStateType> = {
   uiEvents: EventTrigger[],
-  ast: Statechart,
+  ast: AbstractSyntax,
   cleanupState: (state: SC2DEVSNonError) => CleanStateType,
   render: (props: PlantRenderProps<CleanStateType>) => ReactNode,
   signals: string[],

@@ -1,4 +1,4 @@
-import { setRealtime, TimeMode } from "@/statecharts/time";
+import { setRealtime, TimeMode } from "@/App/time";
 import { Dispatch, memo, SetStateAction, useCallback } from "react";
 
 import { useShortcuts } from "@/hooks/useShortcuts";

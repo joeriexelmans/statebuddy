@@ -1,6 +1,6 @@
 import CloseIcon from '@mui/icons-material/Close';
 import { Tooltip } from "../Components/Tooltip";
-import { DeepSetter, Setters } from "../makePartialSetter";
+import { DeepSetter, Setters } from "../../util/partial_setter";
 import { GRID_CELL_SIZE } from '../parameters';
 import { useState } from 'react';
 import { DoubleClickButton } from '../Components/DoubleClickButton';

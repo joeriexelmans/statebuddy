@@ -1,5 +1,5 @@
 import { useShortcuts } from "@/hooks/useShortcuts";
-import { allArrowParts, allHistoryParts, allRectParts, allTextParts, Arrow, ConcreteSyntax, Diamond, entirelySelectedShapes, History, Rountangle, shapesBBox, Text } from "@/statecharts/concrete_syntax";
+import { allArrowParts, allHistoryParts, allRectParts, allTextParts, Arrow, ConcreteSyntax, Diamond, entirelySelectedShapes, History, Rountangle, shapesBBox, Text } from "@/languages/statecharts/concrete_syntax";
 import { addV2D, area, centerOf, subtractV2D, Vec2D } from "@/util/geometry";
 import { ClipboardEvent, Dispatch, useCallback, useMemo } from "react";
 import { Selection, VisualEditorState } from "../VisualEditor.state";

@@ -1,7 +1,7 @@
 import styles from "../../App.module.css";
 import SaveAltIcon from '@mui/icons-material/SaveAlt';
 import { memo, useState } from "react";
-import { ConcreteState, OrState, Statechart, Transition, TransitionSrcTgt, UnstableState, stateDescription } from "../../../statecharts/abstract_syntax";
+import { ConcreteState, OrState, AbstractSyntax, Transition, TransitionSrcTgt, UnstableState, stateDescription } from "../../../languages/statecharts/abstract_syntax";
 import { PseudoStateIcon, RountangleIcon } from "../../TopPanel/Icons";
 import { Tooltip } from "../../Components/Tooltip";
 import { downloadObjectAsJson } from "../../../util/download_json";
@@ -38,7 +38,7 @@ export const StateTree = memo(function StateTree(props: {root: ConcreteState | U
 });
 
 
-export const StateTreePanel = memo(function StateTreePanel({abstractSyntax}: {abstractSyntax: Statechart}) {
+export const StateTreePanel = memo(function StateTreePanel({abstractSyntax}: {abstractSyntax: AbstractSyntax}) {
   return <div className={styles.stateTree}>
     <div style={{float: 'right'}}>
     <Tooltip tooltip="export abstract syntax (JSON)" align="right">
@@ -47,7 +47,7 @@ export const StateTreePanel = memo(function StateTreePanel({abstractSyntax}: {ab
           downloadObjectAsJson({
             root: removeCycles(abstractSyntax.root),
             transitions: [...abstractSyntax.transitions.values()].flatMap(ts => ts.map(removeCyclesT)),
-            inputEvents: abstractSyntax.inputEvents.map(i => i.event),
+            inputEvents: abstractSyntax.inputEventTriggers.map(i => i.event),
             outputEvents: [...abstractSyntax.outputEvents],
             internalEvents: abstractSyntax.internalEvents.map(i => i.event),
           }, 'abstract_syntax.json');

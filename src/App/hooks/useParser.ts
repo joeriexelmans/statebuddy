@@ -1,9 +1,9 @@
 import { useMemo } from "react";
-import { computeTopology, topologiesEqual } from "@/statecharts/detect_topology";
-import { parseStatechart } from "@/statecharts/parser";
+import { computeTopology, topologiesEqual } from "@/languages/statecharts/parser/detect_topology";
+import { parseStatechart } from "@/languages/statecharts/parser/parser";
 import { useCustomMemo } from "@/hooks/useCustomMemo";
 import { VisualEditorState } from "../VisualEditor/VisualEditor.state";
-import { EventTrigger } from "@/statecharts/label_ast";
+import { EventTrigger } from "@/languages/statecharts/transitionlabel/abstract_syntax";
 
 export function useParser(
   editorState: VisualEditorState,
@@ -21,11 +21,7 @@ export function useParser(
       const [abstractSyntax, syntaxErrors] = parseStatechart(topology);
 
       // explicitly declared in/out events are added to the abstract syntax's list of in/out events
-      for (const declaredInput of declaredInputs) {
-        if (!abstractSyntax.inputEvents.some(({event}) => event === declaredInput.event)) {
-          abstractSyntax.inputEvents.push(declaredInput);
-        }
-      }
+      abstractSyntax.inputEvents = abstractSyntax.inputEvents.union(new Set(declaredInputs.map(i => i.event)));
       abstractSyntax.outputEvents = abstractSyntax.outputEvents.union(new Set(declaredOutputs.map(out => out.event)));
       return [abstractSyntax, syntaxErrors] as const;
     },

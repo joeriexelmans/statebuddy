@@ -1,4 +1,4 @@
-import { getSimTime, TimeMode } from "@/statecharts/time";
+import { getSimTime, TimeMode } from "@/App/time";
 import { useCallback, useEffect, useState } from "react";
 
 export function useDisplayTime(time: TimeMode) {

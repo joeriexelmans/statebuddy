@@ -1,15 +1,15 @@
-import { ConcreteSyntax } from "@/statecharts/concrete_syntax";
+import { ConcreteSyntax } from "@/languages/statecharts/concrete_syntax";
 import { digitalWatchPlant, dwatchAbstractSyntax, dwatchConcreteSyntax } from "./Plant/DigitalWatch/DigitalWatch";
 import { microwaveAbstractSyntax, microwaveConcreteSyntax, microwavePlant } from "./Plant/Microwave/Microwave";
 import { Plant } from "./Plant/Plant";
 import { trafficLightAbstractSyntax, trafficLightConcreteSyntax, trafficLightPlant } from "./Plant/TrafficLight/TrafficLight";
-import { SC2DEVSState } from "@/devs/sc2devs";
-import { Statechart } from "@/statecharts/abstract_syntax";
+import { SC2DEVSState } from "@/languages/devs/sc2devs";
+import { AbstractSyntax } from "@/languages/statecharts/abstract_syntax";
 import { gantryCraneAbstractSyntax, gantryCraneConcreteSyntax, gantryCranePlant } from "./Plant/BIP/GantryCrane";
 import { schedulerPlant } from "./Plant/BIP/Scheduler";
 import { emergencyPanelPlant } from "./Plant/BIP/EmergencyPanel";
 import { lightButtonAbstractSyntax, lightButtonConcreteSyntax, lightButtonPlant } from "./Plant/LightButton/LightButton";
-import { RaisedEvent } from "@/statecharts/runtime_types";
+import { RaisedEvent } from "@/languages/statecharts/interpreter/runtime_types";
 
 export type UniversalPlantState = {[property: string]: boolean|number};
 
@@ -19,7 +19,7 @@ type StatechartPlant = Plant<SC2DEVSState, RaisedEvent, UniversalPlantState>;
 export type StatebuddyPlantSpec = {
   plant: Plant<any, any, any>,
   cs?: ConcreteSyntax,
-  as?: Statechart,
+  as?: AbstractSyntax,
 }
 
 export const statebuddyPlants: {[type: string]: StatebuddyPlantSpec} = {

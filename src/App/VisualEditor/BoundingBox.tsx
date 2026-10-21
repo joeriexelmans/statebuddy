@@ -1,4 +1,4 @@
-import { decodeCell, getCells } from "@/statecharts/detect_topology";
+import { decodeCell, getCells } from "@/languages/statecharts/parser/detect_topology";
 import { Rect2D } from "@/util/geometry";
 import { GRID_CELL_SIZE } from "../parameters";
 import { useContext } from "react";

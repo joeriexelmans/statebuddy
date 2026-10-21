@@ -1,10 +1,9 @@
 import styles from "../../Trace/Trace.module.css";
 
-import { EventTrigger } from "../../../statecharts/label_ast";
 import { Tooltip } from "../../Components/Tooltip";
 
-export function InternalEventsPanel(props: {internalEvents: EventTrigger[]}) {
-  return [...props.internalEvents].map(({event, param}) => {
+export function InternalEventsPanel(props: {internalEvents: Set<string>}) {
+  return [...props.internalEvents].map((event) => {
     return <div key={event}>
       <Tooltip tooltip='internal event' align='left'>
         <div className={styles.internalEvent}>

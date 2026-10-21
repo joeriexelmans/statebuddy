@@ -1,16 +1,17 @@
-import { SC2DEVSState } from "@/devs/sc2devs";
-import { restoreTrace } from "@/devs/serialize_trace";
+import { SC2DEVSNonError, SC2DEVSState } from "@/languages/devs/sc2devs";
+import { restoreTrace } from "@/languages/devs/serialize_trace";
 import { ExtTransitionTrace } from "../migrations/v1_types";
-import { DEVSTrace, DEVSTraceItem } from "@/devs/trace";
+import { DEVSTrace, DEVSTraceItem } from "@/languages/devs/trace";
 import { useShortcuts } from "@/hooks/useShortcuts";
-import { getSimTime, getWallClkDelay, TimeMode } from "@/statecharts/time";
+import { getSimTime, getWallClkDelay, TimeMode } from "@/App/time";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { RuntimeError } from "@/statecharts/interpreter";
-import { DEVSComponent } from "@/devs/devs";
-import { WithSetters } from "../makePartialSetter";
-import { TraceableError } from "@/statecharts/parser";
-import { Mode, RaisedEvent } from "@/statecharts/runtime_types";
-import { useDetectChange2 } from "@/hooks/useDetectChange";
+import { RuntimeError } from "@/languages/statecharts/interpreter/interpreter";
+import { DEVSComponent } from "@/languages/devs/devs";
+import { WithSetters } from "../../util/partial_setter";
+import { TraceableError } from "@/languages/statecharts/parser/parser";
+import { RaisedEvent, Mode } from "@/languages/statecharts/interpreter/runtime_types";
+import { getEnterDefaultArrows, getFairStepArrows } from "@/languages/statecharts/interpreter/trace_types";
+import { isSCOutputStep } from "../Trace/SC2DEVSTrace";
 
 // In StateBuddy, currently, the state of our simulation is always a CoupledDEVS state of our statechart model (with a DEVS adapter around it) and a bunch of 'plants'.
 // Perhaps in the future, we could let the user arbitrarily configure this setup (anything on the spectrum from a single Statechart Atomic DEVS to many nested Coupled DEVS ...), but for now, it is what it is.
@@ -91,8 +92,8 @@ export function useSimulator(cE: DEVSComponent<DEVSTrace<CoupledState, RaisedEve
   const {runtimeErrors, highlightActive, highlightTransitions} = useMemo(() => {
     const state = currentSC?.state;
     if (state instanceof RuntimeError) {
-      const runtimeErrors = state.highlight.map(shapeUid => ({
-        shapeUid,
+      const runtimeErrors = state.highlight.map((shapeUid) => ({
+        shapes: [shapeUid],
         message: state.message,
       } as TraceableError));
       return {
@@ -102,9 +103,20 @@ export function useSimulator(cE: DEVSComponent<DEVSTrace<CoupledState, RaisedEve
       };
     }
     else {
-      const currentBigStep = state;
+      let currentBigStep = state;
       const highlightActive = (currentBigStep && currentBigStep.rtconfig.mode) || new Set<string>();
-      const highlightTransitions = currentBigStep && currentBigStep.kind === "bigstep" && currentBigStep.fairSteps.flatMap(step => step.fired.map(t => t.transitionUID)) || [];
+      const highlightTransitions = [] as string[];
+      if (currentBigStep) {
+        const trace = currentTraceItem?.newState.sc;
+        if (trace && isSCOutputStep(trace)) {
+          currentBigStep = trace.at(-2)!.newState.state as SC2DEVSNonError;
+        }
+        if (currentBigStep.kind === "init") {
+          highlightTransitions.push(...getEnterDefaultArrows(currentBigStep.enteredRoot));
+          console.log({highlightTransitions});
+        }
+        highlightTransitions.push(...currentBigStep.fairSteps.flatMap(step => getFairStepArrows(step)));
+      }
       return {
         runtimeErrors: [] as TraceableError[],
         highlightActive,

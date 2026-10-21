@@ -1,11 +1,11 @@
 import { ToolMode, ToolSelectState } from "@/App/migrations/v1_types";
 import { useShortcuts } from "@/hooks/useShortcuts";
 import { UndoCallbacks } from "@/hooks/useUndo";
-import { allArrowParts, allHistoryParts, allRectParts, allTextParts, rountangleMinSize } from "@/statecharts/concrete_syntax";
+import { allArrowParts, allHistoryParts, allRectParts, allTextParts, rountangleMinSize } from "@/languages/statecharts/concrete_syntax";
 import { isEntirelyWithin, normalizeRect, Rect2D, scaleV2D, subtractV2D, Vec2D } from "@/util/geometry";
 import { getBBoxInSvgCoords } from "@/util/svg_helper";
 import { Dispatch, RefObject, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { DeepSetter } from "../../makePartialSetter";
+import { DeepSetter } from "../../../util/partial_setter";
 import { MIN_ROUNTANGLE_SIZE } from "../../parameters";
 import { SelectingState } from "../Selection";
 import { translateSelection } from "../transformations/translate";

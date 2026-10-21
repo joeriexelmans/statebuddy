@@ -8,16 +8,14 @@ import sndBuzz from "./buzz.wav";
 import { preload } from "react-dom";
 
 import trafficLightJSON from "./model.json";
-import { parseStatechart } from "@/statecharts/parser";
-import { ConcreteSyntax } from "@/statecharts/concrete_syntax";
-import { computeTopology } from "@/statecharts/detect_topology";
+import { parseStatechart } from "@/languages/statecharts/parser/parser";
+import { ConcreteSyntax } from "@/languages/statecharts/concrete_syntax";
+import { computeTopology } from "@/languages/statecharts/parser/detect_topology";
 import { makeStatechartPlant, PlantRenderProps, StatechartPlantSpec } from "../Plant";
-import { RuntimeConfiguration } from "@/statecharts/runtime_types";
 import { useAudioContext } from "@/hooks/useAudioContext";
 import { memo, useEffect, useMemo } from "react";
 import { objectsEqual } from "@/util/util";
-import { dummyTracer } from "@/statecharts/tracer";
-import { SC2DEVSNonError, SC2DEVSState } from "@/devs/sc2devs";
+import { SC2DEVSNonError } from "@/languages/devs/sc2devs";
 
 export const trafficLightConcreteSyntax = trafficLightJSON as ConcreteSyntax;
 
@@ -107,10 +105,10 @@ export const TrafficLight = memo(function TrafficLight({state: {red, yellow, gre
 const trafficLightPlantSpec: StatechartPlantSpec<TrafficLightState> = {
   ast: trafficLightAbstractSyntax,
   cleanupState: (state: SC2DEVSNonError) => {
-    const red = state.rtconfig.mode.has(trafficLightAbstractSyntax.label2State.get("red on")!.uid);
-    const yellow = state.rtconfig.mode.has(trafficLightAbstractSyntax.label2State.get("yellow on")!.uid);
-    const green = state.rtconfig.mode.has(trafficLightAbstractSyntax.label2State.get("green on")!.uid);
-    const timerGreen = state.rtconfig.mode.has(trafficLightAbstractSyntax.label2State.get("timer green")!.uid);
+    const red = state.rtconfig.mode.has(trafficLightAbstractSyntax.tag2State.get("#redOn")!.uid);
+    const yellow = state.rtconfig.mode.has(trafficLightAbstractSyntax.tag2State.get("#yellowOn")!.uid);
+    const green = state.rtconfig.mode.has(trafficLightAbstractSyntax.tag2State.get("#greenOn")!.uid);
+    const timerGreen = state.rtconfig.mode.has(trafficLightAbstractSyntax.tag2State.get("#timerGreen")!.uid);
     const timerValue = state.rtconfig.environment.get("t", {kind: "state", thing: trafficLightAbstractSyntax.root});
     return { red, yellow, green, timerGreen, timerValue };
   },

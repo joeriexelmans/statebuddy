@@ -14,7 +14,7 @@ import ClearIcon from '@mui/icons-material/Clear';
 
 import { formatTime } from '@/util/util';
 import { useLocalStorage } from '@/hooks/usePersistentState';
-import { setPaused, setRealtime } from '@/statecharts/time';
+import { setPaused, setRealtime } from '@/App/time';
 import { useShortcuts } from '@/hooks/useShortcuts';
 import { KeyInfoVisible, KeyInfoHidden } from '../../KeyInfo';
 import { Toolbar } from '../../Toolbar';

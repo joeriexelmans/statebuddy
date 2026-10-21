@@ -3,7 +3,7 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import CloseIcon from '@mui/icons-material/Close';
 import HelpIcon from '@mui/icons-material/Help';
 import CheckIcon from '@mui/icons-material/Check';
-import { computeTopology } from "@/statecharts/detect_topology";
+import { computeTopology } from "@/languages/statecharts/parser/detect_topology";
 import { VisualEditor } from "../VisualEditor/VisualEditor";
 import { Tooltip } from "../Components/Tooltip";
 import { count } from "@/util/util";

@@ -1,4 +1,4 @@
-import { RaisedEvent } from "@/statecharts/runtime_types";
+import { RaisedEvent } from "@/languages/statecharts/interpreter/runtime_types";
 import { Plant, PlantRenderProps } from "../Plant";
 
 type ScheduledMove = {

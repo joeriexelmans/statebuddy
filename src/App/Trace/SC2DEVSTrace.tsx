@@ -1,15 +1,16 @@
 // In this module, React components for rendering DEVS execution traces that contain Statechart execution steps.
 
 import styles from "./Trace.module.css";
-import { actionLangValToText } from "@/statecharts/actionlang_prettyprinter";
-import { TraceBigStep, TraceFairStep, TraceSmallStep, TraceExit, TraceEnter, TraceAction, TraceInit } from "@/statecharts/microstep_trace_types";
-import { RT_Event, RaisedEvent } from "@/statecharts/runtime_types";
+import { actionLangValToText } from "@/languages/actionlang/prettyprinter";
+import { TraceBigStep, TraceFairStep, TraceSmallStep, TraceExit, TraceEnter, TraceAction, TraceInit } from "@/languages/statecharts/interpreter/trace_types";
 import { PropsWithChildren, ReactNode, useState } from "react";
 import { Row } from "../Components/Row";
 import { EventParam, InitCause, InputCause, TimerCause } from "./Common";
-import { SC2DEVSState } from "@/devs/sc2devs";
-import { DEVSTrace } from "@/devs/trace";
+import { SC2DEVSState } from "@/languages/devs/sc2devs";
+import { DEVSTrace } from "@/languages/devs/trace";
 import { jsonDeepEqual } from "@/util/util";
+import { RaisedEvent, RT_Event } from "@/languages/statecharts/interpreter/runtime_types";
+import { AbstractSyntax, stateDescription } from "@/languages/statecharts/abstract_syntax";
 
 export function SCInitializationTrace({init}: {init: TraceInit}) {
   return <TraceList>
@@ -23,14 +24,14 @@ export function SCInitializationTrace({init}: {init: TraceInit}) {
       </summary>
       <SCEntered entered={init.enteredRoot} />
     </>}</MyDetails></li>
-    {init.fairSteps.map(step => <li><SCFairStep fairstep={step}/></li>)}
+    {init.fairSteps.map((step, i) => <li key={i}><SCFairStep fairstep={step}/></li>)}
   </TraceList>;
 }
 
 export function SCBigStepTrace({bigstep}: {bigstep: TraceBigStep}) {
   return <div>
     <TraceList>
-      {bigstep.fairSteps.map(step => <li><SCFairStep fairstep={step}/></li>)}
+      {bigstep.fairSteps.map((step, i) => <li key={i}><SCFairStep fairstep={step}/></li>)}
     </TraceList>
   </div>;
 }
@@ -51,7 +52,7 @@ function SCFairStep({fairstep}: {fairstep: TraceFairStep}) {
       </div>
     </summary>
     <TraceList>
-      {fairstep.fired.map(fired => <li><SCFiredTransition fired={fired}/></li>)}
+      {fairstep.fired.map((fired, i) => <li key={i}><SCFiredTransition fired={fired}/></li>)}
     </TraceList>
   </>}</MyDetails>;
 }
@@ -70,11 +71,11 @@ const greyStyle = {color: 'light-dark(#666, #aaa)'};
 function SCFiredTransition({fired}: {fired: TraceSmallStep}) {
   return <div>
     <div style={greyStyle}>
-      fire {fired.transitionUID}
+      fire {stateDescription(fired.transition.src)} → {stateDescription(fired.transition.tgt)}
     </div>
     <TraceList>
       <li><SCExited exited={fired.exited} /></li>
-      {fired.transitionActions.map(action => <li><SCExecutedAction action={action}/></li>)}
+      {fired.transitionActions.map((action, i) => <li key={i}><SCExecutedAction action={action} /></li>)}
       <li><SCEntered entered={fired.entered} /></li>
     </TraceList>
   </div>;
@@ -83,11 +84,11 @@ function SCFiredTransition({fired}: {fired: TraceSmallStep}) {
 function SCExited({exited}: {exited: TraceExit}) {
   return <div>
     <div style={greyStyle}>
-      exit <span style={{borderRadius: 7, border: '1px solid black'}}>{exited.stateUID}</span>
+      exit <span style={{}}>{stateDescription(exited.state)}</span>
     </div>
     <TraceList>
-      <li>{exited.childrenExited.map(child => <SCExited exited={child} />)}</li>
-      {exited.exitActions.map(action => <li><SCExecutedAction action={action}/></li>)}
+      <li>{exited.childrenExited.map(child => <SCExited exited={child} key={child.state.uid}/>)}</li>
+      {exited.exitActions.map((action, i) => <li key={i}><SCExecutedAction action={action} /></li>)}
     </TraceList>
   </div>;
 }
@@ -95,11 +96,11 @@ function SCExited({exited}: {exited: TraceExit}) {
 function SCEntered({entered}: {entered: TraceEnter}) {
   return <div>
     <div style={greyStyle}>
-    enter <span style={{borderRadius: 7, border: '1px solid black'}}>{entered.stateUID}</span>
+    enter <span style={{}}>{stateDescription(entered.state)}</span>
     </div>
     <TraceList>
-      {entered.enterActions.map(action => <li><SCExecutedAction action={action}/></li>)}
-      <li>{entered.childrenEntered.map(child => <SCEntered entered={child}/>)}</li>
+      {entered.enterActions.map((action, i) => <li key={i}><SCExecutedAction action={action} /></li>)}
+      <li>{entered.childrenEntered.children.map(child => <SCEntered entered={child} key={child.state.uid}/>)}</li>
     </TraceList>
   </div>;
 }

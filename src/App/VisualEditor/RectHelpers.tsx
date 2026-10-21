@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { RectSide } from "../../statecharts/concrete_syntax";
+import { RectSide } from "../../languages/statecharts/concrete_syntax";
 import { Vec2D } from "../../util/geometry";
 import { CORNER_HELPER_OFFSET, CORNER_HELPER_RADIUS } from "../parameters";
 import { arraysEqual, objectsEqual, setsEqual } from "@/util/util";

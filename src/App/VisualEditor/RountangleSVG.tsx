@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { Rountangle, RectSide, getRectFatBBox, rountangleMinSize } from "../../statecharts/concrete_syntax";
+import { Rountangle, RectSide, getRectFatBBox, rountangleMinSize } from "../../languages/statecharts/concrete_syntax";
 import { ROUNTANGLE_RADIUS } from "../parameters";
 import { RectHelper } from "./RectHelpers";
 import { arraysEqual, jsonDeepEqual, setsEqual } from "@/util/util";

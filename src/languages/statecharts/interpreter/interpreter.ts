@@ -1,11 +1,11 @@
-import { AbstractState, computePath, ConcreteState, getDescendants, HistoryState, isOverlapping, OrState, StableState, Statechart, stateDescription, Transition,  TransitionSrcTgt } from "./abstract_syntax";
-import { evalExpr, execAssignment } from "./actionlang_interpreter";
-import { actionLangValToText } from "./actionlang_prettyprinter";
+import { AbstractState, computePath, ConcreteState, getDescendants, HistoryState, isOverlapping, OrState, StableState, AbstractSyntax, stateDescription, Transition,  TransitionSrcTgt } from "../abstract_syntax";
+import { evalExpr, execAssignment } from "../../actionlang/interpreter";
+import { actionLangValToText } from "../../actionlang/prettyprinter";
 import { Environment, Scope, ScopedEnvironment } from "./environment";
-import { Action,  TransitionLabel, Trigger } from "./label_ast";
 import { Mode, RT_Event, RT_History, RuntimeConfiguration, TimerElapseEvent, Timers, RaisedEvent } from "./runtime_types";
-import { getRaisedEvents, visitEnterActions } from "./microstep_trace_types";
-import { TraceFairStep, TraceEnter, TraceAction, TraceAssign, TraceExit, TraceInit, TraceSmallStep, TraceBigStep } from "./microstep_trace_types";
+import { getRaisedEvents, TraceEnterAndStateChildren, TraceEnterChildren, TraceEnterNoChildren, TraceEnterOrStateChildren, visitEnterActions } from "./trace_types";
+import { TraceFairStep, TraceEnter, TraceAction, TraceAssign, TraceExit, TraceInit, TraceSmallStep, TraceBigStep } from "./trace_types";
+import { Action, TransitionLabel, Trigger } from "../transitionlabel/abstract_syntax";
 
 export class RuntimeError extends Error {
   highlight: string[];
@@ -25,7 +25,7 @@ const _log = (str: string) => {
 
 const initialScopedEnvironment = (root: OrState) => new ScopedEnvironment(new Map([["root", new Map([["_log", _log]])]]), new Map([["root", {kind: "state", thing: root}]]));
 
-export function initialize(ast: Statechart): TraceInit {
+export function initialize(ast: AbstractSyntax): TraceInit {
   let enteredRoot, rtconfig;
   [rtconfig, enteredRoot] = enterState(0, {
     environment: initialScopedEnvironment(ast.root),
@@ -95,7 +95,7 @@ function enterState(simtime: number, {environment, mode, timers, ...rest}: Runti
 
   let rt = {environment, mode, timers, ...rest};
 
-  let childrenEntered: TraceEnter[] = [];
+  let childrenEntered: TraceEnterChildren;
   if (state.kind !== "pseudo") {
     // schedule timers
     timers = [
@@ -113,9 +113,12 @@ function enterState(simtime: number, {environment, mode, timers, ...rest}: Runti
       timers,
     }, state, toEnter));
   }
+  else {
+    childrenEntered = {kind: "pseudo", children: []};
+  }
 
   return [rt, {
-    stateUID: state.uid,
+    state,
     enterActions,
     childrenEntered,
   }];
@@ -152,7 +155,7 @@ function exitState(rt: RuntimeConfiguration, state: TransitionSrcTgt): [RuntimeC
   // remove from mode
   rt = {...rt, mode: new Set([...rt.mode].filter(s => s !== state.uid))};
   return [rt, {
-    stateUID: state.uid,
+    state,
     exitActions,
     childrenExited,
   }];
@@ -161,41 +164,53 @@ function exitState(rt: RuntimeConfiguration, state: TransitionSrcTgt): [RuntimeC
 // recursively enter the given state's children
 // AND-states: all children are entered.
 // OR-states: if one of the children occurs in 'toEnter', this child will be chosen. if not, then the default child is entered.
-function enterChildren(simtime: number, rt: RuntimeConfiguration, parent: ConcreteState, toEnter: Set<string> = new Set()): [RuntimeConfiguration, TraceEnter[]] {
+function enterChildren(simtime: number, rt: RuntimeConfiguration, parent: ConcreteState, toEnter: Set<string> = new Set()): [RuntimeConfiguration, TraceEnterChildren] {
   // enter children...
   if (parent.kind === "and") {
     // every child must be entered
-    return parent.children.reduce(([rt, entered], child) => {
+    const [newRt, children] = parent.children.reduce(([rt, entered], child) => {
       const [newRt, newlyEntered] = enterState(simtime, rt, child, toEnter);
       return [newRt, [...entered, newlyEntered]];
     }, [rt, [] as TraceEnter[]] as const);
+    return [newRt, {
+      kind: "and",
+      children,
+    }];
   }
   else if (parent.kind === "or") {
     // only one child can be entered
     const childToEnter = parent.children.filter(child => toEnter.has(child.uid));
     let entered;
     if (childToEnter.length === 1) {
-      // good
+      // good, we know which child to enter
       const child = childToEnter[0];
       [rt, entered] = enterState(simtime, rt, child, toEnter);
+      return [rt, {
+        kind: "or",
+        which: "target",
+        children: [entered],
+      }];
     }
     else if (childToEnter.length === 0) {
       // also good, enter default child
       if (parent.initial.length === 0) {
-        // tracer.log("runtime error");
         throw new RuntimeError(`Missing initial state.`, [parent.uid]);
       }
       else if (parent.initial.length > 1) {
-        // tracer.log("runtime error");
         throw new NonDeterminismError(`Non-determinism: multiple initial states.`, [parent.uid, ...parent.initial.map(i => i[0]), parent.uid]);
       }
+      // enter default chind
       const [[arrow, child]] = parent.initial;
       [rt, entered] = enterState(simtime, rt, child, toEnter);
+      return [rt, {
+        kind: "or",
+        which: "initial",
+        children: [entered],
+      }];
     }
     else {
-      throw new Error("can only enter one child of an OR-state, stupid!");
+      throw new Error("this should never happen");
     }
-    return [rt, [entered]];
   }
   throw new Error("should never reach here");
 }
@@ -337,14 +352,10 @@ function matchEventToTrigger(
   return [false, environment, []];
 }
 
-function getEnabledTransitions(mode: Mode, environment: Environment, sourceState: AbstractState, event: RT_Event | undefined, statechart: Statechart) {
+function getEnabledTransitions(mode: Mode, environment: Environment, sourceState: AbstractState, event: RT_Event | undefined, statechart: AbstractSyntax) {
   // generate 'inState'-macro (this function can be called from within a guard condition)
-  const inState = (stateLabel: string) => {
-    for (const [uid, state] of statechart.uid2State.entries()) {
-      if (stateDescription(state) === stateLabel) {
-        return (mode.has(uid));
-      }
-    }
+  const inState = (tag: string) => {
+    return mode.has(statechart.tag2State.get(tag)?.uid || "X");
   };
 
   const outgoing = statechart.transitions.get(sourceState.uid) || [];
@@ -370,7 +381,7 @@ function getEnabledTransitions(mode: Mode, environment: Environment, sourceState
 // Attempt to make ONE outgoing transition from the given source state.
 // Returns a new runtime configuration if a transition was made. Returns 'undefined' if no transition could be made.
 // If the target of the transition is a pseudo-state, then within this same call, transitions will keep firing until a stable state is reached.
-function attemptSrcState(simtime: number, alreadyFired: TraceSmallStep[], rtconfig: RuntimeConfiguration, sourceState: AbstractState, event: RT_Event | undefined, statechart: Statechart): [TraceSmallStep[], RuntimeConfiguration] | undefined {
+function attemptSrcState(simtime: number, alreadyFired: TraceSmallStep[], rtconfig: RuntimeConfiguration, sourceState: AbstractState, event: RT_Event | undefined, statechart: AbstractSyntax): [TraceSmallStep[], RuntimeConfiguration] | undefined {
   const enabled = getEnabledTransitions(rtconfig.mode, rtconfig.environment, sourceState, event, statechart);
   if (enabled.length > 0) {
     if (enabled.length > 1) {
@@ -388,7 +399,7 @@ function attemptSrcState(simtime: number, alreadyFired: TraceSmallStep[], rtconf
   }
 }
 
-function fireUntilStable(simtime: number, alreadyFired: TraceSmallStep[], rtconfig: RuntimeConfiguration, statechart: Statechart): [TraceSmallStep[], RuntimeConfiguration] {
+function fireUntilStable(simtime: number, alreadyFired: TraceSmallStep[], rtconfig: RuntimeConfiguration, statechart: AbstractSyntax): [TraceSmallStep[], RuntimeConfiguration] {
   while (true) {
     const activePseudo = [...rtconfig.mode]
         .map(s => statechart.uid2State.get(s))
@@ -407,7 +418,7 @@ function fireUntilStable(simtime: number, alreadyFired: TraceSmallStep[], rtconf
 
 // A fair step is a response to one (input|internal) event, where possibly multiple transitions are made as long as their arenas do not overlap. A reasonably accurate and more intuitive explanation is that every orthogonal region is allowed to fire at most one transition.
 // This function will attempt to fire outgoing transitions of 'activeParent's children, and recursively, the children of the children. This corresponds to 'parent first' priority semantics.
-function fairStep(simtime: number, rtconfig: RuntimeConfiguration, event: RT_Event, statechart: Statechart, activeParent: StableState, alreadyFired = [] as TraceSmallStep[]): [TraceSmallStep[], RuntimeConfiguration] {
+function fairStep(simtime: number, rtconfig: RuntimeConfiguration, event: RT_Event, statechart: AbstractSyntax, activeParent: StableState, alreadyFired = [] as TraceSmallStep[]): [TraceSmallStep[], RuntimeConfiguration] {
   for (const state of activeParent.children) {
     if (rtconfig.mode.has(state.uid)) {
       const didFire = attemptSrcState(simtime, alreadyFired, rtconfig, state, event, statechart);
@@ -427,7 +438,7 @@ function fairStep(simtime: number, rtconfig: RuntimeConfiguration, event: RT_Eve
 }
 
 // Perform a 'big step', AKA run-to-completion (RTC) step. A big step is an atomic response to an input event or timer elapse.
-export function makeBigStep(rtconfig: RuntimeConfiguration, simtime: number, event: RT_Event, statechart: Statechart): TraceBigStep {
+export function makeBigStep(rtconfig: RuntimeConfiguration, simtime: number, event: RT_Event, statechart: AbstractSyntax): TraceBigStep {
   let fired: TraceSmallStep[];
   [fired, rtconfig] = fairStep(simtime, rtconfig, event, statechart, statechart.root);
   let steps;
@@ -441,7 +452,7 @@ export function makeBigStep(rtconfig: RuntimeConfiguration, simtime: number, eve
 }
 
 // handle internal events after handling input event or after entering default state(s).
-export function handleInternalEvents(simtime: number, rtconfig: RuntimeConfiguration, internalEvents: RaisedEvent[], statechart: Statechart): [TraceFairStep[], RuntimeConfiguration] {
+export function handleInternalEvents(simtime: number, rtconfig: RuntimeConfiguration, internalEvents: RaisedEvent[], statechart: AbstractSyntax): [TraceFairStep[], RuntimeConfiguration] {
   const trace = [];
   let remaining = [...internalEvents]; // defensive copy
   let i=0;
@@ -501,11 +512,11 @@ function fire(simtime: number, rt: RuntimeConfiguration, transition: Transition,
   rt = {...rt, environment: newEnv2};
 
   return [rt, {
-    transitionUID: transition.uid,
+    transition: transition,
     arenaUID: transition.arena.uid,
     exited: exited[0]!, // the arena is always an OR-state, so we can safely assume one child is exited
     transitionActions,
-    entered: entered[0]!, // the arena is always an OR-state, so we can safely assume one child is entered
+    entered: (entered as TraceEnterOrStateChildren).children[0], // the arena is always an OR-state, so we can safely assume one child is entered
   }];
 }
 

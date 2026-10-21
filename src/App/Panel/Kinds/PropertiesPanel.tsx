@@ -12,7 +12,7 @@ import { DoubleClickButton } from "../../Components/DoubleClickButton";
 import { MoveUpDown } from "../../Components/MoveUpDown";
 import { Tooltip } from "../../Components/Tooltip";
 import { TwoStateButton } from "../../Components/TwoStateButton";
-import { WithSetters } from "../../makePartialSetter";
+import { WithSetters } from "../../../util/partial_setter";
 import { PropertyCheckStatus } from "../../SideBar/prepare_trace_types";
 import { PropertyCheckResult2 } from "../../SideBar/PropertyCheckResult";
 

@@ -3,7 +3,7 @@ import { buf2string, deflateBuffer, inflateBuf } from "@/compression/deflate";
 import { Encoder } from "cbor-x";
 import { Dispatch, ReactNode, SetStateAction, useState } from "react";
 import { useUrlHashState } from "../hooks/useUrlHashState";
-import { lossyCompressConcreteSyntax } from "../statecharts/concrete_syntax";
+import { lossyCompressConcreteSyntax } from "../languages/statecharts/concrete_syntax";
 import { myPureDeepAssign } from "../util/util";
 import { App } from "./App";
 import { AppState, defaultAppState } from "./App.state";

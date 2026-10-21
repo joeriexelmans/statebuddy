@@ -1,8 +1,8 @@
-import { Statechart } from "@/statecharts/abstract_syntax";
+import { AbstractSyntax } from "@/languages/statecharts/abstract_syntax";
 import { ReactNode, useMemo } from "react";
 import { AppState } from "../App.state";
 import { SimulatorStuff } from "../hooks/useSimulator";
-import { DeepSetter } from "../makePartialSetter";
+import { DeepSetter } from "../../util/partial_setter";
 import { PanelType } from "../migrations/v1_types";
 import { PropertyCheckStatus } from "../SideBar/prepare_trace_types";
 
@@ -21,7 +21,7 @@ import { StateTreePanel } from "./Kinds/StateTreePanel";
 export type GlobalProps = {
   appState: AppState,
   setAppState: DeepSetter<AppState>,
-  abstractSyntax?: Statechart,
+  abstractSyntax?: AbstractSyntax,
   simulator: SimulatorStuff,
   propertyResults?: PropertyCheckStatus[],
 }
@@ -134,7 +134,9 @@ export function PanelItem({type, globalProps: {appState, setAppState, abstractSy
 
 // Events are shown in columns
 function Columned({children}: {children: ReactNode}) {
-  return <div style={{columnWidth: 160}}>
+  return <div style={{
+    columnWidth: 200,
+  }}>
     {children}
   </div>
 }

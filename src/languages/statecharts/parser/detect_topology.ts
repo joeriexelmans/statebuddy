@@ -1,6 +1,6 @@
 import { area, isEntirelyWithin, Rect2D, Vec2D } from "@/util/geometry";
-import { Arrow, ConcreteSyntax, Diamond, getArrowFatBBox, getArrowFatBBoxes, getRectFatBBox, getTextFatBBox, History, Rountangle, Text } from "./concrete_syntax";
-import { findNearestArrow, findNearestHistory, findNearestSide, findRountangle, RectSide } from "./concrete_syntax";
+import { Arrow, ConcreteSyntax, Diamond, getArrowFatBBox, getArrowFatBBoxes, getRectFatBBox, getTextFatBBox, History, Rountangle, Text } from "../concrete_syntax";
+import { findNearestArrow, findNearestHistory, findNearestSide, findRountangle, RectSide } from "../concrete_syntax";
 import { arraysEqual, jsonDeepEqual, mapsEqual, memoizeOne, setsEqual } from "@/util/util";
 import { GRID_CELL_SIZE, HISTORY_RADIUS } from "@/App/parameters";
 

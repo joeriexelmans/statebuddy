@@ -1,15 +1,15 @@
 import { Dispatch, SetStateAction } from "react";
-import { TraceableError } from "../../statecharts/parser";
+import { TraceableError } from "../../languages/statecharts/parser/parser";
 
 import { PersistentDetails } from "../Components/PersistentDetails";
 
 import gitRev from "@/git-rev.txt";
 import { Tooltip } from "../Components/Tooltip";
 import { Stats } from "./Stats";
-import { Statechart } from "@/statecharts/abstract_syntax";
+import { AbstractSyntax } from "@/languages/statecharts/abstract_syntax";
 
 import appStyles from "../App.module.css";
-import { WithSetters } from "../makePartialSetter";
+import { WithSetters } from "../../util/partial_setter";
 import { Toolbar } from "../TopPanel/Toolbar";
 import { MtlWorkerPoolState } from "@/mtl-checker/useMtlWorkerPool";
 
@@ -17,7 +17,7 @@ type BottomPanelProps = WithSetters<{
   errorsExpanded: boolean,
 }> & {
   errors: TraceableError[],
-  abstractSyntax: Statechart,
+  abstractSyntax: AbstractSyntax,
   workerPoolState: MtlWorkerPoolState,
   setNWorkers: Dispatch<SetStateAction<number>>,
 }
@@ -45,7 +45,7 @@ export function BottomPanel({
       <PersistentDetails state={errorsExpanded} setState={setErrorsExpanded}>
           <summary>{errors.length} errors</summary>
           <div style={{maxHeight: '20vh', overflow: 'auto'}}>
-          {errors.map(({message, shapeUid})=>
+          {errors.map(({message, shapes: shapeUid})=>
             <div>
               {shapeUid}: {message}
             </div>)}

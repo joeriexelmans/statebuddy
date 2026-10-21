@@ -1,7 +1,7 @@
 import connectStyles from "./Connect.module.css";
 
-import { Model2ModelConn } from "@/devs/coupled_devs"
-import { Statechart } from "@/statecharts/abstract_syntax";
+import { Model2ModelConn } from "@/languages/devs/coupled_devs"
+import { AbstractSyntax } from "@/languages/statecharts/abstract_syntax";
 import traceStyles from "../../Trace/Trace.module.css";
 import { memo, useCallback, useMemo } from "react";
 
@@ -15,14 +15,14 @@ import { objectsEqual } from "@/util/util";
 import { useLocalStorage } from "@/hooks/usePersistentState";
 import { DoubleClickButton } from "../../Components/DoubleClickButton";
 import { Tooltip } from "../../Components/Tooltip";
-import { DeepSetter } from "../../makePartialSetter";
+import { DeepSetter } from "../../../util/partial_setter";
 import { PlantsState } from "../../migrations/v1_types";
 import { statebuddyPlants } from "../../plants";
 import { TwoStateButton } from "@/App/Components/TwoStateButton";
 import { Toolbar } from "@/App/TopPanel/Toolbar";
 
 type ConnectProps = {
-  abstractSyntax: Statechart,
+  abstractSyntax: AbstractSyntax,
   plantsState: PlantsState,
   setPlantsState: DeepSetter<PlantsState>,
 };
@@ -73,7 +73,7 @@ function Connections({conns, startIdx, componentNames, actions, rowStyles, cellS
   );
 }
 
-export function useConnect(abstractSyntax: Statechart, plantsState: PlantsState) {
+export function useConnect(abstractSyntax: AbstractSyntax, plantsState: PlantsState) {
   return useMemo(() => {
     const plants = plantsState.plants.map(({id, type}) => [id, statebuddyPlants[type]!] as const);
     const allOutputs = [
@@ -84,7 +84,7 @@ export function useConnect(abstractSyntax: Statechart, plantsState: PlantsState)
             [plantId, eventName] as const)),
     ];
     const allInputs = [
-      ...abstractSyntax.inputEvents.map(({event}) =>
+      ...[...abstractSyntax.inputEvents].map((event) =>
           ['sc', event] as const),
       ...plants.flatMap(([plantId, plant]) =>
           plant.plant.execution.inputs.map(eventName =>

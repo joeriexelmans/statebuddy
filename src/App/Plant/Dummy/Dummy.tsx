@@ -1,5 +1,5 @@
 import { Plant } from "../Plant";
-import { DEVSComponent } from "@/devs/devs";
+import { DEVSComponent } from "@/languages/devs/devs";
 
 export const dummyExecution: DEVSComponent<{}> = {
   initial: () => [[], {}],

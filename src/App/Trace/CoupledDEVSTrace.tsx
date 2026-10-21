@@ -1,22 +1,21 @@
 import styles from "./Trace.module.css";
 
-import { whoMadeExtTransition, whoMadeIntTransition } from "@/devs/coupled_trace";
-import { DEVSTrace, DEVSTraceItem, DEVSTraceItemExtTransition, DEVSTraceItemInit, DEVSTraceItemIntTransition } from "@/devs/trace";
-import { actionLangValToText } from "@/statecharts/actionlang_prettyprinter";
-import { RuntimeError } from "@/statecharts/interpreter";
-import { TraceInit } from "@/statecharts/microstep_trace_types";
-import { RaisedEvent } from "@/statecharts/runtime_types";
+import { whoMadeExtTransition, whoMadeIntTransition } from "@/languages/devs/coupled_trace";
+import { DEVSTrace, DEVSTraceItem, DEVSTraceItemExtTransition, DEVSTraceItemInit, DEVSTraceItemIntTransition } from "@/languages/devs/trace";
+import { actionLangValToText } from "@/languages/actionlang/prettyprinter";
+import { RuntimeError } from "@/languages/statecharts/interpreter/interpreter";
+import { TraceInit } from "@/languages/statecharts/interpreter/trace_types";
 import NotInterestedIcon from '@mui/icons-material/NotInterested';
 import { Dispatch, memo, SetStateAction, useEffect } from "react";
-import { Statechart } from "../../statecharts/abstract_syntax";
-import { TimeMode } from "../../statecharts/time";
+import { AbstractSyntax } from "../../languages/statecharts/abstract_syntax";
+import { TimeMode } from "../time";
 import { formatTime, objectsEqual } from "../../util/util";
 import { Column } from "../Components/Column";
 import { Row } from "../Components/Row";
 import { StatusType } from "../Components/StatusIndicator";
 import { Tooltip } from "../Components/Tooltip";
 import { CoupledState, StateBuddyTraceState } from "../hooks/useSimulator";
-import { WithSetters } from "../makePartialSetter";
+import { WithSetters } from "../../util/partial_setter";
 import { PlantsState } from "../migrations/v1_types";
 import { TraceView } from "../migrations/v2_types";
 import { statebuddyPlants } from "../plants";
@@ -24,6 +23,7 @@ import { PropertyTrace } from "../SideBar/prepare_trace_types";
 import { PropertyStatusIndicator } from "../SideBar/PropertyStatusIndicator";
 import { InitCause, InputCause, TimerCause } from "./Common";
 import { isSCOutputStep, SCBigStepTrace, SCInitializationTrace } from "./SC2DEVSTrace";
+import { RaisedEvent } from "@/languages/statecharts/interpreter/runtime_types";
 
 type TraceProps = WithSetters<{
   currentTrace: StateBuddyTraceState,
@@ -33,7 +33,7 @@ type TraceProps = WithSetters<{
   // clicking on an item in the trace will jump to it so we need to set the time to that point.
   setTime: Dispatch<SetStateAction<TimeMode>>,
 
-  ast: Statechart,
+  ast: AbstractSyntax,
 
   // result of checking a property is a trace of booleans which we display in the trace
   propertyTrace?: PropertyTrace,
@@ -149,7 +149,7 @@ function lookupName(plantsState: PlantsState, plantId: string) {
 
 type ThingsToPassOn = {
   plantsState: PlantsState,
-  ast: Statechart,
+  ast: AbstractSyntax,
 }
 
 const CoupledDEVSTraceItem = memo(function CoupledDEVSTraceItem({item, prevItem, status, ...thingsToPassOn}: {
@@ -170,7 +170,7 @@ const CoupledDEVSTraceItem = memo(function CoupledDEVSTraceItem({item, prevItem,
 }, objectsEqual); // <-- just a shallow comparison already saves us a lot of re-renders
 
 // DEVS components can be statechart instances (white-box -> we show microsteps), or generic (black-box)
-function isComponentStatechart(componentId: string, plantsState: PlantsState, ast: Statechart) {
+function isComponentStatechart(componentId: string, plantsState: PlantsState, ast: AbstractSyntax) {
   if (componentId === "sc") {
     return ast;
   }
@@ -245,7 +245,7 @@ function CoupledDEVSInternalTransition({item, prevItem, status, plantsState, ast
                   {blessedStatechart && <SCBigStepTrace bigstep={blessedItem.newState.state}/>
                                      || <TimerCause/>}
                   <Column>
-                    {blessedItem.outputEvents.map(o => <DEVSRaisedOutputEvent event={o}/>)}
+                    {blessedItem.outputEvents.map((o, i) => <DEVSRaisedOutputEvent key={i} event={o}/>)}
                   </Column>
                 </>}
     </Row>

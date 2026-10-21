@@ -1,7 +1,7 @@
 import { Dispatch, ReactElement, SetStateAction, useState, useCallback, CSSProperties, useMemo } from "react";
 
 import { useShortcuts } from "@/hooks/useShortcuts";
-import { syntaxHighlight } from "@/statecharts/syntax_higlight";
+import { syntaxHighlight } from "@/languages/statecharts/transitionlabel/syntax_higlight";
 import { SyntaxHighlightedText } from "../VisualEditor/SyntaxHiglightedText";
 import { Tooltip } from "../Components/Tooltip";
 import { Overlay } from "../Components/Overlay";

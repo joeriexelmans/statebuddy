@@ -1,4 +1,4 @@
-import { initialEditorState } from "../../statecharts/concrete_syntax";
+import { initialEditorState } from "../../languages/statecharts/concrete_syntax";
 import { defaultDebugState, defaultFindReplaceState, defaultMQTTState } from "./v1_default";
 import { AppStateV3 } from "./v3_types";
 

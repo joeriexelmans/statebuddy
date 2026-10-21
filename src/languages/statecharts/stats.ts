@@ -1,4 +1,4 @@
-import { Statechart, TransitionSrcTgt } from "./abstract_syntax";
+import { AbstractSyntax, TransitionSrcTgt } from "./abstract_syntax";
 
 function countStates(root: TransitionSrcTgt) {
   let and = 0, or = 0, pseudo = 0;
@@ -20,7 +20,7 @@ function countStates(root: TransitionSrcTgt) {
   return [and, or, pseudo];
 }
 
-export function getStats(ast: Statechart) {
+export function getStats(ast: AbstractSyntax) {
   const [numAndStates, numOrStates, numPseudoStates] = countStates(ast.root);
   return {
     numAndStates,

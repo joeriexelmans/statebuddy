@@ -1,4 +1,4 @@
-import { initialEditorState } from "../../statecharts/concrete_syntax";
+import { initialEditorState } from "../../languages/statecharts/concrete_syntax";
 import { AppStateV1, DebugState, MQTTState, SideBarStateV1, ToolSelectState, TracesState } from "./v1_types";
 
 export const defaultToolSelectState: ToolSelectState = {

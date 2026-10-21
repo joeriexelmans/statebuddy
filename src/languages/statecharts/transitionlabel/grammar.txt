@@ -1,4 +1,8 @@
-start = comment / tlabel
+// Open this file in:
+//   https://peggyjs.org/online.html
+// and export as ES6 module (overwriting ./parser.js)
+
+start = comment / tag / tlabel
 
 tlabel = _ trigger:trigger? _ guard:("[" _ guard _ "]")? _ actions:("/" _ actions )? _ {
   return {
@@ -201,7 +205,7 @@ unary = operator:("!" / "-")? atom:atom {
     }
 }
 
-atom = fnCall / nested / literal / ref / rhs_empty_dict / rhsNonemptyDict / rhsEmptyArray / rhs_nonempty_array
+atom = fnCall / nested / literal / ref / tag / rhs_empty_dict / rhsNonemptyDict / rhsEmptyArray / rhs_nonempty_array
 
 rhs_empty_dict = "{" _ "}" {
     return {
@@ -299,3 +303,10 @@ comment = "//" _ text:.* _ ('\n' / !.) {
     };
 }
 
+tag = "#" text:identifier {
+	return {
+    	kind: "tag",
+        text: "#"+text,
+        range: range(),
+    };
+}

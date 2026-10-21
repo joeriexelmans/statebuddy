@@ -1,11 +1,11 @@
 // DEVS adapter for Statecharts
 
-import { Statechart } from "@/statecharts/abstract_syntax";
-import { RaisedEvent } from "@/statecharts/runtime_types";
-import { getRaisedEvents, visitEnterActions } from "@/statecharts/microstep_trace_types";
-import { TraceBigStep, TraceFairStep, TraceInit } from "@/statecharts/microstep_trace_types";
+import { AbstractSyntax } from "@/languages/statecharts/abstract_syntax";
+import { RaisedEvent } from "@/languages/statecharts/interpreter/runtime_types";
+import { getRaisedEvents, visitEnterActions } from "@/languages/statecharts/interpreter/trace_types";
+import { TraceBigStep, TraceFairStep, TraceInit } from "@/languages/statecharts/interpreter/trace_types";
 import { DEVSComponent } from "./devs";
-import { initialize, makeBigStep, RuntimeError } from "@/statecharts/interpreter";
+import { initialize, makeBigStep, RuntimeError } from "@/languages/statecharts/interpreter/interpreter";
 
 export type SC2DEVSNonError = 
     TraceInit & {kind: "init"}
@@ -24,7 +24,7 @@ export type SC2DEVSState = {
 
 
 // Wraps a Statechart in a DEVS component
-export function sc2DEVS(ast: Statechart): DEVSComponent<SC2DEVSState, RaisedEvent> {
+export function sc2DEVS(ast: AbstractSyntax): DEVSComponent<SC2DEVSState, RaisedEvent> {
   return {
     initial: () => {
       return catchRuntimeError(
@@ -97,8 +97,6 @@ export function sc2DEVS(ast: Statechart): DEVSComponent<SC2DEVSState, RaisedEven
     },
     // Small mismatch here: A Statechart will only handle one input event at a time, but DEVS supports a bag of inputs. We just handle all the inputs sequentially (one RTC step per input event). So an extTransition can actually consist of more than one RTC step.
     extTransition: (simtime: number, c: SC2DEVSState, bagOfInputs: RaisedEvent[]) => {
-      console.log({bagOfInputs});
-      
       if (c.state instanceof RuntimeError) {
          // ignore
         return {
@@ -133,7 +131,7 @@ export function sc2DEVS(ast: Statechart): DEVSComponent<SC2DEVSState, RaisedEven
       );
     },
 
-    inputs: ast.inputEvents.map(e => e.event),
+    inputs: [...ast.inputEvents],
     outputs: [...ast.outputEvents],
   }
 }

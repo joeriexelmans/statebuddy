@@ -18,7 +18,7 @@ import { VisualEditorState } from "../VisualEditor/VisualEditor.state";
 import { SimulatorStuff } from '../hooks/useSimulator';
 import { Trial } from '../hooks/useTrial';
 import { useUpdater } from '../hooks/useUpdater';
-import { DeepSetter } from "../makePartialSetter";
+import { DeepSetter } from "../../util/partial_setter";
 import { KeyInfoHidden, KeyInfoVisible } from "./KeyInfo";
 import { Toolbar } from './Toolbar';
 import { EditorToolbar } from "./Toolbars/Editor/EditorToolbar";

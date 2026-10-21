@@ -1,9 +1,9 @@
-import { Statechart } from "@/statecharts/abstract_syntax"
+import { AbstractSyntax } from "@/languages/statecharts/abstract_syntax"
 import { useMemo } from "react"
-import { getStats } from "@/statecharts/stats";
+import { getStats } from "@/languages/statecharts/stats";
 
 type StatsProps = {
-  abstractSyntax: Statechart,
+  abstractSyntax: AbstractSyntax,
 }
 
 export function Stats({abstractSyntax}: StatsProps) {

@@ -1,4 +1,4 @@
-import { RaisedEvent } from "@/statecharts/runtime_types";
+import { RaisedEvent } from "@/languages/statecharts/interpreter/runtime_types";
 import { DEVSComponent } from "./devs";
 
 export type Model2ModelConn = {
