@@ -80,21 +80,9 @@ export function PersistentApp() {
     100, // ms of inactivity before state is compressed and persisted in URL hash
 
     // encode to URL:
-    async ({ syntax: { editorState: {current, ...editorState}, ...syntax }, ...appState }) => {
-      const compressed: AppState = {
-        syntax: {
-          editorState: {
-            current: lossyCompressConcreteSyntax(current),
-            ...editorState,
-            // history: [],
-            // future: [],
-          },
-          ...syntax,
-        },
-        ...appState
-      };
+    async (appState) => {
       // @ts-ignore: this works...
-      const cborBuf = CBOR.encode(compressed) as ArrayBuffer;
+      const cborBuf = CBOR.encode(appState) as ArrayBuffer;
       const cborZipBuf = await deflateBuffer(new Uint8Array(cborBuf));
 
       // console.log('CBOR', cborBuf.byteLength, 'bytes');

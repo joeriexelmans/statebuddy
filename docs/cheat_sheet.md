@@ -48,9 +48,14 @@ The mouse button mapping is always visible. For instance, in the next screenshot
 
 ### Text labels
 
+A text label is either a comment, a tag, or a transition label
+
  * comments start with `//`
-    * comments are also used to give states a name
- * labels always have the form `trigger [guard] / action0; action1; action2`
+    * comments have no effect on the behavior of the model
+ * tags start with `#` followed by an identifier, for instance `#cooking`
+    * tags are used to give human-readable names to states
+    * when using the `inState`-function (in a guard condition, to check if a state is active), the `inState` function expects a tag as a parameter, for instance `inState(#cooking)`.
+ * transition labels always have the form `trigger [guard] / action0; action1; action2`
     * examples
       * example: `buttonPressed [t == 0] / t=3; ^start`
       * example: `after 2s / ^ringBell`
