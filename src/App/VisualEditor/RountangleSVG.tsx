@@ -6,11 +6,13 @@ import { arraysEqual, jsonDeepEqual, setsEqual } from "@/util/util";
 import { BoundingBox } from "./BoundingBox";
 import styles from "./VisualEditor.module.css";
 import { DebugUID } from "./DebugUID";
+import { Selecting } from "./Selection";
 
 export const RountangleSVG = memo(function RountangleSVG(props: {rountangle: Rountangle; selected: Set<RectSide>; highlight: RectSide[]; error?: string; extraHighlight: boolean, active: boolean; dashed: boolean }) {
   const { topLeft, size, uid } = props.rountangle;
   // always draw a rountangle with a minimum size
   // during resizing, rountangle can be smaller than this size and even have a negative size, but we don't show it
+  const bbox = getRectFatBBox(props.rountangle);
   const minSize = rountangleMinSize(size);
   const extraAttrs = {
     className: styles.rountangle
@@ -45,15 +47,9 @@ export const RountangleSVG = memo(function RountangleSVG(props: {rountangle: Rou
       highlight={props.highlight}
       dashed={props.dashed} />
 
-    {props.extraHighlight && <rect
-      x={0-EXTRA_HIGHLIGHT_PADDING}
-      y={0-EXTRA_HIGHLIGHT_PADDING}
-      width={minSize.x+EXTRA_HIGHLIGHT_PADDING*2}
-      height={minSize.y+EXTRA_HIGHLIGHT_PADDING*2}
-      className={styles.extraHighlight}
-      />}
   </g>
-  <BoundingBox {...getRectFatBBox(props.rountangle)} />
+  {props.extraHighlight && <Selecting {...bbox}/>}
+  <BoundingBox {...bbox} />
   </>;
 }, (prevProps, nextProps) => {
   return prevProps === nextProps ||

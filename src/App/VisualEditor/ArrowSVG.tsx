@@ -6,6 +6,7 @@ import { jsonDeepEqual, setsEqual } from "@/util/util";
 import { BoundingBox } from "./BoundingBox";
 import styles from "./VisualEditor.module.css";
 import { DebugUID } from "./DebugUID";
+import { Selecting } from "./Selection";
 
 export const ArrowSVG = memo(function(props: { arrow: Arrow; selected: Set<ArrowPart>; error: string; highlight: boolean; extraHighlight: boolean, fired: boolean; arc: ArcDirection; initialMarker: boolean }) {
   const { start, end, uid } = props.arrow;
@@ -26,7 +27,7 @@ export const ArrowSVG = memo(function(props: { arrow: Arrow; selected: Set<Arrow
     <BoundingBox {...bbox} />
     <path
       className={styles.arrow
-        + ' ' + (props.selected.size === 2 ? styles.selected : "")
+        + ' ' + (props.selected.size >= 2 ? styles.selected : "")
         + ' ' + (props.error ? styles.error : "")
         + ' ' + (props.highlight ? styles.highlight : "")
         + ' ' + (props.fired ? styles.fired : "")
@@ -40,7 +41,7 @@ export const ArrowSVG = memo(function(props: { arrow: Arrow; selected: Set<Arrow
       data-uid={uid}
       data-parts="start end" />
 
-    {props.error && <text
+    {(props.error || props.extraHighlight) && <text
       className={styles.errorHover}
       x={(start.x + end.x) / 2 + 5}
       y={(start.y + end.y) / 2}
@@ -91,13 +92,7 @@ export const ArrowSVG = memo(function(props: { arrow: Arrow; selected: Set<Arrow
       data-uid={uid}
       data-parts="end" />}
 
-    {props.extraHighlight && <rect
-      x={bbox.topLeft.x-EXTRA_HIGHLIGHT_PADDING}
-      y={bbox.topLeft.y-EXTRA_HIGHLIGHT_PADDING}
-      width={bbox.size.x+EXTRA_HIGHLIGHT_PADDING*2}
-      height={bbox.size.y+EXTRA_HIGHLIGHT_PADDING*2}
-      className={styles.extraHighlight}
-      />}
+    {props.extraHighlight && <Selecting {...bbox} />}
 
   </g>;
 }, (prevProps, nextProps) => {

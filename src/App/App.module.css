@@ -9,7 +9,7 @@
   --error-color: light-dark(rgb(204, 0, 0), rgb(255, 82, 82));
   --error-bg-color: light-dark(lightpink, rgb(75, 0, 0));
   --error-hover-bg-color: light-dark(rgb(102, 0, 0), rgb(238, 153, 153));
-  --light-accent-color: light-dark(#1b45ff62, rgba(28, 71, 100, 0.377));
+  --light-accent-color: light-dark(#1b45ff52, rgba(28, 71, 100, 0.377));
   --accent-border-color: light-dark(rgb(69, 48, 255), rgb(64, 185, 255));
   --accent-opaque-color: light-dark(#bbc0f8, #325668);
 

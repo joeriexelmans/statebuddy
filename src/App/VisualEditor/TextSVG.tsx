@@ -9,6 +9,7 @@ import { SyntaxHighlightedText, TSpanWithLineBreaks } from "./SyntaxHiglightedTe
 import { TextRange } from "@/languages/actionlang/abstract_syntax";
 import { TraceableError } from "@/languages/statecharts/parser/parser";
 import { EXTRA_HIGHLIGHT_PADDING } from "../parameters";
+import { Selecting } from "./Selection";
 
 const foundStyle = {
   fill: 'light-dark( #f00 , #f00 )',
@@ -128,13 +129,7 @@ export const TextSVG = memo(function TextSVG(props: {text: Text, selected: boole
       {props.selected && <circle cx={0} cy={0} r={1.5} fill="red" />}
 
     </g>
-    {props.extraHighlight && <rect
-      x={bbox.topLeft.x-EXTRA_HIGHLIGHT_PADDING}
-      y={bbox.topLeft.y-EXTRA_HIGHLIGHT_PADDING}
-      width={bbox.size.x+EXTRA_HIGHLIGHT_PADDING*2}
-      height={bbox.size.y+EXTRA_HIGHLIGHT_PADDING*2}
-      className={styles.extraHighlight}
-      />}
+    {props.extraHighlight && <Selecting {...bbox}/>}
   </>;
 }, (prevProps, newProps) => {
   return jsonDeepEqual(prevProps.text, newProps)
