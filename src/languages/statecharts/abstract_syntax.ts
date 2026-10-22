@@ -12,6 +12,7 @@ export type AbstractState = {
 export type EntryExitState = AbstractState & {
   entryActions: Action[];
   exitActions: Action[];
+  variables: Set<string>; // <-- variables that belong to this state (that are created in the state's entry actions)
 }
 
 export type StableState = EntryExitState & {

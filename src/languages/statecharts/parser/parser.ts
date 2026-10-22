@@ -1,9 +1,10 @@
-import {  ConcreteState, HistoryState, OrState, UnstableState, AbstractSyntax, stateDescription, Transition, computeArena } from "../abstract_syntax";
+import {  ConcreteState, HistoryState, OrState, UnstableState, AbstractSyntax, stateDescription, Transition, computeArena, AbstractState, TransitionSrcTgt } from "../abstract_syntax";
 import { parse as parseLabel, SyntaxError } from "../transitionlabel/parser";
 import { Topology } from "./detect_topology";
 import { memoize } from "@/util/util";
-import { Expression, Lhs } from "../../actionlang/abstract_syntax";
+import { Expression, getLhsRefs, Lhs } from "../../actionlang/abstract_syntax";
 import { ParsedText, Action } from "../transitionlabel/abstract_syntax";
+import { StateTree } from "@/App/Panel/Kinds/StateTreePanel";
 
 export type TraceableError = {
   shapes: string[]; // the shape(s) in concrete syntax to which the error is related.
@@ -28,6 +29,7 @@ export function parseStatechart(topology: Topology): [AbstractSyntax, TraceableE
     tags: [],
     entryActions: [],
     exitActions: [],
+    variables: new Set(),
     depth: 0,
     timers: [],
   }
@@ -50,6 +52,7 @@ export function parseStatechart(topology: Topology): [AbstractSyntax, TraceableE
       tags: [],
       entryActions: [],
       exitActions: [],
+      variables: new Set(),
       parent,
       depth: parent.depth + 1,
     };
@@ -86,6 +89,7 @@ export function parseStatechart(topology: Topology): [AbstractSyntax, TraceableE
       parent,
       entryActions: [],
       exitActions: [],
+      variables: new Set<string>(),
     };
     uid2State.set(uid, pseudoState);
     parent.children.push(pseudoState);
@@ -357,6 +361,23 @@ export function parseStatechart(topology: Topology): [AbstractSyntax, TraceableE
   const tag2State = new Map([...tag2States]
     .filter(([_, states]) => states.length === 1)
     .map(([tag, [[textUid, state]]]) => [tag, state] as const));
+
+
+  // figure out variables
+  function figureOutVariables(state: TransitionSrcTgt, ignore: Set<string>) {
+    if (state.kind === "and" || state.kind === "or") {
+      for (const action of state.entryActions) {
+        if (action.kind === "assignment") {
+          const refs = getLhsRefs(action.lhs);
+          const newlyIntroducedVariables = refs.difference(ignore);
+          newlyIntroducedVariables.forEach(v => state.variables.add(v));
+        }
+      }
+      console.log(state.uid, state.variables);
+      state.children.forEach(child => figureOutVariables(child, state.variables.union(ignore)));
+    }
+  }
+  figureOutVariables(root, new Set());
   
   return [{
     root,

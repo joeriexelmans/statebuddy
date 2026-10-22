@@ -121,3 +121,19 @@ export function visitLhs(lhs: Lhs, callback: (expr: Lhs) => void) {
     }
   }
 }
+
+export function getLhsRefs(lhs: Lhs): Set<string> {
+  if (lhs.kind === "lhsLiteral") {
+    return new Set();
+  }
+  else if (lhs.kind === "lhsRef") {
+    return new Set([lhs.variable]);
+  }
+  else if (lhs.kind === "lhsArray") {
+    return new Set(...lhs.elements.map(getLhsRefs));
+  }
+  else if (lhs.kind === "lhsDict") {
+    return new Set(...Object.entries(lhs.fields).map(([_, lhs]) => getLhsRefs(lhs)));
+  }
+  throw new Error("should never reach here");
+}

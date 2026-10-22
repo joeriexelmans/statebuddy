@@ -16,6 +16,8 @@ export const copySelection = (state: VisualEditorState) => {
 };
 
 const copyInternal = (state: VisualEditorState, e: ClipboardEvent) => {
+  console.log('copyInternal');
+  
   const data = copySelection(state);
   e.clipboardData?.setData("text/plain", data);
 };
