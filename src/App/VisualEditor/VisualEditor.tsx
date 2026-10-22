@@ -37,7 +37,7 @@ type VisualEditorProps = {
   highlightActive: Set<string>, // <-- active states (to render in seperate color)
   highlightTransitions: string[], // <-- fired transitions (different color, thicker)
 
-  extraHighlightShapes: Set<string>,
+  extraHighlight: Set<string>, // <-- shapes to highlight (with different markup than active/fired shapes)
 
   zoom: number;
   findText: string;
@@ -46,7 +46,7 @@ type VisualEditorProps = {
 
 const viewBox = `0 0 ${EDITOR_WIDTH} ${EDITOR_HEIGHT}`;
 
-export const VisualEditor = memo(function VisualEditor({state, topology, errors, highlightActive, highlightTransitions, beginEdit, zoom, findText, editorStuff}: VisualEditorProps) {
+export const VisualEditor = memo(function VisualEditor({state, topology, errors, highlightActive, highlightTransitions, extraHighlight, beginEdit, zoom, findText, editorStuff}: VisualEditorProps) {  
 
   const {copyPasteCallbacks, dragging, onMouseDown, refSVG, renderSelection} = editorStuff;
 
@@ -170,7 +170,8 @@ export const VisualEditor = memo(function VisualEditor({state, topology, errors,
       }
     `}</style>
 
-    <Rountangles rountangles={state.rountangles} topology={topology} {...{selection: renderSelection, sidesToHighlight, rountanglesToHighlight, errors, highlightActive}}/>
+    <Rountangles rountangles={state.rountangles} topology={topology} {...{selection: renderSelection, sidesToHighlight, rountanglesToHighlight, errors, extraHighlight, highlightActive}}/>
+
     <Diamonds diamonds={state.diamonds} {...{selection: renderSelection, sidesToHighlight, rountanglesToHighlight, errors}}/>
 
     {state.history.map(history => <>
@@ -197,6 +198,7 @@ export const VisualEditor = memo(function VisualEditor({state, topology, errors,
           .filter(({shapes}) => shapes.includes(arrow.uid))
           .map(({message}) => message).join(', ')}
         highlight={arrowsToHighlight.hasOwnProperty(arrow.uid)}
+        extraHighlight={extraHighlight.has(arrow.uid)}
         fired={highlightTransitions.includes(arrow.uid)}
         arc={arc}
         initialMarker={Boolean(initialMarker)}
@@ -204,7 +206,7 @@ export const VisualEditor = memo(function VisualEditor({state, topology, errors,
       }
     )}
 
-    <Texts texts={state.texts} {...{selection: renderSelection, textsToHighlight, errors, beginEdit, findText}}/>
+    <Texts texts={state.texts} {...{selection: renderSelection, textsToHighlight, errors, extraHighlight, beginEdit, findText}}/>
 
     {(rootErrors.length>0) && <text className={styles.errorHover} x={5} y={20} style={{display:'inline'}}>{rootErrors.join('\n')}</text>}
 
@@ -214,23 +216,18 @@ export const VisualEditor = memo(function VisualEditor({state, topology, errors,
   </svg>;
 });
 
-const Rountangles = memo(function Rountangles({rountangles, topology, selection, sidesToHighlight, rountanglesToHighlight, errors, highlightActive}: {rountangles: Rountangle[], topology: Topology, selection: Selection, sidesToHighlight: {[key: string]: RectSide[]}, rountanglesToHighlight: {[key: string]: boolean}, errors: TraceableError[], highlightActive: Mode}) {
-  // dirty:
-  // const uidToRect = useDelayedMemo(() => {
-  //   // console.time('uidToRect');
-  //   const result = new Map(rountangles.map(r => [r.uid ,r]));
-  //   // console.timeEnd('uidToRect');
-  //   return result;
-  // }, [rountangles], 100);
+const Rountangles = memo(function Rountangles({rountangles, topology, selection, sidesToHighlight, rountanglesToHighlight, errors, extraHighlight, highlightActive}: {rountangles: Rountangle[], topology: Topology, selection: Selection, sidesToHighlight: {[key: string]: RectSide[]}, rountanglesToHighlight: {[key: string]: boolean}, errors: TraceableError[], extraHighlight: Set<string>, highlightActive: Mode}) {
   return <>{rountangles.map(rountangle => {
     const parentUID = topology.insidenessMap.get(rountangle.uid);
     const parent = topology.rountangles.get(parentUID!);
     const parentIsOrState = parent ? (parent === "or") : true;
+    const highlight = extraHighlight.has(rountangle.uid);
     return <RountangleSVG
       key={rountangle.uid}
       rountangle={rountangle}
       selected={selection.get(rountangle.uid) as Set<RectSide> || new Set()}
       highlight={[...(sidesToHighlight[rountangle.uid] || []), ...(rountanglesToHighlight[rountangle.uid]?["left","right","top","bottom"]:[]) as RectSide[]]}
+      extraHighlight={highlight}
       error={errors
         .filter(({shapes}) => shapes.includes(rountangle.uid))
         .map(({message}) => message).join(', ')}
@@ -244,6 +241,7 @@ const Rountangles = memo(function Rountangles({rountangles, topology, selection,
     && objectsEqual(p.sidesToHighlight, n.sidesToHighlight)
     && objectsEqual(p.rountanglesToHighlight, n.rountanglesToHighlight)
     && arraysEqual(p.errors, n.errors)
+    && setsEqual(p.extraHighlight, n.extraHighlight)
     && setsEqual(p.highlightActive, n.highlightActive);
 });
 
@@ -265,7 +263,7 @@ const Diamonds = memo(function Diamonds({diamonds, selection, sidesToHighlight, 
     && arraysEqual(p.errors, n.errors);
 });
 
-const Texts = memo(function Texts({texts, selection, textsToHighlight, errors, beginEdit, findText}: {texts: Text[], selection: Selection, textsToHighlight: {[key: string]: boolean}, errors: TraceableError[], beginEdit: (uid: string) => void, findText: string}) {
+const Texts = memo(function Texts({texts, selection, textsToHighlight, errors, extraHighlight, beginEdit, findText}: {texts: Text[], selection: Selection, textsToHighlight: {[key: string]: boolean}, errors: TraceableError[], extraHighlight: Set<string>, beginEdit: (uid: string) => void, findText: string}) {
   return <>{texts.map(txt => {
     return <TextSVG
       key={txt.uid}
@@ -273,6 +271,7 @@ const Texts = memo(function Texts({texts, selection, textsToHighlight, errors, b
       text={txt}
       selected={selection.has(txt.uid)}
       highlight={textsToHighlight.hasOwnProperty(txt.uid)}
+      extraHighlight={extraHighlight.has(txt.uid)}
       beginEdit={beginEdit}
       findText={findText}
     />
@@ -282,6 +281,7 @@ const Texts = memo(function Texts({texts, selection, textsToHighlight, errors, b
     && mapsEqual(p.selection, n.selection)
     && objectsEqual(p.textsToHighlight, n.textsToHighlight)
     && arraysEqual(p.errors, n.errors)
+    && setsEqual(p.extraHighlight, n.extraHighlight)
     && p.beginEdit === n.beginEdit
     && p.findText === n.findText;
 });

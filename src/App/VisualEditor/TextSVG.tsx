@@ -8,6 +8,7 @@ import { RangeWithAnnotation, syntaxHighlight } from "@/languages/statecharts/tr
 import { SyntaxHighlightedText, TSpanWithLineBreaks } from "./SyntaxHiglightedText";
 import { TextRange } from "@/languages/actionlang/abstract_syntax";
 import { TraceableError } from "@/languages/statecharts/parser/parser";
+import { EXTRA_HIGHLIGHT_PADDING } from "../parameters";
 
 const foundStyle = {
   fill: 'light-dark( #f00 , #f00 )',
@@ -23,7 +24,7 @@ const fade = (ranges: RangeWithAnnotation[]) => {
 const em = 79/4;
 const ch = 40/5;
 
-export const TextSVG = memo(function TextSVG(props: {text: Text, selected: boolean, highlight: boolean, findText: string, beginEdit: (uid: string) => void, error?: TraceableError}) {
+export const TextSVG = memo(function TextSVG(props: {text: Text, selected: boolean, highlight: boolean, extraHighlight: boolean, findText: string, beginEdit: (uid: string) => void, error?: TraceableError}) {
 
   let {
     ranges,
@@ -57,8 +58,10 @@ export const TextSVG = memo(function TextSVG(props: {text: Text, selected: boole
     errMessage = props.error.message;
   }
 
+  const bbox = getTextFatBBox(props.text);
+
   return <>
-    <BoundingBox {...getTextFatBBox(props.text)}/>
+    <BoundingBox {...bbox}/>
     <g
       key={props.text.uid}
       transform={`translate(${props.text.topLeft.x} ${props.text.topLeft.y})`}
@@ -122,16 +125,21 @@ export const TextSVG = memo(function TextSVG(props: {text: Text, selected: boole
         }
 
       {/* text anchor position - useful for debugging */}
-      {/* {props.selected && <>
-        <line x1={-2.5} x2={2.5} y1={0} y2={0} stroke="red" strokeWidth={0.5}/>
-        <line x1={0} x2={0} y1={-2.5} y2={2.5} stroke="red" strokeWidth={0.5}/>
-      </>} */}
       {props.selected && <circle cx={0} cy={0} r={1.5} fill="red" />}
+
     </g>
+    {props.extraHighlight && <rect
+      x={bbox.topLeft.x-EXTRA_HIGHLIGHT_PADDING}
+      y={bbox.topLeft.y-EXTRA_HIGHLIGHT_PADDING}
+      width={bbox.size.x+EXTRA_HIGHLIGHT_PADDING*2}
+      height={bbox.size.y+EXTRA_HIGHLIGHT_PADDING*2}
+      className={styles.extraHighlight}
+      />}
   </>;
 }, (prevProps, newProps) => {
   return jsonDeepEqual(prevProps.text, newProps)
     && prevProps.highlight === newProps.highlight
+    && prevProps.extraHighlight === newProps.extraHighlight
     && prevProps.beginEdit === newProps.beginEdit
     && prevProps.selected === newProps.selected
     && prevProps.findText === newProps.findText

@@ -26,3 +26,5 @@ export const GRID_CELL_SIZE = 200;
 // warning: making this smaller may brake compatibility with existing models!
 export const EDITOR_WIDTH = 8000;
 export const EDITOR_HEIGHT = 8000;
+
+export const EXTRA_HIGHLIGHT_PADDING = 10;

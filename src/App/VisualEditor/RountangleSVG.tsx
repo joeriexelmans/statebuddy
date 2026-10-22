@@ -1,13 +1,13 @@
 import { memo } from "react";
 import { Rountangle, RectSide, getRectFatBBox, rountangleMinSize } from "../../languages/statecharts/concrete_syntax";
-import { ROUNTANGLE_RADIUS } from "../parameters";
+import { EXTRA_HIGHLIGHT_PADDING, ROUNTANGLE_RADIUS } from "../parameters";
 import { RectHelper } from "./RectHelpers";
 import { arraysEqual, jsonDeepEqual, setsEqual } from "@/util/util";
 import { BoundingBox } from "./BoundingBox";
 import styles from "./VisualEditor.module.css";
 import { DebugUID } from "./DebugUID";
 
-export const RountangleSVG = memo(function RountangleSVG(props: {rountangle: Rountangle; selected: Set<RectSide>; highlight: RectSide[]; error?: string; active: boolean; dashed: boolean }) {
+export const RountangleSVG = memo(function RountangleSVG(props: {rountangle: Rountangle; selected: Set<RectSide>; highlight: RectSide[]; error?: string; extraHighlight: boolean, active: boolean; dashed: boolean }) {
   const { topLeft, size, uid } = props.rountangle;
   // always draw a rountangle with a minimum size
   // during resizing, rountangle can be smaller than this size and even have a negative size, but we don't show it
@@ -44,6 +44,14 @@ export const RountangleSVG = memo(function RountangleSVG(props: {rountangle: Rou
       selected={props.selected}
       highlight={props.highlight}
       dashed={props.dashed} />
+
+    {props.extraHighlight && <rect
+      x={0-EXTRA_HIGHLIGHT_PADDING}
+      y={0-EXTRA_HIGHLIGHT_PADDING}
+      width={minSize.x+EXTRA_HIGHLIGHT_PADDING*2}
+      height={minSize.y+EXTRA_HIGHLIGHT_PADDING*2}
+      className={styles.extraHighlight}
+      />}
   </g>
   <BoundingBox {...getRectFatBBox(props.rountangle)} />
   </>;
@@ -53,6 +61,7 @@ export const RountangleSVG = memo(function RountangleSVG(props: {rountangle: Rou
     && setsEqual(prevProps.selected, nextProps.selected)
     && arraysEqual(prevProps.highlight, nextProps.highlight)
     && prevProps.error === nextProps.error
+    && prevProps.extraHighlight === nextProps.extraHighlight
     && prevProps.active === nextProps.active
     && prevProps.dashed === nextProps.dashed
 })

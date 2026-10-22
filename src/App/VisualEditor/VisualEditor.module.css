@@ -192,3 +192,9 @@ text.uid {
   stroke-width: 3.5px;
   pointer-events: none;
 }
+
+.extraHighlight {
+  stroke: light-dark(brown, yellow);
+  stroke-width: 2px;
+  fill: transparent;
+}

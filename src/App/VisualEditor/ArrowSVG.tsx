@@ -1,13 +1,13 @@
 import { memo } from "react";
 import { Arrow, ArrowPart, getArrowFatBBox, getArrowFatBBoxes } from "../../languages/statecharts/concrete_syntax";
 import { addV2D, ArcDirection, euclideanDistance, scaleV2D } from "../../util/geometry";
-import { CORNER_HELPER_RADIUS } from "../parameters";
+import { CORNER_HELPER_RADIUS, EXTRA_HIGHLIGHT_PADDING } from "../parameters";
 import { jsonDeepEqual, setsEqual } from "@/util/util";
 import { BoundingBox } from "./BoundingBox";
 import styles from "./VisualEditor.module.css";
 import { DebugUID } from "./DebugUID";
 
-export const ArrowSVG = memo(function(props: { arrow: Arrow; selected: Set<ArrowPart>; error: string; highlight: boolean; fired: boolean; arc: ArcDirection; initialMarker: boolean }) {
+export const ArrowSVG = memo(function(props: { arrow: Arrow; selected: Set<ArrowPart>; error: string; highlight: boolean; extraHighlight: boolean, fired: boolean; arc: ArcDirection; initialMarker: boolean }) {
   const { start, end, uid } = props.arrow;
   const radius = euclideanDistance(start, end) / 1.6;
   let largeArc = "1";
@@ -91,11 +91,20 @@ export const ArrowSVG = memo(function(props: { arrow: Arrow; selected: Set<Arrow
       data-uid={uid}
       data-parts="end" />}
 
+    {props.extraHighlight && <rect
+      x={bbox.topLeft.x-EXTRA_HIGHLIGHT_PADDING}
+      y={bbox.topLeft.y-EXTRA_HIGHLIGHT_PADDING}
+      width={bbox.size.x+EXTRA_HIGHLIGHT_PADDING*2}
+      height={bbox.size.y+EXTRA_HIGHLIGHT_PADDING*2}
+      className={styles.extraHighlight}
+      />}
+
   </g>;
 }, (prevProps, nextProps) => {
   return jsonDeepEqual(prevProps.arrow, nextProps.arrow)
     && setsEqual(prevProps.selected, nextProps.selected)
     && prevProps.highlight === nextProps.highlight
+    && prevProps.extraHighlight === nextProps.extraHighlight
     && prevProps.error === nextProps.error
     && prevProps.fired === nextProps.fired
     && prevProps.arc === nextProps.arc

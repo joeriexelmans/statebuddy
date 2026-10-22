@@ -20,6 +20,7 @@ type BottomPanelProps = WithSetters<{
   abstractSyntax: AbstractSyntax,
   workerPoolState: MtlWorkerPoolState,
   setNWorkers: Dispatch<SetStateAction<number>>,
+  setExtraHighlight: Dispatch<SetStateAction<Set<string>>>,
 }
 
 export function BottomPanel({
@@ -29,6 +30,7 @@ export function BottomPanel({
   abstractSyntax,
   workerPoolState,
   setNWorkers,
+  setExtraHighlight,
 }: BottomPanelProps) {
 
   const nBooting = workerPoolState.workers.filter(w => w.state === "booting").length;
@@ -47,7 +49,11 @@ export function BottomPanel({
           <summary>{errors.length} errors</summary>
           <div style={{maxHeight: '20vh', overflow: 'auto'}}>
           {errors.map(({message, shapes}, i)=>
-            <div key={`${i}-${message}`}>
+            <div
+              key={`${i}-${message}`}
+              onMouseEnter={() => setExtraHighlight(() => new Set(shapes))}
+              onMouseLeave={() => setExtraHighlight(() => new Set())}
+            >
               {shapes.join(', ')}: {message}
             </div>)}
           </div>

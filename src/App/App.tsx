@@ -52,6 +52,8 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
   // Wether a modal dialog is being shown or not
   const [modal, setModal] = useState<ReactElement|null>(null);
 
+  const [extraHighlight, setExtraHighlight] = useState(new Set<string>());
+
   // Persist the size of the worker pool in the user's localStorage (not in AppState) - the optimal value here is machine-bound.
   const [nWorkers, setNWorkers] = useLocalStorage("nWorkers", 4);
 
@@ -272,6 +274,7 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
                   mouseMap={appState.view.topPanel.mouseMap}
                   highlightActive={simulator.highlightActive}
                   highlightTransitions={simulator.highlightTransitions}
+                  extraHighlight={extraHighlight}
                   errors={allErrors}
                   beginEdit={beginEdit}
                 />
@@ -353,6 +356,7 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
             // pyodideStatus={pyodide.status}
             workerPoolState={workerPoolState}
             setNWorkers={setNWorkers}
+            setExtraHighlight={setExtraHighlight}
           />
         }
       </div>
