@@ -48,7 +48,7 @@ The mouse button mapping is always visible. For instance, in the next screenshot
 
 ### Text labels
 
-A text label is either a comment, a tag, or a transition label
+A text label is either a comment, a tag, or a transition label.
 
  * comments start with `//`
     * comments have no effect on the behavior of the model
@@ -81,26 +81,27 @@ A text label is either a comment, a tag, or a transition label
             * `True = myBool` assertion that `myBool` must be `True` (runtime error if not)
                * can mix with destructuring assignment: `{x: True} = {x: myBool}` will fail if myBool is `False`.
          * `^o`, `^_o` raise output event `o` or internal event `_o`
- * action language
-    * expressions
-       * literals
-          * `3` numbers
-          * `True`, `False` booleans (warning: `true` and `false` with small caps will be seen as variable names!)
-          * `"hello world"` strings
-       * `x` variable references
-       * unary operators
-          * `!` not (booleans only)
-          * `-` negate (numbers only)
-       * binary operators
-          * `a == b`, `a != b` (not) equals (booleans, numbers, strings)
-          * `a > b`, `a < b`, `a <= b`, `a >= b` comparison (numbers only)
-          * `+`, `-` sum, difference (numbers only)
-       * structures
-          * `{x: 1, y: 2}` dictionaries
-          * `["hey", 42, False]` lists
 
-### Naming conventions
+#### Action language expressions
+
+   * literals
+      * `3` numbers
+      * `True`, `False` booleans (warning: `true` and `false` with small caps will be seen as variable names!)
+      * `"hello world"` strings
+   * `x` variable references
+   * unary operators
+      * `!` not (booleans only)
+      * `-` negate (numbers only)
+   * binary operators
+      * `a == b`, `a != b` (not) equals (booleans, numbers, strings)
+      * `a > b`, `a < b`, `a <= b`, `a >= b` comparison (numbers only)
+      * `+`, `-` sum, difference (numbers only)
+   * structures
+      * `{x: 1, y: 2}` dictionaries
+      * `["hey", 42, False]` lists
+
+### StateBuddy naming conventions
 
  * internal event names **must** start with `_` (underscore)
- * variable names **must** start with a lowercase letter (`[a-z]`)
+ * identifiers (variable names and tags) **must** start with a lowercase letter (`[a-z]`)
  * boolean literals start with uppercase letter: `True`, `False`
