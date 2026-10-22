@@ -12,6 +12,7 @@ import appStyles from "../App.module.css";
 import { WithSetters } from "../../util/partial_setter";
 import { Toolbar } from "../TopPanel/Toolbar";
 import { MtlWorkerPoolState } from "@/mtl-checker/useMtlWorkerPool";
+import { Selection } from "../VisualEditor/VisualEditor.state";
 
 type BottomPanelProps = WithSetters<{
   errorsExpanded: boolean,
@@ -21,6 +22,7 @@ type BottomPanelProps = WithSetters<{
   workerPoolState: MtlWorkerPoolState,
   setNWorkers: Dispatch<SetStateAction<number>>,
   setExtraHighlight: Dispatch<SetStateAction<Set<string>>>,
+  setSelection: Dispatch<SetStateAction<Selection>>;
 }
 
 export function BottomPanel({
@@ -31,6 +33,7 @@ export function BottomPanel({
   workerPoolState,
   setNWorkers,
   setExtraHighlight,
+  setSelection
 }: BottomPanelProps) {
 
   const nBooting = workerPoolState.workers.filter(w => w.state === "booting").length;
@@ -51,8 +54,10 @@ export function BottomPanel({
           {errors.map(({message, shapes}, i)=>
             <div
               key={`${i}-${message}`}
+              style={{cursor: 'pointer'}}
               onMouseEnter={() => setExtraHighlight(() => new Set(shapes))}
               onMouseLeave={() => setExtraHighlight(() => new Set())}
+              onClick={() => setSelection(new Map(shapes.map(shapeUid => [shapeUid, new Set(["start", "end", "left", "right", "top", "bottom", "text"])] as const)))}
             >
               {shapes.join(', ')}: {message}
             </div>)}

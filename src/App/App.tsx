@@ -357,6 +357,7 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
             workerPoolState={workerPoolState}
             setNWorkers={setNWorkers}
             setExtraHighlight={setExtraHighlight}
+            setSelection={setAppState.setSyntax.setEditorState.setCurrent.setSelection._setShallow}
           />
         }
       </div>

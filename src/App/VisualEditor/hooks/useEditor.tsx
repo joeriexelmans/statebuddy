@@ -7,7 +7,7 @@ import { getBBoxInSvgCoords } from "@/util/svg_helper";
 import { Dispatch, RefObject, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DeepSetter } from "../../../util/partial_setter";
 import { MIN_ROUNTANGLE_SIZE } from "../../parameters";
-import { SelectingState } from "../Selection";
+import { mergeSelections, SelectingState } from "../Selection";
 import { translateSelection } from "../transformations/translate";
 import styles from "../VisualEditor.module.css";
 import { Selection, VisualEditorState } from "../VisualEditor.state";
@@ -445,8 +445,6 @@ function computeSelection(ss: SelectingState, refSVG: {current: SVGSVGElement | 
   return new Map();
 }
 
-
-
 function eventTargetToParts(target: EventTarget|null) {
   while (target) {
     // @ts-ignore: dataset property unknown to TypeScript
@@ -464,12 +462,4 @@ function eventTargetToParts(target: EventTarget|null) {
     target = target.parentNode;
   }
   return [undefined, new Set(), false] as const;
-}
-
-export function mergeSelections(a: Selection, b: Selection) {
-  const result = new Map(a);
-  for (const [uid, parts] of b.entries()) {
-    result.set(uid, (result.get(uid) || new Set()).union(parts));
-  }
-  return result;
 }
