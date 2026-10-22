@@ -3,7 +3,7 @@ import "./VisualEditor.css";
 import { Dispatch, memo, ReactElement, SetStateAction, useCallback, useContext, useEffect, useMemo } from "react";
 
 import { arraysEqual, mapsEqual, objectsEqual, setsEqual } from "@/util/util";
-import { ArrowPart, Diamond, RectSide, Rountangle, Text } from "../../languages/statecharts/concrete_syntax";
+import { Arrow, ArrowPart, Diamond, RectSide, Rountangle, Text } from "../../languages/statecharts/concrete_syntax";
 import { Topology } from "../../languages/statecharts/parser/detect_topology";
 import { TraceableError } from "../../languages/statecharts/parser/parser";
 import { ArcDirection, arcDirection } from "../../util/geometry";
@@ -31,8 +31,6 @@ type VisualEditorProps = {
   beginEdit: (uid: string) => void,
 
   errors: TraceableError[], // <-- used for displaying syntax and runtime errors
-
-  
 
   highlightActive: Set<string>, // <-- active states (to render in seperate color)
   highlightTransitions: string[], // <-- fired transitions (different color, thicker)
@@ -183,7 +181,20 @@ export const VisualEditor = memo(function VisualEditor({state, topology, errors,
         />
     </>)}
 
-    {state.arrows.map(arrow => {
+    <Arrows arrows={state.arrows} topology={topology} {...{selection: renderSelection, arrowsToHighlight, errors, extraHighlight, highlightTransitions}}/>
+
+    <Texts texts={state.texts} {...{selection: renderSelection, textsToHighlight, errors, extraHighlight, beginEdit, findText}}/>
+
+    {(rootErrors.length>0) && <text className={styles.errorHover} x={5} y={20} style={{display:'inline'}}>{rootErrors.join('\n')}</text>}
+
+    {debugContext.showGrid && <Grid width={EDITOR_WIDTH} height={EDITOR_HEIGHT} />}
+
+    {state.makingSelection && <Selecting {...state.makingSelection}/>}
+  </svg>;
+});
+
+const Arrows = memo(function Arrows({arrows, topology, selection, arrowsToHighlight, extraHighlight, highlightTransitions, errors}: {arrows: Arrow[], topology: Topology, selection: Selection, arrowsToHighlight: {[key: string]: boolean}, extraHighlight: Set<string>, highlightTransitions: string[], errors: TraceableError[]}) {
+  return arrows.map(arrow => {
       const sides = topology.arrow2SideMap.get(arrow.uid);
       let arc = "no" as ArcDirection;
       if (sides && sides[0]?.uid === sides[1]?.uid && sides[0]!.uid !== undefined) {
@@ -193,7 +204,7 @@ export const VisualEditor = memo(function VisualEditor({state, topology, errors,
       return <ArrowSVG
         key={arrow.uid}
         arrow={arrow}
-        selected={renderSelection.get(arrow.uid) as Set<ArrowPart> || new Set()}
+        selected={selection.get(arrow.uid) as Set<ArrowPart> || new Set()}
         error={errors
           .filter(({shapes}) => shapes.includes(arrow.uid))
           .map(({message}) => message).join(', ')}
@@ -204,16 +215,14 @@ export const VisualEditor = memo(function VisualEditor({state, topology, errors,
         initialMarker={Boolean(initialMarker)}
         />;
       }
-    )}
-
-    <Texts texts={state.texts} {...{selection: renderSelection, textsToHighlight, errors, extraHighlight, beginEdit, findText}}/>
-
-    {(rootErrors.length>0) && <text className={styles.errorHover} x={5} y={20} style={{display:'inline'}}>{rootErrors.join('\n')}</text>}
-
-    {debugContext.showGrid && <Grid width={EDITOR_WIDTH} height={EDITOR_HEIGHT} />}
-
-    {state.makingSelection && <Selecting {...state.makingSelection}/>}
-  </svg>;
+)}, (p, n) => {
+  return arraysEqual(p.arrows, n.arrows)
+    && mapsEqual(p.topology.insidenessMap, n.topology.insidenessMap)
+    && mapsEqual(p.selection, n.selection)
+    && objectsEqual(p.arrowsToHighlight, n.arrowsToHighlight)
+    && arraysEqual(p.errors, n.errors)
+    && setsEqual(p.extraHighlight, n.extraHighlight)
+    && arraysEqual(p.highlightTransitions, n.highlightTransitions)
 });
 
 const Rountangles = memo(function Rountangles({rountangles, topology, selection, sidesToHighlight, rountanglesToHighlight, errors, extraHighlight, highlightActive}: {rountangles: Rountangle[], topology: Topology, selection: Selection, sidesToHighlight: {[key: string]: RectSide[]}, rountanglesToHighlight: {[key: string]: boolean}, errors: TraceableError[], extraHighlight: Set<string>, highlightActive: Mode}) {
