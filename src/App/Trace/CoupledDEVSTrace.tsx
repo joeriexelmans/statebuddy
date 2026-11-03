@@ -49,14 +49,6 @@ export const CoupledDEVSTrace = memo(function CoupledDEVSTrace({
   propertyTrace,
   plantsState,
 }: TraceProps) {
-  useDetectChange2({
-    currentTrace,
-    selectItem,
-    setTime,
-    propertyTrace,
-    plantsState,
-  });
-
   // Auto-scroll when trace item changes
   useEffect(() => {
     if (autoScroll) {

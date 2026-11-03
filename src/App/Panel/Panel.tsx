@@ -1,6 +1,5 @@
 import { memo, ReactNode, useMemo } from "react";
 import { MoveUpDown } from "../Components/MoveUpDown";
-import { PersistentDetails } from "../Components/PersistentDetails";
 import { DeepSetter, makePartialArraySetter, makePartialSetter, WithSetters } from "../../util/partial_setter"
 import { GlobalProps, PanelItem, panelItemInfo, panelTypes } from "./PanelItem"
 import { PanelType } from "../migrations/v1_types";
@@ -8,6 +7,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import { ExpandablePanelItemState } from "../migrations/v1_types";
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import { Tooltip } from "../Components/Tooltip";
+import { MyDetails } from "../Components/MyDetails";
 
 type PanelProps = {
   items: ExpandablePanelItemState[],
@@ -62,9 +62,9 @@ type ExpandablePanelItemProps = WithSetters<{
 export function ExpandablePanelItem({state, setState, globalProps, extraButtons}: ExpandablePanelItemProps) {
   const setExpanded = useMemo(() => makePartialSetter(setState, 'expanded'), [setState]);
   const info = panelItemInfo({type: state.type, globalProps, isExpanded: state.expanded});
-  return <PersistentDetails
-    state={state.expanded}
-    setState={setExpanded}
+  return <MyDetails
+    open={state.expanded}
+    setOpen={setExpanded}
   >
     <summary style={{display: 'flex', justifyContent: 'space-between'}}>
       <div>
@@ -77,5 +77,5 @@ export function ExpandablePanelItem({state, setState, globalProps, extraButtons}
       {extraButtons}
     </summary>
     <PanelItem type={state.type} globalProps={globalProps} isExpanded={state.expanded}/>
-  </PersistentDetails>
+  </MyDetails>
 }

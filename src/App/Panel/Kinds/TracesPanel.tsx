@@ -26,7 +26,6 @@ type TracesProps = {
   state: AppState,
   setState: DeepSetter<AppState>,
   simulator: SimulatorStuff,
-  abstractSyntax: AbstractSyntax,
   activePropertyTrace?: PropertyTrace;
   isExpanded: boolean,
 };
@@ -35,7 +34,6 @@ export function TracesPanel({
   state,
   setState,
   simulator,
-  abstractSyntax,
   activePropertyTrace,
   isExpanded,
 }: TracesProps) {
@@ -74,10 +72,9 @@ export function TracesPanel({
       boxShadow: 'inset 0 10px 10px -10px rgba(0,0,0,0.4)',
       backgroundColor: 'var(--statusbar-bg-color)',
       }}>
-        {abstractSyntax && trace && isExpanded &&
+        {trace && isExpanded &&
           <div style={{fontFamily: 'Roboto Condensed'}}>
             <CoupledDEVSTrace
-              ast={abstractSyntax}
               setTime={setTime._setShallow as Dispatch<SetStateAction<TimeMode>>} // <-- typescript bug?
               currentTrace={trace}
               selectItem={simulator.selectItem}

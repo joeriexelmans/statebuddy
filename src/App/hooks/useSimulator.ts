@@ -103,7 +103,7 @@ export function useInteractiveSimulator(
 
   const computeFresh = (interactive: InteractiveExecutionState) => {
     if (interactive.trace && cE) {
-      console.log('restore fresh');
+      // console.log('restore fresh');
       const trace = restoreTrace(interactive.trace, cE) as DEVSTrace<CoupledState, RaisedEvent>;
       return {
         trace,
@@ -119,7 +119,7 @@ export function useInteractiveSimulator(
       // Doing this check requires comparing every element in old trace with its corresponding element in new trace, with time complexity = O(N).
       // However, since every execution state contains its own complete history, it is enough to compare the last items:
       if (oldPersistentState.trace.trace[oldPersistentState.trace.trace.length-1] === newPersistentState.trace.trace[oldPersistentState.trace.trace.length-1]) {
-        console.log('restore incremental');
+        // console.log('restore incremental');
         const trace = restoreTraceIncremental(oldUIState!.trace,
           newPersistentState.trace.trace.slice(oldPersistentState.trace.trace.length), 
           newPersistentState.trace.lastSimTime, cE!);
@@ -351,7 +351,7 @@ export function useInteractiveSimulator(
 
   useShortcuts([
     {keys: ["ArrowUp"], action: onBack},
-    {keys: ["ArrowDown"], action: onSkip},
+    {keys: ["ArrowDown"], action: onNext},
   ])
 
   const onReplayTrace = useCallback((extTrace: ExtTransitionTrace) => {

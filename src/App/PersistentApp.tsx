@@ -1,7 +1,7 @@
 import styles from "./App.module.css";
 import { buf2string, deflateBuffer, inflateBuf } from "@/compression/deflate";
 import { Encoder } from "cbor-x";
-import { Dispatch, ReactNode, SetStateAction, useState } from "react";
+import { Dispatch, ReactNode, SetStateAction, useEffect, useState } from "react";
 import { useUrlHashState } from "../hooks/useUrlHashState";
 import { lossyCompressConcreteSyntax } from "../languages/statecharts/concrete_syntax";
 import { myPureDeepAssign } from "../util/util";
@@ -9,6 +9,7 @@ import { App } from "./App";
 import { AppState, defaultAppState } from "./App.state";
 import { CrashScreen } from "./CrashScreen";
 import { autoMigrate } from "./migrations/auto_migrate";
+import { diffJSON, explainDiff } from "@/util/diff";
 
 const CBOR = new Encoder({
   structuredClone: true,
@@ -176,6 +177,48 @@ export function PersistentApp() {
   //   });
   // }, [setAppState]);
 
+  const [appHistory, setAppHistory] = useState<{h: AppState[], i: number}>({h:[], i:0});
+  const setAppStateButKeepHistory = (x: SetStateAction<AppState>) => {
+    setAppState(oldState => {
+      if (appHistory.i >= appHistory.h.length-1) {
+        let newState;
+        if (typeof x === 'function') {
+          newState = x(oldState!);
+        }
+        else {
+          newState = x;
+        }
+        setAppHistory(({h, i}) => {
+          const lastState = h.at(-1);
+          if (newState !== lastState) {
+            const diff = diffJSON(lastState, newState);
+            if (diff.kind === "nochange") return {h, i};
+            else {
+              console.log(explainDiff(diff).join('\n'));
+              return {
+                h: [...h.slice(0,i+1), newState],
+                i: i+1,
+              };
+            }
+          }
+          return {h, i}; // no change
+        });
+        return newState;
+      }
+      else return oldState;
+    })
+  }
+
+  useEffect(() => {
+    (async () => {
+    // @ts-ignore
+    const cborBuf = CBOR.encode(appHistory) as ArrayBuffer;
+    console.log('history:', cborBuf.byteLength);
+    const cborZipBuf = await deflateBuffer(new Uint8Array(cborBuf));
+    console.log('zipped:', cborZipBuf.byteLength);
+    })();
+  }, [appHistory]);
+
   // in production mode, we bypass the above and just do a type cast
   setAppStateDefined = setAppState as Dispatch<SetStateAction<AppState>>;
 
@@ -194,7 +237,24 @@ export function PersistentApp() {
             }}>RESET APP</button>
           </CrashScreen>
         : appState
-          ? <App appState={appState} setAppState={setAppStateDefined} modelSize={modelSize} />
+          ? <div style={{display: 'flex', flexDirection: 'column', height: '100vh'}}>
+              <App appState={appHistory.h[appHistory.i] || appState} setAppState={setAppStateButKeepHistory} modelSize={modelSize} />
+              <div style={{display: 'flex', flexDirection: 'column'}}>
+                <input
+                  // style={{flex: '1 1 auto'}}
+                  type="range"
+                  min={0}
+                  max={appHistory.h.length-1}
+                  value={appHistory.i}
+                  step={1}
+                  list="markers"
+                  onChange={e => setAppHistory(({h, i}) => ({h, i:(Number(e.target.value))}))}
+                />
+                <datalist id="markers">
+                  {appHistory.h.map((h, i) => <option key={i} value={i} label={i.toString()}/>)}
+                </datalist>
+              </div>
+            </div>
           : <>Loading ...</>
     }
   </div>

@@ -19,7 +19,6 @@ import { FindReplace } from "./BottomPanel/FindReplace";
 import { Greeter } from "./BottomPanel/Greeter";
 import { Plot } from "./BottomPanel/Plot";
 import { PropertyTable } from "./BottomPanel/PropertyTable";
-import { PersistentDetails } from "./Components/PersistentDetails";
 import { Tooltip } from "./Components/Tooltip";
 import { WithShadow } from "./Components/WithShadow";
 import { useCoupledExecution } from "./hooks/useCoupledExecution";
@@ -45,6 +44,7 @@ import { TopPanel } from "./TopPanel/TopPanel";
 import { useEditor } from "./VisualEditor/hooks/useEditor";
 import { ModelSize } from "../hooks/useUrlHashState";
 import { useDetectChange, useDetectChange2 } from "../hooks/useDetectChange";
+import { MyDetails } from "./Components/MyDetails";
 
 export function App({appState, setAppState: setAppStateShallow, modelSize}: WithSetters<{appState: AppState}> & {modelSize: ModelSize}) {
   const setAppState = useMemo(() => makeDeepSetter(defaultAppState, setAppStateShallow), [setAppStateShallow]);
@@ -217,7 +217,7 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
   const hideFindReplace = hide(setAppState.setView.setVisibility.setFind);
   const hideDebug = hide(setAppState.setView.setVisibility.setDebug);
 
-  return <div style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
+  return <div style={{display: 'flex', flexDirection: 'column', flex: '1 1 auto', overflow: 'hidden'}}>
     <ModalOverlay modal={modal} setModal={setModal}>
 
       {/* Top bar */}
@@ -328,7 +328,7 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
       {/* Bottom bars */}
       <div style={{flex: '0 0 content', borderTop: '1px solid var(--separator-color'}}>
         <div className={styles.statusBar}>
-          <PersistentDetails state={appState.view.visibility.plot} setState={setAppState.setView.setVisibility.setPlot}>
+          <MyDetails open={appState.view.visibility.plot} setOpen={setAppState.setView.setVisibility.setPlot}>
             <summary>
               plot
               <Tooltip tooltip="All signals are boolean. Input/ouput event parameters start with `in_`/`out_` resp. Plant state starts with `<plantname>_`" above align="left">
@@ -343,7 +343,7 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
                 setVisible={setAppState.setView.setPlot.setVisible._setShallow}
                 displayTime={displayTime}
               />}
-          </PersistentDetails>
+          </MyDetails>
         </div>
         {syntaxErrors && abstractSyntax &&
           <BottomPanel

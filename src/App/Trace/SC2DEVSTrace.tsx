@@ -11,10 +11,12 @@ import { DEVSTrace } from "@/languages/devs/trace";
 import { jsonDeepEqual } from "@/util/util";
 import { RaisedEvent, RT_Event } from "@/languages/statecharts/interpreter/runtime_types";
 import { AbstractSyntax, stateDescription } from "@/languages/statecharts/abstract_syntax";
+import { MyDetails } from "../Components/MyDetails";
 
 export function SCInitializationTrace({init}: {init: TraceInit}) {
+  const [open, setOpen] = useState(false);
   return <TraceList>
-    <li><MyDetails>{open => <>
+    <li><MyDetails {...{open, setOpen}}><>
       <summary>
         <div style={{display: 'inline-block'}}>
           <Row>
@@ -23,7 +25,7 @@ export function SCInitializationTrace({init}: {init: TraceInit}) {
         </div>
       </summary>
       <SCEntered entered={init.enteredRoot} />
-    </>}</MyDetails></li>
+    </></MyDetails></li>
     {init.fairSteps.map((step, i) => <li key={i}><SCFairStep fairstep={step}/></li>)}
   </TraceList>;
 }
@@ -36,16 +38,9 @@ export function SCBigStepTrace({bigstep}: {bigstep: TraceBigStep}) {
   </div>;
 }
 
-// Custom details, fixes a bug where a toggle event would also close all parent-<details> nodes.
-function MyDetails({children}: {children: (open: boolean) => ReactNode}) {
-  const [open, setOpen] = useState(false);
-  return <details open={open} onMouseDown={e => e.stopPropagation()} onToggle={e => {setOpen(o => !o); e.stopPropagation()}}>
-    {children(open)}
-  </details>;
-}
-
 function SCFairStep({fairstep}: {fairstep: TraceFairStep}) {
-  return <MyDetails>{open => <>
+  const [open, setOpen] = useState(false);
+  return <MyDetails {...{open, setOpen}}><>
     <summary>
       <div style={{display: 'inline-block'}}>
         <ShowRTEvent rt_event={fairstep.event}/>
@@ -54,7 +49,7 @@ function SCFairStep({fairstep}: {fairstep: TraceFairStep}) {
     <TraceList>
       {fairstep.fired.map((fired, i) => <li key={i}><SCFiredTransition fired={fired}/></li>)}
     </TraceList>
-  </>}</MyDetails>;
+  </></MyDetails>;
 }
 
 function ShowRTEvent({rt_event}: {rt_event: RT_Event}) {

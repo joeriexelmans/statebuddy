@@ -1,8 +1,6 @@
 import { Dispatch, SetStateAction } from "react";
 import { TraceableError } from "../../languages/statecharts/parser/parser";
 
-import { PersistentDetails } from "../Components/PersistentDetails";
-
 import gitRev from "@/git-rev.txt";
 import { Tooltip } from "../Components/Tooltip";
 import { Stats } from "./Stats";
@@ -13,6 +11,7 @@ import { WithSetters } from "../../util/partial_setter";
 import { Toolbar } from "../TopPanel/Toolbar";
 import { MtlWorkerPoolState } from "@/mtl-checker/useMtlWorkerPool";
 import { Selection } from "../VisualEditor/VisualEditor.state";
+import { MyDetails } from "../Components/MyDetails";
 
 type BottomPanelProps = WithSetters<{
   errorsExpanded: boolean,
@@ -47,7 +46,7 @@ export function BottomPanel({
           )}
           style={{alignItems: 'end'}}>
       <div style={{flexGrow:1}}>
-      <PersistentDetails state={errorsExpanded} setState={setErrorsExpanded}>
+      <MyDetails open={errorsExpanded} setOpen={setErrorsExpanded}>
           <summary>{errors.length} errors</summary>
           <div style={{maxHeight: '20vh', overflow: 'auto'}}>
           {errors.map(({message, shapes}, i)=>
@@ -61,7 +60,7 @@ export function BottomPanel({
               {shapes.join(', ')}: {message}
             </div>)}
           </div>
-        </PersistentDetails>
+        </MyDetails>
       </div>
       <div style={{display: 'flex', alignItems: 'center'}}>
         <Stats abstractSyntax={abstractSyntax}/>

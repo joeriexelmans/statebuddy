@@ -120,11 +120,10 @@ export function PanelItem({type, globalProps: {appState, setAppState, abstractSy
   else if (type === "execution traces") {
     const propResults = propertyResults?.[appState.execution.activeProperty];
     const propTrace = propResults?.kind === "ok" && propResults.result || undefined;
-    return <>{abstractSyntax &&
+    return <>{
       <TracesPanel
         state={appState}
         setState={setAppState}
-        abstractSyntax={abstractSyntax}
         simulator={simulator}
         activePropertyTrace={propTrace}
         isExpanded={isExpanded}
