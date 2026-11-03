@@ -42,7 +42,8 @@ export const ExecutionToolbar = memo(function ExecutionToolbar({interactive, set
   const lastSimTime = currentTraceItem?.simtime || 0;
   const progress = (displayTime-lastSimTime)/(nextWakeup-lastSimTime);
   const catchingUp = progress > 1;
-  const formattedDisplayTime = useMemo(() => formatTime(displayTime), [displayTime]);
+  // const formattedDisplayTime = useMemo(() => formatTime(displayTime), [displayTime]);
+  const formattedDisplayTime = useMemo(() => formatTime(lastSimTime), [lastSimTime]);
 
   const KeyInfo = showKeys ? KeyInfoVisible : KeyInfoHidden;
 

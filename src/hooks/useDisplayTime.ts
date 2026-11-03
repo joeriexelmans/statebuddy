@@ -15,7 +15,7 @@ export function useDisplayTime(time: TimeMode) {
     refreshDisplayTime();
     const interval = setInterval(() => {
       refreshDisplayTime();
-    }, 43); // every X ms -> we want a value that makes the numbers 'dance' while not using too much CPU
+    }, 23); // every X ms -> we want a value that makes the numbers 'dance' while not using too much CPU
     return () => {
       clearInterval(interval);
     }
