@@ -64,8 +64,6 @@ export const TrafficLight = memo(function TrafficLight({state: {red, yellow, gre
     }, [color]);
   };
 
-  const timerColor = timerGreen ? "#59ae8b" : "#f9172e";
-
   const style = useMemo(() => `
     @font-face{
       font-family: 'digital-font';
@@ -77,10 +75,15 @@ export const TrafficLight = memo(function TrafficLight({state: {red, yellow, gre
     .hidden {
       opacity: 0;
     }
-    text.timer {
-      text-shadow: 0 0 5px ${timerColor}, 0 0 10px ${timerColor};
+    text.timer.red {
+      fill: #f9172e;
+      text-shadow: 0 0 5px #f9172e, 0 0 10px #f9172e;
+    }
+    text.timer.green {
+      fill: #59ae8b;
+      text-shadow: 0 0 5px #59ae8b, 0 0 10px #59ae8b;
     }`,
-    [timerColor, speed, fontDigital]);
+    [speed, fontDigital]);
 
   return <div style={{display: 'flex', flexDirection: 'column'}}>
     <style>{style}</style>
@@ -93,7 +96,7 @@ export const TrafficLight = memo(function TrafficLight({state: {red, yellow, gre
 
       {timerValue >= 0 && <>
         <rect x={300} y={676} width={108} height={84} fill="black" />
-        <text x={400} y={750} className="timer" fontFamily="digital-font" fontSize={100} fill={timerColor} textAnchor="end">{timerValue}</text>
+        <text x={400} y={750} className={"timer " + (timerGreen ? "green" : "red")} fontFamily="digital-font" fontSize={100} textAnchor="end">{timerValue}</text>
       </>}
     </svg>
     <button style={{flexGrow: 1}} onClick={() => raiseUIEvent({name: "policeInterrupt"})}>POLICE INTERRUPT</button>
