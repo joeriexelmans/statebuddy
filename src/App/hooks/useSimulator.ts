@@ -272,7 +272,7 @@ export function useInteractiveSimulator(
       return {
         trace: interactive.trace && {
           trace: interactive.trace.trace,
-          lastSimTime: nextWakeup !== Infinity ? nextWakeup : interactive.trace.lastSimTime,
+          lastSimTime: nextWakeup,
         },
         time: interactive.time.kind === "paused"
           ? {
@@ -282,14 +282,16 @@ export function useInteractiveSimulator(
           : interactive.time, // <-- for realtime, time mode remains unchanged (clock already naturally advancing)
         idx: interactive.idx+1,
       }
-    })
+    });
   }, [setInteractive, nextWakeup]);
 
   // when user pressed Tab
   const onSkip = useCallback(() => {
-    jumpTimeToNextTimedTransition();
-    const setTime = setInteractive.setTime._setShallow as Dispatch<SetStateAction<TimeMode>>;
-    setTime(time => timeTravel(time, nextWakeup, Date.now()));
+    if (nextWakeup !== Infinity) {
+      jumpTimeToNextTimedTransition();
+      const setTime = setInteractive.setTime._setShallow as Dispatch<SetStateAction<TimeMode>>;
+      setTime(time => timeTravel(time, nextWakeup, Date.now()));
+    }
   }, [jumpTimeToNextTimedTransition, nextWakeup]);
 
   // The following effect is what makes timed transitions happen in Statebuddy:
