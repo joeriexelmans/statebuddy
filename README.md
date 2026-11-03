@@ -84,7 +84,7 @@ StateBuddy was written in TypeScript, using React as the frontend framework. No 
 
 ### Application State
 
-The entire application state sits at the top of the component library, and children components receive their relevant parts of the state as properties. Children also receive 'partial setters' (setters that only update part of the application state) is they need to update parts of the application state.
+The entire application state sits at the top of the component hierarchy, and children components receive their relevant parts of the state as properties. Children also receive 'partial setters' (setters that only update part of the application state) is they need to update parts of the application state.
 
 I avoid global state management libraries such as Zustand and Redux because I prefer an architecture where component dependencies are explicitly determined by their parents. Rather than allowing components to independently reach into global state and decide what they can access, I prefer parents to control which parts of the application state are exposed to their children through props.
 
