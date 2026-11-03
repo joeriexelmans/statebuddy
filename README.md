@@ -80,12 +80,19 @@ See the [manual](./docs/readme.md).
 
 ## Development
 
-StateBuddy was written in TypeScript, using React as the frontend framework.
+StateBuddy was written in TypeScript, using React as the frontend framework. No frontend framework was used, just plain CSS (sometimes a pain, I must admit). For the model editor, no drawing library was used. 
 
-Most of the application state sits at the top of the component hierarchy (`AppState`). It is an object that is JSON (de-)serializable and therefore easily persisted in between page reloads. I tried to divide `AppState` into several hierarchical levels of objects such that detecting changes to parts of the `AppState` can be done 
-efficiently to decide whether dependant components should re-render or not (memoization). I refuse to use "state management" libraries such as zustand or redux, because they reverse the purely functional paradigm of React by letting components decide which parts of **global state** they access, rather than letting their parents decide which parts they *can* see.
+### Application State
 
-My biggest frustration with React is having to manually specify which values/components to memoize. It feels like something the language itself should be able to figure out. If I were to re-write StateBuddy from scratch, I would probably give [Elm](https://elm-lang.org) a try.
+The entire application state sits at the top of the component library, and children components receive their relevant parts of the state as properties. Children also receive 'partial setters' (setters that only update part of the application state) is they need to update parts of the application state.
+
+I avoid global state management libraries such as Zustand and Redux because I prefer an architecture where component dependencies are explicitly determined by their parents. Rather than allowing components to independently reach into global state and decide what they can access, I prefer parents to control which parts of the application state are exposed to their children through props.
+
+### Persistance with CBOR
+
+The entire application state is persisted in between page reloads. To make this happen, it is CBOR-serialized (+ DEFLATE-compressed + base64-encoded) into the URL hash. The reason for choosing CBOR over JSON is that CBOR supports structural sharing (preserved in a round-trip!), reducing data usage by an order of magnitude when working with long edit histories. I do this with mixed feelings, because CBOR is a much less established format than JSON.
+
+### Statechart Language
 
 The [statechart language](./src/statecharts/), which could be used independently from the frontend, consists of:
   - type definitions for
@@ -101,3 +108,7 @@ The [statechart language](./src/statecharts/), which could be used independently
 The action language embedded within the statechart language is parsed by [Peggy](https://peggyjs.org/). Peggy turned out "good enough" for my purposes, although syntax highlighting required more boilerplate than I like. Further, Peggy allows JavaScript code in the grammar file (a feature I have used), which can be considered dirty because now the grammar depends on JavaScript.
 
 For MTL property checking, an existing library was used: [py-metric-temporal-logic](https://github.com/mvcisback/py-metric-temporal-logic). This library and its dependencies are loaded into an instance of Pyodide (CPython compiled to WebAssembly). Compared to the rest of StateBuddy, Pyodide is slow to start (2-3 seconds in my case). Pyodide runs in a pool of web workers, so it doesn't block the main thread (or the DOM). Each worker contains its own instance of Pyodide, so spinning up an extra thread also takes a few seconds (to boot Pyodide).
+
+### Philosophical Reflection
+
+My biggest frustration with React is having to manually specify which values/components to memoize. It feels like something the language itself should be able to figure out. If I were to re-write StateBuddy from scratch, I would probably give [Elm](https://elm-lang.org) a try.
