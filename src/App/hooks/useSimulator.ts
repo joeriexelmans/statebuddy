@@ -14,7 +14,6 @@ import { getEnterDefaultArrows, getFairStepArrows } from "@/languages/statechart
 import { isSCOutputStep } from "../Trace/SC2DEVSTrace";
 import { useIncrementalMemo } from "@/hooks/useIncrementalMemo";
 import { InteractiveExecutionState } from "../migrations/v2_types";
-import { isPrefix } from "@/util/is_prefix";
 
 // In StateBuddy, currently, the state of our simulation is always a CoupledDEVS state of our statechart model (with a DEVS adapter around it) and a bunch of 'plants'.
 // Perhaps in the future, we could let the user arbitrarily configure this setup (anything on the spectrum from a single Statechart Atomic DEVS to many nested Coupled DEVS ...), but for now, it is what it is.

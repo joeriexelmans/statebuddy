@@ -15,7 +15,6 @@ import { Row } from "../Components/Row";
 import { StatusType } from "../Components/StatusIndicator";
 import { Tooltip } from "../Components/Tooltip";
 import { CoupledState, StateBuddyTraceState } from "../hooks/useSimulator";
-import { WithSetters } from "../../util/partial_setter";
 import { PlantsState } from "../migrations/v1_types";
 import { TraceView } from "../migrations/v2_types";
 import { statebuddyPlants } from "../plants";
@@ -24,6 +23,7 @@ import { PropertyStatusIndicator } from "../SideBar/PropertyStatusIndicator";
 import { InitCause, InputCause, TimerCause } from "./Common";
 import { isSCOutputStep, SCBigStepTrace, SCInitializationTrace } from "./SC2DEVSTrace";
 import { RaisedEvent } from "@/languages/statecharts/interpreter/runtime_types";
+import { useDetectChange2 } from "@/hooks/useDetectChange";
 
 type TraceProps = {
   currentTrace: StateBuddyTraceState,
@@ -33,9 +33,6 @@ type TraceProps = {
 
   // clicking on an item in the trace will jump to it so we need to set the time to that point.
   setTime: Dispatch<SetStateAction<TimeMode>>,
-
-  ast: AbstractSyntax,
-
   // result of checking a property is a trace of booleans which we display in the trace
   propertyTrace?: PropertyTrace,
   plantsState: PlantsState,
@@ -46,13 +43,20 @@ export const CoupledDEVSTrace = memo(function CoupledDEVSTrace({
   currentTrace,
   selectItem,
   setTime,
-  ast,
   traceView: {
     autoScroll,
   },
   propertyTrace,
   plantsState,
 }: TraceProps) {
+  useDetectChange2({
+    currentTrace,
+    selectItem,
+    setTime,
+    propertyTrace,
+    plantsState,
+  });
+
   // Auto-scroll when trace item changes
   useEffect(() => {
     if (autoScroll) {
@@ -99,7 +103,6 @@ export const CoupledDEVSTrace = memo(function CoupledDEVSTrace({
             prevItem={prevItem}
             status={propertyStatus}
             plantsState={plantsState}
-            ast={ast}
           />
         </div>
       </div>;
@@ -151,7 +154,6 @@ function lookupName(plantsState: PlantsState, plantId: string) {
 
 type ThingsToPassOn = {
   plantsState: PlantsState,
-  ast: AbstractSyntax,
 }
 
 const CoupledDEVSTraceItem = memo(function CoupledDEVSTraceItem({item, prevItem, status, ...thingsToPassOn}: {
@@ -172,14 +174,15 @@ const CoupledDEVSTraceItem = memo(function CoupledDEVSTraceItem({item, prevItem,
 }, objectsEqual); // <-- just a shallow comparison already saves us a lot of re-renders
 
 // DEVS components can be statechart instances (white-box -> we show microsteps), or generic (black-box)
-function isComponentStatechart(componentId: string, plantsState: PlantsState, ast: AbstractSyntax) {
+function isComponentStatechart(componentId: string, plantsState: PlantsState) {
   if (componentId === "sc") {
-    return ast;
+    return true;
   }
   const plantType = plantsState.plants.find(({id}) => id === componentId)?.type;
   if (plantType) {
-    return statebuddyPlants[plantType].as;
+    return Boolean(statebuddyPlants[plantType].as);
   }
+  return false;
 }
 
 function DEVSRuntimeError({error}: {error: RuntimeError}) {
@@ -196,7 +199,7 @@ function DEVSRuntimeError({error}: {error: RuntimeError}) {
   </>;
 }
 
-function CoupledDEVSInitialization({item, status, plantsState, ast}: {
+function CoupledDEVSInitialization({item, status, plantsState}: {
   item: DEVSTraceItemInit<CoupledState>,
   status: StatusType,
 } & ThingsToPassOn) {
@@ -208,7 +211,7 @@ function CoupledDEVSInitialization({item, status, plantsState, ast}: {
       const error = getRuntimeError(componentTraceItem);
       const plant = plantsState.plants.find(({id}) => id === componentId);
       const componentDisplayName = plant?.name || componentId;
-      const statechart = isComponentStatechart(componentId, plantsState, ast);
+      const statechart = isComponentStatechart(componentId, plantsState);
       return <Row key={componentId}>
         <div>{componentDisplayName}</div>
         <Column>
@@ -222,7 +225,7 @@ function CoupledDEVSInitialization({item, status, plantsState, ast}: {
 }
 
 // An internal transition step made by Coupled DEVS
-function CoupledDEVSInternalTransition({item, prevItem, status, plantsState, ast}: {
+function CoupledDEVSInternalTransition({item, prevItem, status, plantsState}: {
   item: DEVSTraceItemIntTransition<CoupledState, RaisedEvent>,
   prevItem: DEVSTraceItem<CoupledState, RaisedEvent>,
   status: StatusType,
@@ -231,7 +234,7 @@ function CoupledDEVSInternalTransition({item, prevItem, status, plantsState, ast
   const componentMadeIntTransition = whoMadeIntTransition([prevItem, item]);
   const blessedTrace = item.newState[componentMadeIntTransition];
   const blessedItem = blessedTrace.at(-1)! as DEVSTraceItemIntTransition<any, RaisedEvent>;
-  const blessedStatechart = isComponentStatechart(componentMadeIntTransition, plantsState, ast);
+  const blessedStatechart = isComponentStatechart(componentMadeIntTransition, plantsState);
   const isOutputStep = Boolean(blessedStatechart && isSCOutputStep(blessedTrace));
   const error = getRuntimeError(blessedItem);
 
@@ -265,7 +268,7 @@ function CoupledDEVSInternalTransition({item, prevItem, status, plantsState, ast
         }
         return true;
       })}
-      {...{ast, plantsState}}
+      {...{plantsState}}
     />
   </>;
 }
@@ -280,12 +283,12 @@ function DEVSRaisedOutputEvent({event: {name, param}}: {event: RaisedEvent}) {
   </Tooltip>
 }
 
-function DEVSExternalTransitions({components, plantsState, ast}: {
+function DEVSExternalTransitions({components, plantsState}: {
   components: [string, DEVSTrace<any, any>][],
 } & ThingsToPassOn) {
   return components.map(([componentId, componentTrace]) => {
     const item = componentTrace.at(-1)! as DEVSTraceItemExtTransition<any, any>;
-    const statechart = isComponentStatechart(componentId, plantsState, ast);
+    const statechart = isComponentStatechart(componentId, plantsState);
     const error = getRuntimeError(item);
     return <Row key={componentId}>
       <div>{lookupName(plantsState, componentId)}</div>
