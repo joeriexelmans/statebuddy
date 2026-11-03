@@ -1,7 +1,7 @@
-import { memo, useCallback, useMemo } from 'react';
+import { Dispatch, memo, SetStateAction, useCallback, useMemo } from 'react';
 
 import { Tooltip } from '@/App/Components/Tooltip';
-import { infinityIfUndefined, SimulatorCallbacks, SimulatorStuff } from '@/App/hooks/useSimulator';
+import { infinityIfUndefined, SimulatorStuff } from '@/App/hooks/useSimulator';
 import { RunPauseButtons } from './RunPauseButtons';
 import { SpeedControl } from './SpeedControl';
 
@@ -14,12 +14,16 @@ import ClearIcon from '@mui/icons-material/Clear';
 
 import { formatTime } from '@/util/util';
 import { useLocalStorage } from '@/hooks/usePersistentState';
-import { setPaused, setRealtime } from '@/App/time';
+import { setPaused, setRealtime, TimeMode } from '@/App/time';
 import { useShortcuts } from '@/hooks/useShortcuts';
 import { KeyInfoVisible, KeyInfoHidden } from '../../KeyInfo';
 import { Toolbar } from '../../Toolbar';
+import { InteractiveExecutionState } from '@/App/migrations/v2_types';
+import { DeepSetter, WithSetters } from '@/util/partial_setter';
 
 type ExecutionProps = {
+  interactive: InteractiveExecutionState,
+  setInteractive: DeepSetter<InteractiveExecutionState>,
   simulator: SimulatorStuff,
   showKeys: boolean,
   refreshDisplayTime: () => void,
@@ -28,11 +32,13 @@ type ExecutionProps = {
 
 const toolbarStyle = {columnGap: '1em'};
 
-export const ExecutionToolbar = memo(function ExecutionToolbar({simulator, showKeys, refreshDisplayTime, displayTime}: ExecutionProps) {
+export const ExecutionToolbar = memo(function ExecutionToolbar({interactive, setInteractive, simulator, showKeys, refreshDisplayTime, displayTime}: ExecutionProps) {
   const [timescale, setTimescale] = useLocalStorage("timescale", 1);
 
   const nextWakeup = infinityIfUndefined(simulator.nextWakeup);
-  const {currentTraceItem, simulatorCallbacks, time, setTime} = simulator;
+  const {currentTraceItem, simulatorCallbacks} = simulator;
+  const {time} = interactive;
+  const setTime = setInteractive.setTime._setShallow as Dispatch<SetStateAction<TimeMode>>;
   const lastSimTime = currentTraceItem?.simtime || 0;
   const progress = (displayTime-lastSimTime)/(nextWakeup-lastSimTime);
   const catchingUp = progress > 1;
@@ -44,7 +50,7 @@ export const ExecutionToolbar = memo(function ExecutionToolbar({simulator, showK
   const onTogglePaused = useCallback(() => {
     if (simulator.trace) {
       setTime(time => {
-          const wallclktime = Math.round(performance.now());
+          const wallclktime = Math.round(Date.now());
           if (time.kind === "realtime") {
             return setPaused(time, wallclktime);
           }

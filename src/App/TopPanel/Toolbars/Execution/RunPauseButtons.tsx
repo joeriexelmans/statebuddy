@@ -9,12 +9,13 @@ import { CoupledState } from "@/App/hooks/useSimulator";
 import { objectsEqual } from "@/util/util";
 import { memo } from "react";
 import { KeyInfoVisible, KeyInfoHidden } from "../../KeyInfo";
+import { RaisedEvent } from "@/languages/statecharts/interpreter/runtime_types";
 
 export type RunPauseButtonsProps = {
   showKeys: boolean;
   time: TimeMode;
   disabled: boolean;
-  currentTraceItem?: DEVSTraceItem<CoupledState>;
+  currentTraceItem?: DEVSTraceItem<CoupledState, RaisedEvent>;
   onTogglePaused: () => void;
 };
 

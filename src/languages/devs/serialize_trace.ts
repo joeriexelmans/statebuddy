@@ -1,10 +1,11 @@
+import { RaisedEvent } from "../statecharts/interpreter/runtime_types";
 import { DEVSComponent } from "./devs";
 import { DEVSTrace } from "./trace";
 import { ExtTransitionTrace, ExtTransitionTraceItem } from "@/App/migrations/v1_types";
 
 // returns a trace containing only the extTransitions.
 // this is the minimum of information we need to replay a trace.
-export function saveExtTransitions<T>(trace: DEVSTrace<T>, lastSimTime: number): ExtTransitionTrace {
+export function saveExtTransitions<T>(trace: DEVSTrace<T, RaisedEvent>, lastSimTime: number): ExtTransitionTrace {
   const reducedTrace = trace.reduce((acc, cur) => {
     if (cur.kind === "extTransition") {
       return [...acc, {
@@ -20,7 +21,7 @@ export function saveExtTransitions<T>(trace: DEVSTrace<T>, lastSimTime: number):
   }
 }
 
-function runUntil<T>(tracedDEVS: DEVSComponent<DEVSTrace<T>>, trace: DEVSTrace<T>, until: number) {
+function runUntil<T>(tracedDEVS: DEVSComponent<DEVSTrace<T, RaisedEvent>, RaisedEvent>, trace: DEVSTrace<T, RaisedEvent>, until: number) {
   while (true) {
     const nextTimeout = tracedDEVS.timeAdvance(trace);
     if (nextTimeout > until) {
@@ -33,12 +34,21 @@ function runUntil<T>(tracedDEVS: DEVSComponent<DEVSTrace<T>>, trace: DEVSTrace<T
 }
 
 // given a serialized trace (containing only extTransitions), replay the extTransitions so that we get our original trace back :)
-export function restoreTrace<T>(
+export function restoreTrace<StateType>(
   extTrace: ExtTransitionTrace,
-  tracedDEVS: DEVSComponent<DEVSTrace<T>>,
-): DEVSTrace<T> {
-  let trace = tracedDEVS.initial();
-  let remaining = extTrace.trace;
+  tracedDEVS: DEVSComponent<DEVSTrace<StateType, RaisedEvent>, RaisedEvent>,
+): DEVSTrace<StateType, RaisedEvent> {
+  return restoreTraceIncremental(tracedDEVS.initial(), extTrace.trace, extTrace.lastSimTime, tracedDEVS);
+}
+
+export function restoreTraceIncremental<StateType>(
+  initial: DEVSTrace<StateType, RaisedEvent>,
+  extTransitions: ExtTransitionTraceItem[],
+  lastSimTime: number,
+  tracedDEVS: DEVSComponent<DEVSTrace<StateType, RaisedEvent>, RaisedEvent>,
+): DEVSTrace<StateType, RaisedEvent> {
+  let trace = initial;
+  let remaining = extTransitions;
   while (remaining.length > 0) {
     let nextInput;
     [nextInput, ...remaining] = remaining; // pop
@@ -48,7 +58,7 @@ export function restoreTrace<T>(
     trace = tracedDEVS.extTransition(nextInput.simtime, trace, nextInput.bagOfInputs);
   }
   // finally run a bit more because there may still be intTransitions that need to fire
-  trace = runUntil(tracedDEVS, trace, extTrace.lastSimTime);
+  trace = runUntil(tracedDEVS, trace, lastSimTime);
   // done !!!!
   return trace;
 }

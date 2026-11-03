@@ -32,10 +32,10 @@ export const SpeedControl = memo(function SpeedControl({showKeys, timescale, set
   }, [setTime, setTimescale]);
 
   const onSlower = useCallback(() => {
-    onTimeScaleChange(stepDown(TIMESCALE_STEPS, timescale, 0.001).toString(), Math.round(performance.now()));
+    onTimeScaleChange(stepDown(TIMESCALE_STEPS, timescale, 0.001).toString(), Math.round(Date.now()));
   }, [onTimeScaleChange, timescale]);
   const onFaster = useCallback(() => {
-    onTimeScaleChange(stepUp(TIMESCALE_STEPS, timescale, 0.001).toString(), Math.round(performance.now()));
+    onTimeScaleChange(stepUp(TIMESCALE_STEPS, timescale, 0.001).toString(), Math.round(Date.now()));
   }, [onTimeScaleChange, timescale]);
 
   useShortcuts([
@@ -62,7 +62,7 @@ twice as fast as wall clock time)`}>
         <EnterText id="number-timescale"
           value={timescale.toFixed(3)}
           style={{width:40}}
-          onEnter={str => onTimeScaleChange(str, Math.round(performance.now()))}
+          onEnter={str => onTimeScaleChange(str, Math.round(Date.now()))}
         />
       </Tooltip>
       <KeyInfo keyInfo={<kbd>F</kbd>}>

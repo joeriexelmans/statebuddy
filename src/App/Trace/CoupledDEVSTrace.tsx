@@ -25,9 +25,10 @@ import { InitCause, InputCause, TimerCause } from "./Common";
 import { isSCOutputStep, SCBigStepTrace, SCInitializationTrace } from "./SC2DEVSTrace";
 import { RaisedEvent } from "@/languages/statecharts/interpreter/runtime_types";
 
-type TraceProps = WithSetters<{
+type TraceProps = {
   currentTrace: StateBuddyTraceState,
-}> & {
+  selectItem: (idx: number) => void,
+
   traceView: TraceView,
 
   // clicking on an item in the trace will jump to it so we need to set the time to that point.
@@ -42,7 +43,8 @@ type TraceProps = WithSetters<{
 
 // Things are a bit funny here. We want to render the execution history of our Statechart, but we have a Coupled DEVS trace containing all the steps made by both the Statechart and the plant(s). We offer the user to hide steps made by the plant(s).
 export const CoupledDEVSTrace = memo(function CoupledDEVSTrace({
-  currentTrace, setCurrentTrace,
+  currentTrace,
+  selectItem,
   setTime,
   ast,
   traceView: {
@@ -85,7 +87,7 @@ export const CoupledDEVSTrace = memo(function CoupledDEVSTrace({
                     }
           onMouseDown={e => {
             if (e.button === 0) {
-              setCurrentTrace(trace => ({trace: trace.trace, idx: i}));
+              selectItem(i);
               setTime(_ => ({kind: "paused", simtime: item.simtime}));
             }
           }}

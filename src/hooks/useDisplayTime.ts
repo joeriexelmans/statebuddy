@@ -5,7 +5,7 @@ export function useDisplayTime(time: TimeMode) {
   const [displayTime, setDisplayTime] = useState(0);
 
   const refreshDisplayTime = useCallback(() => {
-    const now = Math.round(performance.now());
+    const now = Math.round(Date.now());
     const timeMs = getSimTime(time, now);
     setDisplayTime((timeMs));
   }, [time, setDisplayTime]);

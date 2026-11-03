@@ -149,6 +149,8 @@ Refresh the page to get the latest version.` : `about ${trial.appName}`} align="
 
     {/* execution */}
     <ExecutionToolbar
+      interactive={appState.execution.interactive}
+      setInteractive={setAppState.setExecution.setInteractive}
       simulator={simulator}
       showKeys={showKeys}
       displayTime={displayTime}

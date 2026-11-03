@@ -373,7 +373,6 @@ export function parseStatechart(topology: Topology): [AbstractSyntax, TraceableE
           newlyIntroducedVariables.forEach(v => state.variables.add(v));
         }
       }
-      console.log(state.uid, state.variables);
       state.children.forEach(child => figureOutVariables(child, state.variables.union(ignore)));
     }
   }

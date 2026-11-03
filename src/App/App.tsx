@@ -27,7 +27,7 @@ import { useDelayedEffect } from "../hooks/useDelayedEffect";
 import { UndoState, useUndo } from "../hooks/useUndo";
 import { useParser } from "./hooks/useParser";
 import { useCheckProperties } from "./hooks/useCheckProperties";
-import { useSimulator } from "./hooks/useSimulator";
+import { useInteractiveSimulator } from "./hooks/useSimulator";
 import { useTrial } from "./hooks/useTrial";
 import { DeepSetter, makeDeepSetter, WithSetters } from "../util/partial_setter";
 import { PanelState } from "./migrations/v1_types";
@@ -44,7 +44,7 @@ import { TextDialog } from "./Modals/TextDialog";
 import { TopPanel } from "./TopPanel/TopPanel";
 import { useEditor } from "./VisualEditor/hooks/useEditor";
 import { ModelSize } from "../hooks/useUrlHashState";
-import { useDetectChange2 } from "../hooks/useDetectChange";
+import { useDetectChange, useDetectChange2 } from "../hooks/useDetectChange";
 
 export function App({appState, setAppState: setAppStateShallow, modelSize}: WithSetters<{appState: AppState}> & {modelSize: ModelSize}) {
   const setAppState = useMemo(() => makeDeepSetter(defaultAppState, setAppStateShallow), [setAppStateShallow]);
@@ -69,11 +69,9 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
     document.title = `${location.hostname === "localhost" ? "[dev] " : ""}${appState.view.topPanel.modelName} [StateBuddy] ${timeFormatted}`;
   }, 100, [appState, editorState]);
 
-  // Store app state in URL hash:
-
   const coupledExecution = useCoupledExecution(abstractSyntax, appState.execution.plants);
-  const simulator = useSimulator(coupledExecution);
-  const {displayTime, refreshDisplayTime} = useDisplayTime(simulator.time);
+  const simulator = useInteractiveSimulator(coupledExecution, appState.execution.interactive, setAppState.setExecution.setInteractive);
+  const {displayTime, refreshDisplayTime} = useDisplayTime(appState.execution.interactive.time);
   
   const allErrors = useMemo(
     () => [...syntaxErrors, ...simulator.runtimeErrors],

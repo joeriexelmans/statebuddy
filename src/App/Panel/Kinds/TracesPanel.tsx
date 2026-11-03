@@ -11,7 +11,7 @@ import { saveExtTransitions } from '@/languages/devs/serialize_trace';
 import { MoveUpDown } from '../../Components/MoveUpDown';
 import { DoubleClickButton } from '../../Components/DoubleClickButton';
 import { Dispatch, memo, SetStateAction, useCallback } from 'react';
-import { getSimTime, } from '@/App/time';
+import { getSimTime, TimeMode, } from '@/App/time';
 import { SimulatorStuff, } from '../../hooks/useSimulator';
 import { CoupledDEVSTrace } from '../../Trace/CoupledDEVSTrace';
 import { AbstractSyntax } from '@/languages/statecharts/abstract_syntax';
@@ -39,15 +39,15 @@ export function TracesPanel({
   activePropertyTrace,
   isExpanded,
 }: TracesProps) {
-  const {savedTraces, plants} = state.execution;
-  const {setSavedTraces} = setState.setExecution;
+  const {savedTraces, plants, interactive: {time}} = state.execution;
+  const {setSavedTraces, setInteractive: {setTime}} = setState.setExecution;
   const {height} = state.view.trace;
   const {setHeight} = setState.setView.setTrace;
-  const {trace, time} = simulator;
+  const {trace} = simulator;
 
   const onSaveTrace = useCallback(() => {
     if (trace) {
-      const extTrace = saveExtTransitions(trace.trace, getSimTime(time, performance.now()));
+      const extTrace = saveExtTransitions(trace.trace, getSimTime(time, Date.now()));
       setSavedTraces(savedTraces => [
         ...savedTraces, 
         ["", extTrace] as const,
@@ -78,10 +78,9 @@ export function TracesPanel({
           <div style={{fontFamily: 'Roboto Condensed'}}>
             <CoupledDEVSTrace
               ast={abstractSyntax}
-              setTime={simulator.setTime}
+              setTime={setTime._setShallow as Dispatch<SetStateAction<TimeMode>>} // <-- typescript bug?
               currentTrace={trace}
-              // @ts-ignore
-              setCurrentTrace={simulator.setTrace}
+              selectItem={simulator.selectItem}
               traceView={state.view.trace}
               plantsState={plants}
               propertyTrace={activePropertyTrace}

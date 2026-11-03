@@ -1,11 +1,13 @@
 import { initialEditorState } from "../../languages/statecharts/concrete_syntax";
 import { defaultDebugState, defaultFindReplaceState, defaultMQTTState } from "./v1_default";
+import { defaultInteractiveExecutionState } from "./v2_default";
 import { AppStateV3 } from "./v3_types";
 
 export const defaultAppStateV3 = {
   stateVersion: 3,
 
   execution: {
+    interactive: defaultInteractiveExecutionState,
     activeProperty: 0,
     properties: [],
     plants: {

@@ -3,6 +3,15 @@ import { Selection } from "../VisualEditor/VisualEditor.state";
 import { defaultDebugState, defaultFindReplaceState, defaultMQTTState } from "./v1_default";
 import { AppStateV2 } from "./v2_types";
 
+export const defaultInteractiveExecutionState = {
+  trace: undefined,
+  time: {
+    kind: "paused",
+    simtime: 0,
+  },
+  idx: 0,
+};
+
 export const defaultAppStateV2 = {
   stateVersion: 2,
 
@@ -10,8 +19,8 @@ export const defaultAppStateV2 = {
     ...initialEditorState,
     selection: [],
   },
-
   execution: {
+    interactive: defaultInteractiveExecutionState,
     activeProperty: 0,
     properties: [],
     plants: {

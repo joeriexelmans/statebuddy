@@ -1,17 +1,20 @@
 import { SC2DEVSNonError, SC2DEVSState } from "@/languages/devs/sc2devs";
-import { restoreTrace } from "@/languages/devs/serialize_trace";
+import { restoreTrace, restoreTraceIncremental } from "@/languages/devs/serialize_trace";
 import { ExtTransitionTrace } from "../migrations/v1_types";
 import { DEVSTrace, DEVSTraceItem } from "@/languages/devs/trace";
 import { useShortcuts } from "@/hooks/useShortcuts";
-import { getSimTime, getWallClkDelay, TimeMode } from "@/App/time";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { getSimTime, getWallClkDelay, TimeMode, timeTravel } from "@/App/time";
+import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useState } from "react";
 import { RuntimeError } from "@/languages/statecharts/interpreter/interpreter";
 import { DEVSComponent } from "@/languages/devs/devs";
-import { WithSetters } from "../../util/partial_setter";
+import { DeepSetter, WithSetters } from "../../util/partial_setter";
 import { TraceableError } from "@/languages/statecharts/parser/parser";
 import { RaisedEvent, Mode } from "@/languages/statecharts/interpreter/runtime_types";
 import { getEnterDefaultArrows, getFairStepArrows } from "@/languages/statecharts/interpreter/trace_types";
 import { isSCOutputStep } from "../Trace/SC2DEVSTrace";
+import { useIncrementalMemo } from "@/hooks/useIncrementalMemo";
+import { InteractiveExecutionState } from "../migrations/v2_types";
+import { isPrefix } from "@/util/is_prefix";
 
 // In StateBuddy, currently, the state of our simulation is always a CoupledDEVS state of our statechart model (with a DEVS adapter around it) and a bunch of 'plants'.
 // Perhaps in the future, we could let the user arbitrarily configure this setup (anything on the spectrum from a single Statechart Atomic DEVS to many nested Coupled DEVS ...), but for now, it is what it is.
@@ -41,12 +44,11 @@ export type SimulatorCallbacks = {
 }
 
 export type SimulatorStuff = WithSetters<{
-  // simulator volatile state
   time: TimeMode;
-  trace?: StateBuddyTraceState;
 }> & {
-  // derived from state (shorthand)
+  trace?: StateBuddyTraceState;
   currentTraceItem?: DEVSTraceItem<CoupledState, RaisedEvent>;
+  selectItem: (idx: number) => void;
   nextWakeup?: number;
   runtimeErrors: TraceableError[],
   highlightActive: Mode, // <-- active states
@@ -58,12 +60,82 @@ export type SimulatorStuff = WithSetters<{
 
 type OutputListener = (bagOfOutputs: RaisedEvent[]) => void;
 
-export function useSimulator(cE: DEVSComponent<DEVSTrace<CoupledState, RaisedEvent>, RaisedEvent> | undefined): SimulatorStuff {
-  // time mode of the simulator
-  const [time, setTime] = useState<TimeMode>({kind: "paused", simtime: 0});
-  // trace is 'null' when there is no ongoing execution
-  const [trace, setTrace] = useState<StateBuddyTraceState|undefined>(undefined);
+function traceItemTimestamp(item: DEVSTraceItem<any, any> | undefined) {
+  return item ? item.simtime : Infinity;
+}
 
+function currentTraceIdx(time: TimeMode, trace: DEVSTrace<CoupledState, RaisedEvent>) {
+  // trace is a simtime-sorted list, so we perform a binary search :)
+  let leftMostIdx = 0;
+  let rightMostIdx = trace.length-1;
+  let bias = 'R';
+  const toFind = getSimTime(time, Date.now());
+  while (true) {
+    let middleIdx;
+    if (bias === 'R') {
+      // make the common case fast:
+      // often, when calling this function, the current element will be the last one in the list
+      middleIdx = rightMostIdx;
+    }
+    else {
+      // normal binary search: divide list in the middle
+      middleIdx = Math.floor((leftMostIdx + rightMostIdx) / 2);
+    }
+    const middleIdxTs = traceItemTimestamp(trace[middleIdx]);
+    if (toFind >= middleIdxTs) {
+      if (toFind < traceItemTimestamp(trace[middleIdx+1])) {
+        return middleIdx; // found it :)
+      }
+      leftMostIdx = middleIdx+1;
+    }
+    else {
+      rightMostIdx = middleIdx-1;
+    }
+    // continue with normal binary search
+    bias = 'M';
+  }
+}
+
+export function useInteractiveSimulator(
+  cE: DEVSComponent<DEVSTrace<CoupledState, RaisedEvent>, RaisedEvent> | undefined,
+  interactive: InteractiveExecutionState,
+  setInteractive: DeepSetter<InteractiveExecutionState>,
+): SimulatorStuff {
+
+  const computeFresh = (interactive: InteractiveExecutionState) => {
+    if (interactive.trace && cE) {
+      console.log('restore fresh');
+      const trace = restoreTrace(interactive.trace, cE) as DEVSTrace<CoupledState, RaisedEvent>;
+      return {
+        trace,
+        idx: interactive.idx < 0 ? trace.length-1 : interactive.idx,
+      } as StateBuddyTraceState;
+    }
+  };
+
+  const computeIncremental = (oldPersistentState: InteractiveExecutionState, newPersistentState: InteractiveExecutionState, oldUIState: StateBuddyTraceState | undefined) => {
+    if (oldPersistentState === newPersistentState) return oldUIState; // no change, use memoized value
+    if (oldPersistentState.trace && newPersistentState.trace) {
+      // If old input trace is prefix of new input trace, we can just continue executing our existing fully computed trace
+      // Doing this check requires comparing every element in old trace with its corresponding element in new trace, with time complexity = O(N).
+      // However, since every execution state contains its own complete history, it is enough to compare the last items:
+      if (oldPersistentState.trace.trace[oldPersistentState.trace.trace.length-1] === newPersistentState.trace.trace[oldPersistentState.trace.trace.length-1]) {
+        console.log('restore incremental');
+        const trace = restoreTraceIncremental(oldUIState!.trace,
+          newPersistentState.trace.trace.slice(oldPersistentState.trace.trace.length), 
+          newPersistentState.trace.lastSimTime, cE!);
+        return {
+          trace,
+          idx: interactive.idx < 0 ? trace.length-1 : interactive.idx,
+        };
+      }
+    }
+    return computeFresh(newPersistentState);
+  }
+
+  const trace = useIncrementalMemo(computeIncremental, computeFresh, interactive);
+
+  // For the simulation to have side effects, output listeners can be registered.
   const [outputListeners, setOutputListeners] = useState<OutputListener[]>([]);
 
 
@@ -152,188 +224,158 @@ export function useSimulator(cE: DEVSComponent<DEVSTrace<CoupledState, RaisedEve
   }, [cE, notifyListeners]);
 
   const onInit = useCallback(() => {
-    if (cE === undefined) return;
-    setTrace(_ =>
-      makeImminentTransitions({
-        trace: cE.initial(),
-        idx: 0,
-      }));
-    setTime(time => {
-      if (time.kind === "paused") {
-        return {...time, simtime: 0};
-      }
-      else {
-        return {...time, since: {simtime: 0, wallclktime: performance.now()}};
-      }
-    });
-  }, [cE, makeImminentTransitions]);
+    setInteractive._setShallow(interactive => ({
+      trace: {
+        trace: [],
+        lastSimTime: 0,
+      },
+      time: interactive.time.kind === "paused"
+        ? {kind: "paused", simtime: 0}
+        : {kind: "realtime", since: {simtime: 0, wallclktime: Date.now()}, scale: interactive.time.scale},
+      idx: 0,
+    }));
+  }, [setInteractive]);
 
   const onClear = useCallback(() => {
-    setTrace(undefined);
-    setTime({kind: "paused", simtime: 0});
-  }, [setTrace, setTime]);
+    setInteractive._setShallow({
+      trace: undefined,
+      time: {kind: "paused", simtime: 0},
+      idx: 0,
+    });
+  }, [setInteractive]);
 
   // raise input event at current point in simulated time (depends on 'time'), producing a new runtime configuration (or a runtime error)
   const onRaise = useCallback((bagOfInputs: RaisedEvent[]) => {
-    if (cE === undefined) return;
-    setTrace(trace => {
-      if (trace) {
-        const simtime = getSimTime(time, Math.round(performance.now()));
-        const newTrace = cE.extTransition(
-          simtime,
-          trace.trace.slice(0, trace.idx + 1) as DEVSTrace<CoupledState, RaisedEvent>,
-          bagOfInputs,
-        );
-        return makeImminentTransitions({
-          trace: newTrace,
-          idx: newTrace.length-1, // <-- last (= new) item becomes active
-        });
-      }
+    setInteractive._setShallow(interactive => {
+      const simtime = getSimTime(interactive.time, Math.round(Date.now()));   
+      return {
+        trace: interactive.trace && {
+          trace: [
+              ...interactive.trace.trace.filter(bagOfInputs => bagOfInputs.simtime <= simtime),
+              {bagOfInputs, simtime},
+            ],
+          lastSimTime: simtime,
+        },
+        // advance time if paused:
+        time: interactive.time.kind === "paused" ? {
+          kind: "paused",
+          simtime: simtime,
+        } : interactive.time, // <-- don't advance time if realtime (time is already advancing)
+        idx: interactive.idx+1,
+      };
     });
-  }, [setTrace, cE, time, makeImminentTransitions]);
-
-  // make next intTransition
-  const makeNextTimedTransition = useCallback(() => {
-    setTrace(trace => {
-      if (trace) {
-        // we're at the end of the trace -> make intTransition
-        if (trace.idx === trace.trace.length-1) {
-          if (cE!.timeAdvance(trace.trace) === Infinity) {
-            return trace; // cannot make intTransition
-          }
-          const [outputEvents, newTrace] = cE!.intTransition(trace.trace);
-          notifyListeners(outputEvents);
-          return {
-            trace: newTrace,
-            idx: newTrace.length - 1,
-          };
-        }
-        else {
-          // just advance the index
-          // this is safe as long as execution is deterministic
-          return {
-            trace: trace.trace,
-            idx: trace.idx+1,
-          }
-        }
-      }
-    });
-  }, [cE, setTrace, notifyListeners]);
+  }, [setInteractive]);
 
   // Sets the simulated time to exactly match the next timed transition.
   // Note: this function does not make the next timed transition happen. You need to call `makeNextTimedTransition` for that.
   const jumpTimeToNextTimedTransition = useCallback(() => {
-    if (trace && currentTraceItem !== null && cE !== null && nextWakeup !== Infinity) {
-      setTime(time => {
-        if (time.kind === "paused") {
-          return {
-            kind: "paused",
-            simtime: nextWakeup,
-          }
-        }
-        else {
-          return {
-            kind: "realtime",
-            scale: time.scale,
-            since: {
+    setInteractive._setShallow(interactive => {
+      return {
+        trace: interactive.trace && {
+          trace: interactive.trace.trace,
+          lastSimTime: nextWakeup !== Infinity ? nextWakeup : interactive.trace.lastSimTime,
+        },
+        time: interactive.time.kind === "paused"
+          ? {
+              kind: "paused",
               simtime: nextWakeup,
-              wallclktime: Math.round(performance.now()),
             }
-          }
-        }
-      })
-    }
-  }, [nextWakeup, setTime, trace, currentTraceItem, cE]);
+          : interactive.time, // <-- for realtime, time mode remains unchanged (clock already naturally advancing)
+        idx: interactive.idx+1,
+      }
+    })
+  }, [setInteractive, nextWakeup]);
 
   // when user pressed Tab
   const onSkip = useCallback(() => {
-    makeNextTimedTransition();
     jumpTimeToNextTimedTransition();
-  }, [jumpTimeToNextTimedTransition, makeNextTimedTransition]);
+    const setTime = setInteractive.setTime._setShallow as Dispatch<SetStateAction<TimeMode>>;
+    setTime(time => timeTravel(time, nextWakeup, Date.now()));
+  }, [jumpTimeToNextTimedTransition, nextWakeup]);
 
   // The following effect is what makes timed transitions happen in Statebuddy:
   // timer elapse events are triggered by a change of the simulated time (possibly as a scheduled JS event loop timeout)
   useEffect(() => {
     let timeout: NodeJS.Timeout | undefined;
-    if (trace && currentTraceItem && cE) {
-      if (time.kind === "realtime") {
-        const nextTimeout = cE.timeAdvance(trace.trace.slice(0, trace.idx+1) as DEVSTrace<CoupledState, RaisedEvent>);
-        const wallclkDelay = getWallClkDelay(time, nextTimeout, Math.round(performance.now()));
-        if (wallclkDelay !== Infinity) {
-          timeout = setTimeout(makeNextTimedTransition, wallclkDelay);
-        }
+    if (interactive.time.kind === "realtime") {
+      const wallclkDelay = getWallClkDelay(interactive.time, nextWakeup, Math.round(Date.now()));
+      if (wallclkDelay !== Infinity) {
+        timeout = setTimeout(jumpTimeToNextTimedTransition, wallclkDelay);
       }
     }
     return () => {
       if (timeout) clearTimeout(timeout);
     }
-  }, [cE, time, currentTraceItem, makeNextTimedTransition]);
+  }, [interactive, nextWakeup, jumpTimeToNextTimedTransition]);
 
   const onBack = useCallback(() => {
-    setTrace(s => {
-      if (!s) return s;
-      const {trace, idx} = s;
-      const newIdx = idx - 1;
-      if (newIdx < 0) return s; // can't go back
-      setTime({
-        kind: "paused",
-        simtime: trace[newIdx].simtime,
-      });
-      return {
-        trace,
-        idx: newIdx,
-      };
-    });
-  }, [setTrace, setTime]);
+    if (trace) {
+      const prevItem = trace.trace[trace.idx-1];
+      const prevSimtime = prevItem ? prevItem.simtime : 0;
+      setInteractive._setShallow(interactive => ({
+        trace: interactive.trace,
+        time: {
+          kind: "paused",
+          simtime: prevSimtime,
+        },
+        idx: trace.idx-1 >= 0 ? trace.idx-1 : 0,
+      }))
+    }
+  }, [trace]);
 
   const onNext = useCallback(() => {
-    setTrace(s => {
-      if (!s) return s;
-      const {trace, idx} = s;
-      const newIdx = idx + 1;
-      if (newIdx >= trace.length) return s; // can't go forward
-      setTime({
+    if (trace) {
+      const nextItem = trace.trace[trace.idx+1] || trace.trace[trace.idx];
+      setInteractive._setShallow(interactive => ({
+        trace: interactive.trace,
+        time: {
+          kind: "paused",
+          simtime: nextItem.simtime,
+        },
+        idx: trace.idx+1 < trace.trace.length ? trace.idx+1 : trace.idx,
+      }));
+    }
+  }, [trace]);
+
+  const selectItem = useCallback((idx: number) => {
+    setInteractive._setShallow(interactive => ({
+      trace: interactive.trace,
+      time: {
         kind: "paused",
-        simtime: trace[idx+1].simtime,
-      });
-      return {
-        trace,
-        idx: newIdx,
-      }
-    })
-  }, [setTrace, setTime]);
+        simtime: trace?.trace[idx].simtime || 0,
+      },
+      idx: idx,
+    }))
+  }, [trace]);
 
   useShortcuts([
     {keys: ["ArrowUp"], action: onBack},
-    {keys: ["ArrowDown"], action: onNext},
+    {keys: ["ArrowDown"], action: onSkip},
   ])
 
   const onReplayTrace = useCallback((extTrace: ExtTransitionTrace) => {
-    if (cE) {
-      setTrace(_ => {
-        const trace = restoreTrace(extTrace, cE);
-        return {
-          trace,
-          idx: trace.length-1,
-        };
-      });
-      setTime({kind: "paused", simtime: extTrace.lastSimTime});
-    }
-  }, [cE]);
+    setInteractive._setShallow(_ => {
+      return {
+        trace: extTrace,
+        time: {
+          kind: "paused",
+          simtime: extTrace.lastSimTime,
+        },
+        idx: -1,
+      }
+    })
+  }, [setInteractive]);
 
   const simulatorCallbacks = useMemo(() => ({
     onInit, onClear, onBack, onRaise, onSkip, onReplayTrace, addOutputListener, rmOutputListener,
   }), [onInit, onClear, onBack, onRaise, onSkip, onReplayTrace, addOutputListener, rmOutputListener]);
 
   const simulator = useMemo(() => ({
-      // state
+      time: interactive.time,
+      setTime: setInteractive.setTime._setShallow as Dispatch<SetStateAction<TimeMode>>,
       trace,
-      setTrace,
-      time,
-      setTime,
-
-      // derived from state (shorthand)
       currentTraceItem,
+      selectItem,
       nextWakeup,
       runtimeErrors,
       highlightActive,
@@ -341,7 +383,7 @@ export function useSimulator(cE: DEVSComponent<DEVSTrace<CoupledState, RaisedEve
 
       // 'reducers'
       simulatorCallbacks,
-  }), [cE, time, trace, outputListeners]);
+  }), [cE, trace, outputListeners]);
 
   return simulator;
 }

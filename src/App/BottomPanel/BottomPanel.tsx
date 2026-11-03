@@ -44,7 +44,6 @@ export function BottomPanel({
     <div className={appStyles.stackHorizontal
             + ' ' + appStyles.statusBar
             + ' ' + (errors.length ? appStyles.error : ""
-            // + ' ' + (pyodideStatus === "loading" ? appStyles.pyodideLoading : "")
           )}
           style={{alignItems: 'end'}}>
       <div style={{flexGrow:1}}>
