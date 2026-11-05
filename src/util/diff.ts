@@ -89,7 +89,7 @@ export function explainDiff(diff: JsonDiff): string[] {
     return ['<no change>'];
   }
   else if (diff.kind === 'objectchange') {
-    return diff.keys.map(({key, diff}) => key + '.' + explainDiff(diff));
+    return diff.keys.flatMap(({key, diff}) => explainDiff(diff).map(d => key + '.' + d));
   }
   else if (diff.kind === 'arraychange') {
     return ['<array changed>'];

@@ -8,6 +8,7 @@ import { ExpandablePanelItemState } from "../migrations/v1_types";
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import { Tooltip } from "../Components/Tooltip";
 import { MyDetails } from "../Components/MyDetails";
+import { useDetectChange } from "@/hooks/useDetectChange";
 
 type PanelProps = {
   items: ExpandablePanelItemState[],
@@ -36,7 +37,7 @@ export const Panel = memo(function Panel({items, setItems, globalProps}: PanelPr
           extraButtons={<div>
             {/* @ts-ignore */}
             <MoveUpDown i={i} ls={items} setter={setItems}/>
-            <button onClick={() => setItems(items => items.toSpliced(i, 1))}>
+            <button onClick={() => {console.log('click'); setItems(items => items.toSpliced(i, 1))}}>
               <CloseIcon fontSize="small"/>
             </button>
           </div>}

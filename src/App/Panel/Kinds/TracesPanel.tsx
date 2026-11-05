@@ -21,6 +21,7 @@ import { NicelyCentered } from '../../Components/NicelyCentered';
 import { AppState } from '../../App.state';
 import { ExtTransitionTrace, SavedTraces } from '../../migrations/v1_types';
 import { TraceView } from '../../migrations/v2_types';
+import { Scrollable } from "@/App/Components/Scrollable";
 
 type TracesProps = {
   state: AppState,
@@ -65,12 +66,15 @@ export function TracesPanel({
       disableSave={trace === undefined}
       onSaveTrace={onSaveTrace}
     />
-    <div style={{
-      flexGrow: 1,
-      overflow:'auto',
-      height,
-      boxShadow: 'inset 0 10px 10px -10px rgba(0,0,0,0.4)',
-      backgroundColor: 'var(--statusbar-bg-color)',
+    <Scrollable
+      state={state.view.scroll.trace}
+      setState={setState.setView.setScroll.setTrace._setShallow}
+      style={{
+        flexGrow: 1,
+        overflow:'auto',
+        height,
+        boxShadow: 'inset 0 10px 10px -10px rgba(0,0,0,0.4)',
+        backgroundColor: 'var(--statusbar-bg-color)',
       }}>
         {trace && isExpanded &&
           <div style={{fontFamily: 'Roboto Condensed'}}>
@@ -93,7 +97,7 @@ export function TracesPanel({
               </div>
             </NicelyCentered>
         }
-    </div>
+    </Scrollable>
     <ResizeHandle
       getDelta={e => e.movementY}
       setSize={setHeight}

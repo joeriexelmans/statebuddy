@@ -2,7 +2,7 @@ import { Dispatch, PropsWithChildren, SetStateAction, useRef } from "react";
 
 // Dirty fix for 2 bugs:
 //   - toggle event emitted when changing the 'open'-state
-//   - closing details also clsoing all parent <details> nodes
+//   - closing details also cl0sing all parent <details> nodes
 export function MyDetails({open, setOpen, children}: PropsWithChildren<{open: boolean, setOpen: Dispatch<SetStateAction<boolean>>}>) {
   const ref = useRef(null);
   return <details
@@ -16,6 +16,10 @@ export function MyDetails({open, setOpen, children}: PropsWithChildren<{open: bo
       let clickOnSummary = false;
       let element = e.target;
       while (element !== ref.current) {
+        // @ts-ignore
+        if (element.tagName === "BUTTON" || element.tagName === "INPUT") {
+          break; // the user meant to click a specific element, no toggle the details
+        }
         // @ts-ignore
         if (element.parentElement === ref.current) {
           // @ts-ignore

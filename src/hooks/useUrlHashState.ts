@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { useDelayedEffect } from "./useDelayedEffect";
 import { base642buf, buf2base64 } from "../compression/deflate";
 
@@ -9,12 +9,14 @@ export type ModelSize = {
 
 // persist state in URL hash
 export function useUrlHashState<StateType>(
+  state: StateType,
+  setState: (newState: StateType) => void,
   delayMs: number,
   encode: (s: StateType) => Promise<ArrayBuffer>,
   decode: (h: ArrayBuffer) => Promise<StateType>,
   onErr: (err: any) => void,
 ) {
-  const [state, setState] = useState<StateType|undefined>(undefined);
+  // const [state, setState] = useState<StateType|undefined>(undefined);
   const [size, setSize] = useState<ModelSize>({compressed: 0, original: 0});
 
   useEffect(() => {
@@ -60,5 +62,5 @@ export function useUrlHashState<StateType>(
     }
   }, delayMs, [state])
 
-  return [state, setState, size] as const;
+  return size;
 }

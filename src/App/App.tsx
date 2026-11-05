@@ -45,6 +45,7 @@ import { useEditor } from "./VisualEditor/hooks/useEditor";
 import { ModelSize } from "../hooks/useUrlHashState";
 import { useDetectChange, useDetectChange2 } from "../hooks/useDetectChange";
 import { MyDetails } from "./Components/MyDetails";
+import { Scrollable } from "./Components/Scrollable";
 
 export function App({appState, setAppState: setAppStateShallow, modelSize}: WithSetters<{appState: AppState}> & {modelSize: ModelSize}) {
   const setAppState = useMemo(() => makeDeepSetter(defaultAppState, setAppStateShallow), [setAppStateShallow]);
@@ -241,7 +242,10 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
       <div className={styles.stackHorizontal} style={{flexGrow: 1, overflow: 'clip auto'}}>
 
         {/* Left panel */}
-        <SizedPanel width={appState.view.leftPanel.width}>
+        <SizedPanel
+          scroll={appState.view.leftPanel.scroll}
+          setScroll={setAppState.setView.setLeftPanel.setScroll._setShallow}
+          width={appState.view.leftPanel.width}>
           <Panel
             items={appState.view.leftPanel.items}
             setItems={setAppState.setView.setLeftPanel.setItems}
@@ -258,7 +262,8 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
         }}>
 
           {/* Editor */}
-          <div style={{overflow: 'auto'}}> {/* <-- this element will overflow in the Y-direction (because its parent is a COLUMN) */}
+          <Scrollable state={appState.view.scroll.editor} setState={setAppState.setView.setScroll.setEditor._setShallow} style={{overflow: 'auto'}}>
+          {/* <div style={{overflow: 'auto'}}> <-- this element will overflow in the Y-direction (because its parent is a COLUMN) */}
             {editorState && topology && syntaxErrors &&
               <DebugContext value={appState.view.debug}>
                 <VisualEditor
@@ -277,7 +282,8 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
                   beginEdit={beginEdit}
                 />
               </DebugContext>}
-          </div>
+          {/* </div> */}
+          </Scrollable>
           
           {/* <Greeter trial={trial}/> */}
 
@@ -316,7 +322,10 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
           getDelta={e => -e.movementX}
           setSize={setAppState.setView.setRightPanel.setWidth}
         />
-        <SizedPanel width={appState.view.rightPanel.width}>
+        <SizedPanel
+          scroll={appState.view.rightPanel.scroll}
+          setScroll={setAppState.setView.setRightPanel.setScroll._setShallow}
+          width={appState.view.rightPanel.width}>
           <Panel
             items={appState.view.rightPanel.items}
             setItems={setAppState.setView.setRightPanel.setItems}

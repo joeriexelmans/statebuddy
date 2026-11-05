@@ -1,5 +1,7 @@
 import { initialEditorState } from "../../languages/statecharts/concrete_syntax";
+import { defaultScrollableState } from "../Components/Scrollable";
 import { Selection } from "../VisualEditor/VisualEditor.state";
+import { SerializableSelection } from "./v0_types";
 import { defaultDebugState, defaultFindReplaceState, defaultMQTTState } from "./v1_default";
 import { AppStateV2 } from "./v2_types";
 
@@ -12,9 +14,56 @@ export const defaultInteractiveExecutionState = {
   idx: 0,
 };
 
+export const defaultView = {
+  scroll: {
+    editor: defaultScrollableState,
+  },
+  visibility: {
+    keys: false,
+    find: false,
+    plot: false,
+    debug: false,
+    errors: false,
+    table: false,
+  },
+  leftPanel: {
+    width: 300,
+    items: [
+      {type: "input events", expanded: true},
+      {type: "internal events", expanded: true},
+      {type: "output events", expanded: true},
+    ],
+  },
+  rightPanel: {
+    width: 300,
+    items: [
+      {type: "execution traces", expanded: true},
+    ],
+  },
+  plot: {
+    visible: {},
+  },
+  debug: defaultDebugState,
+  trace: {
+    autoScroll: true,
+    height: 400,
+    microSteps: true,
+    plantSteps: true,
+    transitions: false,
+  },
+  topPanel: {
+    modelName: "",
+    mouseMap: {
+      leftMouseMode: "select",
+      middleMouseMode: "nothing",
+      rightMouseMode: "nothing",
+    },
+    zoom: 100,
+  }
+};
+
 export const defaultAppStateV2 = {
   stateVersion: 2,
-
   editorState: {
     ...initialEditorState,
     selection: [],
@@ -36,48 +85,5 @@ export const defaultAppStateV2 = {
     declaredInputs: [],
     declaredOutputs: [],
   },
-  view: {
-    visibility: {
-      keys: false,
-      find: false,
-      plot: false,
-      debug: false,
-      errors: false,
-      table: false,
-    },
-    leftPanel: {
-      width: 300,
-      items: [
-        {type: "input events", expanded: true},
-        {type: "internal events", expanded: true},
-        {type: "output events", expanded: true},
-      ],
-    },
-    rightPanel: {
-      width: 300,
-      items: [
-        {type: "execution traces", expanded: true},
-      ],
-    },
-    plot: {
-      visible: {},
-    },
-    debug: defaultDebugState,
-    trace: {
-      autoScroll: true,
-      height: 400,
-      microSteps: true,
-      plantSteps: true,
-      transitions: false,
-    },
-    topPanel: {
-      modelName: "",
-      mouseMap: {
-        leftMouseMode: "select",
-        middleMouseMode: "nothing",
-        rightMouseMode: "nothing",
-      },
-      zoom: 100,
-    }
-  }
+  view: defaultView,
 } as AppStateV2;

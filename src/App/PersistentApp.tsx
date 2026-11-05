@@ -1,15 +1,15 @@
 import styles from "./App.module.css";
 import { buf2string, deflateBuffer, inflateBuf } from "@/compression/deflate";
 import { Encoder } from "cbor-x";
-import { Dispatch, ReactNode, SetStateAction, useEffect, useState } from "react";
+import { Dispatch, ReactNode, SetStateAction, useCallback, useEffect, useState } from "react";
 import { useUrlHashState } from "../hooks/useUrlHashState";
-import { lossyCompressConcreteSyntax } from "../languages/statecharts/concrete_syntax";
 import { myPureDeepAssign } from "../util/util";
 import { App } from "./App";
 import { AppState, defaultAppState } from "./App.state";
 import { CrashScreen } from "./CrashScreen";
 import { autoMigrate } from "./migrations/auto_migrate";
 import { diffJSON, explainDiff } from "@/util/diff";
+import { chunkedIdxToFlat, chunkedLength, chunkedPush, flatIdxToChunked } from "@/util/chunked_array";
 
 const CBOR = new Encoder({
   structuredClone: true,
@@ -75,77 +75,86 @@ const msgs = {
 
 // A wrapper around <App> that persists the app state in URL hash
 export function PersistentApp() {
-  
   const [err, setErr] = useState<ReactNode>();
-  const [appState, setAppState, modelSize] = useUrlHashState<AppState>(
-    100, // ms of inactivity before state is compressed and persisted in URL hash
 
-    // encode to URL:
-    async (appState) => {
-      // @ts-ignore: this works...
-      const cborBuf = CBOR.encode(appState) as ArrayBuffer;
-      const cborZipBuf = await deflateBuffer(new Uint8Array(cborBuf));
+  const [appHistory, setAppHistory] = useState<{h: AppState[][], i: number, j: number}>({h:[[]], i:0, j:0});
 
-      // console.log('CBOR', cborBuf.byteLength, 'bytes');
-      // console.log('CBOR zipped', cborZipBuf.byteLength, 'bytes');
+  const appState = appHistory.h[appHistory.i]?.[appHistory.j];
+  const setAppState = (appState: AppState) => {
+    setAppHistory({h: [[appState]], i: 0, j:0});
+  }
 
-      // const jsonBuf = str2buf(JSON.stringify(compressed));
-      // console.log('JSON', jsonBuf.byteLength, 'bytes');
+  const encodeToURL = async (appState: AppState) => {
+    // @ts-ignore: this works...
+    const cborBuf = CBOR.encode(appState) as ArrayBuffer;
+    const cborZipBuf = await deflateBuffer(new Uint8Array(cborBuf));
 
-      // const jsonZipBuf = (await deflateString(JSON.stringify(compressed)));
-      // console.log('JSON zipped', jsonZipBuf.byteLength, 'bytes');
+    // console.log('CBOR', cborBuf.byteLength, 'bytes');
+    // console.log('CBOR zipped', cborZipBuf.byteLength, 'bytes');
 
-      return cborZipBuf;
-    },
+    // const jsonBuf = str2buf(JSON.stringify(compressed));
+    // console.log('JSON', jsonBuf.byteLength, 'bytes');
 
-    // decode from URL:
-    async buf => {
-      if (buf.byteLength === 0) {
-        // empty URL hash -> initial state
-        setErr(undefined);
-        return defaultAppState;
-      }
+    // const jsonZipBuf = (await deflateString(JSON.stringify(compressed)));
+    // console.log('JSON zipped', jsonZipBuf.byteLength, 'bytes');
 
-      let inflated;
+    return cborZipBuf;
+  };
 
+  const decodeFromURL = async (buf: ArrayBuffer) => {
+    if (buf.byteLength === 0) {
+      // empty URL hash -> initial state
+      setErr(undefined);
+      return defaultAppState;
+    }
+
+    let inflated;
+
+    try {
+      inflated = await inflateBuf(new Uint8Array(buf));
+
+      let stateUnknown;
       try {
-        inflated = await inflateBuf(new Uint8Array(buf));
-
-        let stateUnknown;
+        stateUnknown = CBOR.decode(new Uint8Array(inflated));
+      }
+      catch (cborErr) {
         try {
-          stateUnknown = CBOR.decode(new Uint8Array(inflated));
+          const str = buf2string(inflated);
+          stateUnknown = JSON.parse(str);
+        } catch (jsonErr) {
+          console.error({cborErr, jsonErr});
+
+          setErr(<LoadingSteps steps={[
+            [<OK/>, msgs.parseUrlBase64],
+            [<OK/>, msgs.decompress],
+            [<FAIL/>, msgs.parseCBOR],
+            [<FAIL/>, msgs.parseJSON],
+          ]}/>);
+
+          return;
         }
-        catch (cborErr) {
-          try {
-            const str = buf2string(inflated);
-            stateUnknown = JSON.parse(str);
-          } catch (jsonErr) {
-            console.error({cborErr, jsonErr});
-
-            setErr(<LoadingSteps steps={[
-              [<OK/>, msgs.parseUrlBase64],
-              [<OK/>, msgs.decompress],
-              [<FAIL/>, msgs.parseCBOR],
-              [<FAIL/>, msgs.parseJSON],
-            ]}/>);
-
-            return;
-          }
-        }
-        setErr(undefined);
-        const migrated = autoMigrate(stateUnknown);
-        return myPureDeepAssign(defaultAppState, migrated);
       }
-      catch (inflateErr) {
-        console.error({inflateErr});
+      setErr(undefined);
+      const migrated = autoMigrate(stateUnknown);
+      return myPureDeepAssign(defaultAppState, migrated);
+    }
+    catch (inflateErr) {
+      console.error({inflateErr});
 
-        setErr(<LoadingSteps steps={[
-          [<OK/>, msgs.parseUrlBase64],
-          [<FAIL/>, msgs.decompress],
-          [<PENDING/>, msgs.parseCBOR],
-        ]}/>);
-      }
-    },
+      setErr(<LoadingSteps steps={[
+        [<OK/>, msgs.parseUrlBase64],
+        [<FAIL/>, msgs.decompress],
+        [<PENDING/>, msgs.parseCBOR],
+      ]}/>);
+    }
+  };
+
+  const modelSize = useUrlHashState<AppState>(
+    appState,
+    setAppState,
+    100, // ms of inactivity before state is compressed and persisted in URL hash
+    encodeToURL,
+    decodeFromURL,
 
     err => {
       console.error(err);
@@ -158,69 +167,45 @@ export function PersistentApp() {
     },
   );
 
-  let setAppStateDefined;
-  
-  // setAppStateDefined = useCallback((callback: (SetStateAction<AppState> | AppState)) => {
-  //   setAppState(appState => {
-  //     if (appState === undefined) {
-  //       // can this happen? i'm not totally sure
-  //       throw new Error("the impossible happened ?!");
-  //     }
-  //     else {
-  //       if (typeof callback === "function") {
-  //         return callback(appState);
-  //       }
-  //       else {
-  //         return callback;
-  //       }
-  //     }
-  //   });
-  // }, [setAppState]);
-
-  const [appHistory, setAppHistory] = useState<{h: AppState[], i: number}>({h:[], i:0});
-  const setAppStateButKeepHistory = (x: SetStateAction<AppState>) => {
-    setAppState(oldState => {
-      if (appHistory.i >= appHistory.h.length-1) {
-        let newState;
-        if (typeof x === 'function') {
-          newState = x(oldState!);
-        }
-        else {
-          newState = x;
-        }
-        setAppHistory(({h, i}) => {
-          const lastState = h.at(-1);
-          if (newState !== lastState) {
-            const diff = diffJSON(lastState, newState);
-            if (diff.kind === "nochange") return {h, i};
-            else {
-              console.log(explainDiff(diff).join('\n'));
-              return {
-                h: [...h.slice(0,i+1), newState],
-                i: i+1,
-              };
-            }
-          }
-          return {h, i}; // no change
-        });
-        return newState;
+  const setAppStateButKeepHistory = useCallback((value: SetStateAction<AppState>) => {
+    setAppHistory(({h, i, j}) => {
+      if (i !== h.length-1 || j !== h[i].length-1) {
+        // you're looking at an old state -> app is read-only
+        return {h, i, j};
       }
-      else return oldState;
+
+      const oldState = h[i][j];
+      let newState;
+      if (typeof value === 'function') {
+        // console.log('oldstate:', oldState);
+        newState = value(oldState);
+      }
+      else {
+        newState = value;
+      }
+      const diff = diffJSON(oldState, newState);
+      if (diff.kind === "nochange") return {h, i, j};
+      else {
+        console.log(explainDiff(diff).join('\n'), diff);
+        const newHistory = chunkedPush(h, newState);
+        return {
+          h: newHistory,
+          i: newHistory.length-1,
+          j: newHistory.at(-1)!.length-1,
+        };
+      }
     })
-  }
+  }, [setAppHistory]);
 
-  useEffect(() => {
-    (async () => {
-    // @ts-ignore
-    const cborBuf = CBOR.encode(appHistory) as ArrayBuffer;
-    console.log('history:', cborBuf.byteLength);
-    const cborZipBuf = await deflateBuffer(new Uint8Array(cborBuf));
-    console.log('zipped:', cborZipBuf.byteLength);
-    })();
-  }, [appHistory]);
-
-  // in production mode, we bypass the above and just do a type cast
-  setAppStateDefined = setAppState as Dispatch<SetStateAction<AppState>>;
+  // useEffect(() => {
+  //   (async () => {
+  //   // @ts-ignore
+  //   const cborBuf = CBOR.encode(appHistory) as ArrayBuffer;
+  //   console.log('history:', cborBuf.byteLength);
+  //   const cborZipBuf = await deflateBuffer(new Uint8Array(cborBuf));
+  //   console.log('zipped:', cborZipBuf.byteLength);
+  //   })();
+  // }, [appHistory]);
 
   // @ts-ignore: also useful for debugging!
   window['appState'] = appState;
@@ -238,20 +223,30 @@ export function PersistentApp() {
           </CrashScreen>
         : appState
           ? <div style={{display: 'flex', flexDirection: 'column', height: '100vh'}}>
-              <App appState={appHistory.h[appHistory.i] || appState} setAppState={setAppStateButKeepHistory} modelSize={modelSize} />
+              <App
+                appState={appState}
+                setAppState={setAppStateButKeepHistory}
+                modelSize={modelSize}
+              />
               <div style={{display: 'flex', flexDirection: 'column'}}>
                 <input
-                  // style={{flex: '1 1 auto'}}
                   type="range"
                   min={0}
-                  max={appHistory.h.length-1}
-                  value={appHistory.i}
+                  max={chunkedLength(appHistory.h)-1}
+                  value={appHistory.i*500+appHistory.j}
                   step={1}
                   list="markers"
-                  onChange={e => setAppHistory(({h, i}) => ({h, i:(Number(e.target.value))}))}
+                  onChange={e => {
+                    setAppHistory(({h}) => ({
+                      h,
+                      ...flatIdxToChunked(Number(e.target.value)),
+                    }))}}
                 />
                 <datalist id="markers">
-                  {appHistory.h.map((h, i) => <option key={i} value={i} label={i.toString()}/>)}
+                  {appHistory.h.map((arr, i) => arr.map((_, j) => {
+                    const idx = chunkedIdxToFlat({i, j});
+                    return <option key={idx} value={idx} label={idx.toString()}/>;
+                  }))}
                 </datalist>
               </div>
             </div>

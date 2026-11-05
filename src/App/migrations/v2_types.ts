@@ -2,6 +2,7 @@ import { DebugState, ExtTransitionTrace, FindReplaceStateV1, MQTTState, PanelSta
 import { VisualEditorStateV0 } from "./v0_types";
 import { EventTrigger } from "@/languages/statecharts/transitionlabel/abstract_syntax";
 import { TimeMode } from "../time";
+import { ScrollableState } from "../Components/Scrollable";
 
 export type VersionedAppState = {
   stateVersion: number;
@@ -42,6 +43,10 @@ export type VisibilityState = {
 };
 
 export type ViewState = {
+  scroll: {
+    editor: ScrollableState,
+    trace: ScrollableState,
+  },
   topPanel: TopPanelState,
   visibility: VisibilityState,
   trace: TraceView,
@@ -49,9 +54,11 @@ export type ViewState = {
     visible: { [name:string]: boolean },
   },
   leftPanel: PanelState & {
+    scroll: ScrollableState,
     width: number,
   },
   rightPanel: PanelState & {
+    scroll: ScrollableState,
     width: number,
   },
   debug: DebugState,

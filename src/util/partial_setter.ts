@@ -3,9 +3,13 @@ import { Dispatch, SetStateAction, useMemo } from "react";
 export function makePartialSetter<T, K extends keyof T>(fullSetter: Dispatch<SetStateAction<T>>, key: K): Dispatch<SetStateAction<T[typeof key]>> {
   return (newValueOrCallback: T[K] | ((oldValue: T[K]) => T[K])) => {
     fullSetter(oldFullValue => {
-      const newValue = (typeof newValueOrCallback === 'function') ? (newValueOrCallback as (newValue: T[K]) => T[K])(oldFullValue[key] as T[K]) : newValueOrCallback as T[K];
+      const newValue = (typeof newValueOrCallback === 'function')
+        ? (newValueOrCallback as (newValue: T[K]) => T[K])(oldFullValue[key] as T[K])
+        : newValueOrCallback as T[K];
+      
+      
       if (newValue === oldFullValue[key]) {
-        return oldFullValue;
+        return oldFullValue; // is this an optimization?
       }
       else {
         return {

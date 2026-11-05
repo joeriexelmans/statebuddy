@@ -1,4 +1,5 @@
 import { initialEditorState } from "../../languages/statecharts/concrete_syntax";
+import { defaultScrollableState } from "../Components/Scrollable";
 import { defaultDebugState, defaultFindReplaceState, defaultMQTTState } from "./v1_default";
 import { defaultInteractiveExecutionState } from "./v2_default";
 import { AppStateV3 } from "./v3_types";
@@ -29,6 +30,10 @@ export const defaultAppStateV3 = {
     },
   },
   view: {
+    scroll: {
+      editor: defaultScrollableState,
+      trace: defaultScrollableState,
+    },
     visibility: {
       keys: false,
       find: false,
@@ -38,6 +43,7 @@ export const defaultAppStateV3 = {
       table: false,
     },
     leftPanel: {
+      scroll: defaultScrollableState,
       width: 300,
       items: [
         {type: "input events", expanded: true},
@@ -46,6 +52,7 @@ export const defaultAppStateV3 = {
       ],
     },
     rightPanel: {
+      scroll: defaultScrollableState,
       width: 300,
       items: [
         {type: "execution traces", expanded: true},
