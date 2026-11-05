@@ -199,28 +199,28 @@ export function useInteractiveSimulator(
   // Simulator callbacks...
 
   // keep making intTransitions as long as they don't advance the simtime
-  const makeImminentTransitions = useCallback((trace: StateBuddyTraceState) => {
-    let i=0;
-    while (true) {
-      if (i > 1000) {
-        throw new Error("too many steps - probably an infinite loop :(");
-      }
-      const simtime = trace.trace[trace.idx].simtime;
-      const nextWakeup = cE!.timeAdvance(trace.trace);
-      if (nextWakeup > simtime) {
-        return trace;
-      }
-      else {
-        const [outputEvents, newTrace] = cE!.intTransition(trace.trace);
-        notifyListeners(outputEvents);
-        trace = {
-          trace: newTrace,
-          idx: trace.idx + 1,
-        }
-      }
-      i++;
-    }
-  }, [cE, notifyListeners]);
+  // const makeImminentTransitions = useCallback((trace: StateBuddyTraceState) => {
+  //   let i=0;
+  //   while (true) {
+  //     if (i > 1000) {
+  //       throw new Error("too many steps - probably an infinite loop :(");
+  //     }
+  //     const simtime = trace.trace[trace.idx].simtime;
+  //     const nextWakeup = cE!.timeAdvance(trace.trace);
+  //     if (nextWakeup > simtime) {
+  //       return trace;
+  //     }
+  //     else {
+  //       const [outputEvents, newTrace] = cE!.intTransition(trace.trace);
+  //       notifyListeners(outputEvents);
+  //       trace = {
+  //         trace: newTrace,
+  //         idx: trace.idx + 1,
+  //       }
+  //     }
+  //     i++;
+  //   }
+  // }, [cE, notifyListeners]);
 
   const onInit = useCallback(() => {
     setInteractive._setShallow(interactive => ({
@@ -246,24 +246,30 @@ export function useInteractiveSimulator(
   // raise input event at current point in simulated time (depends on 'time'), producing a new runtime configuration (or a runtime error)
   const onRaise = useCallback((bagOfInputs: RaisedEvent[]) => {
     setInteractive._setShallow(interactive => {
-      const simtime = getSimTime(interactive.time, Math.round(Date.now()));   
+      const simtime = getSimTime(interactive.time, Math.round(Date.now()));
+      let numExtTransitions = 0;
+      if (trace) {
+        for (let i=0; i<=trace.idx; i++) {
+          if (trace.trace[i].kind === "extTransition") numExtTransitions++;
+        }
+      }
       return {
         trace: interactive.trace && {
           trace: [
-              ...interactive.trace.trace.filter(bagOfInputs => bagOfInputs.simtime <= simtime),
+              ...interactive.trace.trace.slice(0, numExtTransitions),
               {bagOfInputs, simtime},
             ],
           lastSimTime: simtime,
         },
         // advance time if paused:
         time: interactive.time.kind === "paused" ? {
-          kind: "paused",
+          kind: "paused" as const,
           simtime: simtime,
         } : interactive.time, // <-- don't advance time if realtime (time is already advancing)
-        idx: interactive.idx+1,
+        idx: -1,
       };
     });
-  }, [setInteractive]);
+  }, [setInteractive, trace]);
 
   // Sets the simulated time to exactly match the next timed transition.
   // Note: this function does not make the next timed transition happen. You need to call `makeNextTimedTransition` for that.
