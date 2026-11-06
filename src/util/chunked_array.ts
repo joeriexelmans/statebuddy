@@ -18,14 +18,10 @@ export function chunkedPush<T>(oldArray: T[][], elem: T): T[][] {
   }
 }
 
-export function chunkedLength<T>(arr: T[][]) {
-  return (arr.length-1)*500 + arr.at(-1)!.length;
-}
-
 export function flatIdxToChunked(idx: number) {
   return {
-    i: Math.floor(idx / 500),
-    j: idx % 500,
+    i: Math.floor(idx / CHUNK_SIZE),
+    j: idx % CHUNK_SIZE,
   };
 }
 
