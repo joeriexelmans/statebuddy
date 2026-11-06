@@ -230,7 +230,7 @@ export function useInteractiveSimulator(
       time: interactive.time.kind === "paused"
         ? {kind: "paused", simtime: 0}
         : {kind: "realtime", since: {simtime: 0, wallclktime: Date.now()}, scale: interactive.time.scale},
-      idx: 0,
+      idx: -1,
     }));
   }, [setInteractive]);
 
