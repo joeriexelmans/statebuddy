@@ -184,7 +184,6 @@ export function useInteractiveSimulator(
         }
         if (currentBigStep.kind === "init") {
           highlightTransitions.push(...getEnterDefaultArrows(currentBigStep.enteredRoot));
-          console.log({highlightTransitions});
         }
         highlightTransitions.push(...currentBigStep.fairSteps.flatMap(step => getFairStepArrows(step)));
       }

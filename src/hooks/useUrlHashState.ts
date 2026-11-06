@@ -9,7 +9,7 @@ export type ModelSize = {
 
 // persist state in URL hash
 export function useUrlHashState<StateType>(
-  state: StateType,
+  state: StateType|undefined,
   setState: (newState: StateType) => void,
   delayMs: number,
   encode: (s: StateType) => Promise<ArrayBuffer>,

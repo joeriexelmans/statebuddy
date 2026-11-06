@@ -11,6 +11,10 @@ import { ModalOverlay } from "./App/Overlays/ModalOverlay";
 import deadStatebuddy from "../artwork/new-logo/dead-statebuddy-optimized.svg";
 import { PersistentApp } from "./App/PersistentApp";
 import { CrashScreen } from "./App/CrashScreen";
+import { SpyingApp } from "./App/SpyingApp";
+import { NonSpyingApp } from "./App/NonSpyingApp";
+
+const searchParams = new URLSearchParams(window.location.search);
 
 const elem = document.getElementById("root")!;
 const app = (
@@ -29,7 +33,7 @@ const app = (
       <h3>... and went to <a href="https://static1.squarespace.com/static/50e08e65e4b0c2f4976972df/t/588a2e70725e25b6981e64d1/1485450864394/Chiang+Hell+Is+the+Absence+of+God.pdf">heaven</a>.</h3>
     </CrashScreen>
   }>
-    <PersistentApp />
+    {searchParams.get("spy")==="1" ? <SpyingApp/> : <NonSpyingApp />}
   </ErrorBoundary>
   // </StrictMode>
 );

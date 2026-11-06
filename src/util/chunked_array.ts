@@ -43,13 +43,13 @@ export function chunkedLast<T>(arr: T[][]) {
 
 export function chunkedBinarySearch<T>(arr: T[][], end: T, fn: (elem: T, next: T) => Cmp): {i: number, j: number} {
   // 1. find the chunk
-  console.log('find chunk, numchunks=', arr.length);
+  // console.log('find chunk, numchunks=', arr.length);
   
   const i = binarySearch(arr, [end], (chunk, nextChunk) => {
     return fn(chunk[0], nextChunk[0] || end);
   });
   // 2. find within chunk
-  console.log('i=',i,' find within chunk');
+  // console.log('i=',i,' find within chunk');
   const j = binarySearch(arr[i], end, fn);
   return {i, j};
 }

@@ -6,7 +6,7 @@ export function MouseIcon({left, right, middle}: {left: boolean, right: boolean,
   if (!left && !right && !middle) {
     return <></>;
   }
-  const activeColor = 'var(--firing-transition-color)';
+  const activeColor = '#000';
   const backgroundColor = '#aaa';
 
   const getStyle = (active: boolean) => ({

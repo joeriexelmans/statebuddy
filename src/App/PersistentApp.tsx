@@ -8,18 +8,14 @@ import { App } from "./App";
 import { AppState, defaultAppState } from "./App.state";
 import { CrashScreen } from "./CrashScreen";
 import { autoMigrate } from "./migrations/auto_migrate";
-import { diffJSON, explainDiff } from "@/util/diff";
-import { chunkedBinarySearch, chunkedFirst, chunkedIdxToFlat, chunkedLast, chunkedLength, chunkedPush, flatIdxToChunked } from "@/util/chunked_array";
+import { WithSetters } from "@/util/partial_setter";
 
-import cursorSVG from "../assets/cursor.svg";
 
 const CBOR = new Encoder({
   structuredClone: true,
   // useRecords: true, // <-- no difference in size, not compatible with other CBOR implementations
   // pack: true, // <-- packing only slightly reduces encoded size, and if we DEFLATE the resulting buffer, there is no difference!
 });
-
-const appStart = Date.now();
 
 // Example model: digital watch (without edit history)
 //
@@ -77,22 +73,10 @@ const msgs = {
   parseJSON: "instead try JSON-decode",
 }
 
-type AppStateWithCursor = {
-  s: AppState,
-  c: {x: number, y: number, buttons: number},
-  t: number, // Unix timestamp
-}
 
 // A wrapper around <App> that persists the app state in URL hash
-export function PersistentApp() {
+export function PersistentApp({appState, setAppState}: WithSetters<{appState: AppState|undefined}>) {
   const [err, setErr] = useState<ReactNode>();
-
-  const [appHistory, setAppHistory] = useState<{h: AppStateWithCursor[][], i: number, j: number}>({h:[[]], i:0, j:0});
-
-  const appState = appHistory.h[appHistory.i]?.[appHistory.j]?.s;
-  const setAppState = (appState: AppState) => {
-    setAppHistory({h: [[{s: appState, c: {x:0,y:0,buttons:0}, t: Date.now()}]], i: 0, j:0});
-  }
 
   const encodeToURL = async (appState: AppState) => {
     // @ts-ignore: this works...
@@ -146,7 +130,10 @@ export function PersistentApp() {
       }
       setErr(undefined);
       const migrated = autoMigrate(stateUnknown);
-      return myPureDeepAssign(defaultAppState, migrated);
+      // add missing fields if there are any
+      const fullyRestored = myPureDeepAssign(defaultAppState, migrated);
+      console.log('fully restored');
+      return fullyRestored;
     }
     catch (inflateErr) {
       console.error({inflateErr});
@@ -177,69 +164,7 @@ export function PersistentApp() {
     },
   );
 
-  const setAppStateButKeepHistory = useCallback((value: SetStateAction<AppState>) => {
-    setAppHistory(({h, i, j}) => {
-      if (i !== h.length-1 || j !== h[i].length-1) {
-        // you're looking at an old state -> app is read-only
-        return {h, i, j};
-      }
-
-      const t = Date.now();
-      const oldState = h[i][j];
-      let newState;
-      if (typeof value === 'function') {
-        // console.log('oldstate:', oldState);
-        newState = value(oldState.s);
-      }
-      else {
-        newState = value;
-      }
-      
-      const diff = diffJSON(oldState, newState);
-      if (diff.kind === "nochange") return {h, i, j};
-      else {
-        console.log(explainDiff(diff).join('\n'), diff);
-        const newHistory = chunkedPush(h, {s: newState, c: oldState.c, t});
-        return {
-          h: newHistory,
-          i: newHistory.length-1,
-          j: newHistory.at(-1)!.length-1,
-        };
-      }
-    })
-  }, [setAppHistory]);
-
-  const pushState = useCallback((state: (old: AppStateWithCursor) => AppStateWithCursor) => {
-    setAppHistory(({h, i, j}) => {
-      if (i !== h.length-1 || j !== h[i].length-1) {
-        // you're looking at an old state -> app is read-only
-        return {h, i, j};
-      }
-      const newHistory = chunkedPush(h, state(h[i][j]));
-      return {
-        h: newHistory,
-        i: newHistory.length-1,
-        j: newHistory.at(-1)!.length-1,
-      }
-    })
-  }, [setAppHistory])
-
-  // useEffect(() => {
-  //   (async () => {
-  //   // @ts-ignore
-  //   const cborBuf = CBOR.encode(appHistory) as ArrayBuffer;
-  //   console.log('history:', cborBuf.byteLength);
-  //   const cborZipBuf = await deflateBuffer(new Uint8Array(cborBuf));
-  //   console.log('zipped:', cborZipBuf.byteLength);
-  //   })();
-  // }, [appHistory]);
-
-  // @ts-ignore: also useful for debugging!
-  window['appState'] = appState;
-
-  const cur = appHistory.h[appHistory.i][appHistory.j];
-
-  return <div className={styles.App}>
+  return <div className={styles.App} style={{display: 'flex', overflow: 'hidden'}}>
     {err ? <CrashScreen>
             <h1>Failed to restore state from URL</h1>
             <div style={{height: '2em'}}/>
@@ -251,61 +176,11 @@ export function PersistentApp() {
             }}>RESET APP</button>
           </CrashScreen>
         : appState
-          ? 
-            <div style={{position: 'relative', height: '100vh', overflow: 'hidden'}}>
-              <div
-                style={{display: 'flex', flexDirection: 'column', height: '100vh'}}
-                onMouseMove={e => pushState(({s}) => ({s, c: {x: e.clientX, y: e.clientY, buttons: e.buttons}, t: Date.now()}))}
-                onMouseDown={e => pushState(({s}) => ({s, c: {x: e.clientX, y: e.clientY, buttons: e.buttons}, t: Date.now()}))}
-                onMouseUp={e => pushState(({s}) => ({s, c: {x: e.clientX, y: e.clientY, buttons: e.buttons}, t: Date.now()}))}
-              >
-                  <App
-                    appState={appState}
-                    setAppState={setAppStateButKeepHistory}
-                    modelSize={modelSize}
-                  />
-                <div style={{display: 'flex', flexDirection: 'column'}}>
-                  <input
-                    type="range"
-                    min={chunkedFirst(appHistory.h).t}
-                    max={chunkedLast(appHistory.h)!.t}
-                    value={appHistory.h[appHistory.i][appHistory.j].t}
-                    // step={1}
-                    // list="markers"
-                    onChange={e => {
-                      const targetTimestamp = Number(e.target.value);
-                      const found = chunkedBinarySearch(
-                        appHistory.h,
-                        {t: Infinity} as AppStateWithCursor,
-                        (s, n) => {
-                          console.log('target', targetTimestamp-appStart, 'low', s.t-appStart, 'high', n.t-appStart);
-                          if (targetTimestamp < s.t) {console.log('too big'); return "toobig"}
-                          else if (targetTimestamp >= n.t) {console.log('too small'); return "toosmall"}
-                          else if (targetTimestamp - s.t < n.t - targetTimestamp) return "eq-smaller"; else return "eq-bigger";
-                        });
-                      setAppHistory(({h}) => ({
-                        h,
-                        ...found,
-                      }))}}
-                  />
-                  {/* <datalist id="markers">
-                    {appHistory.h.map((arr, i) => arr.map((_, j) => {
-                      const idx = chunkedIdxToFlat({i, j});
-                      return <option key={idx} value={idx} label={idx.toString()}/>;
-                    }))}
-                  </datalist> */}
-                </div>
-              </div>
-              {(appHistory.i !== appHistory.h.length-1 || appHistory.j !== appHistory.h[appHistory.i].length-1)
-                &&
-                <div style={{position: 'absolute', left: cur.c.x-5, top: cur.c.y-3, fontSize: 24, pointerEvents: 'none'}}>
-                  <img src={cursorSVG} width={24}/>
-                  {(cur.c.buttons & 1) && "L" || ""}
-                  {(cur.c.buttons & 2) && "R" || ""}
-                  {(cur.c.buttons & 4) && "M" || ""}
-                </div>
-              }
-            </div>
+          ? <App
+              appState={appState}
+              setAppState={setAppState as Dispatch<SetStateAction<AppState>>}
+              modelSize={modelSize}
+            />
           : <>Loading ...</>
     }
   </div>

@@ -218,7 +218,7 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
   const hideFindReplace = hide(setAppState.setView.setVisibility.setFind);
   const hideDebug = hide(setAppState.setView.setVisibility.setDebug);
 
-  return <div style={{display: 'flex', flexDirection: 'column', flex: '1 1 auto', overflow: 'hidden'}}>
+  return <div style={{display: 'flex', flexDirection: 'column', overflow: 'hidden'}}>
     <ModalOverlay modal={modal} setModal={setModal}>
 
       {/* Top bar */}
@@ -360,7 +360,6 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
             errorsExpanded={appState.view.visibility.errors}
             setErrorsExpanded={setAppState.setView.setVisibility.setErrors}
             errors={syntaxErrors}
-            // pyodideStatus={pyodide.status}
             workerPoolState={workerPoolState}
             setNWorkers={setNWorkers}
             setExtraHighlight={setExtraHighlight}

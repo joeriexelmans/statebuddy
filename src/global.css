@@ -72,6 +72,10 @@ html, body, #root {
   height: 100vh;
 }
 
+#root {
+  display: flex;
+}
+
 button svg,
 label  svg {
   /* SVGs in buttons and labels are typically icons and we want to center those vertically */
