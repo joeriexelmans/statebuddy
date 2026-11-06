@@ -1,4 +1,4 @@
-import { chunkedBinarySearch, chunkedFirst, chunkedLast, chunkedPush } from "@/util/chunked_array";
+import { chunkedBinarySearch, chunkedFirst, chunkedIdxToFlat, chunkedLast, chunkedLength, chunkedPush, flatIdxToChunked } from "@/util/chunked_array";
 import { diffJSON, explainDiff } from "@/util/diff";
 import { MouseEvent, SetStateAction, useCallback, useState } from "react";
 import { AppState } from "./App.state";
@@ -17,11 +17,8 @@ type AppStateWithCursor = {
 const appStart = Date.now();
 
 export function SpyingApp() {
-  const [appHistory, setAppHistory] = useState<{h: (AppStateWithCursor)[][], i: number, j: number}>({h:[[{s: undefined, c: {x:0,y:0,buttons:0}, t: appStart}]], i:0, j:0});
+  const [appHistory, setAppHistory] = useState<{h: (AppStateWithCursor)[][], i: number, j: number}>({h:[[{s: undefined, c: {x:-100,y:-100,buttons:0}, t: appStart}]], i:0, j:0});
   const appState = appHistory.h[appHistory.i]?.[appHistory.j]?.s;
-  // const replaceAppState = (appState: AppState) => {
-  //   setAppHistory({h: [[{s: appState, c: {x:0,y:0,buttons:0}, t: Date.now()}]], i: 0, j:0});
-  // }
 
   const [paused, setPaused] = useState(false);
 
@@ -107,29 +104,39 @@ export function SpyingApp() {
       {paused && cur && <input
         type="range"
         style={{width: '100vw'}}
-        min={chunkedFirst(appHistory.h).t}
-        max={chunkedLast(appHistory.h)!.t}
-        value={cur.t}
+        min={0}
+        max={chunkedLength(appHistory.h)-1}
+        value={chunkedIdxToFlat(appHistory)}
+        // min={chunkedFirst(appHistory.h).t}
+        // max={chunkedLast(appHistory.h)!.t}
+        // value={cur.t}
         onChange={e => {
-          const targetTimestamp = Number(e.target.value);
-          const found = chunkedBinarySearch(
-            appHistory.h,
-            {t: Infinity} as AppStateWithCursor,
-            (s, n) => {
-              if (targetTimestamp < s.t) {return "toobig"}
-              else if (targetTimestamp >= n.t) {return "toosmall"}
-              else if (targetTimestamp - s.t < n.t - targetTimestamp) return "eq-smaller"; else return "eq-bigger";
-            });
+          const target = Math.round(Number(e.target.value));
           setAppHistory(({h}) => ({
             h,
-            ...found,
-          }))}}
+            ...flatIdxToChunked(target)
+          }));
+        }}
+        // onChange={e => {
+        //   const targetTimestamp = Number(e.target.value);
+        //   const found = chunkedBinarySearch(
+        //     appHistory.h,
+        //     {t: Infinity} as AppStateWithCursor,
+        //     (s, n) => {
+        //       if (targetTimestamp < s.t) {return "toobig"}
+        //       else if (targetTimestamp >= n.t) {return "toosmall"}
+        //       else if (targetTimestamp - s.t < n.t - targetTimestamp) return "eq-smaller"; else return "eq-bigger";
+        //     });
+        //   setAppHistory(({h}) => ({
+        //     h,
+        //     ...found,
+        //   }))}}
       />}
     </div>
 
     {cur && paused &&
-      <div style={{position: 'absolute', left: cur.c.x-4, top: cur.c.y-2, fontSize: 24, pointerEvents: 'none'}}>
-        <img src={cursorSVG} width={24}/>
+      <div style={{position: 'absolute', left: cur.c.x-4, top: cur.c.y-2, fontSize: 24, pointerEvents: 'none', zIndex: 100}}>
+        <img src={cursorSVG} width={cur.c.buttons ? 28 : 24}/>
         {cur.c.buttons && <MouseIcon
           left={Boolean(cur.c.buttons & 1)}
           right={Boolean(cur.c.buttons & 2)}

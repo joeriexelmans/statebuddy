@@ -41,6 +41,10 @@ export function chunkedLast<T>(arr: T[][]) {
   return arr.at(-1)?.at(-1);
 }
 
+export function chunkedLength<T>(arr: T[][]) {
+  return (arr.length-1)*CHUNK_SIZE + arr.at(-1)!.length;
+}
+
 export function chunkedBinarySearch<T>(arr: T[][], end: T, fn: (elem: T, next: T) => Cmp): {i: number, j: number} {
   // 1. find the chunk
   // console.log('find chunk, numchunks=', arr.length);
