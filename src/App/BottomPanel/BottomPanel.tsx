@@ -86,8 +86,8 @@ export function BottomPanel({
         switch to&nbsp;
         <Tooltip tooltip="only works if you are running a development server locally" above={true}>
           {location.host === "localhost:3000" ?
-            <a href={`https://deemz.org/public/statebuddy/v2/${location.hash}`}>production</a>
-            : <a href={`http://localhost:3000/${location.hash}`}>development</a>
+            <a href={`https://deemz.org/public/statebuddy/v2/${location.search}${location.hash}`}>production</a>
+            : <a href={`http://localhost:3000/${location.search}${location.hash}`}>development</a>
           }
         </Tooltip>
         &nbsp;mode
