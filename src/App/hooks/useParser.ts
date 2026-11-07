@@ -21,8 +21,8 @@ export function useParser(
       const [abstractSyntax, syntaxErrors] = parseStatechart(topology);
 
       // explicitly declared in/out events are added to the abstract syntax's list of in/out events
-      abstractSyntax.inputEvents = abstractSyntax.inputEvents.union(new Set(declaredInputs.map(i => i.event)));
-      abstractSyntax.outputEvents = abstractSyntax.outputEvents.union(new Set(declaredOutputs.map(out => out.event)));
+      // abstractSyntax.inputEvents = abstractSyntax.inputEvents.union(new Set(declaredInputs.map(i => i.event)));
+      // abstractSyntax.outputEvents = abstractSyntax.outputEvents.union(new Set(declaredOutputs.map(out => out.event)));
       return [abstractSyntax, syntaxErrors] as const;
     },
 

@@ -61,13 +61,13 @@ export function PanelItem({type, globalProps: {appState, setAppState, abstractSy
   }
   else if (type === "input events") {
     return useMemo(() =>
-      <Columned>{abstractSyntax && <InputEventsPanel
+      <>{abstractSyntax && <InputEventsPanel
         inputEvents={abstractSyntax.inputEvents}
         onRaise={simulator.simulatorCallbacks.onRaise}
         disabled={simulator.trace === undefined}
         declaredInputs={appState.syntax.declaredInputs}
         setDeclaredInputs={setAppState.setSyntax.setDeclaredInputs}
-      />}</Columned>,
+      />}</>,
       [abstractSyntax?.inputEvents, simulator, appState.syntax.declaredInputs]);
   }
   else if (type === "internal events") {

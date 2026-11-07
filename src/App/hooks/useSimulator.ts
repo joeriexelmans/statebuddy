@@ -285,7 +285,7 @@ export function useInteractiveSimulator(
               simtime: nextWakeup,
             }
           : interactive.time, // <-- for realtime, time mode remains unchanged (clock already naturally advancing)
-        idx: interactive.idx+1,
+        idx: (interactive.idx >= 0) ? interactive.idx+1 : -1, // -1 is special value (meaning: last element in trace)
       }
     });
   }, [setInteractive, nextWakeup]);

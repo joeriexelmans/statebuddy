@@ -12,6 +12,7 @@ import { Plant } from "../../Plant/Plant";
 import { statebuddyPlants, UniversalPlantState } from "../../plants";
 import { prefixCoupledInputEvent } from "@/App/hooks/useCoupledExecution";
 import { RaisedEvent } from "@/languages/statecharts/interpreter/runtime_types";
+import { Toolbar } from "@/App/TopPanel/Toolbar";
 
 type ShowPlantsProps = {
   plantsState: PlantsState,
@@ -81,7 +82,7 @@ const PlantForm = memo(function PlantForm({name, type, onNameChange, onDelete}: 
   onDelete: () => void,
   onNameChange: (newName: string) => void,
 }) {
-  return <div className={appStyles.toolbar}>
+  return <Toolbar>
     {/* <div>{type}</div> */}
     <Tooltip tooltip="human-readable name for the plant" fullWidth align="left">
       <input
@@ -97,5 +98,5 @@ const PlantForm = memo(function PlantForm({name, type, onNameChange, onDelete}: 
     >
       <DeleteOutlineIcon fontSize="small"/>
     </DoubleClickButton>
-  </div>;
+  </Toolbar>;
 });

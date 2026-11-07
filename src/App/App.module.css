@@ -82,7 +82,7 @@
 }
 
 .App button:not(:disabled):hover, input[type="submit"]:not(:disabled):hover {
-  background-color: var(--light-accent-color);
+  background-color: var(--accent-opaque-color);
 }
 
 .App button:disabled,

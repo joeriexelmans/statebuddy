@@ -8,6 +8,7 @@ import { v2_to_v3 } from "./v2_to_v3";
 import { AppStateV3 } from "./v3_types";
 import { myPureDeepAssign } from "../../util/util";
 import { defaultAppStateV3 } from "./v3_default";
+import { v3_to_v4 } from "./v3_to_v4";
 
 export type AppStateUnknownVersion = AppStateV0 | AppStateV1 | AppStateV2 | AppStateV3;
 
@@ -28,6 +29,7 @@ const migrations = [
   v0_to_v1,
   v1_to_v2,
   v2_to_v3,
+  v3_to_v4,
 ] as const;
 
 export function autoMigrate(appState: AppStateUnknownVersion): AppState {

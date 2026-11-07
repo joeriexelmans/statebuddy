@@ -1,17 +1,17 @@
 import { memo, useCallback } from "react";
 import { UndoCallbacks } from "../../../../hooks/useUndo";
 import { Vec2D } from "../../../../util/geometry";
-import { SyntaxStateV3 } from "../../../migrations/v3_types";
 import { rotateSelection } from "../../../VisualEditor/transformations/rotate";
 import { VisualEditorState } from "../../../VisualEditor/VisualEditor.state";
 import { Toolbar } from "../../Toolbar";
 import { CopyPasteButtons } from "./CopyPasteButtons";
 import { RotateButtons } from "./RotateButtons";
 import { UndoRedoButtons } from "./UndoRedoButtons";
+import { SyntaxStateV4 } from "@/App/migrations/v4_types";
 
 type EditorToolbarProps = {
   KeyInfo: any,
-  syntax: SyntaxStateV3,
+  syntax: SyntaxStateV4,
   historyCallbacks: UndoCallbacks<VisualEditorState>,
   startDragging: (where: Vec2D) => void,
 }

@@ -3,12 +3,12 @@ import { defaultScrollableState } from "../Components/Scrollable";
 import { Selection } from "../VisualEditor/VisualEditor.state";
 import { SerializableSelection } from "./v0_types";
 import { defaultDebugState, defaultFindReplaceState, defaultMQTTState } from "./v1_default";
-import { AppStateV2 } from "./v2_types";
+import { AppStateV2, InteractiveExecutionState } from "./v2_types";
 
-export const defaultInteractiveExecutionState = {
+export const defaultInteractiveExecutionState: InteractiveExecutionState = {
   trace: undefined,
   time: {
-    kind: "paused",
+    kind: "paused" as const,
     simtime: 0,
   },
   idx: 0,
