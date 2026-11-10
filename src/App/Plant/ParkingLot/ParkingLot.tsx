@@ -77,7 +77,7 @@ export function ParkingLot({state, speed, raiseUIEvent}: PlantRenderProps<Parkin
   <line x1={130} x2={240} y1={455} y2={455} stroke={laserColor} strokeWidth={state.exitCarWaiting || state.exitCarPassingThrough ? laserThick : laserThin} strokeDasharray="5 5"/>
   <line x1={130} x2={240} y1={482} y2={482} stroke={laserColor} strokeWidth={state.exitCarPassingThrough || state.exitCarPassedThrough ? laserThick : laserThin} strokeDasharray="5 5"/>
 
-  {state.entryCarWaiting && <g transform="translate(615 430)">
+  {state.entryCarWaiting && <g transform="translate(615 440)">
     <CarBackSVG/>
   </g>}
   {state.entryCarPassingThrough && <g transform="translate(615 420)">
@@ -87,7 +87,7 @@ export function ParkingLot({state, speed, raiseUIEvent}: PlantRenderProps<Parkin
     <CarBackSVG/>
   </g>}
 
-  {state.entryCarWaiting && <g transform="translate(190 430)">
+  {state.entryCarWaiting && <g transform="translate(190 440)">
     <CarFrontSVG/>
   </g>}
   {state.entryCarPassingThrough && <g transform="translate(190 420)">
@@ -250,7 +250,7 @@ export function CarBackSVG() {
    <ellipse transform="rotate(-43.0731, 591.851, 457.646)" ry="2.11007" rx="2.18165" id="svg_30" cy="457.64578" cx="591.85141" stroke="#000" fill="#f40909"/>
    <line transform="rotate(-14.9016, 594.982, 469.481)" id="svg_31" y2="457.11788" x2="595.89105" y1="481.8433" x1="594.07304" stroke="#000" fill="none"/>
    <rect id="svg_47" height="8.0178" width="24.94427" y="487.34152" x="611.04528" stroke="#000" fill="#ffffff"/>
-    <text transform="matrix(0.147225, 0, 0, 0.208965, 333.582, 369.66)" xml:space="preserve" text-anchor="start" fontFamily="monospace" fontSize="24" strokeWidth="0" id="svg_48" y="590.24124" x="1895.22968" stroke="#ffffff" fill="#000000">I ♥️ MoSIS</text>
+    <text transform="matrix(0.147225, 0, 0, 0.208965, 333.582, 369.66)" text-anchor="start" fontFamily="monospace" fontSize="24" strokeWidth="0" id="svg_48" y="590.24124" x="1895.22968" stroke="#ffffff" fill="#000000">I ♥️ MoSIS</text>
   </g></g>);
 }
 
@@ -271,6 +271,6 @@ export function CarFrontSVG() {
    <ellipse transform="rotate(-43.0731, 199.656, 362.021)" ry="2.11007" rx="2.18165" id="svg_18" cy="362.021" cx="199.65616" stroke="#000" fill="#f40909"/>
    <line id="svg_19" y2="362.94751" x2="198.60534" y1="370.9469" x1="198.24173" stroke="#000" fill="none"/>
    <rect id="svg_49" height="8.0178" width="24.94427" y="401.35835" x="170.18229" stroke="#000" fill="#ffffff"/>
-   <text transform="matrix(0.147225, 0, 0, 0.208965, 333.582, 369.66)" xml:space="preserve" text-anchor="start" fontFamily="monospace" fontSize="24" strokeWidth="0" id="svg_50" y="180.73093" x="-1099.25502" stroke="#ffffff" fill="#000000">I ♥️ MoSIS</text>
+   <text transform="matrix(0.147225, 0, 0, 0.208965, 333.582, 369.66)" text-anchor="start" fontFamily="monospace" fontSize="24" strokeWidth="0" id="svg_50" y="180.73093" x="-1099.25502" stroke="#ffffff" fill="#000000">I ♥️ MoSIS</text>
   </g></g>);
 }
