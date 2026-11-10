@@ -23,7 +23,7 @@ export function SpyingApp() {
   const [paused, setPaused] = useState(false);
 
   useShortcuts([
-    {keys: ["Ctrl", "`"], action: () => setPaused(p => !p)},
+    {keys: ["Ctrl", "/"], action: () => setPaused(p => !p)},
   ])
 
   const setAppStateButKeepHistory = useCallback((value: SetStateAction<AppState|undefined>) => {
