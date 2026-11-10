@@ -1,0 +1,19 @@
+Parking lot
+ - sensors detect entry and exit
+ - barrier at exit requires payment
+ - barrier at entry (must take ticket + pay for duration of stay)
+ - sensors to detect car passing through barrier
+ - cars are counted (parking lot full => can't enter)
+
+ - night mode?
+
+ - additional sensors at each parking spot?
+    -> detect inconsistencies, then manually fix
+
+Unusual scenarios:
+ - car takes ticket to enter, but the reverses
+ - car pays to leave, but then reverses (e.g., driver forgot something)
+
+ - miscount:
+    - system thinks car entered, but this never happened
+    - system thinks car left, but this never happened
