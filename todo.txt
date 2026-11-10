@@ -43,21 +43,16 @@ Performance
 
 
 BUGS
-    (*) editing SC <-> Plant connections at runtime doesn't seem to work
-    (*) runtime errors coming from plant are mistakenly shown as runtime errors on statechart
-    (*) runtime errors during initialization do not appear in trace
-
-REGRESSIONS
-    - file import is broken
-    - [DONE] highlight search results broken
-    - mouseup event sometimes missed in VisualEditor
-    - [DONE] catch and display runtime errors in trace
+    (*) editing SC <-> Plant connections at runtime doesn't seem to work?
 
 TODO
 
-- explicitly declare input/output events
+- only require OR-state to have initial state if OR-state is target of a transition.
 
-- breaking change: state names start with # (not with //)
+- [DONE] explicitly declare input/output events
+        - TODO: explicitly declare parameter values for input events
+
+- [DONE] breaking change: state names start with # (not with //)
 
 - [DONE] add banner to v1: "you are using old Statebuddy version"
 
@@ -78,7 +73,7 @@ TODO
 
 - [DONE] make side panel user-resizable
 
-- ability to turn off property checking
+- [DONE] ability to turn off property checking
 
 - maybe support:
     - explicit order of outgoing transitions?
@@ -103,7 +98,7 @@ TODO
         app state?
 
 - usability stuff:
-    - export/import model as JSON
+    - export/import model
     - export/import traces and properties
 
     - use Langium for action language and for MTL expressions

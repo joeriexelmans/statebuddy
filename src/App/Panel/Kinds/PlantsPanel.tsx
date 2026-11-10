@@ -6,6 +6,7 @@ import { statebuddyPlants } from "../../plants"
 import { Toolbar } from "../../TopPanel/Toolbar"
 import { ShowPlants } from "./ShowPlants"
 import { memo } from "react"
+import { ParkingLot } from "@/App/Plant/ParkingLot/ParkingLot"
 
 type PlantsPanelProps = {
   plantsState: PlantsState,
@@ -59,5 +60,33 @@ export const PlantsPanel = memo(function PlantsPanel({plantsState, setPlantsStat
       coupledState={coupledState}
       onRaise={simulator.simulatorCallbacks.onRaise}
     />}
+    <ParkingLot
+      state={{
+        numCarsParked: 4,
+        remainingCapacity: 3,
+
+        barrierEntryOpen: true,
+        barrierExitOpen: false,
+
+        entryCarPassedThrough: true,
+        entryCarPassingThrough: true,
+        entryCarWaiting: true,
+
+        exitCarPassedThrough: true,
+        exitCarPassingThrough: true,
+        exitCarWaiting: true,
+
+        lightEntryGreen: true,
+        lightExitGreen: false,
+
+        ticket: true,
+
+        entryIsForcedOpen: true,
+        exitIsForcedOpen: false,
+
+      }}
+      speed={0}
+      raiseUIEvent={() => {}}
+    />
   </>
 });
