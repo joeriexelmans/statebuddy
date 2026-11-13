@@ -10,19 +10,19 @@ Statechart design, simulation and testing tool, developed with the goal of teach
   - Intuitive editor (inspired by [CouchEdit](https://dl.acm.org/doi/10.1145/3417990.3421401), which was in turn inspired by [StateMate](https://ieeexplore.ieee.org/document/54292))
       - Low cognitive load: concrete syntax is just a bunch of flat shapes, that you can *freely* manipulate.
           - ![](./docs/videos/editing.webp) ![](./docs/videos/editing2.webp)
-      - No hidden information: the parser sees exactly what you see, nothing more, nothing less.
-      - Visual feedback from parser during editing.
+      - The parser is **passive**, in the sense that it does not interfere with / limit what you can draw. You get visual feedback of what it *thinks* you are doing, and that's about it:
           - ![](/./docs/videos/editing3.webp)
-          - Syntax highlighting
+      - No hidden information: the parser sees exactly what you see, nothing more, nothing less.
   - Builtin action language
       - Variables, simple arithmetic, arrays and dictionaries
       - Pattern matching on event parameters
+      - Syntax highlighting
   - Simulation
       - Time simulation
           - step-by-step
           - (scaled) real-time
-      - Coupled execution: controller <-> plant(s) (currently 3 hardcoded plant types: digital watch, traffic light, microwave oven)
-          - follows Coupled DEVS
+      - Coupled execution: your statechart can interact with a simulated "plant" (e.g., a traffic light, microwave oven, ...)
+          - implements Coupled DEVS theory
   - Omniscient debugging (= ability to undo execution steps)
       - logging of microsteps
   - Live modeling (= ability to edit model at runtime -- use at your own risk :)
@@ -80,17 +80,21 @@ See the [manual](./docs/readme.md).
 
 ## Development
 
-StateBuddy was written in TypeScript, using React as the frontend framework. No frontend framework was used, just plain CSS (sometimes a pain, I must admit). For the model editor, no drawing library was used. 
+StateBuddy was written in TypeScript, using React to render HTML (client-side only). No frontend framework (e.g., MUI) was used, just plain CSS (sometimes a pain, I must admit).
 
 ### Application State
 
-The entire application state sits at the top of the component hierarchy, and children components receive their relevant parts of the state as properties. Children also receive 'partial setters' (setters that only update part of the application state) is they need to update parts of the application state.
+The entire application state sits at the top of the component hierarchy, and children components receive their relevant parts of the state as properties. Children also receive 'partial setters' (setters that only update part of the application state) if they need to update parts of the application state.
 
 I avoid global state management libraries such as Zustand and Redux because I prefer an architecture where component dependencies are explicitly determined by their parents. Rather than allowing components to independently reach into global state and decide what they can access, I prefer parents to control which parts of the application state are exposed to their children through props.
 
 ### Persistance with CBOR
 
 The entire application state is persisted in between page reloads. To make this happen, it is CBOR-serialized (+ DEFLATE-compressed + base64-encoded) into the URL hash. The reason for choosing CBOR over JSON is that CBOR supports structural sharing (preserved in a round-trip!), reducing data usage by an order of magnitude when working with long edit histories. I do this with mixed feelings, because CBOR is a much less established format than JSON.
+
+### Visual Editor
+
+The visual editor for drawing Statechart models was created from scratch with React rendering SVG elements that contain mouse event handlers, and CSS classes for visual feedback when hovering an element. Looking back, I am very happy not to have used an existing "diagramming" library. An existing library would have made it difficult to customize editing behavior. Rolling my own solution was also surprisingly easy and gives me complete control.
 
 ### Statechart Language
 
@@ -105,10 +109,14 @@ The [statechart language](./src/statecharts/), which could be used independently
           - initialization (abstract syntax -> runtime configuration)
           - step function ((runtime configuration × event) -> runtime configuration)
 
-The action language embedded within the statechart language is parsed by [Peggy](https://peggyjs.org/). Peggy turned out "good enough" for my purposes, although syntax highlighting required more boilerplate than I like. Further, Peggy allows JavaScript code in the grammar file (a feature I have used), which can be considered dirty because now the grammar depends on JavaScript.
+### Action Language
 
-For MTL property checking, an existing library was used: [py-metric-temporal-logic](https://github.com/mvcisback/py-metric-temporal-logic). This library and its dependencies are loaded into an instance of Pyodide (CPython compiled to WebAssembly). Compared to the rest of StateBuddy, Pyodide is slow to start (2-3 seconds in my case). Pyodide runs in a pool of web workers, so it doesn't block the main thread (or the DOM). Each worker contains its own instance of Pyodide, so spinning up an extra thread also takes a few seconds (to boot Pyodide).
+The action language parser is generated from a grammar by [Peggy](https://peggyjs.org/). Peggy turned out "good enough" for my purposes, although syntax highlighting required more boilerplate than I'd like. Further, Peggy allows JavaScript code in the grammar file (a feature I'm using), which can be considered dirty because now the grammar depends on JavaScript.
+
+### MTL Property Checking
+
+For MTL property checking, a Python library was used: [py-metric-temporal-logic](https://github.com/mvcisback/py-metric-temporal-logic). This library and its dependencies are loaded into an instance of Pyodide (CPython compiled to WebAssembly). Compared to the rest of StateBuddy, Pyodide is slow to start (2-3 seconds in my case). Pyodide runs in a pool of web workers, so it doesn't block the main thread (or the DOM). Each worker contains its own instance of Pyodide, so each thread requires a few seconds to spin up. Property checking is not incremental: for every new step in the execution, the entire trace needs to be checked again. This is far from optimal.
 
 ### Philosophical Reflection
 
-My biggest frustration with React is having to manually specify which values/components to memoize. It feels like something the language itself should be able to figure out. If I were to re-write StateBuddy from scratch, I would probably give [Elm](https://elm-lang.org) a try.
+I am happy with React's paradigm of explicit, immutable application state and pure render functions. Memoization, on the other hand, requires more manual configuration than theoretically necessary. If I were to re-write StateBuddy from scratch, I would probably give [Elm](https://elm-lang.org) or [PureScript](https://www.purescript.org/) a try.
