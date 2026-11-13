@@ -4,10 +4,11 @@ import { parseStatechart } from "@/languages/statecharts/parser/parser";
 import { useCustomMemo } from "@/hooks/useCustomMemo";
 import { VisualEditorState } from "../VisualEditor/VisualEditor.state";
 import { EventTrigger } from "@/languages/statecharts/transitionlabel/abstract_syntax";
+import { DeclaredInput } from "../migrations/v4_types";
 
 export function useParser(
   editorState: VisualEditorState,
-  declaredInputs: EventTrigger[],
+  declaredInputs: DeclaredInput[],
   declaredOutputs: EventTrigger[],
 ) {
   // Re-compute the topology whenever there is any change to the concrete syntax.
