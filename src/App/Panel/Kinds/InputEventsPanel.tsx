@@ -22,6 +22,7 @@ import { Overlay } from "../../Components/Overlay";
 import { Tooltip } from "../../Components/Tooltip";
 import { codeStyle } from "../../Modals/TextDialog";
 import { SyntaxHighlightedText } from "../../VisualEditor/SyntaxHiglightedText";
+import { useDetectChange2 } from "@/hooks/useDetectChange";
 
 type ShowInputEventsProps = {
   inputEvents: Set<string>, // <-- input events from the abstract syntax
@@ -38,6 +39,15 @@ export const InputEventsPanel = memo(function ShowInputEvents({
   declaredInputs,
   setDeclaredInputs,
 }: ShowInputEventsProps) {
+  // console.log('render input events');
+  //   useDetectChange2({
+  //   inputEvents,
+  //   onRaise,
+  //   disabled,
+  //   declaredInputs,
+  //   setDeclaredInputs,
+  // })
+  
   const [declareTxt, setDeclareTxt] = useState("");
   
   const raiseOneEvent = useCallback((e: RaisedEvent) => onRaise([e]), [onRaise]);
@@ -56,7 +66,7 @@ export const InputEventsPanel = memo(function ShowInputEvents({
     })
   }
 
-  const everything = [...allInputEvents].map(eventName => {
+  const everything = [...allInputEvents].sort((a,b) => a.localeCompare(b)).map(eventName => {
     const found = declaredInputs.find(e => e.event === eventName);
     if (found) {
       return found;

@@ -10,6 +10,7 @@ import { schedulerPlant } from "./Plant/BIP/Scheduler";
 import { emergencyPanelPlant } from "./Plant/BIP/EmergencyPanel";
 import { lightButtonAbstractSyntax, lightButtonConcreteSyntax, lightButtonPlant } from "./Plant/LightButton/LightButton";
 import { RaisedEvent } from "@/languages/statecharts/interpreter/runtime_types";
+import { parkingLotAbstractSyntax, parkingLotConcreteSyntax, parkingLotPlant } from "./Plant/ParkingLot/ParkingLot";
 
 export type UniversalPlantState = {[property: string]: boolean|number};
 
@@ -54,4 +55,9 @@ export const statebuddyPlants: {[type: string]: StatebuddyPlantSpec} = {
   // "bip-emergency-panel": {
   //   plant: emergencyPanelPlant,
   // }
+  "parking lot": {
+    plant: parkingLotPlant as unknown as StatechartPlant,
+    cs: parkingLotConcreteSyntax,
+    as: parkingLotAbstractSyntax,
+  }
 };

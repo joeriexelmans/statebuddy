@@ -60,24 +60,24 @@ export const PlantsPanel = memo(function PlantsPanel({plantsState, setPlantsStat
       coupledState={coupledState}
       onRaise={simulator.simulatorCallbacks.onRaise}
     />}
-    <ParkingLot
+    {/* <ParkingLot
       state={{
-        numCarsParked: 4,
-        remainingCapacity: 3,
+        numCars: 4,
+        capacity: 3,
 
-        barrierEntryOpen: true,
-        barrierExitOpen: false,
+        entryBarrierOpen: false,
+        exitBarrierOpen: false,
 
-        entryCarPassedThrough: true,
-        entryCarPassingThrough: true,
+        entryCarPassed: false,
+        entryCarPassing: false,
         entryCarWaiting: true,
 
-        exitCarPassedThrough: true,
-        exitCarPassingThrough: true,
-        exitCarWaiting: true,
+        exitCarPassed: false,
+        exitCarPassing: false,
+        exitCarWaiting: false,
 
-        lightEntryGreen: true,
-        lightExitGreen: false,
+        entryLightGreen: true,
+        exitLightGreen: false,
 
         ticket: true,
 
@@ -87,6 +87,6 @@ export const PlantsPanel = memo(function PlantsPanel({plantsState, setPlantsStat
       }}
       speed={0}
       raiseUIEvent={() => {}}
-    />
+    /> */}
   </>
 });

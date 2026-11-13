@@ -132,7 +132,8 @@ export function useInteractiveSimulator(
     return computeFresh(newPersistentState);
   }
 
-  const trace = useIncrementalMemo(computeIncremental, computeFresh, interactive);
+  // "full trace" == what you see in the "execution traces" panel
+  const fullTrace = useIncrementalMemo(computeIncremental, computeFresh, interactive);
 
   // For the simulation to have side effects, output listeners can be registered.
   const [outputListeners, setOutputListeners] = useState<OutputListener[]>([]);
@@ -153,10 +154,10 @@ export function useInteractiveSimulator(
   }, [outputListeners]);
 
   // The currently active item in the execution trace, if there is one
-  const currentTraceItem = trace && trace.trace[trace.idx];
+  const currentTraceItem = fullTrace && fullTrace.trace[fullTrace.idx];
   
   // the timeAdvance of the currently selected item in the trace
-  const nextWakeup = infinityIfUndefined(trace && cE?.timeAdvance(trace.trace.slice(0, trace.idx+1) as DEVSTrace<CoupledState, RaisedEvent>));
+  const nextWakeup = infinityIfUndefined(fullTrace && cE?.timeAdvance(fullTrace.trace.slice(0, fullTrace.idx+1) as DEVSTrace<CoupledState, RaisedEvent>));
 
   const currentSC = currentTraceItem?.newState.sc.at(-1)!.newState;
 
@@ -197,30 +198,6 @@ export function useInteractiveSimulator(
 
   // Simulator callbacks...
 
-  // keep making intTransitions as long as they don't advance the simtime
-  // const makeImminentTransitions = useCallback((trace: StateBuddyTraceState) => {
-  //   let i=0;
-  //   while (true) {
-  //     if (i > 1000) {
-  //       throw new Error("too many steps - probably an infinite loop :(");
-  //     }
-  //     const simtime = trace.trace[trace.idx].simtime;
-  //     const nextWakeup = cE!.timeAdvance(trace.trace);
-  //     if (nextWakeup > simtime) {
-  //       return trace;
-  //     }
-  //     else {
-  //       const [outputEvents, newTrace] = cE!.intTransition(trace.trace);
-  //       notifyListeners(outputEvents);
-  //       trace = {
-  //         trace: newTrace,
-  //         idx: trace.idx + 1,
-  //       }
-  //     }
-  //     i++;
-  //   }
-  // }, [cE, notifyListeners]);
-
   const onInit = useCallback(() => {
     setInteractive._setShallow(interactive => ({
       trace: {
@@ -247,11 +224,9 @@ export function useInteractiveSimulator(
     setInteractive._setShallow(interactive => {
       const simtime = getSimTime(interactive.time, Math.round(Date.now()));
       let numExtTransitions = 0;
-      if (trace) {
-        for (let i=0; i<=trace.idx; i++) {
-          if (trace.trace[i].kind === "extTransition") numExtTransitions++;
-        }
-      }
+      if (fullTrace) {
+        numExtTransitions = fullTrace.trace[fullTrace.idx].numExtTransitions;
+      }      
       return {
         trace: interactive.trace && {
           trace: [
@@ -268,7 +243,7 @@ export function useInteractiveSimulator(
         idx: -1,
       };
     });
-  }, [setInteractive, trace]);
+  }, [setInteractive, fullTrace]);
 
   // Sets the simulated time to exactly match the next timed transition.
   // Note: this function does not make the next timed transition happen. You need to call `makeNextTimedTransition` for that.
@@ -290,7 +265,7 @@ export function useInteractiveSimulator(
     });
   }, [setInteractive, nextWakeup]);
 
-  // when user pressed Tab
+  // when user presses <Tab>
   const onSkip = useCallback(() => {
     if (nextWakeup !== Infinity) {
       jumpTimeToNextTimedTransition();
@@ -314,9 +289,10 @@ export function useInteractiveSimulator(
     }
   }, [interactive, nextWakeup, jumpTimeToNextTimedTransition]);
 
+  // Back/Next: controlled by arrow keys on the keyboard
   const onBack = useCallback(() => {
-    if (trace) {
-      const prevItem = trace.trace[trace.idx-1];
+    if (fullTrace) {
+      const prevItem = fullTrace.trace[fullTrace.idx-1];
       const prevSimtime = prevItem ? prevItem.simtime : 0;
       setInteractive._setShallow(interactive => ({
         trace: interactive.trace,
@@ -324,35 +300,34 @@ export function useInteractiveSimulator(
           kind: "paused",
           simtime: prevSimtime,
         },
-        idx: trace.idx-1 >= 0 ? trace.idx-1 : 0,
+        idx: fullTrace.idx-1 >= 0 ? fullTrace.idx-1 : 0,
       }))
     }
-  }, [trace]);
-
+  }, [fullTrace]);
   const onNext = useCallback(() => {
-    if (trace) {
-      const nextItem = trace.trace[trace.idx+1] || trace.trace[trace.idx];
+    if (fullTrace) {
+      const nextItem = fullTrace.trace[fullTrace.idx+1] || fullTrace.trace[fullTrace.idx];
       setInteractive._setShallow(interactive => ({
         trace: interactive.trace,
         time: {
           kind: "paused",
           simtime: nextItem.simtime,
         },
-        idx: trace.idx+1 < trace.trace.length ? trace.idx+1 : trace.idx,
+        idx: fullTrace.idx+1 < fullTrace.trace.length ? fullTrace.idx+1 : fullTrace.idx,
       }));
     }
-  }, [trace]);
+  }, [fullTrace]);
 
   const selectItem = useCallback((idx: number) => {
     setInteractive._setShallow(interactive => ({
       trace: interactive.trace,
       time: {
         kind: "paused",
-        simtime: trace?.trace[idx].simtime || 0,
+        simtime: fullTrace?.trace[idx].simtime || 0,
       },
       idx: idx,
     }))
-  }, [trace]);
+  }, [fullTrace]);
 
   useShortcuts([
     {keys: ["ArrowUp"], action: onBack},
@@ -379,7 +354,7 @@ export function useInteractiveSimulator(
   const simulator = useMemo(() => ({
       time: interactive.time,
       setTime: setInteractive.setTime._setShallow as Dispatch<SetStateAction<TimeMode>>,
-      trace,
+      trace: fullTrace,
       currentTraceItem,
       selectItem,
       nextWakeup,
@@ -389,7 +364,7 @@ export function useInteractiveSimulator(
 
       // 'reducers'
       simulatorCallbacks,
-  }), [cE, trace, outputListeners]);
+  }), [cE, fullTrace, outputListeners]);
 
   return simulator;
 }

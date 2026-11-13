@@ -305,7 +305,7 @@ function CoupledDEVSExternalTransition({item, prevItem, status, ...rest}: {
       : <Column>
           <Tooltip tooltip="External inputs were received, but all components ignored it.">
             <NotInterestedIcon fontSize="small"/>
-            {item.bagOfInputs.map(e => <InputCause e={e}/>)}
+            {item.bagOfInputs.map((e, i) => <InputCause key={`${i}-${e.name}`} e={e}/>)}
           </Tooltip>
         </Column>
     }

@@ -1,35 +1,39 @@
-import { PlantRenderProps } from "../Plant";
+import { makeStatechartPlant, PlantRenderProps, StatechartPlantSpec } from "../Plant";
 import fontDigital from "../DigitalWatch/digital-font.ttf";
 
-type BarrierState = {
+import parkingLotJSON from "./model.json";
+import { parseStatechart } from "@/languages/statecharts/parser/parser";
+import { computeTopology } from "@/languages/statecharts/parser/detect_topology";
+import { ConcreteSyntax } from "@/languages/statecharts/concrete_syntax";
+import { SC2DEVSNonError } from "@/languages/devs/sc2devs";
 
-}
+export const parkingLotConcreteSyntax = parkingLotJSON as ConcreteSyntax;
+
+export const [parkingLotAbstractSyntax, parkingLotErrors] = parseStatechart(computeTopology(parkingLotConcreteSyntax));
+
+type CarState = "nocar" | "waiting" | "passing" | "passed" | "wtf";
 
 type ParkingLotState = {
-  barrierEntryOpen: boolean;
-  barrierExitOpen: boolean;
-  lightEntryGreen: boolean; // false means red
-  lightExitGreen: boolean; // false means red
   ticket: boolean;
-  numCarsParked: number;
-  remainingCapacity: number,
-  entryCarWaiting: boolean;
-  entryCarPassingThrough: boolean;
-  entryCarPassedThrough: boolean;
 
-  exitCarWaiting: boolean;
-  exitCarPassingThrough: boolean;
-  exitCarPassedThrough: boolean;
+  numCars: number;
+  capacity: number,
+  countedCars: number;
 
-  entryIsForcedOpen: boolean;
-  exitIsForcedOpen: boolean;
+  entryBarrierOpen: boolean;
+  entryLightGreen: boolean; // false means red
+  entryCar: CarState;
+
+  exitBarrierOpen: boolean;
+  exitLightGreen: boolean; // false means red
+  exitCar: CarState;
 }
 
 const laserThin = 1.5;
 const laserThick = 3;
-const laserColor = "red";
+const laserColor = "blue";
 
-const asphaltColor = "#444";
+const asphaltColor = "#a2a2a2";
 
 export function ParkingLot({state, speed, raiseUIEvent}: PlantRenderProps<ParkingLotState>) {
   return <>
@@ -49,7 +53,7 @@ export function ParkingLot({state, speed, raiseUIEvent}: PlantRenderProps<Parkin
 
 
   {/* Ticket machine */}
-  <rect id="svg_101" height="34.83729" width="24.18118" y="461.0924" x="535.27888" stroke="#000000" fill="#777777"/>
+  <rect id="svg_101" height="34.83729" width="24.18118" y="461.0924" x="535.27888" stroke="#000000" fill="#a7a7a7"/>
   <rect id="svg_103" height="3.2788" width="18.03342" y="472.97807" x="538.55768" stroke="#000000" fill="#000000"/>
 
   {/* Ticket from ticket machine */}
@@ -57,94 +61,91 @@ export function ParkingLot({state, speed, raiseUIEvent}: PlantRenderProps<Parkin
 
   {/* Payment machine */}
   <g transform="translate(30 50)">
-  <rect id="svg_105" height="34.83729" width="24.18118" y="379.1223" x="237.7274" stroke="#000000" fill="#777777"/>
+  <rect id="svg_105" height="34.83729" width="24.18118" y="379.1223" x="237.7274" stroke="#000000" fill="#a7a7a7"/>
   <rect id="svg_106" height="3.2788" width="18.03342" y="391.00797" x="241.00619" stroke="#000000" fill="#000000"/>
   <text textAnchor="start" fontFamily="monospace" fontSize="24" strokeWidth="0" id="svg_108" y="378.71245" x="240.59636" stroke="#000000" fill="#000000">€</text>
   </g>
 
-  {[0,1,2,3,4,5,6].splice(0, state.numCarsParked).map(i => <g transform={`translate(${162+i*80+(2*i%3)} ${102+(i-1)%5})`}>
+  {[0,1,2,3,4,5,6].splice(0, state.numCars).map(i => <g key={i} transform={`translate(${162+i*80+(2*i%3)} ${102+(i-1)%5})`}>
     {(i % 3 === 0) ? <CarBackSVG/> : <CarFrontSVG/>}
   </g>)}
   
 
 
+
+
   {/* Entry sensors */}
-  <line x1={570} x2={680} y1={455} y2={455} stroke={laserColor} strokeWidth={state.entryCarPassingThrough || state.entryCarPassedThrough ? laserThick : laserThin} strokeDasharray="5 5"/>
-  <line x1={570} x2={680} y1={482} y2={482} stroke={laserColor} strokeWidth={state.entryCarWaiting || state.entryCarPassingThrough ? laserThick : laserThin} strokeDasharray="5 5"/>
+
+  <line x1={570} x2={680-15} y1={455} y2={455} stroke={laserColor} strokeWidth={(state.entryCar === "passed" || state.entryCar === "passing") ? laserThick : laserThin} strokeDasharray="5 5"/>
+  <line x1={570} x2={680-15} y1={482} y2={482} stroke={laserColor} strokeWidth={(state.entryCar === "waiting" || state.entryCar === "passing") ? laserThick : laserThin} strokeDasharray="5 5"/>
 
 
   {/* Exit sensors */}
-  <line x1={130} x2={240} y1={455} y2={455} stroke={laserColor} strokeWidth={state.exitCarWaiting || state.exitCarPassingThrough ? laserThick : laserThin} strokeDasharray="5 5"/>
-  <line x1={130} x2={240} y1={482} y2={482} stroke={laserColor} strokeWidth={state.exitCarPassingThrough || state.exitCarPassedThrough ? laserThick : laserThin} strokeDasharray="5 5"/>
+  <line x1={130} x2={240-15} y1={455} y2={455} stroke={laserColor} strokeWidth={(state.exitCar === "waiting" || state.exitCar === "passing") ? laserThick : laserThin} strokeDasharray="5 5"/>
+  <line x1={130} x2={240-15} y1={482} y2={482} stroke={laserColor} strokeWidth={(state.exitCar === "passed" || state.exitCar === "passing") ? laserThick : laserThin} strokeDasharray="5 5"/>
 
-  {state.entryCarWaiting && <g transform="translate(615 440)">
-    <CarBackSVG/>
+  {(state.exitCar === "passed") && <g transform="translate(190 440)">
+    <CarFrontSVG/>
   </g>}
-  {state.entryCarPassingThrough && <g transform="translate(615 420)">
-    <CarBackSVG/>
+  {(state.exitCar === "passing") && <g transform="translate(190 420)">
+    <CarFrontSVG/>
   </g>}
-  {state.entryCarPassedThrough && <g transform="translate(615 400)">
-    <CarBackSVG/>
+  {(state.exitCar === "waiting") && <g transform="translate(190 400)">
+    <CarFrontSVG/>
   </g>}
 
-  {state.entryCarWaiting && <g transform="translate(190 440)">
-    <CarFrontSVG/>
+  {(state.entryCar === "waiting") && <g transform="translate(615 440)">
+    <CarBackSVG/>
   </g>}
-  {state.entryCarPassingThrough && <g transform="translate(190 420)">
-    <CarFrontSVG/>
+  {(state.entryCar === "passing") && <g transform="translate(615 420)">
+    <CarBackSVG/>
   </g>}
-  {state.exitCarPassedThrough && <g transform="translate(190 400)">
-    <CarFrontSVG/>
+  {(state.entryCar === "passed") && <g transform="translate(615 400)">
+    <CarBackSVG/>
   </g>}
 
   {/* Entry barrier */}
   <g transform="translate(697 435)">
-    <BarrierSVG isOpen={state.barrierEntryOpen}/>
+    <BarrierSVG isOpen={state.entryBarrierOpen}/>
   </g>
 
   {/* Exit barrier */}
   <g transform="translate(110 435) scale(-1 1)">
-    <BarrierSVG isOpen={state.barrierExitOpen}/>
+    <BarrierSVG isOpen={state.exitBarrierOpen}/>
   </g>
 
+  {/* Sensor text */}
+  <text x={680-12} y={455+5} fill="blue" textAnchor="start">S1</text>
+  <text x={680-12} y={482+5} fill="blue" textAnchor="start">S0</text>
+  <text x={240-12} y={455+5} fill="blue" textAnchor="start">S2</text>
+  <text x={240-12} y={482+5} fill="blue" textAnchor="start">S3</text>
+
+
   <g transform="translate(320 440)">
-    <TrafficLight isGreen={state.lightExitGreen}/>
+    <TrafficLight isGreen={state.exitLightGreen}/>
   </g>
 
   <g transform="translate(510 470)">
-    <TrafficLight isGreen={state.lightEntryGreen}/>
+    <TrafficLight isGreen={state.entryLightGreen}/>
     <g transform="translate(-34 10)">
     <rect width={40} height={32} x={-32} y={-24}/>
-    <text className="counter" textAnchor="end" x={0} y={0} fill={(state.remainingCapacity > 0) ? "rgb(57, 239, 120)" : "#f00"} fontSize={28}>{state.remainingCapacity}</text>
+    <text className="counter" textAnchor="end" x={0} y={0} fill={(state.capacity - state.countedCars > 0) ? "rgb(57, 239, 120)" : "#f00"} fontSize={28}>{state.capacity - state.countedCars}</text>
     </g>
   </g>
  </g>
 </svg>
-<div style={{fontWeight: 'bolder'}}>
+<div style={{fontWeight: 'bolder', width: '100%'}}>
   <div style={{width: '100%', }}>
-    <button style={{width: '50%'}} disabled={state.numCarsParked === 0}>UNPARK</button>
-    <button style={{width: '50%'}} disabled={!state.entryCarPassedThrough || state.remainingCapacity === 0}>PARK</button>
+    <button style={{width: '50%'}} disabled={state.exitCar === "nocar" || state.numCars === state.capacity} onClick={() => raiseUIEvent({name: "entrReverse"})}>🠝 {{"nocar": "", "waiting": "RE-PARK", "passing": "REVERSE", "passed": "REVERSE", "wtf": "WTF"}[state.exitCar]} 🠝</button>
+    <button style={{width: '50%'}} disabled={(state.entryCar === "passing" || state.entryCar === "waiting") && !state.entryBarrierOpen} onClick={() => raiseUIEvent({name: "entrProceed"})}>🠝 {{"nocar": "ARRIVE", "waiting": "DRIVE", "passing": "DRIVE", "passed": "PARK", "wtf": "WTF"}[state.entryCar]} 🠝</button>
   </div>
   <div style={{width: '100%', }}>
-    <button style={{width: '50%'}} disabled={state.entryCarWaiting || state.entryCarPassingThrough}>PAY</button>
-    <div style={{width: '50%', display: 'inline-block'}}>&nbsp;</div>
+    <button style={{width: '50%'}} disabled={state.exitCar !== "waiting"} onClick={() => raiseUIEvent({name: "pay"})}>PAY</button>
+    <button style={{width: '50%'}} disabled={state.entryCar !== "waiting" || !state.ticket} onClick={() => raiseUIEvent({name: "takeTicket"})}>TAKE TICKET</button>
   </div>
-  <div style={{width: '100%', }}>
-    <button style={{width: '50%'}} disabled={!state.exitCarWaiting || state.exitCarPassingThrough}>{state.exitCarPassingThrough ? "REVERSE" : "DRIVE THROUGH"}</button>
-    <button style={{width: '50%'}} disabled={!state.entryCarWaiting || state.entryCarPassingThrough}>{state.entryCarPassingThrough ? "REVERSE" : "DRIVE THROUGH"}</button>
-  </div>
-  <div style={{width: '100%', }}>
-    <div style={{width: '50%', display: 'inline-block'}}>&nbsp;</div>
-    <button style={{width: '50%'}} disabled={state.entryCarWaiting || state.entryCarPassingThrough}>TAKE TICKET</button>
-  </div>
-  <div style={{width: '100%', }}>
-    <button style={{width: '50%'}} disabled={!state.exitCarPassedThrough}>LEAVE</button>
-    <button style={{width: '50%'}} disabled={state.entryCarWaiting || state.entryCarPassingThrough}>ARRIVE</button>
-  </div>
-
-  <div style={{width: '100%', }}>
-    <button style={{width: '50%'}}>{state.exitIsForcedOpen ? "UN-FORCE OPEN" : "FORCE OPEN"}</button>
-    <button style={{width: '50%'}}>{state.entryIsForcedOpen ? "UN-FORCE OPEN" : "FORCE OPEN"}</button>
+  <div style={{width: '100%'}}>
+    <button style={{width: '50%'}} disabled={state.numCars === 0 && state.exitCar === "nocar"} onClick={() => raiseUIEvent({name: "exProceed"})}>🠟 {{"nocar": "LEAVE", "waiting": "LEAVE", "passing": "LEAVE", "passed": "LEAVE", "wtf": "WTF"}[state.exitCar]} 🠟</button>
+    <button style={{width: '50%'}} disabled={state.entryCar === "nocar"} onClick={() => raiseUIEvent({name: "entrReverse"})}>🠟 {{"nocar": "", "waiting": "REVERSE (LEAVE)", "passing": "REVERSE", "passed": "REVERSE", "wtf": "WTF"}[state.entryCar]} 🠟</button>
   </div>
   </div>
   </>;
@@ -250,7 +251,7 @@ export function CarBackSVG() {
    <ellipse transform="rotate(-43.0731, 591.851, 457.646)" ry="2.11007" rx="2.18165" id="svg_30" cy="457.64578" cx="591.85141" stroke="#000" fill="#f40909"/>
    <line transform="rotate(-14.9016, 594.982, 469.481)" id="svg_31" y2="457.11788" x2="595.89105" y1="481.8433" x1="594.07304" stroke="#000" fill="none"/>
    <rect id="svg_47" height="8.0178" width="24.94427" y="487.34152" x="611.04528" stroke="#000" fill="#ffffff"/>
-    <text transform="matrix(0.147225, 0, 0, 0.208965, 333.582, 369.66)" text-anchor="start" fontFamily="monospace" fontSize="24" strokeWidth="0" id="svg_48" y="590.24124" x="1895.22968" stroke="#ffffff" fill="#000000">I ♥️ MoSIS</text>
+    <text transform="matrix(0.147225, 0, 0, 0.208965, 333.582, 369.66)" textAnchor="start" fontFamily="monospace" fontSize="24" strokeWidth="0" id="svg_48" y="590.24124" x="1895.22968" stroke="#ffffff" fill="#000000">I ♥️ MoSIS</text>
   </g></g>);
 }
 
@@ -274,3 +275,49 @@ export function CarFrontSVG() {
    <text transform="matrix(0.147225, 0, 0, 0.208965, 333.582, 369.66)" text-anchor="start" fontFamily="monospace" fontSize="24" strokeWidth="0" id="svg_50" y="180.73093" x="-1099.25502" stroke="#ffffff" fill="#000000">I ♥️ MoSIS</text>
   </g></g>);
 }
+
+const parkingLotPlantSpec: StatechartPlantSpec<ParkingLotState> = {
+  ast: parkingLotAbstractSyntax,
+  cleanupState: (state: SC2DEVSNonError) => {
+    return {
+      entryBarrierOpen: state.rtconfig.mode.has(parkingLotAbstractSyntax.tag2State.get("#entryBarrierOpen")!.uid),
+      entryLightGreen: state.rtconfig.mode.has(parkingLotAbstractSyntax.tag2State.get("#entryGreen")!.uid,),
+      entryCar: state.rtconfig.mode.has(parkingLotAbstractSyntax.tag2State.get("#entryNoCars")!.uid) ? "nocar"
+              : state.rtconfig.mode.has(parkingLotAbstractSyntax.tag2State.get("#entryWaiting")!.uid,) ? "waiting"
+              : state.rtconfig.mode.has(parkingLotAbstractSyntax.tag2State.get("#entryPassing")!.uid,) ? "passing"
+              : state.rtconfig.mode.has(parkingLotAbstractSyntax.tag2State.get("#entryPassed")!.uid,) ? "passed"
+              : "wtf",
+
+      exitBarrierOpen: state.rtconfig.mode.has(parkingLotAbstractSyntax.tag2State.get("#exitBarrierOpen")!.uid),
+      exitLightGreen: state.rtconfig.mode.has(parkingLotAbstractSyntax.tag2State.get("#exitGreen")!.uid,),
+      exitCar: state.rtconfig.mode.has(parkingLotAbstractSyntax.tag2State.get("#exitNoCars")!.uid) ? "nocar"
+              : state.rtconfig.mode.has(parkingLotAbstractSyntax.tag2State.get("#exitWaiting")!.uid,) ? "waiting"
+              : state.rtconfig.mode.has(parkingLotAbstractSyntax.tag2State.get("#exitPassing")!.uid,) ? "passing"
+              : state.rtconfig.mode.has(parkingLotAbstractSyntax.tag2State.get("#exitPassed")!.uid,) ? "passed"
+              : "wtf",
+
+      numCars: state.rtconfig.environment.get("numCars", {kind: "state", thing: parkingLotAbstractSyntax.root}),
+      capacity: state.rtconfig.environment.get("capacity", {kind: "state", thing: parkingLotAbstractSyntax.root}),
+      countedCars: state.rtconfig.environment.get("countedCars", {kind: "state", thing: parkingLotAbstractSyntax.root}),
+
+      ticket: state.rtconfig.mode.has(parkingLotAbstractSyntax.tag2State.get("#ticket")!.uid,),
+
+    }
+  },
+  render: ParkingLot,
+  uiEvents: [
+    {kind: "event", event: "entrProceed"},
+    {kind: "event", event: "entrReverse"},
+
+    {kind: "event", event: "exProceed"},
+    {kind: "event", event: "exReverse"},
+
+    {kind: "event", event: "takeTicket"},
+    {kind: "event", event: "pay"},
+  ],
+  signals: [
+    "s0", "s1", "s2", "s3",
+  ],
+}
+
+export const parkingLotPlant = makeStatechartPlant(parkingLotPlantSpec);
