@@ -120,3 +120,10 @@ For MTL property checking, a Python library was used: [py-metric-temporal-logic]
 ### Philosophical Reflection
 
 I am happy with React's paradigm of explicit, immutable application state and pure render functions. Memoization, on the other hand, requires more manual configuration than theoretically necessary. If I were to re-write StateBuddy from scratch, I would probably give [Elm](https://elm-lang.org) or [PureScript](https://www.purescript.org/) a try.
+
+### Source Code
+
+The source code is mirrored in two locations. Both are kept up-to-date.
+
+  - https://deemz.org/git/research/statebuddy
+  - https://github.com/joeriexelmans/statebuddy
