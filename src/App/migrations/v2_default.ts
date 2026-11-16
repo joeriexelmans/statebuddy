@@ -39,6 +39,7 @@ export const defaultView: ViewState = {
   rightPanel: {
     width: 300,
     items: [
+      {type: "variables", expanded: true},
       {type: "execution traces", expanded: true},
     ],
     scroll: defaultScrollableState,

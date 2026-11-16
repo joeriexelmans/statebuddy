@@ -22,16 +22,17 @@ export const defaultViewStateV3: ViewState = {
     scroll: defaultScrollableState,
     width: 300,
     items: [
-      {type: "input events" as const, expanded: true},
-      {type: "internal events" as const, expanded: true},
-      {type: "output events" as const, expanded: true},
+      {type: "input events", expanded: true},
+      {type: "internal events", expanded: true},
+      {type: "output events", expanded: true},
     ],
   },
   rightPanel: {
     scroll: defaultScrollableState,
     width: 300,
     items: [
-      {type: "execution traces" as const, expanded: true},
+      {type: "variables", expanded: true},
+      {type: "execution traces", expanded: true},
     ],
   },
   plot: {
@@ -45,9 +46,9 @@ export const defaultViewStateV3: ViewState = {
   topPanel: {
     modelName: "",
     mouseMap: {
-      leftMouseMode: "select" as const,
-      middleMouseMode: "nothing" as const,
-      rightMouseMode: "nothing" as const,
+      leftMouseMode: "select",
+      middleMouseMode: "nothing",
+      rightMouseMode: "nothing",
     },
     zoom: 100,
   },
