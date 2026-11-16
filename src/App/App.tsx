@@ -46,12 +46,10 @@ import { ModelSize } from "../hooks/useUrlHashState";
 import { useDetectChange, useDetectChange2 } from "../hooks/useDetectChange";
 import { MyDetails } from "./Components/MyDetails";
 import { Scrollable } from "./Components/Scrollable";
+import { ModalState } from "./migrations/v2_types";
 
 export function App({appState, setAppState: setAppStateShallow, modelSize}: WithSetters<{appState: AppState}> & {modelSize: ModelSize}) {
   const setAppState = useMemo(() => makeDeepSetter(defaultAppState, setAppStateShallow), [setAppStateShallow]);
-
-  // Wether a modal dialog is being shown or not
-  const [modal, setModal] = useState<ReactElement|null>(null);
 
   const [extraHighlight, setExtraHighlight] = useState(new Set<string>());
 
@@ -136,7 +134,6 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
     })),
   }), [propertyResults, preparedTraceForPlot]);
 
-  const onAboutStateBuddy = useCallback(() => setModal(<About setModal={setModal} {...trial}/>), [trial]);
 
   // const onOpen = useCallback((modelName: string) => {
   //   editorState && setModal(<OpenFile
@@ -160,43 +157,24 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
   // The state of the visual editor (and all previous and future states)
   const historyCallbacks = useUndo(setAppState.setSyntax.setEditorState._setShallow);
 
+  // @ts-ignore
+  const onAboutStateBuddy = useCallback(() => setAppState.setView.setModal._setShallow({kind: "about"}), []);
+
   // callback to start editing text label (in modal dialog)
   const beginEdit = useCallback((uid: string) => {
-    const text = editorState?.texts.find(t => t.uid === uid)?.text;
-    if (text !== undefined) {
-      setModal(<TextDialog
-        setModal={setModal}
-        text={text}
-        done={newText => {
-          if (newText === undefined) {
-            // user canceled -> do nothing
-            return;
-          }
-          else if (newText === "") {
-            // delete text
-            historyCallbacks.commit(({texts, ...rest}) => ({
-              texts: texts.filter(t => t.uid !== uid),
-              ...rest,
-            }));
-          }
-          else {
-            // update text
-            historyCallbacks.commit(oldState => ({
-              ...oldState,
-              texts: oldState.texts.map(t => {
-                if (t.uid === uid) {
-                  return {
-                    ...t,
-                    text: newText,
-                  }
-                }
-                else return t;
-              }),
-            }));
-          }
-      }} />);
-    }
-  }, [editorState.texts, setModal, historyCallbacks.commit]);
+    // @ts-ignore
+    setAppState.setView.setModal._setShallow((modal: ModalState) => {
+      const text = editorState?.texts.find(t => t.uid === uid)?.text;
+      if (text !== undefined) {
+        return {
+          kind: "txtEdit" as const,
+          text,
+          uid,
+        };        
+      }
+      return modal;
+    });
+  }, [editorState.texts]);
 
   const editorStuff = useEditor(
     appState.view.topPanel.mouseMap,
@@ -218,8 +196,50 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
   const hideFindReplace = hide(setAppState.setView.setVisibility.setFind);
   const hideDebug = hide(setAppState.setView.setVisibility.setDebug);
 
+  // @ts-ignore
+  const closeModal = useCallback(() => setAppState.setView.setModal._setShallow(({kind: "none" as const})), []);
+
+  let modal = null;
+  if (appState.view.modal.kind === "about") {
+    modal = <About {...trial} closeModal={closeModal}/>;
+  }
+  else if (appState.view.modal.kind === "txtEdit") {
+    const {text, uid} = appState.view.modal;
+    modal = <TextDialog
+      closeModal={closeModal}
+      text={text}
+      done={newText => {
+        if (newText === undefined) {
+          // user canceled -> do nothing
+          return;
+        }
+        else if (newText === "") {
+          // delete text
+          historyCallbacks.commit(({texts, ...rest}) => ({
+            texts: texts.filter(t => t.uid !== uid),
+            ...rest,
+          }));
+        }
+        else {
+          // update text
+          historyCallbacks.commit(oldState => ({
+            ...oldState,
+            texts: oldState.texts.map(t => {
+              if (t.uid === uid) {
+                return {
+                  ...t,
+                  text: newText,
+                }
+              }
+              else return t;
+            }),
+          }));
+        }
+    }} />
+  }
+
   return <div style={{display: 'flex', flexDirection: 'column', overflow: 'hidden'}}>
-    <ModalOverlay modal={modal} setModal={setModal}>
+    <ModalOverlay modal={modal} closeModal={closeModal}>
 
       {/* Top bar */}
       <WithShadow>

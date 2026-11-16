@@ -15,17 +15,17 @@ export const codeStyle = {
   boxSizing: 'border-box',
 } as CSSProperties;
 
-export function TextDialog(props: {setModal: Dispatch<SetStateAction<ReactElement|null>>, text: string, done: (newText: string|undefined) => void}) {
+export function TextDialog(props: {closeModal: () => void, text: string, done: (newText: string|undefined) => void}) {
   const [text, setText] = useState(props.text);
 
   useShortcuts([
     {keys: ["Enter"], action: useCallback(() => {
         props.done(text);
-        props.setModal(null);
-      }, [text, props.done, props.setModal])},
+        props.closeModal();
+      }, [text, props.done, props.closeModal])},
     {keys: ["Escape"], action: useCallback(() => {
-        props.setModal(null);
-      }, [props.setModal])},
+        props.closeModal();
+      }, [props.closeModal])},
   ], false);
 
   const {

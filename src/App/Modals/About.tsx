@@ -10,26 +10,26 @@ import { Logo } from "../Logo/Logo";
 import { Trial } from "../hooks/useTrial";
 import { useShortcuts } from "@/hooks/useShortcuts";
 
-export function About({setModal, trialStarted, remainingDays, startTrial}: {setModal: Dispatch<SetStateAction<ReactElement|null>>} & Trial) {
+export function About({closeModal, trialStarted, remainingDays, startTrial}: {closeModal: () => void} & Trial) {
   useShortcuts([
-    {keys: ["Escape"], action: () => setModal(null)},
+    {keys: ["Escape"], action: () => closeModal()},
   ]);
   
   if (trialStarted) {
     return <AboutStateBoss
       remainingDays={remainingDays}
-      setModal={setModal}
+      closeModal={closeModal}
       />;
   }
   else {
     return <AboutStateBuddy
       startTrial={startTrial}
-      setModal={setModal}
+      closeModal={closeModal}
       />;
   }
 }
 
-export function AboutStateBuddy({startTrial, setModal}: {startTrial: () => void, setModal: Dispatch<SetStateAction<ReactElement|null>>}) {
+export function AboutStateBuddy({startTrial, closeModal}: {startTrial: () => void, closeModal: () => void}) {
   const [_, setCount] = useState(0);
   
   return <div style={{maxWidth: '500px', padding: 4, display: 'flex', flexDirection: 'column', gap: '1em', alignItems: 'center'}}>
@@ -38,7 +38,7 @@ export function AboutStateBuddy({startTrial, setModal}: {startTrial: () => void,
         if (i+1 === 7) {
           setTimeout(() => {
             startTrial();
-            setModal(<AboutStateBoss remainingDays={30} setModal={setModal}/>);
+            // setModal(<AboutStateBoss remainingDays={30} setModal={setModal}/>);
           }, 0);
         }
         return i+1;
@@ -53,13 +53,13 @@ export function AboutStateBuddy({startTrial, setModal}: {startTrial: () => void,
 
     <p>Contact: <a href="mailto:joeri.exelmans@gmail.com">joeri.exelmans@gmail.com</a></p>
 
-    <button onClick={() => setModal(null)}>OK</button>
+    <button onClick={closeModal}>OK</button>
     </div>;
 }
 
 const boomAt = 490; // ms into 'cinematic boom' where the boom actually happens. Note that we schedule the visual effect to be a bit too early. This is (1) to compensate for possible slow rendering, and (2) because it is perceived to be more realistic for the visual effect to be a bit too early rather than too late, because our brains are used to the fact that light travels faster than sound.
 
-export function AboutStateBoss(props: {remainingDays: number, setModal: Dispatch<SetStateAction<ReactElement|null>>}) {
+export function AboutStateBoss(props: {remainingDays: number, closeModal: () => void}) {
 
   const [show, setShow] = useState(false);
   const [play, preloadAudio] = useAudioContext(1);
@@ -108,7 +108,7 @@ export function AboutStateBoss(props: {remainingDays: number, setModal: Dispatch
         snd.then(() => {
           setTimeout(() => {
             snd = Promise.resolve(null); // this prevents the sound from being stopped when the modal closes because of timeout (we only want to stop the sound upon user cancelation)
-            props.setModal(null);
+            props.closeModal();
           }, boomAt);
         });
       }, 1300-boomAt);

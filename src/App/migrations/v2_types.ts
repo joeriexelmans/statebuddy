@@ -42,6 +42,22 @@ export type VisibilityState = {
   table: boolean,
 };
 
+export type ModalState = ModalStateNone | ModalStateAbout | ModalStateTextEdit;
+
+export type ModalStateNone = {
+  kind: "none",
+}
+
+export type ModalStateAbout = {
+  kind: "about",
+}
+
+export type ModalStateTextEdit = {
+  kind: "txtEdit",
+  text: string, // <-- text value currently displayed
+  uid: string, // <-- uid of text label that is being edited
+}
+
 export type ViewState = {
   scroll: {
     editor: ScrollableState,
@@ -62,6 +78,7 @@ export type ViewState = {
     width: number,
   },
   debug: DebugState,
+  modal: ModalState,
 }
 
 // JSON-serializable app state, version 2.
