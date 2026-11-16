@@ -21,9 +21,21 @@ const _log = (str: string) => {
   console.log(str); return str;
 }
 
-// const initialFlatEnvironment = new FlatEnvironment(new Map<string, any>([["_log", _log]]));
-
-const initialScopedEnvironment = (root: OrState) => new ScopedEnvironment(new Map([["root", new Map([["_log", _log]])]]), new Map([["root", {kind: "state", thing: root}]]));
+const initialScopedEnvironment = (root: OrState) => new ScopedEnvironment(new Map([
+  ["root", new Map<string, any>([
+    ["_log", _log],
+    ["put", ([dict, key, val]: [Map<any,any>, any, any]) => new Map([...dict, [key, val]])],
+    ["del", ([dict, key]: [Map<any, any>, any]) => new Map([...dict].filter(([k]) => k !== key))],
+    ["get", ([dict, key]: [Map<any, any>, any]) => dict.get(key)],
+    ["len", (container: any) => {
+      if (container instanceof Map) return container.size;
+      else if (Array.isArray(container)) return container.length;
+      else {
+        throw new RuntimeError("len: invalid argument (must be list or dictionary)", []);
+      }
+    }]
+  ]),
+]]), new Map([["root", {kind: "state", thing: root}]]));
 
 export function initialize(ast: AbstractSyntax): TraceInit {
   let enteredRoot, rtconfig;

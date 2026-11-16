@@ -12,8 +12,8 @@ export function actionLangValToText(val: any): string {
   if (Array.isArray(val)) {
     return `[${val.map(el => actionLangValToText(el)).join(', ')}]`;
   }
-  if (val && typeof val === "object") {
-    return `{${Object.entries(val).map(([key, val]) => `${key}: ${actionLangValToText(val)}`).join(', ')}}`;
+  if (val instanceof Map) {
+    return `{${[...val].map(([key, val]) => `${key}: ${actionLangValToText(val)}`).join(', ')}}`;
   }
   if (typeof val === "function") {
     return "<function>";

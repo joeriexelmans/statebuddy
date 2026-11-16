@@ -73,9 +73,7 @@ export type FunctionCall = {
 
 export type DictExpression = {
   kind: "dict",
-  fields: {
-    [fieldname: string]: Expression,
-  },
+  fields: Map<string, Expression>,
 }
 
 export type ArrayExpression = {

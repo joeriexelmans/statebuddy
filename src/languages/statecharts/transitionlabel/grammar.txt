@@ -170,7 +170,7 @@ compare = sum:sum rest:((_ ("==" / "!=" / "<=" / ">=" / "<" / ">") _) compare)? 
     };
 }
 
-sum = prod:product rest:((_ ("+" / "-" / "||") _) sum)? {
+sum = prod:product rest:((_ ("+" / "-" / "||" / "++") _) sum)? {
 	if (rest === null) {
     	return prod;
     }
@@ -217,7 +217,7 @@ rhs_empty_dict = "{" _ "}" {
 rhsNonemptyDict = "{" _ head:rhsDictField tail:(_ "," _ rhsDictField)* (_ ",")? _ "}" {
     return {
         kind: "dict",
-        fields: Object.fromEntries([
+        fields: new Map([
             head,
             ...tail.map(t => t[3]),
         ]),

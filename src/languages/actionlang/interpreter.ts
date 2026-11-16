@@ -6,29 +6,72 @@ import { RuntimeError } from "../statecharts/interpreter/interpreter";
 import { Expression, Lhs } from "./abstract_syntax";
 import { TraceAssign } from "../statecharts/interpreter/trace_types";
 
+function numericUnary(op: string, fn: (x: number) => any): (x: any) => any {
+  return (x: any) => {
+    if (typeof x !== "number") {
+      throw new RuntimeError(`unary operator (${op}): argument must be a number`, []);
+    }
+    return fn(x);
+  };
+}
+
+function numericBinary(op: string, fn: (a: number, b: number) => any): (a: any, b: any) => any {
+  return (a: any, b: any) => {
+    if (typeof a !== "number" || typeof b !== "number") {
+      throw new RuntimeError(`(${op}) operator: both arguments must be numbers`, []);
+    }
+    return fn(a, b);
+  };
+}
+
+function booleanBinary(op: string, fn: (a: boolean, b: boolean) => any): (a: any, b: any) => any {
+  return (a: any, b: any) => {
+    if (typeof a !== "boolean" || typeof b !== "boolean") {
+      throw new RuntimeError(`(${op}) operator: both arguments must be booleans`, []);
+    }
+    return fn(a, b);
+  };
+}
+
 const UNARY_OPERATOR_MAP: Map<string, (x: any) => any> = new Map([
-  ["!", x => !x],
-  ["-", x => -x as any],
+  ["!", (x: any) => {
+    if (typeof x !== "boolean") {
+      throw new RuntimeError("unary operator (!): argument must be a boolean", []);
+    }
+    return !x;
+  }],
+  ["-", numericUnary("-", x => -x)],
 ]);
+
 const BINARY_OPERATOR_MAP: Map<string, (a: any, b: any) => any> = new Map([
-  ["+", (a, b) => {
-    if (typeof a === "number" && typeof b === "number") return (a + b);
-    else if (Array.isArray(a) && Array.isArray(b)) return [...a, ...b];
-    else throw new RuntimeError("invalid operands", []);
-  }
-  ],
-  ["-", (a, b) => a - b],
-  ["*", (a, b) => a * b],
-  ["/", (a, b) => a / b],
-  ["&&", (a, b) => a && b],
-  ["||", (a, b) => a || b],
-  ["==", (a, b) => a == b],
-  ["<=", (a, b) => a <= b],
-  [">=", (a, b) => a >= b],
-  ["<", (a, b) => a < b],
-  [">", (a, b) => a > b],
-  ["%", (a, b) => a % b],
+  // arithmetic
+  ["+", numericBinary("+", (a, b) => a + b)],
+  ["-", numericBinary("-", (a, b) => a - b)],
+  ["*", numericBinary("*", (a, b) => a * b)],
+  ["/", numericBinary("/", (a, b) => a / b)],
+  ["%", numericBinary("%", (a, b) => a % b)],
+
+  // comparison
+  ["<",  numericBinary("<",  (a, b) => a < b)],
+  [">",  numericBinary(">",  (a, b) => a > b)],
+  ["<=", numericBinary("<=", (a, b) => a <= b)],
+  [">=", numericBinary(">=", (a, b) => a >= b)],
+
+  // logic
+  ["&&", booleanBinary("&&", (a, b) => a && b)],
+  ["||", booleanBinary("||", (a, b) => a || b)],
+
+  // lists
+  ["++", (a: any, b: any) => {
+    if (Array.isArray(a) && Array.isArray(b)) return [...a, ...b];
+    if (typeof a === "string" && typeof b === "string") return a + b;
+    throw new RuntimeError("(++) operator: both arguments must be lists or both must be strings", []);
+  }],
+
+  // equality works on any types, so no check
+  ["==", (a: any, b: any) => a === b],
 ]);
+
 
 // parameter uids: list of UIDs to append to any raised errors
 export function evalExpr(expr: Expression, env: Environment, scope: Scope, uids: string[] = []): any {
@@ -63,7 +106,7 @@ export function evalExpr(expr: Expression, env: Environment, scope: Scope, uids:
     return expr.elements.map(el => evalExpr(el, env, scope, uids));
   }
   else if (expr.kind === "dict") {
-    return Object.fromEntries(Object.entries(expr.fields).map(([key,val]) => [key, evalExpr(val, env, scope, uids)]));
+    return new Map([...expr.fields].map(([key,val]) => [key, evalExpr(val, env, scope, uids)]));
   }
   else if (expr.kind === "tag") {
     return expr.text;
