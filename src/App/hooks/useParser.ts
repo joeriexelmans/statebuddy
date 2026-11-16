@@ -9,7 +9,7 @@ import { DeclaredInput } from "../migrations/v4_types";
 export function useParser(
   editorState: VisualEditorState,
   declaredInputs: DeclaredInput[],
-  declaredOutputs: EventTrigger[],
+  declaredOutputs: string[],
 ) {
   // Re-compute the topology whenever there is any change to the concrete syntax.
   // This is quite fast because it's quite optimized and internally shit is memoized as well.
