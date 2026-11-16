@@ -99,6 +99,7 @@ export const defaultAppStateV1: AppStateV1 = {
   },
   rightPanel: {
     items: [
+      { type: "variables", expanded: true },
       { type: "execution traces", expanded: true },
     ],
   },
