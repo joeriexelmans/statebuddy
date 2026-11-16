@@ -11,7 +11,12 @@ const UNARY_OPERATOR_MAP: Map<string, (x: any) => any> = new Map([
   ["-", x => -x as any],
 ]);
 const BINARY_OPERATOR_MAP: Map<string, (a: any, b: any) => any> = new Map([
-  ["+", (a, b) => a + b],
+  ["+", (a, b) => {
+    if (typeof a === "number" && typeof b === "number") return (a + b);
+    else if (Array.isArray(a) && Array.isArray(b)) return [...a, ...b];
+    else throw new RuntimeError("invalid operands", []);
+  }
+  ],
   ["-", (a, b) => a - b],
   ["*", (a, b) => a * b],
   ["/", (a, b) => a / b],

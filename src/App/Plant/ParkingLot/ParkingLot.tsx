@@ -154,7 +154,7 @@ export function ParkingLot({state, speed, raiseUIEvent}: PlantRenderProps<Parkin
   <div style={{width: '100%', }}>
     <button style={{width: '50%'}}
       disabled={state.exitCar !== "waiting"}
-      onClick={() => raiseUIEvent({name: state.canPay ? "pay" : "insertTicket"})}>{state.exitCar === "waiting" ? state.canPay ? "PAY" : "INSERT TICKET" : "_"}</button>
+      onClick={() => raiseUIEvent({name: state.canPay ? "pay" : "scanTicket"})}>{state.exitCar === "waiting" ? state.canPay ? "PAY" : "SCAN TICKET" : "_"}</button>
     <button style={{width: '50%'}}
       disabled={state.entryCar !== "waiting" || !state.ticket}
       onClick={() => raiseUIEvent({name: "takeTicket"})}>TAKE TICKET</button>
@@ -343,7 +343,7 @@ const parkingLotPlantSpec: StatechartPlantSpec<ParkingLotState> = {
     {kind: "event", event: "exReverse"},
 
     {kind: "event", event: "takeTicket"},
-    {kind: "event", event: "insertTicket"},
+    {kind: "event", event: "scanTicket"},
     {kind: "event", event: "pay"},
 
     {kind: "event", event: "openEntry"},
