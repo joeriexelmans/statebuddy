@@ -312,7 +312,7 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
               </DebugContext>}
           {/* </div> */}
           </Scrollable>
-          
+
           {/* <Greeter trial={trial}/> */}
 
           {appState.view.visibility.table && appState.execution.properties.length > 0 && appState.execution.savedTraces.length > 0 && coupledExecution && abstractSyntax &&

@@ -16,6 +16,8 @@ import { InputEventsPanel } from "./Kinds/InputEventsPanel";
 import { InternalEventsPanel } from "./Kinds/InternalEventsPanel";
 import { OutputEventsPanel } from "./Kinds/OutputEventsPanel";
 import { StateTreePanel } from "./Kinds/StateTreePanel";
+import { VariablesPanel } from "./Kinds/VariablesPanel";
+import { RuntimeError } from "@/languages/statecharts/interpreter/interpreter";
 
 // Union of all the stuff any of the panels need to know about
 export type GlobalProps = {
@@ -31,6 +33,7 @@ export const panelTypes: PanelType[] = [
   "input events",
   "internal events",
   "output events",
+  "variables",
   "plants",
   "connect",
   "mqtt",
@@ -83,6 +86,14 @@ export function PanelItem({type, globalProps: {appState, setAppState, abstractSy
         />
       }</Columned>,
       [abstractSyntax?.outputEvents, appState.syntax.declaredOutputs]);
+  }
+  else if (type === "variables") {
+    const currentState = simulator.currentTraceItem && simulator.currentTraceItem.newState.sc.at(-1)!.newState.state!;
+    let environment;
+    if (currentState && !(currentState instanceof RuntimeError)) {
+      environment = currentState.rtconfig.environment;
+    }
+    return <VariablesPanel variables={abstractSyntax!.variables} environment={environment}/>;
   }
   else if (type === "plants") {
     return <PlantsPanel

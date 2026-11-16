@@ -24,10 +24,10 @@ const _log = (str: string) => {
 const initialScopedEnvironment = (root: OrState) => new ScopedEnvironment(new Map([
   ["root", new Map<string, any>([
     ["_log", _log],
-    ["put", ([dict, key, val]: [Map<any,any>, any, any]) => new Map([...dict, [key, val]])],
-    ["del", ([dict, key]: [Map<any, any>, any]) => new Map([...dict].filter(([k]) => k !== key))],
-    ["get", ([dict, key]: [Map<any, any>, any]) => dict.get(key)],
-    ["len", (container: any) => {
+    ["_put", ([dict, key, val]: [Map<any,any>, any, any]) => new Map([...dict, [key, val]])],
+    ["_del", ([dict, key]: [Map<any, any>, any]) => new Map([...dict].filter(([k]) => k !== key))],
+    ["_get", ([dict, key]: [Map<any, any>, any]) => dict.get(key)],
+    ["_len", (container: any) => {
       if (container instanceof Map) return container.size;
       else if (Array.isArray(container)) return container.length;
       else {
@@ -40,7 +40,7 @@ const initialScopedEnvironment = (root: OrState) => new ScopedEnvironment(new Ma
 export function initialize(ast: AbstractSyntax): TraceInit {
   let enteredRoot, rtconfig;
   [rtconfig, enteredRoot] = enterState(0, {
-    environment: initialScopedEnvironment(ast.root),
+    environment: initialScopedEnvironment(ast.root).set("_simtime", 0, {kind: "state", thing: ast.root}),
     mode: new Set(),
     history: new Map(),
     timers: [],
@@ -452,6 +452,10 @@ function fairStep(simtime: number, rtconfig: RuntimeConfiguration, event: RT_Eve
 // Perform a 'big step', AKA run-to-completion (RTC) step. A big step is an atomic response to an input event or timer elapse.
 export function makeBigStep(rtconfig: RuntimeConfiguration, simtime: number, event: RT_Event, statechart: AbstractSyntax): TraceBigStep {
   let fired: TraceSmallStep[];
+  rtconfig = {
+    ...rtconfig,
+    environment: rtconfig.environment.set("_simtime", simtime, {kind: "state", thing: statechart.root}),
+  };
   [fired, rtconfig] = fairStep(simtime, rtconfig, event, statechart, statechart.root);
   let steps;
   [steps, rtconfig] = handleInternalEvents(simtime, rtconfig, getRaisedEvents(fired, "raisedInternal"), statechart);

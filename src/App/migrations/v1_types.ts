@@ -162,6 +162,7 @@ export type PanelType =
   "input events" |
   "internal events" |
   "output events" |
+  "variables" |
   "plants" |
   "connect" |
   "mqtt" |
