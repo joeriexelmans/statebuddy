@@ -24,11 +24,11 @@ Sensors activate when a car is located next to it.
 When a car arrives at the entry, it will activate sensor S0. If the barrier is opened and the car drives forward, it will activate S1 while S0 remains active. If the car continues to drive forward, it will de-activate S0 while S1 remains active. If the car drives even more forward (into the parking lot), S1 finally de-activates.
 
 Likewise for cars exiting the parking lot, the "normal" order is:
-  - none active
-  - S2 active
-  - S2 & S3 active
-  - S3 active
-  - none active
+    - none active
+    - S2 active
+    - S2 & S3 active
+    - S3 active
+    - none active
 
 
 Assumptions
@@ -49,6 +49,8 @@ Assumptions
         - there are no cars in the system.
 
     A5. Cars do not necessarily always drive forward: they may reverse at any point in time, but will never hit a CLOSED barrier (cfr. A1).
+
+    A6. Cars can only interact with the ticket machine (i.e., take a ticket) or payment machine (i.e., scan their ticket, pay) if they are located next to it.
 
 
 Requirements
@@ -74,17 +76,38 @@ Entry procedure
 
     R6. If after R3, the car reverses (leaving the system) instead of passing through the barrier, the traffic light must become RED and the barrier must CLOSE.
 
-    R7. While a car is PASSING THROUGH an opened barrier, the traffic light must become RED (to indicate any approaching vehicle to not attempt passing through since the barrier will close soon).
+    R7. While a car is PASSING THROUGH the opened entry barrier, the entry traffic light must become RED (to indicate any approaching vehicle to not attempt passing through since the barrier will close soon).
 
-    R8. SAFETY: While a car is passing through an opened barrier (e.g., S0 AND S1 are active), the barrier MUST NEVER CLOSE. Failure to meet this requirement will cause a major accident (with fire (try it :)).
-
-    R9. When a car has passed through the opened barrier (e.g., S0 de-activates WHILE S1 active), the barrier immediately CLOSES. The system must also record the ticket ID's corresponding timestamp of entry.
+    R8. When a car has passed through the opened entry-barrier (e.g., S0 de-activates WHILE S1 active), the barrier immediately CLOSES. The system must also record the ticket ID's corresponding timestamp of entry.
         Tips:
             - use the `simtime()` function to get the current time (in milliseconds of simulated time)
             - use a dictionary that maps ticket IDs to entry-times.
 
+Exit procedure (very similar to entry procedure, I'm sorry)
+--------------
 
+    R9. When a car arrives at the exit (-> S2 activates), where the payment machine is located, it may scan its ticket. payment machine should then prompt the driver to pay for the amount of time spent on the parking lot.
+        Tips:
+            - use the `simtime()` function to get the current time (in milliseconds of simulated time)
+    
+    R12. If a driver has payed, the exit traffic light becomes GREEN and the exit barrier OPENS.
 
+    R13. If then (after R12), the car does not drive forward or reverse for 3 seconds, the exit traffic light must become RED, and one second later (= 4 seconds total after payment), the barrier must CLOSE again. If the car wants to enter the parking lot, it must scan its ticket again and pay for the extra time spent on the parking lot since its earlier payment.
+        Tips:
+            - when a driver pays for his stay, reset the entry timestamp of his ticket ID to the time of the payment
 
- 
+    R14. If after R12, the car reverses (parking his car again) instead of passing through the barrier, the traffic light must become RED and the barrier must CLOSE.
 
+    R15. While a car is PASSING THROUGH the opened exit barrier, the exit traffic light must become RED (to indicate any approaching vehicle to not attempt passing through since the barrier will close soon).
+
+    R16. When a car has passed through the opened exit-barrier (e.g., S2 de-activates WHILE S3 active), the barrier immediately CLOSES. All information about the car (its ticket ID and entry-timestamp) must be erased from the system.
+
+Safety
+------
+
+    R18. SAFETY: While a car is PASSING THROUGH an opened barrier (e.g., S0 AND S1 are active), the barrier MUST NEVER CLOSE. Failure to meet this requirement will cause a major accident (with fire (try it :)).
+
+Manual override
+---------------
+
+    R19. Either barrier (entry/exit) can be manually opened by a parking lot operator. Manually opening a barrier is a discrete event (e.g., a button press), and the system should respond by immediately OPENING the barrier and setting its traffic light to GREEN. After 9 seconds, the traffic light becomes RED and then one second later (= 10 seconds total after manual override), the barrier CLOSES (unless if a car is PASSING THROUGH (R18), then the barrier closes as soon as no car is PASSING THROUGH).
