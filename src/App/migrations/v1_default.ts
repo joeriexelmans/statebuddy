@@ -95,11 +95,11 @@ export const defaultAppStateV1: AppStateV1 = {
       { type: "input events", expanded: true },
       { type: "internal events", expanded: true },
       { type: "output events", expanded: true },
+      { type: "variables", expanded: true },
     ],
   },
   rightPanel: {
     items: [
-      { type: "variables", expanded: true },
       { type: "execution traces", expanded: true },
     ],
   },

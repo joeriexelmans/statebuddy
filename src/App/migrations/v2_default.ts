@@ -33,13 +33,13 @@ export const defaultView: ViewState = {
       {type: "input events", expanded: true},
       {type: "internal events", expanded: true},
       {type: "output events", expanded: true},
+      {type: "variables", expanded: true},
     ],
     scroll: defaultScrollableState,
   },
   rightPanel: {
     width: 300,
     items: [
-      {type: "variables", expanded: true},
       {type: "execution traces", expanded: true},
     ],
     scroll: defaultScrollableState,
