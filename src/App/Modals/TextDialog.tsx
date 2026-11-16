@@ -5,6 +5,7 @@ import { syntaxHighlight } from "@/languages/statecharts/transitionlabel/syntax_
 import { SyntaxHighlightedText } from "../VisualEditor/SyntaxHiglightedText";
 import { Tooltip } from "../Components/Tooltip";
 import { Overlay } from "../Components/Overlay";
+import { WithSetters } from "@/util/partial_setter";
 
 export const codeStyle = {
   padding: 1,
@@ -15,14 +16,12 @@ export const codeStyle = {
   boxSizing: 'border-box',
 } as CSSProperties;
 
-export function TextDialog(props: {closeModal: () => void, text: string, done: (newText: string|undefined) => void}) {
-  const [text, setText] = useState(props.text);
-
+export function TextDialog(props: WithSetters<{text: string}> & {closeModal: () => void, done: (newText: string|undefined) => void}) {
   useShortcuts([
     {keys: ["Enter"], action: useCallback(() => {
-        props.done(text);
+        props.done(props.text);
         props.closeModal();
-      }, [text, props.done, props.closeModal])},
+      }, [props.text, props.done, props.closeModal])},
     {keys: ["Escape"], action: useCallback(() => {
         props.closeModal();
       }, [props.closeModal])},
@@ -31,10 +30,10 @@ export function TextDialog(props: {closeModal: () => void, text: string, done: (
   const {
     ranges,
     parseError,
-  } = syntaxHighlight(text);
+  } = syntaxHighlight(props.text);
 
   const {cssWidth, cssHeight} = useMemo(() => {
-    const lines = text.split('\n');
+    const lines = props.text.split('\n');
     return {
       cssWidth: Math.max(
         50,
@@ -44,7 +43,7 @@ export function TextDialog(props: {closeModal: () => void, text: string, done: (
         lines.length + 2,
       )*1.5 + 'em',
     }
-  }, [text]);
+  }, [props.text]);
   
   return <div style={{padding: 2, display: 'flex', gap: 8, flexDirection: 'column', alignItems: 'center'}}>
 
@@ -58,7 +57,7 @@ export function TextDialog(props: {closeModal: () => void, text: string, done: (
           height: cssHeight,
           overflow: "hidden",
         }}>
-        <SyntaxHighlightedText text={text} ranges={ranges}/>
+        <SyntaxHighlightedText text={props.text} ranges={ranges}/>
       </pre>
     }>
       <textarea
@@ -72,8 +71,8 @@ export function TextDialog(props: {closeModal: () => void, text: string, done: (
           height: cssHeight,
           overflow: "hidden",
         }}
-        onChange={e=>setText(e.target.value)}
-        value={text}
+        onChange={e=>props.setText(e.target.value)}
+        value={props.text}
         onFocus={e => e.target.select()}
         spellCheck={false}
         />

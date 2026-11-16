@@ -3,7 +3,7 @@ import { defaultScrollableState } from "../Components/Scrollable";
 import { Selection } from "../VisualEditor/VisualEditor.state";
 import { SerializableSelection } from "./v0_types";
 import { defaultDebugState, defaultFindReplaceState, defaultMQTTState } from "./v1_default";
-import { AppStateV2, InteractiveExecutionState } from "./v2_types";
+import { AppStateV2, InteractiveExecutionState, ViewState } from "./v2_types";
 
 export const defaultInteractiveExecutionState: InteractiveExecutionState = {
   trace: undefined,
@@ -14,9 +14,10 @@ export const defaultInteractiveExecutionState: InteractiveExecutionState = {
   idx: 0,
 };
 
-export const defaultView = {
+export const defaultView: ViewState = {
   scroll: {
     editor: defaultScrollableState,
+    trace: defaultScrollableState,
   },
   visibility: {
     keys: false,
@@ -33,12 +34,14 @@ export const defaultView = {
       {type: "internal events", expanded: true},
       {type: "output events", expanded: true},
     ],
+    scroll: defaultScrollableState,
   },
   rightPanel: {
     width: 300,
     items: [
       {type: "execution traces", expanded: true},
     ],
+    scroll: defaultScrollableState,
   },
   plot: {
     visible: {},
@@ -47,9 +50,6 @@ export const defaultView = {
   trace: {
     autoScroll: true,
     height: 400,
-    microSteps: true,
-    plantSteps: true,
-    transitions: false,
   },
   topPanel: {
     modelName: "",
@@ -59,6 +59,9 @@ export const defaultView = {
       rightMouseMode: "nothing",
     },
     zoom: 100,
+  },
+  modal: {
+    kind: "none",
   }
 };
 

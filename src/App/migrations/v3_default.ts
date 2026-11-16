@@ -2,9 +2,10 @@ import { initialEditorState } from "../../languages/statecharts/concrete_syntax"
 import { defaultScrollableState } from "../Components/Scrollable";
 import { defaultDebugState, defaultFindReplaceState, defaultMQTTState } from "./v1_default";
 import { defaultInteractiveExecutionState } from "./v2_default";
+import { ViewState } from "./v2_types";
 import { AppStateV3 } from "./v3_types";
 
-export const defaultViewStateV3 = {
+export const defaultViewStateV3: ViewState = {
   scroll: {
     editor: defaultScrollableState,
     trace: defaultScrollableState,
@@ -49,7 +50,10 @@ export const defaultViewStateV3 = {
       rightMouseMode: "nothing" as const,
     },
     zoom: 100,
-  }
+  },
+  modal: {
+    kind: "none",
+  },
 };
 
 export const defaultExecutionStateV3 = {

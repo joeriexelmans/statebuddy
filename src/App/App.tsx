@@ -208,6 +208,10 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
     modal = <TextDialog
       closeModal={closeModal}
       text={text}
+      setText={text => setAppState.setView.setModal._setShallow((modal: any) => ({
+        ...modal,
+        text,
+      }))}
       done={newText => {
         if (newText === undefined) {
           // user canceled -> do nothing
@@ -238,7 +242,11 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
     }} />
   }
 
-  return <div style={{display: 'flex', flexDirection: 'column', overflow: 'hidden'}}>
+  return <div style={{
+      display: 'flex', flexDirection: 'column',
+      overflow: 'hidden',
+      position: 'relative', // <-- this is necessary for the overlay to 
+    }}>
     <ModalOverlay modal={modal} closeModal={closeModal}>
 
       {/* Top bar */}
