@@ -216,7 +216,7 @@ export function useEditor(
       return;
     }
     else if (mode === "select") {
-      e.preventDefault();
+      // e.preventDefault();
       e.stopPropagation();
       startSelect(e);
     }
