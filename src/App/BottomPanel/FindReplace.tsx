@@ -1,11 +1,14 @@
-import { Dispatch, FormEvent, SetStateAction, useCallback } from "react";
+import { Dispatch, FormEvent, KeyboardEventHandler, SetStateAction, useCallback } from "react";
 
 import CloseIcon from '@mui/icons-material/Close';
 import SwapVertIcon from '@mui/icons-material/SwapVert';
+import FindReplaceIcon from '@mui/icons-material/FindReplace';
+import HighlightAltIcon from '@mui/icons-material/HighlightAlt';
+
 import { Tooltip } from "../Components/Tooltip";
 import { FindReplaceStateV1 } from "../migrations/v1_types";
 import { VisualEditorState } from "../VisualEditor/VisualEditor.state";
-
+import { Text } from "@/languages/statecharts/concrete_syntax";
 
 type FindReplaceProps = {
   state: FindReplaceStateV1,
@@ -15,34 +18,54 @@ type FindReplaceProps = {
   hide: () => void,
 };
 
+function numOccurrences(txts: Text[], findText: string) {
+  if (findText === "") return 0;
+  return txts.reduce(
+    (count, txt) => count+(txt.text.indexOf(findText) !== -1 ? 1: 0),
+    0,
+  );
+}
+
 export function FindReplace({state: {findText, replaceText}, setState, cs, setCS, hide}: FindReplaceProps) {
-  const onReplace = useCallback(() => {
+  const selectedTexts = [...cs.selection].map(([uid, parts]) => parts.has("text") && cs.texts.find(el => el.uid === uid)!).filter(x => x!==false);
+
+  const numGlobal = numOccurrences(cs.texts, findText);
+  const numSelection = numOccurrences(selectedTexts, findText);
+
+  const doReplace = (onlySelection: boolean) => {
     setCS(cs => {
       return {
         ...cs,
         texts: cs.texts.map(txt => ({
           ...txt,
-          text: txt.text.replaceAll(findText, replaceText)
+          text: (!onlySelection || selectedTexts.includes(txt))
+            ? txt.text.replaceAll(findText, replaceText)
+            : txt.text,
         })),
       };
     });
-  }, [findText, replaceText, setCS]);
+  };
 
   const onSwap = useCallback(() => {
     setState(({findText, replaceText}) => ({replaceText: findText, findText: replaceText}));
   }, [findText, replaceText]);
 
-  const onSubmit = useCallback((e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    onReplace();
-    // onSwap();
-  }, [findText, replaceText, onSwap, onReplace]);
+  const onKeyDown: KeyboardEventHandler<HTMLDivElement> = (e) => {
+    if (e.key === "Enter") {
+      e.stopPropagation();
+      e.preventDefault();
+      if (e.shiftKey) {
+        doReplace(true)
+      }
+      else {
+        doReplace(false);
+      }
+    }
+  }
 
-  const n = findText === "" ? 0 : cs.texts.reduce((count, txt) => count+(txt.text.indexOf(findText) !== -1 ? 1: 0), 0);
-
-  return <form onSubmit={onSubmit}>
-    <div className="toolbar toolbarGroup" style={{display: 'flex', flexDirection: 'row'}}>
+  return (
+    <div className="toolbar toolbarGroup" style={{display: 'flex', flexDirection: 'row'}}
+      onKeyDown={onKeyDown}>
       <div style={{flexGrow:1, display: 'flex', flexDirection: 'column'}}>
         <input placeholder="find"
           value={findText}
@@ -73,15 +96,27 @@ export function FindReplace({state: {findText, replaceText}, setState, cs, setCS
             </button>
           </Tooltip>
         </div>
-        <Tooltip tooltip="replace all occurrences in model" 
+        <Tooltip tooltip={`replace ${numSelection} occurrences in selection`} align="right" above>
+          <button type="button"
+            style={{width: 50}}
+            disabled={numSelection===0}
+            onClick={() => doReplace(true)}
+            >
+              <HighlightAltIcon/>({numSelection})
+          </button>
+        </Tooltip>
+        <Tooltip tooltip={`replace ${numGlobal} occurrences in model\n<Enter>`}
           align="right"
-          above={true}>
-        <input type="submit"
-            disabled={n===0}
-            value={`replace all (${n})`}
-            style={{height: 26, width: 100}}/>
+          above>
+          <button type="button"
+            disabled={numGlobal===0}
+            style={{height: 26, width: 50}}
+            onClick={() => doReplace(false)}
+            >
+              <FindReplaceIcon/>({numGlobal})
+          </button>
         </Tooltip>
       </div>
     </div>
-  </form>;
+  );
 }
