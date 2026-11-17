@@ -367,10 +367,12 @@ export function parseStatechart(topology: Topology): [AbstractSyntax, TraceableE
   function figureOutVariables(state: TransitionSrcTgt, ignore: Set<string>) {
     if (state.kind === "and" || state.kind === "or") {
       for (const action of state.entryActions) {
-        if (action.kind === "assignment") {
-          const refs = getLhsRefs(action.lhs);
-          const newlyIntroducedVariables = refs.difference(ignore);
-          newlyIntroducedVariables.forEach(v => state.variables.add(v));
+        for (const a of action.actions) {
+          if (a.kind === "assignment") {
+            const refs = getLhsRefs(a.lhs);
+            const newlyIntroducedVariables = refs.difference(ignore);
+            newlyIntroducedVariables.forEach(v => state.variables.add(v));
+          }
         }
       }
       state.children.forEach(child => figureOutVariables(child, state.variables.union(ignore)));
