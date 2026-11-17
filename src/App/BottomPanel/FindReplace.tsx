@@ -9,8 +9,10 @@ import { Tooltip } from "../Components/Tooltip";
 import { FindReplaceStateV1 } from "../migrations/v1_types";
 import { VisualEditorState } from "../VisualEditor/VisualEditor.state";
 import { Text } from "@/languages/statecharts/concrete_syntax";
+import { KeyInfoVisible, KeyInfoHidden } from "../TopPanel/KeyInfo";
 
 type FindReplaceProps = {
+  showKeys: boolean,
   state: FindReplaceStateV1,
   setState: Dispatch<SetStateAction<FindReplaceStateV1>>,
   cs: VisualEditorState,
@@ -26,11 +28,13 @@ function numOccurrences(txts: Text[], findText: string) {
   );
 }
 
-export function FindReplace({state: {findText, replaceText}, setState, cs, setCS, hide}: FindReplaceProps) {
+export function FindReplace({showKeys, state: {findText, replaceText}, setState, cs, setCS, hide}: FindReplaceProps) {
   const selectedTexts = [...cs.selection].map(([uid, parts]) => parts.has("text") && cs.texts.find(el => el.uid === uid)!).filter(x => x!==false);
 
   const numGlobal = numOccurrences(cs.texts, findText);
   const numSelection = numOccurrences(selectedTexts, findText);
+
+  const KeyInfo = showKeys ? KeyInfoVisible : KeyInfoHidden;
 
   const doReplace = (onlySelection: boolean) => {
     setCS(cs => {
@@ -61,6 +65,11 @@ export function FindReplace({state: {findText, replaceText}, setState, cs, setCS
         doReplace(false);
       }
     }
+    else if (e.key === "Escape") {
+      e.stopPropagation();
+      e.preventDefault();
+      hide();
+    }
   }
 
   return (
@@ -86,36 +95,42 @@ export function FindReplace({state: {findText, replaceText}, setState, cs, setCS
               <SwapVertIcon fontSize="small"/>
             </button>
           </Tooltip>
-          <Tooltip tooltip="hide" above={true}>
-            <button
-                type="button" // <-- prevent form submission on click
-                onClick={hide}
-                style={{width: 50}}
-                >
-              <CloseIcon fontSize="small"/>
+          <KeyInfo keyInfo={<kbd>Esc</kbd>}>
+            <Tooltip tooltip="hide" above={true}>
+              <button
+                  type="button" // <-- prevent form submission on click
+                  onClick={hide}
+                  style={{width: 50}}
+                  >
+                <CloseIcon fontSize="small"/>
+              </button>
+            </Tooltip>
+          </KeyInfo>
+        </div>
+        <KeyInfo keyInfo={<><kbd>Shift</kbd>+<kbd>Enter</kbd></>}>
+          <Tooltip tooltip={`replace ${numSelection} occurrences in selection`} align="right" above>
+            <button type="button"
+              style={{width: 50}}
+              disabled={numSelection===0}
+              onClick={() => doReplace(true)}
+              >
+                <HighlightAltIcon/>({numSelection})
             </button>
           </Tooltip>
-        </div>
-        <Tooltip tooltip={`replace ${numSelection} occurrences in selection`} align="right" above>
-          <button type="button"
-            style={{width: 50}}
-            disabled={numSelection===0}
-            onClick={() => doReplace(true)}
-            >
-              <HighlightAltIcon/>({numSelection})
-          </button>
-        </Tooltip>
-        <Tooltip tooltip={`replace ${numGlobal} occurrences in model\n<Enter>`}
-          align="right"
-          above>
-          <button type="button"
-            disabled={numGlobal===0}
-            style={{height: 26, width: 50}}
-            onClick={() => doReplace(false)}
-            >
-              <FindReplaceIcon/>({numGlobal})
-          </button>
-        </Tooltip>
+        </KeyInfo>
+        <KeyInfo keyInfo={<kbd>Enter</kbd>}>
+          <Tooltip tooltip={`replace ${numGlobal} occurrences in model\n<Enter>`}
+            align="right"
+            above>
+            <button type="button"
+              disabled={numGlobal===0}
+              style={{height: 26, width: 50}}
+              onClick={() => doReplace(false)}
+              >
+                <FindReplaceIcon/>({numGlobal})
+            </button>
+          </Tooltip>
+        </KeyInfo>
       </div>
     </div>
   );

@@ -2,7 +2,7 @@ import styles from "./App.module.css";
 import { buf2string, deflateBuffer, inflateBuf } from "@/compression/deflate";
 import { Encoder } from "cbor-x";
 import { Dispatch, ReactNode, SetStateAction, useCallback, useEffect, useState } from "react";
-import { useUrlHashState } from "../hooks/useUrlHashState";
+import { ModelSize, useUrlHashState } from "../hooks/useUrlHashState";
 import { myPureDeepAssign } from "../util/util";
 import { App } from "./App";
 import { AppState, defaultAppState } from "./App.state";
@@ -78,7 +78,9 @@ const msgs = {
 export function PersistentApp({appState, setAppState}: WithSetters<{appState: AppState|undefined}>) {
   const [err, setErr] = useState<ReactNode>();
 
-  const encodeToURL = async (appState: AppState) => {
+  const [modelSize, setModelSize] = useState<ModelSize>({original: 0, compressed: 0});
+
+  const encodeToURL = useCallback(async (appState: AppState) => {
     // @ts-ignore: this works...
     const cborBuf = CBOR.encode(appState) as ArrayBuffer;
     const cborZipBuf = await deflateBuffer(new Uint8Array(cborBuf));
@@ -92,10 +94,13 @@ export function PersistentApp({appState, setAppState}: WithSetters<{appState: Ap
     // const jsonZipBuf = (await deflateString(JSON.stringify(compressed)));
     // console.log('JSON zipped', jsonZipBuf.byteLength, 'bytes');
 
-    return cborZipBuf;
-  };
+    setModelSize({original: cborBuf.byteLength, compressed: cborZipBuf.byteLength});
 
-  const decodeFromURL = async (buf: ArrayBuffer) => {
+    return cborZipBuf;
+    
+  }, [setModelSize]);
+
+  const decodeFromURL = useCallback(async (buf: ArrayBuffer) => {
     if (buf.byteLength === 0) {
       // empty URL hash -> initial state
       setErr(undefined);
@@ -144,9 +149,9 @@ export function PersistentApp({appState, setAppState}: WithSetters<{appState: Ap
         [<PENDING/>, msgs.parseCBOR],
       ]}/>);
     }
-  };
+  }, [setErr]);
 
-  const modelSize = useUrlHashState<AppState>(
+  useUrlHashState<AppState>(
     appState,
     setAppState,
     100, // ms of inactivity before state is compressed and persisted in URL hash

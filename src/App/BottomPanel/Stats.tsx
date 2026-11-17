@@ -10,10 +10,10 @@ export function Stats({abstractSyntax}: StatsProps) {
   const stats = useMemo(() => getStats(abstractSyntax), [abstractSyntax]);
 
   return <>
-    {stats.numAndStates} AND-states,&nbsp;
-    {stats.numOrStates} OR-states,&nbsp;
-    {stats.numPseudoStates} pseudo-states,&nbsp;
-    {stats.numHistory} history states,&nbsp;
+    {stats.numAndStates} AND,&nbsp;
+    {stats.numOrStates} OR,&nbsp;
+    {stats.numPseudoStates} pseudo,&nbsp;
+    {stats.numHistory} history,&nbsp;
     {stats.numTransitions} transitions
   </>;
 }

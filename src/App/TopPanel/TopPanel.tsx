@@ -42,7 +42,7 @@ export type TopPanelProps = {
   refreshDisplayTime: () => void,
 
   // saving / downloading
-  modelSize: ModelSize,
+  // modelSize: ModelSize,
 
   trial: Trial,
 
@@ -57,7 +57,7 @@ const ShortcutExport = <><kbd>Ctrl</kbd>+<kbd>S</kbd></>;
 const toolbarGap = {columnGap: '1em'};
 
 export const TopPanel = memo(function TopPanel(props: TopPanelProps) {
-  const {trial, displayTime, refreshDisplayTime, modelSize, startDragging, simulator, appState, setAppState, onAboutStateBuddy, onSave, historyCallbacks,
+  const {trial, displayTime, refreshDisplayTime, startDragging, simulator, appState, setAppState, onAboutStateBuddy, onSave, historyCallbacks,
   } = props;
   const {setKeys, setFind} = setAppState.setView.setVisibility;
   const showKeys = appState.view.visibility.keys;
@@ -115,7 +115,7 @@ Refresh the page to get the latest version.` : `about ${trial.appName}`} align="
           </button>
         </Tooltip>
       </KeyInfo> */}
-      <Tooltip tooltip={`model size (compressed):\n${prettyNumber(modelSize.compressed)} bytes`} align='left'>
+      <Tooltip tooltip={`model name`} align='left'>
         <input
           type="text"
           placeholder='model name'

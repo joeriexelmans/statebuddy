@@ -12,10 +12,13 @@ import { Toolbar } from "../TopPanel/Toolbar";
 import { MtlWorkerPoolState } from "@/mtl-checker/useMtlWorkerPool";
 import { Selection } from "../VisualEditor/VisualEditor.state";
 import { MyDetails } from "../Components/MyDetails";
+import { ModelSize } from "@/hooks/useUrlHashState";
+import { prettyNumber } from "@/util/pretty";
 
 type BottomPanelProps = WithSetters<{
   errorsExpanded: boolean,
 }> & {
+  modelSize: ModelSize,
   errors: TraceableError[],
   abstractSyntax: AbstractSyntax,
   workerPoolState: MtlWorkerPoolState,
@@ -25,6 +28,7 @@ type BottomPanelProps = WithSetters<{
 }
 
 export function BottomPanel({
+  modelSize,
   errorsExpanded,
   setErrorsExpanded,
   errors,
@@ -63,8 +67,13 @@ export function BottomPanel({
         </MyDetails>
       </div>
       <div style={{display: 'flex', alignItems: 'center'}}>
+        <Tooltip
+          tooltip={`model size\nuncompressed: ${prettyNumber(modelSize.original)} bytes`}
+          above
+        >{prettyNumber(modelSize.compressed)} bytes zipped ({Math.round(modelSize.compressed/modelSize.original*100)}%)</Tooltip>
+        &emsp;|&emsp;
         <Stats abstractSyntax={abstractSyntax}/>
-        &nbsp;|&nbsp;
+        &emsp;|&emsp;
           <Tooltip tooltip="MTL properties are checked with a Python library, which runs in your browser via Pyodide. Each worker is an instance of Python running in its own thread." above>
             MTL worker pool:
             &nbsp;
@@ -82,7 +91,7 @@ export function BottomPanel({
           &nbsp;
           {workerPoolState.queue.length} jobs queued
         
-        &nbsp;|&nbsp;
+        &emsp;|&emsp;
         switch to&nbsp;
         <Tooltip tooltip="only works if you are running a development server locally" above={true}>
           {location.host === "localhost:3000" ?
@@ -91,7 +100,7 @@ export function BottomPanel({
           }
         </Tooltip>
         &nbsp;mode
-        &nbsp;|&nbsp;
+        &emsp;|&emsp;
         Rev:&nbsp;
         <Tooltip tooltip="view source code" align="right" above={true}>
           <a href={`https://deemz.org/git/research/statebuddy/commit/${gitRev}`} target="_blank">

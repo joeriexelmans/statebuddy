@@ -259,7 +259,6 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
           simulator={simulator}
           displayTime={displayTime}
           refreshDisplayTime={refreshDisplayTime}
-          modelSize={modelSize}
           trial={trial}
           onAboutStateBuddy={onAboutStateBuddy}
           onSave={onSave}
@@ -328,6 +327,7 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
           {appState.view.visibility.find &&
             <BelowEditor>
               <FindReplace
+                showKeys={appState.view.visibility.keys}
                 state={appState.find}
                 setState={setAppState.setFind._setShallow}
                 cs={editorState}
@@ -384,6 +384,7 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
         </div>
         {syntaxErrors && abstractSyntax &&
           <BottomPanel
+            modelSize={modelSize}
             abstractSyntax={abstractSyntax}
             errorsExpanded={appState.view.visibility.errors}
             setErrorsExpanded={setAppState.setView.setVisibility.setErrors}

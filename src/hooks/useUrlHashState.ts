@@ -16,9 +16,6 @@ export function useUrlHashState<StateType>(
   decode: (h: ArrayBuffer) => Promise<StateType>,
   onErr: (err: any) => void,
 ) {
-  // const [state, setState] = useState<StateType|undefined>(undefined);
-  const [size, setSize] = useState<ModelSize>({compressed: 0, original: 0});
-
   useEffect(() => {
     const loadFromURL = () => {
       
@@ -55,12 +52,9 @@ export function useUrlHashState<StateType>(
           const str = buf2base64(buf);
           const hash = '#'+str;
           window.history.replaceState({}, "", hash);
-          setSize({original: 0, compressed: str.length});
         }
       });
       return cancel;
     }
   }, delayMs, [state])
-
-  return size;
 }
