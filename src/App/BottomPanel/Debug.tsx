@@ -69,11 +69,11 @@ export function DebugPanel({
         <label>
           cell size
           &nbsp;
-          <input id="time"
-            // disabled={true}
+          <input
+            disabled={true}
             value={GRID_CELL_SIZE}
             readOnly={true}
-            style={{width: 56}}
+            style={{width: 56, cursor: 'not-allowed'}}
             />
         </label>
       </Tooltip>

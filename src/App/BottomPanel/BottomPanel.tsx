@@ -38,6 +38,7 @@ export function BottomPanel({
   setExtraHighlight,
   setSelection
 }: BottomPanelProps) {
+  const searchParams = new URLSearchParams(window.location.search);
 
   const nBooting = workerPoolState.workers.filter(w => w.state === "booting").length;
   const nReady = workerPoolState.workers.filter(w => w.state === "ready").length;
@@ -91,15 +92,15 @@ export function BottomPanel({
           &nbsp;
           {workerPoolState.queue.length} jobs queued
         
-        &emsp;|&emsp;
-        switch to&nbsp;
-        <Tooltip tooltip="only works if you are running a development server locally" above={true}>
-          {location.host === "localhost:3000" ?
-            <a href={`https://deemz.org/public/statebuddy/v2/${location.search}${location.hash}`}>production</a>
-            : <a href={`http://localhost:3000/${location.search}${location.hash}`}>development</a>
-          }
-        </Tooltip>
-        &nbsp;mode
+        {searchParams.get("dev") === "1" && <>
+          &emsp;|&emsp;
+          switch to&nbsp;
+            {location.host === "localhost:3000" ?
+              <a href={`https://deemz.org/public/statebuddy/v2/${location.search}${location.hash}`}>production</a>
+              : <a href={`http://localhost:3000/${location.search}${location.hash}`}>development</a>
+            }
+          &nbsp;mode
+        </>}
         &emsp;|&emsp;
         Rev:&nbsp;
         <Tooltip tooltip="view source code" align="right" above={true}>
