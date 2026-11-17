@@ -8,6 +8,7 @@ import { PlantsState } from "../migrations/v1_types";
 import { useConnect } from "../Panel/Kinds/ConnectPanel";
 import { RaisedEvent } from "@/languages/statecharts/interpreter/runtime_types";
 import { CoupledState } from "./useSimulator";
+import { DeclaredInput } from "../migrations/v4_types";
 
 // Every plant's UI input events are exposed as global (Coupled DEVS) input events.
 // They must be prefixed with the plant ID, so they don't interact with each other.
@@ -16,7 +17,7 @@ export function prefixCoupledInputEvent(componentId: string, eventName: string) 
   return "$" + componentId + "_" + eventName;
 }
 
-export function useCoupledExecution(ast: AbstractSyntax|undefined, plantsState: PlantsState) {
+export function useCoupledExecution(ast: AbstractSyntax|undefined, declaredInputs: DeclaredInput[], plantsState: PlantsState) {
   const plantInstances = useMemo(() =>
     plantsState.plants.map(({id, type}) => [id, statebuddyPlants[type]!] as const),
     [plantsState]
@@ -24,7 +25,7 @@ export function useCoupledExecution(ast: AbstractSyntax|undefined, plantsState: 
 
   const tracedSC2DEVS = useMemo(() => ast && makeTracedDEVS(sc2DEVS(ast)), [ast]);
 
-  const effectivelyConnected = ast && useConnect(ast, plantsState).effectivelyConnected || [];
+  const effectivelyConnected = ast && useConnect(ast, declaredInputs, plantsState).effectivelyConnected || [];
 
   const coupledExecution = useMemo(() => {
     // Every statechart input event is exposed as a global input event.

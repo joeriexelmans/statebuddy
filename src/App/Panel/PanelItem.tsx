@@ -49,7 +49,7 @@ type PanelItemProps = {
 
 export function panelItemInfo({type, globalProps: {appState, abstractSyntax}}: PanelItemProps) {
   if (type === "connect" && abstractSyntax) {
-    const {suggestionsState} = useConnect(abstractSyntax, appState.execution.plants);
+    const {suggestionsState} = useConnect(abstractSyntax, appState.syntax.declaredInputs, appState.execution.plants);
     if (suggestionsState.some(s => s === "undecided")) {
       return `${suggestionsState.filter(s => s === "undecided").length} suggested connections (decide if you want to keep them)`;
     }
@@ -105,6 +105,7 @@ export function PanelItem({type, globalProps: {appState, setAppState, abstractSy
   else if (type === "connect") {
     return <>{abstractSyntax && <ConnectPanel
       abstractSyntax={abstractSyntax}
+      declaredInputs={appState.syntax.declaredInputs}
       plantsState={appState.execution.plants}
       setPlantsState={setAppState.setExecution.setPlants}
       />}</>

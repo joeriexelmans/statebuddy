@@ -20,9 +20,11 @@ import { PlantsState } from "../../migrations/v1_types";
 import { statebuddyPlants } from "../../plants";
 import { TwoStateButton } from "@/App/Components/TwoStateButton";
 import { Toolbar } from "@/App/TopPanel/Toolbar";
+import { DeclaredInput } from "@/App/migrations/v4_types";
 
 type ConnectProps = {
   abstractSyntax: AbstractSyntax,
+  declaredInputs: DeclaredInput[],
   plantsState: PlantsState,
   setPlantsState: DeepSetter<PlantsState>,
 };
@@ -73,7 +75,7 @@ function Connections({conns, startIdx, componentNames, actions, rowStyles, cellS
   );
 }
 
-export function useConnect(abstractSyntax: AbstractSyntax, plantsState: PlantsState) {
+export function useConnect(abstractSyntax: AbstractSyntax, declaredInputs: DeclaredInput[], plantsState: PlantsState) {
   return useMemo(() => {
     const plants = plantsState.plants.map(({id, type}) => [id, statebuddyPlants[type]!] as const);
     const allOutputs = [
@@ -84,7 +86,8 @@ export function useConnect(abstractSyntax: AbstractSyntax, plantsState: PlantsSt
             [plantId, eventName] as const)),
     ];
     const allInputs = [
-      ...[...abstractSyntax.inputEvents].map((event) =>
+      ...[...new Set(abstractSyntax.inputEvents)
+        .union(new Set(declaredInputs.map(i => i.event)))].map((event) =>
           ['sc', event] as const),
       ...plants.flatMap(([plantId, plant]) =>
           plant.plant.execution.inputs.map(eventName =>
@@ -110,7 +113,7 @@ export function useConnect(abstractSyntax: AbstractSyntax, plantsState: PlantsSt
   }, [abstractSyntax, plantsState]);
 }
 
-export const ConnectPanel = memo(function Connect({abstractSyntax, plantsState, setPlantsState: {setConns}}: ConnectProps) {
+export const ConnectPanel = memo(function Connect({abstractSyntax, declaredInputs, plantsState, setPlantsState: {setConns}}: ConnectProps) {
   const [selectedOutput, setSelectedOutput] = useLocalStorage("connect.selectedOutput", "-1");
   const [selectedInput, setSelectedInput] = useLocalStorage("connect.selectedInput", "-1");
   const names = Object.fromEntries([
@@ -134,7 +137,7 @@ export const ConnectPanel = memo(function Connect({abstractSyntax, plantsState, 
   //   return ;
   // }, [deleteConnection]);
 
-  const {suggestions, suggestionsState, allInputs, allOutputs, manuallyAdded} = useConnect(abstractSyntax, plantsState);
+  const {suggestions, suggestionsState, allInputs, allOutputs, manuallyAdded} = useConnect(abstractSyntax, declaredInputs, plantsState);
 
   // cannot connect component to itself (against the rules of DEVS):
   const endpointMissing = allInputs[Number(selectedInput)] === undefined || allOutputs[Number(selectedOutput)] === undefined;

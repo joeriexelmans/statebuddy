@@ -68,7 +68,7 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
     document.title = `${location.hostname === "localhost" ? "[dev] " : ""}${appState.view.topPanel.modelName} [StateBuddy] ${timeFormatted}`;
   }, 100, [appState, editorState]);
 
-  const coupledExecution = useCoupledExecution(abstractSyntax, appState.execution.plants);
+  const coupledExecution = useCoupledExecution(abstractSyntax, appState.syntax.declaredInputs, appState.execution.plants);
   const simulator = useInteractiveSimulator(coupledExecution, appState.execution.interactive, setAppState.setExecution.setInteractive);
   const {displayTime, refreshDisplayTime} = useDisplayTime(appState.execution.interactive.time);
   
