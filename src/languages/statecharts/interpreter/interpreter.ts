@@ -165,7 +165,7 @@ function exitState(rt: RuntimeConfiguration, state: TransitionSrcTgt): [RuntimeC
   env = deleteVariables(env, scope);
 
   // remove from mode
-  rt = {...rt, mode: new Set([...rt.mode].filter(s => s !== state.uid))};
+  rt = {...rt, mode: new Set([...rt.mode].filter(s => s !== state.uid)), environment: env};
   return [rt, {
     state,
     exitActions,
