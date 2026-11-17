@@ -346,7 +346,7 @@ const parkingLotPlantSpec: StatechartPlantSpec<ParkingLotState> = {
 
       cars: state.rtconfig.environment.get("cars", {kind: "state", thing: parkingLotAbstractSyntax.root}),
       capacity: state.rtconfig.environment.get("capacity", {kind: "state", thing: parkingLotAbstractSyntax.root}),
-      // countedCars: state.rtconfig.environment.get("countedCars", {kind: "state", thing: parkingLotAbstractSyntax.root}),
+      countedCars: state.rtconfig.environment.get("countedCars", {kind: "state", thing: parkingLotAbstractSyntax.root}),
 
       ticket: state.rtconfig.mode.has(parkingLotAbstractSyntax.tag2State.get("#ticket")!.uid)
         ? state.rtconfig.environment.get("printedID", {kind: "state", thing: parkingLotAbstractSyntax.tag2State.get("#ticket")!})
