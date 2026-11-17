@@ -1,3 +1,4 @@
+import { Expression } from "../actionlang/abstract_syntax";
 import { Action, EventTrigger, ParsedText } from "./transitionlabel/abstract_syntax";
 
 export type AbstractState = {
@@ -9,9 +10,15 @@ export type AbstractState = {
   tags: [string, string][]; // array of tuple (text-uid, text-text)
 }
 
+export type EntryExitActions = {
+  labelUid: string; // uid of text label
+  guard: Expression;
+  actions: Action[];
+}
+
 export type EntryExitState = AbstractState & {
-  entryActions: Action[];
-  exitActions: Action[];
+  entryActions: EntryExitActions[];
+  exitActions: EntryExitActions[];
   variables: Set<string>; // <-- variables that belong to this state (that are created in the state's entry actions)
 }
 

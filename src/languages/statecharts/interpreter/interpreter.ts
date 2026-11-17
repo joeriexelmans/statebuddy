@@ -115,9 +115,13 @@ function enterState(simtime: number, {environment, mode, timers, ...rest}: Runti
   // entry actions
   let enterActions: TraceAction[] = [];
   for (const action of state.entryActions) {
-    let as;
-    [environment, as] = execAction(environment, action, {kind: "state", thing: state}, [state.uid]);
-    enterActions = [...enterActions, ...as];
+    if (evalExpr(action.guard, environment, {kind: "state", thing: state}, [action.labelUid])) {
+      for (const a of action.actions) {
+        let as;
+        [environment, as] = execAction(environment, a, {kind: "state", thing: state}, [state.uid]);
+        enterActions = [...enterActions, ...as];
+      }
+    }
   }
 
   let rt = {environment, mode, timers, ...rest};
@@ -170,11 +174,15 @@ function exitState(rt: RuntimeConfiguration, state: TransitionSrcTgt): [RuntimeC
 
   // exit actions
   let env = rt.environment;
-  let exitActions = [];
+  let exitActions = [] as TraceAction[];
   for (const action of state.exitActions) {
-    let as;
-    ([env, as] = execAction(env, action, scope, [state.uid]));
-    exitActions.push(...as);
+    if (evalExpr(action.guard, env, {kind: "state", thing: state}, [action.labelUid])) {
+      for (const a of action.actions) {
+        let as;
+        [env, as] = execAction(env, a, {kind: "state", thing: state}, [state.uid]);
+        exitActions = [...exitActions, ...as];
+      }
+    }
   }
   // all variables that were declared within the scope of our exited state are deleted
   env = deleteVariables(env, scope);

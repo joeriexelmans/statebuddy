@@ -278,10 +278,10 @@ export function parseStatechart(topology: Topology): [AbstractSyntax, TraceableE
         // labels belonging to a rountangle (= a state) must by entry/exit actions
         // if we cannot find a containing state, then it belong to the root
         if (parsed.trigger.kind === "entry") {
-          belongsToState.entryActions.push(...parsed.actions);
+          belongsToState.entryActions.push({guard: parsed.guard, actions: parsed.actions, labelUid: parsed.uid});
         }
         else if(parsed.trigger.kind === "exit") {
-          belongsToState.exitActions.push(...parsed.actions);
+          belongsToState.exitActions.push({guard: parsed.guard, actions: parsed.actions, labelUid: parsed.uid});
         }
         else {
           errors.push({
