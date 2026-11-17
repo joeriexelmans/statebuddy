@@ -31,9 +31,24 @@ const initialScopedEnvironment = (root: OrState) => new ScopedEnvironment(new Ma
       if (container instanceof Map) return container.size;
       else if (Array.isArray(container)) return container.length;
       else {
-        throw new RuntimeError("len: invalid argument (must be list or dictionary)", []);
+        throw new RuntimeError("_len: invalid argument (must be list or dictionary)", []);
       }
-    }]
+    }],
+    ["_push", ([arr, el]: [any, any]) => {
+      if (Array.isArray(arr)) return [...arr, el];
+      throw new RuntimeError("_push: invalid argument (must be list)", []);
+    }],
+    ["_pop", (arr: any) => {
+      if (Array.isArray(arr)) {
+        if (arr.at(-1) !== undefined) {
+          const el = arr.at(-1);
+          const rest = arr.slice(0, -1);
+          return [rest, el];
+        }
+        throw new RuntimeError("_pop: list is empty!", []);
+      }
+      throw new RuntimeError("_pop: invalid argument (must be list)", []);
+    }],
   ]),
 ]]), new Map([["root", {kind: "state", thing: root}]]));
 

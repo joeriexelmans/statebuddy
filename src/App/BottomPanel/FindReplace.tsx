@@ -77,10 +77,13 @@ export function FindReplace({showKeys, state: {findText, replaceText}, setState,
       onKeyDown={onKeyDown}>
       <div style={{flexGrow:1, display: 'flex', flexDirection: 'column'}}>
         <input placeholder="find"
+          autoFocus
+          onFocus={e => e.target.select()}
           value={findText}
           onChange={e  => setState(s => ({...s, findText: e.target.value}))}
           style={{flexGrow: 1, minWidth: 20}}/>
         <input tabIndex={0} placeholder="replace"
+          onFocus={e => e.target.select()}
           value={replaceText}
           onChange={e => setState(s => ({...s, replaceText: e.target.value}))}
           style={{flexGrow: 1, minWidth: 20}}/>
@@ -108,13 +111,14 @@ export function FindReplace({showKeys, state: {findText, replaceText}, setState,
           </KeyInfo>
         </div>
         <KeyInfo keyInfo={<><kbd>Shift</kbd>+<kbd>Enter</kbd></>}>
-          <Tooltip tooltip={`replace ${numSelection} occurrences in selection`} align="right" above>
+          <Tooltip tooltip={`replace ${numSelection} occurrences in selection\n<Shift>+<Enter>`} align="right" above>
             <button type="button"
               style={{width: 50}}
               disabled={numSelection===0}
               onClick={() => doReplace(true)}
               >
-                <HighlightAltIcon/>({numSelection})
+                <HighlightAltIcon/>
+                {numSelection}
             </button>
           </Tooltip>
         </KeyInfo>
@@ -127,7 +131,8 @@ export function FindReplace({showKeys, state: {findText, replaceText}, setState,
               style={{height: 26, width: 50}}
               onClick={() => doReplace(false)}
               >
-                <FindReplaceIcon/>({numGlobal})
+                <FindReplaceIcon/>
+                {numGlobal}
             </button>
           </Tooltip>
         </KeyInfo>

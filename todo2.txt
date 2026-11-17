@@ -12,11 +12,15 @@ Bugs
 
 - in an existing trace, if next element is input event, then <Tab> jumps to that event instead of slicing the trace and making the next timed event happen.
 
+- undo works, but redo doesn't
+
 Desirable features
 ------------------
 
-- store parameters of raised events
-    (not just the last parameter value)
+- store user actions:
+    motivation
+      1. make history explainable
+      2. history uses less memory
 
 - use <meter> element in top panel to indicate when timed transition is due.
 

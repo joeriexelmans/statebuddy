@@ -15,10 +15,10 @@ export const [parkingLotAbstractSyntax, parkingLotErrors] = parseStatechart(comp
 type CarState = "nocar" | "waiting" | "passing" | "passed" | "accident";
 
 type ParkingLotState = {
-  ticket: boolean;
-  canPay: boolean;
+  ticket: number | null;
+  payment: number | null;
 
-  numCars: number;
+  cars: number[];
   capacity: number,
   countedCars: number;
 
@@ -59,7 +59,9 @@ export function ParkingLot({state, speed, raiseUIEvent}: PlantRenderProps<Parkin
   <rect id="svg_103" height="3.2788" width="18.03342" y="472.97807" x="538.55768" stroke="#000000" fill="#000000"/>
 
   {/* Ticket from ticket machine */}
-  {state.ticket && <rect id="svg_104" height="13.93492" width="10.65611" y="473.38792" x="542.65618" stroke="#000000" fill="#fff9ce"/>}
+  {(state.ticket !== null) && <g transform="translate(543 473 )">
+    <TicketSVG id={state.ticket} />
+  </g>}
 
   {/* Payment machine */}
   <g transform="translate(30 50)">
@@ -68,13 +70,12 @@ export function ParkingLot({state, speed, raiseUIEvent}: PlantRenderProps<Parkin
   <text textAnchor="start" fontFamily="monospace" fontSize="24" strokeWidth="0" id="svg_108" y="378.71245" x="240.59636" stroke="#000000" fill="#000000">€</text>
   </g>
 
-  {[0,1,2,3,4,5,6].splice(0, state.numCars).map(i => <g key={i} transform={`translate(${162+i*80+(2*i%3)} ${102+(i-1)%5})`}>
+  {state.cars.map((ticketID, i) => <g key={i} transform={`translate(${162+i*80+(2*i%3)} ${102+(i-1)%5})`}>
     {(i % 3 === 0) ? <CarBackSVG/> : <CarFrontSVG/>}
+    <g transform="translate(0 30)">
+      <TicketSVG id={ticketID}/>
+    </g>
   </g>)}
-  
-
-
-
 
   {/* Entry sensors */}
 
@@ -145,7 +146,7 @@ export function ParkingLot({state, speed, raiseUIEvent}: PlantRenderProps<Parkin
 <div style={{fontWeight: 'bolder', width: '100%'}}>
   <div style={{width: '100%', }}>
     <button style={{width: '50%'}}
-      disabled={state.exitCar === "nocar" || state.exitCar === "waiting" && state.numCars === state.capacity || state.exitCar === "passed" && !state.exitBarrierOpen || state.exitCar === "accident"}
+      disabled={state.exitCar === "nocar" || state.exitCar === "waiting" && state.cars.length === state.capacity || state.exitCar === "passed" && !state.exitBarrierOpen || state.exitCar === "accident"}
       onClick={() => raiseUIEvent({name: "exReverse"})}>🠝 {{"nocar": "", "waiting": "UN-LEAVE (RE-PARK)", "passing": "REVERSE", "passed": "REVERSE", "accident": "ACCIDENT!"}[state.exitCar]} 🠝</button>
     <button style={{width: '50%'}}
       disabled={(state.entryCar === "passing" || state.entryCar === "waiting") && !state.entryBarrierOpen || state.entryCar === "accident"}
@@ -154,14 +155,23 @@ export function ParkingLot({state, speed, raiseUIEvent}: PlantRenderProps<Parkin
   <div style={{width: '100%', }}>
     <button style={{width: '50%'}}
       disabled={state.exitCar !== "waiting"}
-      onClick={() => raiseUIEvent({name: state.canPay ? "pay" : "scanTicket"})}>{state.exitCar === "waiting" ? state.canPay ? "PAY" : "SCAN TICKET" : "_"}</button>
+      onClick={() => raiseUIEvent((state.payment === null)
+        ? {name:  "scanTicket"}
+        : {name: "pay", param: state.payment})}
+      >
+        {state.exitCar === "waiting"
+          ? ((state.payment === null)
+            ? "SCAN TICKET"
+            : `PAY €${Math.ceil(state.payment*100)/100}`)
+          : "_"}
+    </button>
     <button style={{width: '50%'}}
-      disabled={state.entryCar !== "waiting" || !state.ticket}
+      disabled={state.entryCar !== "waiting" || state.ticket === null}
       onClick={() => raiseUIEvent({name: "takeTicket"})}>TAKE TICKET</button>
   </div>
   <div style={{width: '100%'}}>
     <button style={{width: '50%'}}
-      disabled={state.numCars === 0 && state.exitCar === "nocar" || state.exitCar === "accident" || state.exitCar === "waiting" && !state.exitBarrierOpen}
+      disabled={state.cars.length === 0 && state.exitCar === "nocar" || state.exitCar === "accident" || state.exitCar === "waiting" && !state.exitBarrierOpen}
       onClick={() => raiseUIEvent({name: "exProceed"})}>🠟 {{"nocar": "LEAVE", "waiting": "LEAVE", "passing": "LEAVE", "passed": "LEAVE", "accident": "ACCIDENT!"}[state.exitCar]} 🠟</button>
     <button style={{width: '50%'}}
       disabled={state.entryCar === "nocar" || state.entryCar === "passed" && !state.entryBarrierOpen || state.entryCar === "accident"}
@@ -169,8 +179,8 @@ export function ParkingLot({state, speed, raiseUIEvent}: PlantRenderProps<Parkin
   </div>
   <div style={{width: '100%', height: 12}}></div>
   <div style={{width: '100%'}}>
-    <button style={{width: '50%'}} disabled={false} onClick={() => raiseUIEvent({name: "openExit"})}>MANUALLY OPEN BARRIER</button>
-    <button style={{width: '50%'}} disabled={false} onClick={() => raiseUIEvent({name: "openEntry"})}>MANUALLY OPEN BARRIER</button>
+    <button style={{width: '50%'}} disabled={false} onClick={() => raiseUIEvent({name: "forceExit"})}>FORCE EXIT</button>
+    <button style={{width: '50%'}} disabled={false} onClick={() => raiseUIEvent({name: "forceEntry"})}>FORCE ENTRY</button>
   </div>
   </div>
   </>;
@@ -251,6 +261,14 @@ export function SceneSVG() {
   </g>
 }
 
+export function TicketSVG({id}: {id: number}) {
+  return <>
+    <rect id="svg_104" height="13.93492" width="11" y="0" x="0" stroke="#000000" fill="#fff9ce"/>
+    <text y={12} x={5.5} textAnchor="middle">{id}</text>
+  </>;
+}
+
+
 export function BarrierSVG({isOpen}: {isOpen: boolean}) {
   return (<g>
       <g transform={`rotate(${90*Number(isOpen)})`}>
@@ -326,12 +344,14 @@ const parkingLotPlantSpec: StatechartPlantSpec<ParkingLotState> = {
               : state.rtconfig.mode.has(parkingLotAbstractSyntax.tag2State.get("#exitPassed")!.uid,) ? "passed"
               : "accident",
 
-      numCars: state.rtconfig.environment.get("numCars", {kind: "state", thing: parkingLotAbstractSyntax.root}),
+      cars: state.rtconfig.environment.get("cars", {kind: "state", thing: parkingLotAbstractSyntax.root}),
       capacity: state.rtconfig.environment.get("capacity", {kind: "state", thing: parkingLotAbstractSyntax.root}),
-      countedCars: state.rtconfig.environment.get("countedCars", {kind: "state", thing: parkingLotAbstractSyntax.root}),
+      // countedCars: state.rtconfig.environment.get("countedCars", {kind: "state", thing: parkingLotAbstractSyntax.root}),
 
-      ticket: state.rtconfig.mode.has(parkingLotAbstractSyntax.tag2State.get("#ticket")!.uid,),
-      canPay: state.rtconfig.mode.has(parkingLotAbstractSyntax.tag2State.get("#pay")!.uid,),
+      ticket: state.rtconfig.mode.has(parkingLotAbstractSyntax.tag2State.get("#ticket")!.uid)
+        ? state.rtconfig.environment.get("printedID", {kind: "state", thing: parkingLotAbstractSyntax.tag2State.get("#ticket")!})
+        : null,
+      payment: state.rtconfig.mode.has(parkingLotAbstractSyntax.tag2State.get("#pay")!.uid) ? state.rtconfig.environment.get("amount", {kind: "state", thing: parkingLotAbstractSyntax.tag2State.get("#pay")!}) : null,
     }
   },
   render: ParkingLot,
@@ -346,8 +366,8 @@ const parkingLotPlantSpec: StatechartPlantSpec<ParkingLotState> = {
     {kind: "event", event: "scanTicket"},
     {kind: "event", event: "pay"},
 
-    {kind: "event", event: "openEntry"},
-    {kind: "event", event: "openExit"},
+    {kind: "event", event: "forceEntry"},
+    {kind: "event", event: "forceExit"},
   ],
   signals: [
     "s0", "s1", "s2", "s3",
