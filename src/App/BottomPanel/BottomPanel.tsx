@@ -68,7 +68,7 @@ export function BottomPanel({
           <Tooltip tooltip="MTL properties are checked with a Python library, which runs in your browser via Pyodide. Each worker is an instance of Python running in its own thread." above>
             MTL worker pool:
             &nbsp;
-            <span>{nBooting} booting / {nReady} ready / {nWorking} working</span>
+            <span>{nBooting} booting / {nReady} idle / {nWorking} working</span>
           </Tooltip>
           &nbsp;
           <Toolbar>

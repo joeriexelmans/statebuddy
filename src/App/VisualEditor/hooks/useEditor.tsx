@@ -349,22 +349,18 @@ export function useEditor(
   );
 
   const onEditText = useCallback(() => {
-    replace(state => {
-      if (state.selection.size === 1) {
-        for (const [uid, parts] of state.selection) {
-          if (parts.size === 1) {
-            for (const part of parts) {
-              if (part === "text") {
-                beginEdit(uid);
-              }
+    if (state.selection.size === 1) {
+      for (const [uid, parts] of state.selection) {
+        if (parts.size === 1) {
+          for (const part of parts) {
+            if (part === "text") {
+              beginEdit(uid);
             }
           }
         }
       }
-      // we don't actually change the state:
-      return state;
-    })
-  }, [replace, beginEdit]);
+    }
+  }, [state.selection, beginEdit]);
     
   useShortcuts([
     {keys: ["o"], action: useCallback(() => convertSelection("or"), [convertSelection])},

@@ -164,17 +164,17 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
   const beginEdit = useCallback((uid: string) => {
     // @ts-ignore
     setAppState.setView.setModal._setShallow((modal: ModalState) => {
-      const text = editorState?.texts.find(t => t.uid === uid)?.text;
+      const text = editorState.texts.find(t => t.uid === uid)?.text;
       if (text !== undefined) {
         return {
           kind: "txtEdit" as const,
           text,
           uid,
-        };        
+        };
       }
       return modal;
     });
-  }, [editorState.texts]);
+  }, [editorState.texts, setAppState.setView.setModal._setShallow]);
 
   const editorStuff = useEditor(
     appState.view.topPanel.mouseMap,
