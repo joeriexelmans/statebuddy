@@ -143,7 +143,7 @@ export function SpyingApp() {
     }
   }, [paused]);
 
-  return <div style={{display: 'flex', flexDirection: 'column', overflow: 'hidden'}}>
+  return <div style={{display: 'flex', flexDirection: 'column', overflow: 'hidden', width: '100vw'}}>
     <div
       style={{display: 'flex', flexDirection: 'column', overflow: 'hidden', flexGrow: 1}}
     >
@@ -165,7 +165,6 @@ export function SpyingApp() {
           width: paused ? cur.w.width : undefined,
           height: paused ? cur.w.height : undefined,
           overflow: 'hidden',
-          flexGrow: 1,
         }}>
           <PersistentApp appState={appState} setAppState={setAppStateButKeepHistory} />
           {cur && paused &&
