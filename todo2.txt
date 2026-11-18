@@ -18,9 +18,9 @@ Bugs
 
 - entry/exit action belonging to 'default state'-arrow should cause syntax error.
 
-- prevent shapes from being dragged outside scrollable view.
+- [DONE] prevent shapes from being dragged outside scrollable view.
 
-- allow drawing rountangles from any corner to any corner (not just top,left -> bottom,right)
+- [DONE] allow drawing rountangles from any corner to any corner (not just top,left -> bottom,right)
 
 Desirable features
 ------------------
