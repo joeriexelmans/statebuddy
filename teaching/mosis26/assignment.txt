@@ -80,7 +80,7 @@ Entry procedure
 
     R8. When a car has passed through the opened entry-barrier (e.g., S0 de-activates WHILE S1 active), the barrier immediately CLOSES. The system must also record the ticket ID's corresponding timestamp of entry.
         Tips:
-            - use the `simtime()` function to get the current time (in milliseconds of simulated time)
+            - use the `_simtime` variable to get the current time (in milliseconds of simulated time)
             - use a dictionary that maps ticket IDs to entry-times.
 
 Exit procedure (very similar to entry procedure, I'm sorry)
@@ -88,7 +88,7 @@ Exit procedure (very similar to entry procedure, I'm sorry)
 
     R9. When a car arrives at the exit (-> S2 activates), where the payment machine is located, it may scan its ticket. payment machine should then prompt the driver to pay for the amount of time spent on the parking lot.
         Tips:
-            - use the `simtime()` function to get the current time (in milliseconds of simulated time)
+            - use the `_simtime` variable to get the current time (in milliseconds of simulated time)
     
     R12. If a driver has payed, the exit traffic light becomes GREEN and the exit barrier OPENS.
 
@@ -105,10 +105,10 @@ Exit procedure (very similar to entry procedure, I'm sorry)
 Safety
 ------
 
-    R18. SAFETY: While a car is PASSING THROUGH an opened barrier (e.g., S0 AND S1 are active), the barrier MUST NEVER CLOSE. Failure to meet this requirement will cause a major accident (with fire (try it :)).
+    R17. SAFETY: While a car is PASSING THROUGH an opened barrier (e.g., S0 AND S1 are active), the barrier MUST NEVER CLOSE. Failure to meet this requirement will cause a major accident (with fire (try it :)).
 
 Manual override
 ---------------
 
-    R19. Either barrier (entry/exit) can be manually opened by a parking lot operator. Manually opening a barrier is a discrete event (e.g., a button press), and the system should respond by immediately OPENING the barrier and setting its traffic light to GREEN. After 3 seconds, the traffic light becomes RED and then one second later (= 4 seconds total after manual override), the barrier CLOSES (unless if a car is PASSING THROUGH (cfr. R18), then the barrier closes as soon as no car is PASSING THROUGH).
+    R18. Either barrier (entry/exit) can be manually opened by a parking lot operator. Manually opening a barrier is a discrete event (e.g., a button press), and the system should respond by immediately OPENING the barrier and setting its traffic light to GREEN. After 3 seconds, the traffic light becomes RED and then one second later (= 4 seconds total after manual override), the barrier CLOSES (unless if a car is PASSING THROUGH (cfr. R17), then the barrier closes as soon as no car is PASSING THROUGH).
 
