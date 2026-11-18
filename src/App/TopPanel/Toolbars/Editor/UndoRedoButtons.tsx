@@ -7,7 +7,6 @@ import { UndoCallbacks } from "../../../../hooks/useUndo";
 import { DoubleClickButton } from "../../../Components/DoubleClickButton";
 import { Tooltip } from "../../../Components/Tooltip";
 import { VisualEditorState } from "../../../VisualEditor/VisualEditor.state";
-import { KeyInfoVisible, KeyInfoHidden } from "../../KeyInfo";
 
 export const UndoRedoButtons = memo(function UndoRedoButtons({
   KeyInfo,
@@ -20,7 +19,6 @@ export const UndoRedoButtons = memo(function UndoRedoButtons({
   historyLength: number,
   futureLength: number,
 }) {
-
   useShortcuts([
     {keys: ["Ctrl", "z"], action: undo},
     {keys: ["Ctrl", "Shift", "Z"], action: redo},

@@ -23,7 +23,7 @@ function callIfFn<T>(callback: SetStateAction<T>, oldValue: T) {
 }
 
 export function useUndo<T>(setState: Dispatch<SetStateAction<UndoState<T>>>) {
-
+  
   const callbacks = useMemo(() => {
     // creates new entry in undo history
     // future is lost
@@ -40,10 +40,11 @@ export function useUndo<T>(setState: Dispatch<SetStateAction<UndoState<T>>>) {
     // overwrites last entry in undo history
     // we do this while dragging shapes: if every mouse move event would create a new history entry, our history would get quite polluted.
     const replace: Dispatch<SetStateAction<T>> = (callback) => {
-      setState(({history, current}) => ({
+      setState(({history, current, future}) => ({
         history,
         current: callIfFn(callback, current),
-        future: [], // <-- forget future :(
+        // future: [], // <-- forget future :(
+        future,
       }));
     };
 

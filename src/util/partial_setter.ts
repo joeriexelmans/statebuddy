@@ -1,4 +1,4 @@
-import { Dispatch, SetStateAction, useMemo } from "react";
+import { Dispatch, SetStateAction } from "react";
 
 export function makePartialSetter<T, K extends keyof T>(fullSetter: Dispatch<SetStateAction<T>>, key: K): Dispatch<SetStateAction<T[typeof key]>> {
   return (newValueOrCallback: T[K] | ((oldValue: T[K]) => T[K])) => {
@@ -6,8 +6,7 @@ export function makePartialSetter<T, K extends keyof T>(fullSetter: Dispatch<Set
       const newValue = (typeof newValueOrCallback === 'function')
         ? (newValueOrCallback as (newValue: T[K]) => T[K])(oldFullValue[key] as T[K])
         : newValueOrCallback as T[K];
-      
-      
+
       if (newValue === oldFullValue[key]) {
         return oldFullValue; // is this an optimization?
       }

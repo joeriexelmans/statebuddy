@@ -4,7 +4,7 @@ import '@fontsource/roboto-condensed';
 import '@fontsource/roboto';
 import '@fontsource/roboto-mono';
 
-import { Dispatch, PropsWithChildren, ReactElement, SetStateAction, useCallback, useMemo, useState } from "react";
+import { Dispatch, PropsWithChildren, SetStateAction, useCallback, useMemo, useState } from "react";
 
 import { useDisplayTime } from "@/hooks/useDisplayTime";
 import { useLocalStorage } from "@/hooks/usePersistentState";
@@ -16,14 +16,13 @@ import { AppState, defaultAppState } from "./App.state";
 import { BottomPanel } from "./BottomPanel/BottomPanel";
 import { DebugPanel } from "./BottomPanel/Debug";
 import { FindReplace } from "./BottomPanel/FindReplace";
-import { Greeter } from "./BottomPanel/Greeter";
 import { Plot } from "./BottomPanel/Plot";
 import { PropertyTable } from "./BottomPanel/PropertyTable";
 import { Tooltip } from "./Components/Tooltip";
 import { WithShadow } from "./Components/WithShadow";
 import { useCoupledExecution } from "./hooks/useCoupledExecution";
 import { useDelayedEffect } from "../hooks/useDelayedEffect";
-import { UndoState, useUndo } from "../hooks/useUndo";
+import { useUndo } from "../hooks/useUndo";
 import { useParser } from "./hooks/useParser";
 import { useCheckProperties } from "./hooks/useCheckProperties";
 import { useInteractiveSimulator } from "./hooks/useSimulator";
@@ -134,20 +133,6 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
     })),
   }), [propertyResults, preparedTraceForPlot]);
 
-
-  // const onOpen = useCallback((modelName: string) => {
-  //   editorState && setModal(<OpenFile
-  //     onClose={hideModal}
-  //     properties={appState.sideBar.propertyEditor.properties}
-  //     savedTraces={appState.sideBar.traces.savedTraces}
-  //     setSavedTraces={setSavedTraces}
-  //     editorState={editorState}
-  //     bytes={modelSize.original}
-  //     modelName={modelName}
-  //     setProperties={setProperties}
-  //     replaceModel={historyCallbacks.commit}/>);
-  // }, [appState.sideBar, editorState, modelSize, historyCallbacks]);
-
   const onSave = useCallback((modelName: string) => {
     downloadObjectAsJson(
       appState,
@@ -155,7 +140,7 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
   }, [editorState, appState]);
 
   // The state of the visual editor (and all previous and future states)
-  const historyCallbacks = useUndo(setAppState.setSyntax.setEditorState._setShallow);
+  const historyCallbacks = useUndo(setAppState.setSyntax.setEditorState._setShallow);  
 
   // @ts-ignore
   const onAboutStateBuddy = useCallback(() => setAppState.setView.setModal._setShallow({kind: "about"}), []);

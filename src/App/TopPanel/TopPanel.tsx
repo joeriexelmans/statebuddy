@@ -41,9 +41,6 @@ export type TopPanelProps = {
   displayTime: number,
   refreshDisplayTime: () => void,
 
-  // saving / downloading
-  // modelSize: ModelSize,
-
   trial: Trial,
 
   onAboutStateBuddy: () => void,

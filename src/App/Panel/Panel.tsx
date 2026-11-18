@@ -37,7 +37,7 @@ export const Panel = memo(function Panel({items, setItems, globalProps}: PanelPr
           extraButtons={<div>
             {/* @ts-ignore */}
             <MoveUpDown i={i} ls={items} setter={setItems}/>
-            <button onClick={() => {console.log('click'); setItems(items => items.toSpliced(i, 1))}}>
+            <button onClick={() => {setItems(items => items.toSpliced(i, 1))}}>
               <CloseIcon fontSize="small"/>
             </button>
           </div>}

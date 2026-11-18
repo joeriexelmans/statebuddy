@@ -400,7 +400,6 @@ export function ensureSelectionWithinEditorBounds(s: VisualEditorState): VisualE
     texts: s.texts.filter(isSelected),
   };
   const bbox = shapesBBox(selectedShapes)!;
-  console.log(bbox);
   
   const moveAwayFromTopLeft = {
     x: Math.max(0, ARROW_BOUNDS.topLeft.x - bbox.topLeft.x),
