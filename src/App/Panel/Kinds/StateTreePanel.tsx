@@ -4,7 +4,7 @@ import { memo, useState } from "react";
 import { ConcreteState, OrState, AbstractSyntax, Transition, TransitionSrcTgt, UnstableState, stateDescription } from "../../../languages/statecharts/abstract_syntax";
 import { PseudoStateIcon, RountangleIcon } from "../../TopPanel/Icons";
 import { Tooltip } from "../../Components/Tooltip";
-import { downloadObjectAsJson } from "../../../util/download_json";
+import { downloadObjectAsJson } from "../../../util/download_file";
 
 export const StateTree = memo(function StateTree(props: {root: ConcreteState | UnstableState, dashed: boolean}) {
   const description = stateDescription(props.root);

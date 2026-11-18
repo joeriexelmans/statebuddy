@@ -1,12 +1,30 @@
 import { chunkedBinarySearch, chunkedFirst, chunkedIdxToFlat, chunkedLast, chunkedLength, chunkedPush, flatIdxToChunked } from "@/util/chunked_array";
 import { diffJSON, explainDiff } from "@/util/diff";
-import { MouseEvent, SetStateAction, useCallback, useState } from "react";
+import { ChangeEvent, ChangeEventHandler, MouseEvent, SetStateAction, useCallback, useState } from "react";
 import { AppState } from "./App.state";
 import { PersistentApp } from "./PersistentApp";
 
 import cursorSVG from "../assets/cursor.svg";
 import { useShortcuts } from "@/hooks/useShortcuts";
 import { MouseIcon } from "./TopPanel/MouseIcon";
+import { TwoStateButton } from "./Components/TwoStateButton";
+
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import FileUploadIcon from '@mui/icons-material/FileUpload';
+import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
+import PauseIcon from '@mui/icons-material/Pause';
+import SkipNextIcon from '@mui/icons-material/SkipNext';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+
+import { Encoder } from "cbor-x";
+import { deflateBuffer, inflateBuf } from "@/compression/deflate";
+import { downloadArrayBuffer } from "@/util/download_file";
+
+const CBOR = new Encoder({
+  structuredClone: true,
+  // useRecords: true, // <-- no difference in size, not compatible with other CBOR implementations
+  // pack: true, // <-- packing only slightly reduces encoded size, and if we DEFLATE the resulting buffer, there is no difference!
+});
 
 type AppStateWithCursor = {
   s: AppState | undefined,
@@ -90,6 +108,33 @@ export function SpyingApp() {
     t: Date.now(),
   }));
 
+  const now = new Date(appHistory.h[appHistory.i][appHistory.j].t);
+
+  const onExport = useCallback(async () => {
+    // @ts-ignore: this works...
+    const cborBuf = CBOR.encode(appHistory.h) as ArrayBuffer;
+    const cborZipBuf = await deflateBuffer(new Uint8Array(cborBuf));
+    downloadArrayBuffer(cborZipBuf, "application/cbor", (appState?.view.topPanel.modelName||"untitled") + ".sblog");
+  }, [appHistory.h]);
+
+  const onImport = useCallback(async (e: ChangeEvent<HTMLInputElement>) => {
+    try {
+      const file = e.target.files?.[0];
+      if (!file) {
+        alert('no file!!');
+        return;
+      }
+      const cborZipBuf = await file.arrayBuffer();
+      const cborBuf = await inflateBuf(new Uint8Array(cborZipBuf));
+      const h = CBOR.decode(new Uint8Array(cborBuf));
+      setAppHistory({h, i: h.length-1, j: h.at(-1).length-1});
+      setPaused(true);
+    } catch (e) {
+      // @ts-ignore
+      alert('import failed!! ' + e.message);
+    }
+  }, [setAppHistory, setPaused]);
+
   return <div style={{display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative'}}>
     <div
       style={{display: 'flex', flexDirection: 'column', overflow: 'hidden', flexGrow: 1}}
@@ -101,37 +146,51 @@ export function SpyingApp() {
       >
         <PersistentApp appState={appState} setAppState={setAppStateButKeepHistory} />
       </div>
-      {paused && cur && <input
-        type="range"
-        style={{width: '100vw'}}
-        min={0}
-        max={chunkedLength(appHistory.h)-1}
-        value={chunkedIdxToFlat(appHistory)}
-        // min={chunkedFirst(appHistory.h).t}
-        // max={chunkedLast(appHistory.h)!.t}
-        // value={cur.t}
-        onChange={e => {
-          const target = Math.round(Number(e.target.value));
-          setAppHistory(({h}) => ({
-            h,
-            ...flatIdxToChunked(target)
-          }));
-        }}
-        // onChange={e => {
-        //   const targetTimestamp = Number(e.target.value);
-        //   const found = chunkedBinarySearch(
-        //     appHistory.h,
-        //     {t: Infinity} as AppStateWithCursor,
-        //     (s, n) => {
-        //       if (targetTimestamp < s.t) {return "toobig"}
-        //       else if (targetTimestamp >= n.t) {return "toosmall"}
-        //       else if (targetTimestamp - s.t < n.t - targetTimestamp) return "eq-smaller"; else return "eq-bigger";
-        //     });
-        //   setAppHistory(({h}) => ({
-        //     h,
-        //     ...found,
-        //   }))}}
-      />}
+      {paused && cur && <div style={{display: 'flex', width: '100vw', alignItems: 'center'}}>
+        <div style={{width: 'fit-content'}}>app paused</div>
+        &nbsp;
+        {/* <button disabled={paused} onClick={() => setPaused(p => !p)} title="pause app"><PauseIcon fontSize="small"/></button> */}
+        <input
+          disabled={!paused}
+          type="range"
+          style={{flexGrow: 1}}
+          min={0}
+          max={chunkedLength(appHistory.h)-1}
+          value={chunkedIdxToFlat(appHistory)}
+          onChange={e => {
+            const target = Math.round(Number(e.target.value));
+            setAppHistory(({h}) => ({
+              h,
+              ...flatIdxToChunked(target)
+            }));
+          }}
+          // onChange={e => {
+          //   const targetTimestamp = Number(e.target.value);
+          //   const found = chunkedBinarySearch(
+          //     appHistory.h,
+          //     {t: Infinity} as AppStateWithCursor,
+          //     (s, n) => {
+          //       if (targetTimestamp < s.t) {return "toobig"}
+          //       else if (targetTimestamp >= n.t) {return "toosmall"}
+          //       else if (targetTimestamp - s.t < n.t - targetTimestamp) return "eq-smaller"; else return "eq-bigger";
+          //     });
+          //   setAppHistory(({h}) => ({
+          //     h,
+          //     ...found,
+          //   }))}}
+        />
+        <button disabled={!paused} onClick={() => {setAppHistory(h => ({...h, i: h.h.length-1, j: h.h.at(-1)!.length-1})); setPaused(false)}} title="resume app">
+          {/* <SkipNextIcon fontSize="small"/> */}
+          <PlayArrowIcon fontSize="small"/>
+          <FiberManualRecordIcon fontSize="small"/>
+        </button>
+        &nbsp;
+        <div style={{width: 'fit-content'}}>{now.toISOString()}</div>
+        &nbsp;
+        <input type="file" id="fileInput" hidden onChange={onImport}/>
+        <button title="import recording" onClick={() => {document.getElementById("fileInput")?.click()}}><FileUploadIcon fontSize="small"/></button>
+        <button title="export recording" onClick={onExport}><FileDownloadIcon fontSize="small"/></button>
+      </div>}
     </div>
 
     {cur && paused &&

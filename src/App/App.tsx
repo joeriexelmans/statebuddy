@@ -9,7 +9,7 @@ import { Dispatch, PropsWithChildren, SetStateAction, useCallback, useMemo, useS
 import { useDisplayTime } from "@/hooks/useDisplayTime";
 import { useLocalStorage } from "@/hooks/usePersistentState";
 import { useMtlWorkerPool } from "@/mtl-checker/useMtlWorkerPool";
-import { downloadObjectAsJson } from "@/util/download_json";
+import { downloadObjectAsJson } from "@/util/download_file";
 import { formatDateTime } from "@/util/util";
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import { AppState, defaultAppState } from "./App.state";
