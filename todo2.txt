@@ -18,6 +18,8 @@ Bugs
 
 - entry/exit action belonging to 'default state'-arrow should cause syntax error.
 
+- prevent shapes from being dragged outside scrollable view.
+
 Desirable features
 ------------------
 
