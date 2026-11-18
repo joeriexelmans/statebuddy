@@ -153,7 +153,7 @@ export function SpyingApp() {
         alignContent: 'center',
         alignItems: paused ? 'center' : undefined,
         justifyContent: 'center',
-        backgroundColor: 'light-dark(rgb(107, 107, 167), #305b73)',
+        backgroundColor: 'light-dark(#1b45ff52, rgba(28, 71, 100, 0.377))',
       }}
         onMouseMove={mouseEventHandler}
         onMouseDown={mouseEventHandler}
