@@ -15,20 +15,37 @@ export const [parkingLotAbstractSyntax, parkingLotErrors] = parseStatechart(comp
 type CarState = "nocar" | "waiting" | "passing" | "passed" | "accident";
 
 type ParkingLotState = {
+  // the ID of the ticket currently sticking out of the ticket machine.
+  // null if there is no ticket sticking out of the ticking machine.
   ticket: number | null;
+
+  // the amount of money the payment machine is requesting.
+  // null if no payment is being requested.
   payment: number | null;
 
+  // the ID on the ticket of the car that is trying to leave the parking lot.
+  // special values:
+  //   null if there is no car trying to leave.
+  //   -1 if the car that is trying to leave did not take a ticket when entering.
+  leavingCarTicketID: number | null;
+
+  // array of size 0-7 of ticket IDs taken by the cars that have parked
   cars: number[];
+  // always 7
   capacity: number,
+  // a variable that is controlled by the controller statechart (by carsInc/carsDec event).
+  // the size of the 'cars' array tells us how many cars there truly are in the parking lot.
+  // 'countedCars' is the number of cars the controller statechart makes us believe there are.
+  // (capacity-countedCars) is the number displayed on the sign at the entry.
   countedCars: number;
 
-  entryBarrierOpen: boolean;
+  entryBarrierOpen: boolean; // true means OPEN, false means CLOSED
   entryLightGreen: boolean; // false means red
-  entryCar: CarState;
+  entryCar: CarState; // is there a car at the entrance, and where is it exactly? (before/passing/after barrier)
 
-  exitBarrierOpen: boolean;
+  exitBarrierOpen: boolean; // true means OPEN, false means CLOSED
   exitLightGreen: boolean; // false means red
-  exitCar: CarState;
+  exitCar: CarState; // is there a car at the exit, and where is it exactly? (before/passing/after barrier)
 }
 
 const laserThin = 1.5;
@@ -73,7 +90,8 @@ export function ParkingLot({state, speed, raiseUIEvent}: PlantRenderProps<Parkin
   {state.cars.map((ticketID, i) => <g key={i} transform={`translate(${162+i*80+(2*i%3)} ${102+(i-1)%5})`}>
     {(i % 3 === 0) ? <CarBackSVG/> : <CarFrontSVG/>}
     <g transform="translate(0 30)">
-      <TicketSVG id={ticketID}/>
+      {/* The ticket the car took when it entered */}
+      {ticketID !== -1 && <TicketSVG id={ticketID}/>}
     </g>
   </g>)}
 
@@ -154,7 +172,7 @@ export function ParkingLot({state, speed, raiseUIEvent}: PlantRenderProps<Parkin
   </div>
   <div style={{width: '100%', }}>
     <button style={{width: '50%'}}
-      disabled={state.exitCar !== "waiting"}
+      disabled={state.exitCar !== "waiting" || state.leavingCarTicketID !== -1}
       onClick={() => raiseUIEvent((state.payment === null)
         ? {name:  "scanTicket"}
         : {name: "pay", param: state.payment})}
@@ -350,6 +368,9 @@ const parkingLotPlantSpec: StatechartPlantSpec<ParkingLotState> = {
 
       ticket: state.rtconfig.mode.has(parkingLotAbstractSyntax.tag2State.get("#ticket")!.uid)
         ? state.rtconfig.environment.get("printedID", {kind: "state", thing: parkingLotAbstractSyntax.tag2State.get("#ticket")!})
+        : null,
+      leavingCarTicketID: state.rtconfig.mode.has(parkingLotAbstractSyntax.tag2State.get("#exitWaiting")!.uid)
+        ? state.rtconfig.environment.get("leavingID", {kind: "state", thing: parkingLotAbstractSyntax.tag2State.get("#exitWaiting")!})
         : null,
       payment: state.rtconfig.mode.has(parkingLotAbstractSyntax.tag2State.get("#pay")!.uid) ? state.rtconfig.environment.get("amount", {kind: "state", thing: parkingLotAbstractSyntax.tag2State.get("#pay")!}) : null,
     }
