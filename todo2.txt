@@ -20,6 +20,8 @@ Bugs
 
 - prevent shapes from being dragged outside scrollable view.
 
+- allow drawing rountangles from any corner to any corner (not just top,left -> bottom,right)
+
 Desirable features
 ------------------
 
@@ -27,6 +29,8 @@ Desirable features
     motivation
       1. make history explainable
       2. history uses less memory
+
+- fork/join for synchronization of orthogonal regions
       
 - use <meter> element in top panel to indicate when timed transition is due.
 
