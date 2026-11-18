@@ -70,6 +70,7 @@ const BINARY_OPERATOR_MAP: Map<string, (a: any, b: any) => any> = new Map([
 
   // equality works on any types, so no check
   ["==", (a: any, b: any) => a === b],
+  ["!=", (a: any, b: any) => a !== b],
 ]);
 
 
