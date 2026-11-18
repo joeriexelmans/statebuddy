@@ -1,10 +1,9 @@
-import {  ConcreteState, HistoryState, OrState, UnstableState, AbstractSyntax, stateDescription, Transition, computeArena, AbstractState, TransitionSrcTgt } from "../abstract_syntax";
+import {  ConcreteState, HistoryState, OrState, UnstableState, AbstractSyntax, stateDescription, Transition, computeArena, TransitionSrcTgt } from "../abstract_syntax";
 import { parse as parseLabel, SyntaxError } from "../transitionlabel/parser";
 import { Topology } from "./detect_topology";
 import { memoize } from "@/util/util";
 import { Expression, getLhsRefs, Lhs } from "../../actionlang/abstract_syntax";
 import { ParsedText, Action } from "../transitionlabel/abstract_syntax";
-import { StateTree } from "@/App/Panel/Kinds/StateTreePanel";
 
 export type TraceableError = {
   shapes: string[]; // the shape(s) in concrete syntax to which the error is related.
@@ -113,6 +112,8 @@ export function parseStatechart(topology: Topology): [AbstractSyntax, TraceableE
   const transitions = new Map<string, Transition[]>();
   const uid2Transition = new Map<string, Transition>();
 
+  const initialMarkings = new Set<string>();
+
   for (const uid of topology.arrows) {
     const srcUID = topology.arrow2SideMap.get(uid)?.[0]?.uid;
     const tgtUID = topology.arrow2SideMap.get(uid)?.[1]?.uid;
@@ -126,7 +127,8 @@ export function parseStatechart(topology: Topology): [AbstractSyntax, TraceableE
         errors.push({shapes: [uid], message: "dangling"});
       }
       else {
-        // target but no source, so we treat is as an 'initial' marking
+        // target but no source, so we treat it as an 'initial' marking
+        initialMarkings.add(uid);
         const tgtState = uid2State.get(tgtUID)!;
         if (tgtState.kind === "pseudo") {
           // maybe allow this in the future?
@@ -229,6 +231,7 @@ export function parseStatechart(topology: Topology): [AbstractSyntax, TraceableE
       }
     }
     const belongsToArrowUID = topology.text2ArrowMap.get(uid);
+
     const belongsToTransition = uid2Transition.get(belongsToArrowUID!);
     if (belongsToTransition) {
       const {src} = belongsToTransition;
@@ -268,6 +271,9 @@ export function parseStatechart(topology: Topology): [AbstractSyntax, TraceableE
           }
         }
       }
+    }
+    else if (initialMarkings.has(belongsToArrowUID!)) {
+      errors.push({shapes: [uid], message: "initial-marking cannot have label"})
     }
     else {
       // text does not belong to transition...
