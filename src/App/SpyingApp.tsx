@@ -1,6 +1,6 @@
 import { chunkedBinarySearch, chunkedFirst, chunkedIdxToFlat, chunkedLast, chunkedLength, chunkedPush, flatIdxToChunked } from "@/util/chunked_array";
 import { diffJSON, explainDiff } from "@/util/diff";
-import { ChangeEvent, ChangeEventHandler, MouseEvent, SetStateAction, useCallback, useState } from "react";
+import { ChangeEvent, ChangeEventHandler, MouseEvent, SetStateAction, useCallback, useEffect, useState } from "react";
 import { AppState } from "./App.state";
 import { PersistentApp } from "./PersistentApp";
 
@@ -28,14 +28,15 @@ const CBOR = new Encoder({
 
 type AppStateWithCursor = {
   s: AppState | undefined,
-  c: {x: number, y: number, buttons: number},
+  c: {x: number, y: number, buttons: number}, // <-- cursor state
+  w: {width: number, height: number}, // <-- window inner size
   t: number, // Unix timestamp
 }
 
 const appStart = Date.now();
 
 export function SpyingApp() {
-  const [appHistory, setAppHistory] = useState<{h: (AppStateWithCursor)[][], i: number, j: number}>({h:[[{s: undefined, c: {x:-100,y:-100,buttons:0}, t: appStart}]], i:0, j:0});
+  const [appHistory, setAppHistory] = useState<{h: (AppStateWithCursor)[][], i: number, j: number}>({h:[[{s: undefined, c: {x:-100,y:-100,buttons:0}, w: {width:window.innerWidth, height:window.innerHeight},  t: appStart}]], i:0, j:0});
   const appState = appHistory.h[appHistory.i]?.[appHistory.j]?.s;
 
   const [paused, setPaused] = useState(false);
@@ -60,7 +61,7 @@ export function SpyingApp() {
       else {
         newAppState = value;
       }
-      const newState = {s: newAppState, c: oldState.c, t};
+      const newState = {s: newAppState, c: oldState.c, t, w: oldState.w};
       const diff = diffJSON(oldState.s, newState.s);
       if (diff.kind === "nochange") return {h, i, j};
       else {
@@ -90,22 +91,13 @@ export function SpyingApp() {
     })
   }, [setAppHistory, paused]);
 
-  // useEffect(() => {
-  //   (async () => {
-  //   // @ts-ignore
-  //   const cborBuf = CBOR.encode(appHistory) as ArrayBuffer;
-  //   console.log('history:', cborBuf.byteLength);
-  //   const cborZipBuf = await deflateBuffer(new Uint8Array(cborBuf));
-  //   console.log('zipped:', cborZipBuf.byteLength);
-  //   })();
-  // }, [appHistory]);
-
   const cur = appHistory.h[appHistory.i][appHistory.j];
 
-  const mouseEventHandler = (e: MouseEvent<HTMLDivElement>) => !paused && pushState(({s}) => ({
+  const mouseEventHandler = (e: MouseEvent<HTMLDivElement>) => !paused && pushState(({s, w}) => ({
     s,
     c: {x: e.clientX, y: e.clientY, buttons: e.buttons},
     t: Date.now(),
+    w,
   }));
 
   const now = new Date(appHistory.h[appHistory.i][appHistory.j].t);
@@ -135,18 +127,60 @@ export function SpyingApp() {
     }
   }, [setAppHistory, setPaused]);
 
-  return <div style={{display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative'}}>
+  const onResize = useCallback(() => {
+    pushState(({s, c}) => ({
+      s,
+      c,
+      t: Date.now(),
+      w: {width: window.innerWidth, height: window.innerHeight},
+    }))
+  }, [pushState])
+
+  useEffect(() => {
+    if (!paused) {
+      window.addEventListener('resize', onResize);
+      return () => window.removeEventListener('resize', onResize);
+    }
+  }, [paused]);
+
+  return <div style={{display: 'flex', flexDirection: 'column', overflow: 'hidden'}}>
     <div
       style={{display: 'flex', flexDirection: 'column', overflow: 'hidden', flexGrow: 1}}
     >
-      <div style={{display: 'flex', overflow: 'hidden', flexGrow: 1}}
+      <div style={{display: 'flex',
+        overflow: 'hidden',
+        flexGrow: 1,
+        alignContent: 'center',
+        alignItems: paused ? 'center' : undefined,
+        justifyContent: 'center',
+        backgroundColor: 'light-dark(rgb(107, 107, 167), #305b73)',
+      }}
         onMouseMove={mouseEventHandler}
         onMouseDown={mouseEventHandler}
         onMouseUp={mouseEventHandler}
       >
-        <PersistentApp appState={appState} setAppState={setAppStateButKeepHistory} />
+        <div style={{
+          position: 'relative',
+          display: 'flex',
+          width: paused ? cur.w.width : undefined,
+          height: paused ? cur.w.height : undefined,
+          overflow: 'hidden',
+          flexGrow: 1,
+        }}>
+          <PersistentApp appState={appState} setAppState={setAppStateButKeepHistory} />
+          {cur && paused &&
+            <div style={{position: 'absolute', left: cur.c.x-4, top: cur.c.y-2, fontSize: 24, pointerEvents: 'none', zIndex: 100}}>
+              <img src={cursorSVG} width={cur.c.buttons ? 28 : 24}/>
+              {cur.c.buttons && <MouseIcon
+                left={Boolean(cur.c.buttons & 1)}
+                right={Boolean(cur.c.buttons & 2)}
+                middle={Boolean(cur.c.buttons & 4)}
+                /> || <></>}
+            </div>
+          }
+        </div>
       </div>
-      {paused && cur && <div style={{display: 'flex', width: '100vw', alignItems: 'center'}}>
+      {paused && cur && <div style={{display: 'flex', width: '100vw', alignItems: 'center', position: 'absolute', bottom: 0, backgroundColor: 'var(--background-color)'}}>
         <div style={{width: 'fit-content'}}>app paused</div>
         &nbsp;
         {/* <button disabled={paused} onClick={() => setPaused(p => !p)} title="pause app"><PauseIcon fontSize="small"/></button> */}
@@ -186,22 +220,13 @@ export function SpyingApp() {
         </button>
         &nbsp;
         <div style={{width: 'fit-content'}}>{now.toISOString()}</div>
+        &emsp;
+        <div style={{width: 'fit-content'}}>{cur.w.width}x{cur.w.height}</div>
         &nbsp;
         <input type="file" id="fileInput" hidden onChange={onImport}/>
         <button title="import recording" onClick={() => {document.getElementById("fileInput")?.click()}}><FileUploadIcon fontSize="small"/></button>
         <button title="export recording" onClick={onExport}><FileDownloadIcon fontSize="small"/></button>
       </div>}
     </div>
-
-    {cur && paused &&
-      <div style={{position: 'absolute', left: cur.c.x-4, top: cur.c.y-2, fontSize: 24, pointerEvents: 'none', zIndex: 100}}>
-        <img src={cursorSVG} width={cur.c.buttons ? 28 : 24}/>
-        {cur.c.buttons && <MouseIcon
-          left={Boolean(cur.c.buttons & 1)}
-          right={Boolean(cur.c.buttons & 2)}
-          middle={Boolean(cur.c.buttons & 4)}
-          /> || <></>}
-      </div>
-    }
   </div>;
 }

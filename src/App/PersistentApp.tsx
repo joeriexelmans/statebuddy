@@ -169,7 +169,7 @@ export function PersistentApp({appState, setAppState}: WithSetters<{appState: Ap
     },
   );
 
-  return <div className={styles.App} style={{display: 'flex', overflow: 'hidden'}}>
+  return <div className={styles.App} style={{display: 'flex', overflow: 'hidden', flexGrow: 1}}>
     {err ? <CrashScreen>
             <h1>Failed to restore state from URL</h1>
             <div style={{height: '2em'}}/>
@@ -186,7 +186,7 @@ export function PersistentApp({appState, setAppState}: WithSetters<{appState: Ap
               setAppState={setAppState as Dispatch<SetStateAction<AppState>>}
               modelSize={modelSize}
             />
-          : <>Loading ...</>
+          : <div style={{flexGrow: 1, alignSelf: 'stretch', width: '100%'}}>Loading ...</div>
     }
   </div>
 }
