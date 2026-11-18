@@ -1,7 +1,8 @@
-import { Rect2D, Vec2D, Line2D, euclideanDistance, intersectLines, isWithin, lineBBox, subtractV2D, roundRect2D, roundVec2D, roundLine2D, addV2D, scaleV2D } from "../../util/geometry";
-import { ARROW_SNAP_THRESHOLD, HISTORY_RADIUS, ROUNTANGLE_RADIUS, TEXT_SNAP_THRESHOLD } from "../../App/parameters";
+import { Rect2D, Vec2D, Line2D, euclideanDistance, intersectLines, isWithin, lineBBox, subtractV2D, roundRect2D, roundVec2D, roundLine2D, addV2D, scaleV2D, ensureVecWithinBounds, rectToAbsolute, translateRect, rectFromAbsolute, area, translateAnchored, translateLine } from "../../util/geometry";
+import { ARROW_SNAP_THRESHOLD, CORNER_HELPER_RADIUS, EDITOR_HEIGHT, EDITOR_WIDTH, HISTORY_RADIUS, ROUNTANGLE_RADIUS, TEXT_SNAP_THRESHOLD } from "../../App/parameters";
 import {  Parts, Selection, VisualEditorState } from "../../App/VisualEditor/VisualEditor.state";
 import { sides } from "@/util/geometry";
+import { applyTranslation } from "@/App/VisualEditor/transformations/translate";
 
 export type Rountangle = {
   uid: string;
@@ -344,7 +345,7 @@ export function entirelySelectedShapes(cs: ConcreteSyntax, selection: Selection)
   };
 }
 
-export function shapesBBox(shapes: ConcreteSyntax): Rect2D | undefined {
+export function shapesBBox(shapes: ConcreteSyntax): Rect2D {
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
   function addPointToBBox({x,y}: Vec2D) {
     minX = Math.min(minX, x);
@@ -376,4 +377,65 @@ export function shapesBBox(shapes: ConcreteSyntax): Rect2D | undefined {
     topLeft: { x: minX, y: minY },
     size: { x: maxX - minX, y: maxY - minY },
   }
+}
+
+const CANVAS_BOUNDS = {
+  topLeft: {x: 0, y: 0},
+  size: {x: EDITOR_WIDTH, y: EDITOR_HEIGHT},
+}
+
+const ARROW_BOUNDS = {
+  topLeft: addV2D(CANVAS_BOUNDS.topLeft, {x: CORNER_HELPER_RADIUS, y: CORNER_HELPER_RADIUS}),
+  size: subtractV2D(CANVAS_BOUNDS.size, {x: CORNER_HELPER_RADIUS*2, y: CORNER_HELPER_RADIUS*2}),
+}
+
+export function ensureSelectionWithinEditorBounds(s: VisualEditorState): VisualEditorState {
+  if (s.selection.size === 0) return s;
+  const isSelected = (shape: {uid: string}) => (s.selection.get(shape.uid)?.size || 0) > 0
+  const selectedShapes: ConcreteSyntax = {
+    rountangles: s.rountangles.filter(isSelected),
+    arrows: s.arrows.filter(isSelected),
+    diamonds: s.diamonds.filter(isSelected),
+    history: s.history.filter(isSelected),
+    texts: s.texts.filter(isSelected),
+  };
+  const bbox = shapesBBox(selectedShapes)!;
+  console.log(bbox);
+  
+  const moveAwayFromTopLeft = {
+    x: Math.max(0, ARROW_BOUNDS.topLeft.x - bbox.topLeft.x),
+    y: Math.max(0, ARROW_BOUNDS.topLeft.y - bbox.topLeft.y),
+  }
+  const moveAwayFromBottomRight = {
+    x: Math.min(0, rectToAbsolute(ARROW_BOUNDS).bottomRight.x - rectToAbsolute(bbox).bottomRight.x),
+    y: Math.min(0, rectToAbsolute(ARROW_BOUNDS).bottomRight.y - rectToAbsolute(bbox).bottomRight.y),
+  };
+  // unless you are dealing with HUUUUGE shapes, either of these 'moveAwayFrom...' vectors will be zero. Nevertheless if they want us to move in opposite directions, we just add them together to get something "stable"... it's the least worst thing we could do...
+  const delta = addV2D(moveAwayFromTopLeft, moveAwayFromBottomRight);
+
+  return rawMoveSelection(s, delta);
+}
+
+export function rawMoveSelection({selection, rountangles, diamonds, arrows, history, texts, ...rest}: VisualEditorState, delta: Vec2D): VisualEditorState {
+  let newSelection = selection;
+  let newRountangles;
+  [newRountangles, newSelection] = applyTranslation(rountangles, newSelection, delta, translateRect);
+  newRountangles = (newRountangles === rountangles) ? rountangles : newRountangles.sort((a,b) => area(b) - area(a));
+  let newDiamonds;
+  [newDiamonds, newSelection] = applyTranslation(diamonds, newSelection, delta, translateRect);
+  let newHistory;
+  [newHistory, newSelection] = applyTranslation(history, newSelection, delta, translateAnchored);
+  let newArrows;
+  [newArrows, newSelection] = applyTranslation(arrows, newSelection, delta, translateLine);
+  let newTexts;
+  [newTexts, newSelection] = applyTranslation(texts, newSelection, delta, translateAnchored);
+  return {
+    rountangles: newRountangles,
+    diamonds: newDiamonds,
+    history: newHistory,
+    arrows: newArrows,
+    texts: newTexts,
+    selection: newSelection,
+    ...rest,
+  };
 }

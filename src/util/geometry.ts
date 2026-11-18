@@ -140,18 +140,9 @@ export function translateRect(rect: Rect2D, delta: Vec2D, parts: Parts) {
     }));
   }
   const normalized = normalizeRect(translated); // <-- flip if negative dimension(s)
-  return [ensureRectWithinBounds(normalized, ARROW_BOUNDS), newParts] as const;
+  return [normalized, newParts] as const;
 }
 
-const CANVAS_BOUNDS = {
-  topLeft: {x: 0, y: 0},
-  size: {x: EDITOR_WIDTH, y: EDITOR_HEIGHT},
-}
-
-const ARROW_BOUNDS = {
-  topLeft: addV2D(CANVAS_BOUNDS.topLeft, {x: CORNER_HELPER_RADIUS, y: CORNER_HELPER_RADIUS}),
-  size: subtractV2D(CANVAS_BOUNDS.size, {x: CORNER_HELPER_RADIUS*2, y: CORNER_HELPER_RADIUS*2}),
-}
 
 // Some calculations are easier if we change our notation:
 export function rectToAbsolute({topLeft, size}: Rect2D): {topLeft: Vec2D, bottomRight: Vec2D} {
@@ -190,16 +181,13 @@ export function translateLine(line: Line2D, delta: Vec2D, parts: Parts): [Line2D
     end: parts.has("end") ? addV2D(line.end, delta) : line.end,
   };
   // make sure we never move something outside the viewbox
-  return [{
-    start: ensureVecWithinBounds(translated.start, ARROW_BOUNDS),
-    end: ensureVecWithinBounds(translated.end, ARROW_BOUNDS),
-  }, parts];
+  return [translated, parts];
 }
 
 export function translateAnchored(shape: {topLeft: Vec2D}, delta: Vec2D, parts: Parts) : [{topLeft: Vec2D}, Parts] {
   if (parts.size === 0) return [shape, parts] as const;
   return [{
-    topLeft: ensureVecWithinBounds(addV2D(shape.topLeft, delta), ARROW_BOUNDS),
+    topLeft: addV2D(shape.topLeft, delta),
   }, parts] as const;
 }
 
