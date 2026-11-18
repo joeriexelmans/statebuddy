@@ -68,7 +68,7 @@ Counting
 Entry procedure
 ---------------
 
-    R3. When a car arrives at the entrance (-> S0 activates), the ticket machine should print a ticket with a unique ID (just use a counter: first ticket has ID 0, then 1, 2, 3, etc.).
+    R3. When a car arrives at the entrance (-> S0 activates), and there is at least one free spot in the parking lot, the ticket machine should print a ticket with a unique ID (just use a counter: first ticket has ID 0, then 1, 2, 3, etc.).
 
     R4. When a car takes a ticket at the entrance, the entry barrier must OPEN and the entry traffic light must become GREEN.
 
