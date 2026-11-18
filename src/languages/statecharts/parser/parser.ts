@@ -233,6 +233,9 @@ export function parseStatechart(topology: Topology): [AbstractSyntax, TraceableE
     const belongsToArrowUID = topology.text2ArrowMap.get(uid);
 
     const belongsToTransition = uid2Transition.get(belongsToArrowUID!);
+    if (belongsToArrowUID && !belongsToTransition) {
+      errors.push({shapes: [uid], message: "initial-marking cannot have label"})
+    }
     if (belongsToTransition) {
       const {src} = belongsToTransition;
       belongsToTransition.label.push(parsed);
@@ -271,9 +274,6 @@ export function parseStatechart(topology: Topology): [AbstractSyntax, TraceableE
           }
         }
       }
-    }
-    else if (initialMarkings.has(belongsToArrowUID!)) {
-      errors.push({shapes: [uid], message: "initial-marking cannot have label"})
     }
     else {
       // text does not belong to transition...
@@ -330,13 +330,14 @@ export function parseStatechart(topology: Topology): [AbstractSyntax, TraceableE
   }
 
   for (const transition of uid2Transition.values()) {
-    if (transition.label.length === 0) {
+    const transitionLabels = transition.label.filter(l => l.kind === "transitionLabel");
+    if (transitionLabels.length === 0) {
       errors.push({
         shapes: [transition.uid],
         message: "no label",
       });
     }
-    else if (transition.label.length > 1) {
+    else if (transitionLabels.length > 1) {
       errors.push({
         shapes: [transition.uid],
         message: "multiple labels",
