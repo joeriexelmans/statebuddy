@@ -1,7 +1,7 @@
 import { ToolMode, ToolSelectState } from "@/App/migrations/v1_types";
 import { useShortcuts } from "@/hooks/useShortcuts";
 import { UndoCallbacks } from "@/hooks/useUndo";
-import { allArrowParts, allHistoryParts, allRectParts, allTextParts, rountangleMinSize } from "@/languages/statecharts/concrete_syntax";
+import { allArrowParts, allHistoryParts, allRectParts, allTextParts, rectMinimumSize } from "@/languages/statecharts/concrete_syntax";
 import { isEntirelyWithin, normalizeRect, Rect2D, scaleV2D, subtractV2D, Vec2D } from "@/util/geometry";
 import { getBBoxInSvgCoords } from "@/util/svg_helper";
 import { Dispatch, RefObject, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -10,7 +10,7 @@ import { MIN_ROUNTANGLE_SIZE } from "../../parameters";
 import { mergeSelections, SelectingState } from "../Selection";
 import { translateSelection } from "../transformations/translate";
 import styles from "../VisualEditor.module.css";
-import { Selection, VisualEditorState } from "../VisualEditor.state";
+import { Parts, Selection, VisualEditorState } from "../VisualEditor.state";
 import { CopyPasteCallbacks, useCopyPaste } from "./useCopyPaste";
 
 export type EditorStuff = {
@@ -268,16 +268,52 @@ export function useEditor(
   const onMouseUp = useCallback((e: {target: any, pageX: number, pageY: number}) => {
     // do not persist sizes smaller than 40x40
     replace(state => {
+      const flipH = new Set<string>;
+      const flipV = new Set<string>;
       return {
         ...state,
-        rountangles: state.rountangles.map(r => ({
-          ...r,
-          size: rountangleMinSize(r.size),
+        rountangles: state.rountangles.map(r => {
+          if (r.size.x < 0) flipH.add(r.uid);
+          if (r.size.y < 0) flipV.add(r.uid);
+          return {
+            ...r,
+            ...normalizeRect(rectMinimumSize(r)),
+          };
+        }),
+        diamonds: state.diamonds.map(d => {
+          if (d.size.x < 0) flipH.add(d.uid);
+          if (d.size.y < 0) flipV.add(d.uid);
+          return {
+            ...d,
+            ...normalizeRect(rectMinimumSize(d)),
+            // size: rountangleMinSize(d.size),
+          };
+        }),
+        selection: new Map<string, Parts>([...state.selection].map(([uid, parts]) => {
+          if (flipH.has(uid)) {
+            parts = new Set([...parts].map(p => {
+              if (p === "left") {
+                return "right";
+              }
+              else if (p === "right") {
+                return "left";
+              }
+              else return p;
+            }));
+          }
+          if (flipV.has(uid)) {
+            parts = new Set([...parts].map(p => {
+              if (p === "top") {
+                return "bottom";
+              }
+              else if (p === "bottom") {
+                return "top";
+              }
+              else return p;
+            }));
+          }
+          return [uid, parts];
         })),
-        diamonds: state.diamonds.map(d => ({
-          ...d,
-          size: rountangleMinSize(d.size),
-        }))
       };
     });
     setState._setShallow(state => {

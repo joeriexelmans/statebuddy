@@ -254,16 +254,20 @@ export function findNearestHistory(point: Vec2D, candidates: History[]): History
   return best;
 }
 
-export function rountangleMinSize(size: Vec2D): Vec2D {
+export function rectMinimumSize({topLeft, size}: Rect2D): Rect2D {
   const minSize = ROUNTANGLE_RADIUS * 2;
-  if (size.x >= minSize && size.y >= minSize) {
-    return size;
+  const newSize = {
+    x: Math.abs(size.x) >= minSize ? size.x : minSize*(Math.sign(size.x)||1),
+    y: Math.abs(size.y) >= minSize ? size.y : minSize*(Math.sign(size.y)||1),
   }
   return {
-    x: Math.max(minSize, size.x),
-    y: Math.max(minSize, size.y),
-  };
-};
+    topLeft: {
+      x: topLeft.x + (size.x-newSize.x)/2,
+      y: topLeft.y + (size.y-newSize.y)/2,
+    },
+    size: newSize,
+  }
+}
 
 const maxSnapDistance = Math.ceil(Math.max(ARROW_SNAP_THRESHOLD, TEXT_SNAP_THRESHOLD)/2);
 const snap = {x: -maxSnapDistance, y: -maxSnapDistance};

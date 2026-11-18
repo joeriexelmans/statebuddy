@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { Rountangle, RectSide, getRectFatBBox, rountangleMinSize } from "../../languages/statecharts/concrete_syntax";
+import { Rountangle, RectSide, getRectFatBBox, rectMinimumSize } from "../../languages/statecharts/concrete_syntax";
 import { EXTRA_HIGHLIGHT_PADDING, ROUNTANGLE_RADIUS } from "../parameters";
 import { RectHelper } from "./RectHelpers";
 import { arraysEqual, jsonDeepEqual, setsEqual } from "@/util/util";
@@ -7,13 +7,16 @@ import { BoundingBox } from "./BoundingBox";
 import styles from "./VisualEditor.module.css";
 import { DebugUID } from "./DebugUID";
 import { Selecting } from "./Selection";
+import { normalizeRect } from "@/util/geometry";
 
 export const RountangleSVG = memo(function RountangleSVG(props: {rountangle: Rountangle; selected: Set<RectSide>; highlight: RectSide[]; error?: string; extraHighlight: boolean, active: boolean; dashed: boolean }) {
-  const { topLeft, size, uid } = props.rountangle;
-  // always draw a rountangle with a minimum size
-  // during resizing, rountangle can be smaller than this size and even have a negative size, but we don't show it
-  const bbox = getRectFatBBox(props.rountangle);
-  const minSize = rountangleMinSize(size);
+  const { uid } = props.rountangle;
+  // always draw a rountangle with a minimum size (otherwise it becomes difficult for the user to see what she has drawn)
+  // during resizing, rountangle can be secretely smaller than this size, but we don't render it that way:
+  const minSize = rectMinimumSize(props.rountangle); // <-- possibly negative size in any dimension(s)
+
+  const bbox = getRectFatBBox(minSize);
+
   const extraAttrs = {
     className: styles.rountangle
       + ' ' + (props.dashed ? styles.dashed : "")
@@ -25,13 +28,13 @@ export const RountangleSVG = memo(function RountangleSVG(props: {rountangle: Rou
     "data-parts": "left top right bottom",
   };
   return <>
-  <g transform={`translate(${topLeft.x} ${topLeft.y})`}>
+  <g transform={`translate(${minSize.topLeft.x} ${minSize.topLeft.y})`}>
     <rect
       rx={ROUNTANGLE_RADIUS} ry={ROUNTANGLE_RADIUS}
       x={0}
       y={0}
-      width={minSize.x}
-      height={minSize.y}
+      width={minSize.size.x}
+      height={minSize.size.y}
       {...extraAttrs}
     />
 
@@ -42,12 +45,14 @@ export const RountangleSVG = memo(function RountangleSVG(props: {rountangle: Rou
     {props.error &&
       <text className={styles.errorHover} x={30} y={20}>{props.error}</text>}
 
-    <RectHelper uid={uid} size={minSize}
+    <RectHelper uid={uid} size={minSize.size}
       selected={props.selected}
       highlight={props.highlight}
       dashed={props.dashed} />
 
   </g>
+  {/* <g transform={`translate(${minSize.topLeft.x} ${minSize.topLeft.y})`}>
+  </g> */}
   {props.extraHighlight && <Selecting {...bbox}/>}
   <BoundingBox {...bbox} />
   </>;

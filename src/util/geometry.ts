@@ -1,3 +1,4 @@
+import { CORNER_HELPER_RADIUS, EDITOR_HEIGHT, EDITOR_WIDTH } from "@/App/parameters";
 import { Parts } from "../App/VisualEditor/VisualEditor.state";
 import { RectSide } from "../languages/statecharts/concrete_syntax";
 
@@ -94,34 +95,112 @@ export function lineBBox(line: Line2D, margin=0): Rect2D {
 }
 
 export function translateRect(rect: Rect2D, delta: Vec2D, parts: Parts) {
-  return {
+  const translated = {
     topLeft: {
       x: parts.has("left") ? rect.topLeft.x + delta.x : rect.topLeft.x,
       y: parts.has("top") ? rect.topLeft.y + delta.y : rect.topLeft.y,
     },
     size: {
-      x: /*Math.max(40,*/ rect.size.x
+      x: rect.size.x
         + (parts.has("right") ? delta.x : 0)
         - (parts.has("left")  ? delta.x : 0),
-      y: /*Math.max(40,*/ rect.size.y
+      y: rect.size.y
         + (parts.has("bottom") ? delta.y : 0)
         - (parts.has("top")    ? delta.y : 0),
     },
   };
+  // If size has become negative in a dimension, then flip it.
+  const flipH = translated.size.x < 0;
+  const flipV = translated.size.y < 0;
+  let newParts = parts;
+  if (flipH) {
+    console.log('flip H');
+    
+    newParts = new Set([...parts].map(p => {
+      if (p === "left") {
+        return "right";
+      }
+      else if (p === "right") {
+        return "left";
+      }
+      else return p;
+    }));
+  }
+  if (flipV) {
+    console.log('flip V');
+
+    newParts = new Set([...parts].map(p => {
+      if (p === "top") {
+        return "bottom";
+      }
+      else if (p === "bottom") {
+        return "top";
+      }
+      else return p;
+    }));
+  }
+  const normalized = normalizeRect(translated); // <-- flip if negative dimension(s)
+  return [ensureRectWithinBounds(normalized, ARROW_BOUNDS), newParts] as const;
 }
 
-export function translateLine(line: Line2D, delta: Vec2D, parts: Parts): Line2D {
+const CANVAS_BOUNDS = {
+  topLeft: {x: 0, y: 0},
+  size: {x: EDITOR_WIDTH, y: EDITOR_HEIGHT},
+}
+
+const ARROW_BOUNDS = {
+  topLeft: addV2D(CANVAS_BOUNDS.topLeft, {x: CORNER_HELPER_RADIUS, y: CORNER_HELPER_RADIUS}),
+  size: subtractV2D(CANVAS_BOUNDS.size, {x: CORNER_HELPER_RADIUS*2, y: CORNER_HELPER_RADIUS*2}),
+}
+
+// Some calculations are easier if we change our notation:
+export function rectToAbsolute({topLeft, size}: Rect2D): {topLeft: Vec2D, bottomRight: Vec2D} {
   return {
-    start: parts.has("start") ? addV2D(line.start, delta) : line.start,
-    end: parts.has("end") ? addV2D(line.end, delta) : line.end,
+    topLeft,
+    bottomRight: addV2D(topLeft, size),
+  }
+}
+export function rectFromAbsolute({topLeft, bottomRight}: {topLeft: Vec2D, bottomRight: Vec2D}): Rect2D {
+  return {
+    topLeft,
+    size: subtractV2D(bottomRight, topLeft),
+  }
+}
+
+export function ensureRectWithinBounds(rect: Rect2D, bounds: Rect2D): Rect2D {
+  const absolute = rectToAbsolute(rect);
+
+  const bounded = {
+    topLeft: ensureVecWithinBounds(absolute.topLeft, bounds),
+    bottomRight: ensureVecWithinBounds(absolute.bottomRight, bounds),
+  }
+  return rectFromAbsolute(bounded);
+}
+
+export function ensureVecWithinBounds(vec: Vec2D, bounds: Rect2D) {
+  return {
+    x: Math.min(Math.max(bounds.topLeft.x, vec.x), bounds.topLeft.x+bounds.size.x),
+    y: Math.min(Math.max(bounds.topLeft.y, vec.y), bounds.topLeft.y+bounds.size.y),
   };
 }
 
-export function translateAnchored(shape: {topLeft: Vec2D}, delta: Vec2D, parts: Parts) : {topLeft: Vec2D} {
-  if (parts.size === 0) return shape;
-  return {
-    topLeft: addV2D(shape.topLeft, delta),
-  }
+export function translateLine(line: Line2D, delta: Vec2D, parts: Parts): [Line2D, Parts] {
+  const translated = {
+    start: parts.has("start") ? addV2D(line.start, delta) : line.start,
+    end: parts.has("end") ? addV2D(line.end, delta) : line.end,
+  };
+  // make sure we never move something outside the viewbox
+  return [{
+    start: ensureVecWithinBounds(translated.start, ARROW_BOUNDS),
+    end: ensureVecWithinBounds(translated.end, ARROW_BOUNDS),
+  }, parts];
+}
+
+export function translateAnchored(shape: {topLeft: Vec2D}, delta: Vec2D, parts: Parts) : [{topLeft: Vec2D}, Parts] {
+  if (parts.size === 0) return [shape, parts] as const;
+  return [{
+    topLeft: ensureVecWithinBounds(addV2D(shape.topLeft, delta), ARROW_BOUNDS),
+  }, parts] as const;
 }
 
 // intersection point of two lines

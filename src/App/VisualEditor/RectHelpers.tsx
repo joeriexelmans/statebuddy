@@ -55,22 +55,22 @@ export const RectHelper = memo(function RectHelper(props: { uid: string, size: V
       data-parts="top left" />
     <circle
       className={cornerClass}
-      cx={props.size.x - CORNER_HELPER_OFFSET}
+      cx={props.size.x}
       cy={CORNER_HELPER_OFFSET}
       r={CORNER_HELPER_RADIUS}
       data-uid={props.uid}
       data-parts="top right" />
     <circle
       className={cornerClass}
-      cx={props.size.x - CORNER_HELPER_OFFSET}
-      cy={props.size.y - CORNER_HELPER_OFFSET}
+      cx={props.size.x}
+      cy={props.size.y}
       r={CORNER_HELPER_RADIUS}
       data-uid={props.uid}
       data-parts="bottom right" />
     <circle
       className={cornerClass}
       cx={CORNER_HELPER_OFFSET}
-      cy={props.size.y - CORNER_HELPER_OFFSET}
+      cy={props.size.y}
       r={CORNER_HELPER_RADIUS}
       data-uid={props.uid}
       data-parts="bottom left" />
