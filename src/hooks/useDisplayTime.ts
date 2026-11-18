@@ -13,12 +13,13 @@ export function useDisplayTime(time: TimeMode) {
   useEffect(() => {
     // This has no effect on statechart execution. In between events, the statechart is doing nothing. However, by updating the displayed time, we give the illusion of continuous progress.
     refreshDisplayTime();
-    const interval = setInterval(() => {
+
+    const renderFrame = () => {
       refreshDisplayTime();
-    }, 23); // every X ms -> we want a value that makes the numbers 'dance' while not using too much CPU
-    return () => {
-      clearInterval(interval);
+      req = requestAnimationFrame(renderFrame);
     }
+    let req = requestAnimationFrame(renderFrame);
+    return () => cancelAnimationFrame(req);
   }, [time, refreshDisplayTime]);
 
   return {displayTime, refreshDisplayTime};
