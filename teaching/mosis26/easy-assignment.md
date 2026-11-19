@@ -174,7 +174,7 @@ Likewise, the sequence for a car exiting the parking lot is:
 
 ### Plant <-> Statechart Interface
 
-The Statechart model that you will create can respond to the following input events:
+Your Statechart model can respond to the following input events:
 
   - `s0(True|False)` indicates a change in the s0 sensor reading (`True`: car detected, `False`: no car detected)
   - `s1(True|False)` indicates a change in the s1 sensor reading (True: car detected, False: no car detected)
@@ -185,7 +185,7 @@ The Statechart model that you will create can respond to the following input eve
   - `payed` indicates a driver has payed the fee at the payment machine located at the exit
 
 
-The Statechart model that you will create can raise the following output events:
+Your Statechart model can raise the following output events:
 
   - `carsInc` increments the number of counted cars (potentially resulting in a `full` event being received)
   - `carsDec` decrements the number of counted cars (resulting in a `notFull` event being received if the parking lot was full)
