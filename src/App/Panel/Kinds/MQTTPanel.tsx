@@ -163,7 +163,7 @@ export const MQTT = memo(function MQTT({state, setState, simulator, abstractSynt
         console.warn("error pasting MQTT config from clipboard", e);
       }
     });
-  }, []);
+  }, [setState._setShallow]);
 
   return <div>
     <Toolbar>
