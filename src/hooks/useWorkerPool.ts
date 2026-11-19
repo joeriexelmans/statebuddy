@@ -71,7 +71,7 @@ export function useWorkerPool<I,O>(nWorkers: number, workerUrl: string) {
       }
     }
     pullJobFromQueue();
-  }, []);
+  }, [setState]);
 
   // react to changing pool size
   useEffect(() => {
