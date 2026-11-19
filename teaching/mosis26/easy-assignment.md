@@ -1,5 +1,11 @@
 # MoSIS'26 Statecharts Assignment
 
+## Changelog
+
+Any changes to the assignment (e.g., fixing mistakes) will be mentioned here.
+
+**Fri 20 Nov 2026 13:45** Initial version of assignment.
+
 ## Goals
 
 The goal of this assignment is to get hands-on experience with Statechart modeling, simulation, debugging and testing.
@@ -232,26 +238,37 @@ It is also a small experiment to see if recording user interactions works well e
 
 ### Submitting Your Solution
 
-You must submit:
+  - deadline: **Friday, 4 December 2026, before 23:59.**
+  - medium: [BlackBoard Ultra](http://lms.uantwerpen.be/)
+
+**One team member** submits:
 
   - Either:
       - If you wish to submit the full recording, simply upload the exported recording file (it contains your solution as well...)
       - If you do *not* wish to submit the full recording (e.g., privacy reasons), and only your solution, simply upload a file containing the URL (including the long hash-string).
-  - and a PDF document containing:
-      - your answers to the exercises
-      - your answers the following questions:
-          1. Did you have hands-on experience with Statecharts modeling before? (e.g., Itemis CREATE)
-          2. How much effort did it take to complete the exercise? Scale: 1 (very low) - 7 (very high) What made it easy or hard?
-          3. Is there a feature/aspect of StateBuddy that you found especially useful?
-          4. Is there a feature/aspect of StateBuddy that you found especially problematic?
 
-        Elaborate where necessary.
+**Both team members** submit:
+
+  - a PDF / HTML / plain text document, *individually* answering the following questions:
+
+      0. Your name and name of the other team member.
+      1. Did you have hands-on experience with Statecharts modeling before? (e.g., Itemis CREATE)
+      2. What part(s) of the assignment did you work on?
+      3. How many hours did you spend on the assignment?
+      4. How much effort did it take to complete your part of the work?
+      5. Is there a feature/aspect of StateBuddy that you found especially useful?
+      6. Is there a feature/aspect of StateBuddy that you found especially problematic?
+
+    Elaborate where necessary.
+
+There is no need to explain your solution in written word. You will do this orally and individually, after the submission deadline.
+
+## Problem?
+
+ - Found a bug? -> [create an issue on GitHub](https://github.com/joeriexelmans/statebuddy/issues)
+ - Anything else -> [e-mail me](mailto:joeri.exelmans@uantwerpen.be)
 
 ## Resources
 
  - [StateBuddy manual](https://deemz.org/git/research/statebuddy/src/branch/master/docs/readme.md)
  - [Example models](https://deemz.org/git/research/statebuddy/src/branch/master#try-it-now)
-
-### Problems?
-
-[E-mail me](mailto:joeri.exelmans@uantwerpen.be) or submit a bug in the [GitHub issue tracker](https://github.com/joeriexelmans/statebuddy/issues).
