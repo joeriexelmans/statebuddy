@@ -2,9 +2,8 @@
 
 ## Changelog
 
-Any changes to the assignment (e.g., fixing mistakes) will be mentioned here.
 
-**Fri 20 Nov 2026 13:45** Initial version of assignment.
+    Fri 20 Nov 2026 13:45 -- Initial version of assignment.
 
 ## Goals
 
@@ -265,8 +264,10 @@ To unfreeze the app, and continue working (and recording), click the "resume app
       2. What part(s) of the assignment did you work on?
       3. How many hours did you spend on the assignment?
       4. How much effort did it take to complete your part of the work?
-      5. Is there a feature/aspect of StateBuddy that you found especially useful?
-      6. Is there a feature/aspect of StateBuddy that you found especially problematic?
+      5. Was StateBuddy responsive enough, or did it lag?
+      6. What CPU and how much RAM do you have?
+      7. Is there a feature/aspect of StateBuddy that you found especially useful?
+      8. Is there a feature/aspect of StateBuddy that you found especially problematic?
 
     Elaborate where necessary.
 
