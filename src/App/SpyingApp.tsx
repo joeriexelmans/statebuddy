@@ -181,6 +181,8 @@ export function SpyingApp() {
       </div>
       {paused && cur && <div style={{display: 'flex', width: '100vw', alignItems: 'center', position: 'absolute', bottom: 0, backgroundColor: 'var(--background-color)'}}>
         <div style={{width: 'fit-content'}}>app paused</div>
+        &emsp;
+        <div style={{width: 'fit-content'}}>{chunkedLength(appHistory.h)} snapshots</div>
         &nbsp;
         {/* <button disabled={paused} onClick={() => setPaused(p => !p)} title="pause app"><PauseIcon fontSize="small"/></button> */}
         <input
