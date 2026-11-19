@@ -61,7 +61,8 @@ export const TopPanel = memo(function TopPanel(props: TopPanelProps) {
   const toggleKeys = useToggle(setKeys);
   const {currentTraceItem, simulatorCallbacks} = simulator;
 
-  const updateAvailable = useUpdater();
+  // const updateAvailable = useUpdater();
+  const updateAvailable = false;
 
   const modelName = appState.view.topPanel.modelName;
 
