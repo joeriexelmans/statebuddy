@@ -1,3 +1,5 @@
+# MoSIS'26 Statecharts Assignment (hard mode)
+
 ## System Description
 
 
