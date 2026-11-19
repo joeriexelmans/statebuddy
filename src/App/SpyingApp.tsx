@@ -214,15 +214,15 @@ export function SpyingApp() {
           //     ...found,
           //   }))}}
         />
-        <button disabled={!paused} onClick={() => {setAppHistory(h => ({...h, i: h.h.length-1, j: h.h.at(-1)!.length-1})); setPaused(false)}} title="resume app">
+        <button disabled={!paused} onClick={() => {setAppHistory(h => ({...h, i: h.h.length-1, j: h.h.at(-1)!.length-1})); setPaused(false)}} title="jump to most recent snapshot and resume app">
           {/* <SkipNextIcon fontSize="small"/> */}
           <PlayArrowIcon fontSize="small"/>
           <FiberManualRecordIcon fontSize="small"/>
         </button>
         &nbsp;
-        <div style={{width: 'fit-content'}}>{now.toISOString()}</div>
+        <div style={{width: 'fit-content'}} title="timestamp of current snapshot">{now.toISOString()}</div>
         &emsp;
-        <div style={{width: 'fit-content'}}>{cur.w.width}x{cur.w.height}</div>
+        <div style={{width: 'fit-content'}} title="window size (in CSS pixels) of current snapshot">{cur.w.width}x{cur.w.height}</div>
         &nbsp;
         <input type="file" id="fileInput" hidden onChange={onImport}/>
         <button title="import recording" onClick={() => {document.getElementById("fileInput")?.click()}}><FileUploadIcon fontSize="small"/></button>
