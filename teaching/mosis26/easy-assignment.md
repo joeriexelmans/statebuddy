@@ -80,7 +80,7 @@ Likewise, the sequence for a car exiting the parking lot is:
 
     R0. The car count must ALWAYS be updated when a car enters/exits the parking lot. More precisely, the car count MUST be updated when a car has PASSED the entrance/exit barrier.
 
-#### Entry Procedure
+#### Normal Entry Procedure
 
     R1. Whenever a car is IN FRONT OF the entrance barrier, AND there is at least one free spot in the parking lot, the entrance barrier MUST be OPEN and its traffic light MUST be GREEN. In all other cases, the traffic light must be RED.
 
@@ -92,5 +92,21 @@ Likewise, the sequence for a car exiting the parking lot is:
       
       Motivation: This makes it impossible for the car or any other car to leave the parking lot via the entrance.
     
-    
-    
+#### Normal Exit Procedure
+
+    R3. When a car is IN FRONT OF the exit barrier, AND its driver pays for her stay, the exit barrier MUST OPEN and its traffic light MUST become GREEN. Then, as long as no car PASSES THROUGH the exit barrier, after 3 seconds, the exit traffic light MUST become RED, and another 1 second later (= 4 seconds since the driver's payment), the exit barrier MUST CLOSE.
+
+    R4. Whenever a car is PASSING THROUGH the exit barrier, its traffic light MUST become RED.
+
+    R5. Whenever a car has PASSED the exit barrier, the barrier must CLOSE.
+
+
+### Plant <-> Statechart Interface
+
+
+
+## What is Expected
+
+As an indication of expected complexity, my own solution contains 17 AND-states, 10 OR-states and 19 transitions.
+
+Generally speaking, a less complex solution (consisting of fewer model elements) is preferred, because it will be easier to understand / explain / maintain.
