@@ -32,9 +32,9 @@ Likewise for cars exiting the parking lot, the "normal" order is:
 
 ## Assumptions
 
-A0. Only one car will block any of the entry sensors (S0/S1) at a time. The same holds for the exit sensors.
+    A0. Only one car will block any of the entry sensors (S0/S1) at a time. The same holds for the exit sensors.
 
-A1. If one sensor (e.g., S0 OR S1) but not both (e.g., S0 AND S1) are active, we assume that a car is in front (S0) of, or behind (S1) a barrier. In this case, if the barrier is CLOSED, the car will never attempt to drive through it.
+    A1. If one sensor (e.g., S0 OR S1) but not both (e.g., S0 AND S1) are active, we assume that a car is in front (S0) of, or behind (S1) a barrier. In this case, if the barrier is CLOSED, the car will never attempt to drive through it.
 
     A2. If both sensors (S0 & S1 at the entry, or S2 & S3 at the exit) are active, we assume that there is a car PASSING THROUGH a barrier.
 
