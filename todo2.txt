@@ -16,6 +16,8 @@ Bugs
 
 - support 'default history' (syntax already allows it, semantics ignore it)
 
+- F5 + empty editor => one initial state
+
 - [DONE] adding a comment to a transition should not count as a transition label
 
 - [DONE] entry/exit action belonging to 'default state'-arrow should cause syntax error.

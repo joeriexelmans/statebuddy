@@ -192,13 +192,13 @@ export function ParkingLot({state, speed, raiseUIEvent}: PlantRenderProps<Parkin
       disabled={state.cars.length === 0 && state.exitCar === "nocar" || state.exitCar === "accident" || state.exitCar === "waiting" && !state.exitBarrierOpen}
       onClick={() => raiseUIEvent({name: "exProceed"})}>🠟 {{"nocar": "LEAVE", "waiting": "LEAVE", "passing": "LEAVE", "passed": "LEAVE", "accident": "ACCIDENT!"}[state.exitCar]} 🠟</button>
     <button style={{width: '50%'}}
-      disabled={state.entryCar === "nocar" || state.entryCar === "passed" && !state.entryBarrierOpen || state.entryCar === "accident"}
-      onClick={() => raiseUIEvent({name: "entrReverse"})}>🠟 {{"nocar": "", "waiting": "REVERSE (LEAVE)", "passing": "REVERSE", "passed": "REVERSE", "accident": "ACCIDENT!"}[state.entryCar]} 🠟</button>
+      disabled={state.entryCar === "nocar" && state.cars.length === 0 || state.entryCar === "passed" && !state.entryBarrierOpen || state.entryCar === "accident"}
+      onClick={() => raiseUIEvent({name: "entrReverse"})}>🠟 {{"nocar": "REVERSE (UN-PARK)", "waiting": "REVERSE (LEAVE)", "passing": "REVERSE", "passed": "REVERSE", "accident": "ACCIDENT!"}[state.entryCar]} 🠟</button>
   </div>
   <div style={{width: '100%', height: 12}}></div>
   <div style={{width: '100%'}}>
-    <button style={{width: '50%'}} disabled={false} onClick={() => raiseUIEvent({name: "forceExit"})}>FORCE EXIT</button>
-    <button style={{width: '50%'}} disabled={false} onClick={() => raiseUIEvent({name: "forceEntry"})}>FORCE ENTRY</button>
+    <button style={{width: '50%'}} disabled={false} onClick={() => raiseUIEvent({name: "forceExit"})}>FORCE-OPEN EXIT</button>
+    <button style={{width: '50%'}} disabled={false} onClick={() => raiseUIEvent({name: "forceEntry"})}>FORCE-OPEN ENTRY</button>
   </div>
   </div>
   </>;
