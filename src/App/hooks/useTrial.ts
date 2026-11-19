@@ -14,7 +14,7 @@ export function useTrial() {
   const startTrial = useCallback(() => {
     const now = new Date().toISOString();
     setWhenStarted(now);
-  }, []);
+  }, [setWhenStarted]);
 
   const appName = (whenStarted === null) ? "StateBuddy" : "StateBoss";
 

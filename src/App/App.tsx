@@ -143,7 +143,7 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
   const historyCallbacks = useUndo(setAppState.setSyntax.setEditorState._setShallow);  
 
   // @ts-ignore
-  const onAboutStateBuddy = useCallback(() => setAppState.setView.setModal._setShallow({kind: "about"}), []);
+  const onAboutStateBuddy = useCallback(() => setAppState.setView.setModal._setShallow({kind: "about"}), [setAppState.setView.setModal._setShallow]);
 
   // callback to start editing text label (in modal dialog)
   const beginEdit = useCallback((uid: string) => {

@@ -52,7 +52,7 @@ export function FindReplace({showKeys, state: {findText, replaceText}, setState,
 
   const onSwap = useCallback(() => {
     setState(({findText, replaceText}) => ({replaceText: findText, findText: replaceText}));
-  }, [findText, replaceText]);
+  }, [findText, replaceText, setState]);
 
   const onKeyDown: KeyboardEventHandler<HTMLDivElement> = (e) => {
     if (e.key === "Enter") {

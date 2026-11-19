@@ -8,7 +8,7 @@ export function useUpdater() {
     .then(res => res.text())
     .then(text => set([text, false]))
     .catch(() => {});
-  }, []);
+  }, [set]);
 
   const checkForUpdates = useCallback(() => {
     // we just download the index.html file and see if it changed.
@@ -24,7 +24,7 @@ export function useUpdater() {
       })
     })
     .catch(() => {});
-  }, []);
+  }, [set]);
 
   useEffect(() => {
     if (!updateAvailable) { // <-- only give notification once
