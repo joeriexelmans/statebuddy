@@ -348,7 +348,7 @@ export function parseStatechart(topology: Topology): [AbstractSyntax, TraceableE
   // sort children by their label
   for (const state of uid2State.values()) {
     if (state.kind === "and") {
-      state.children.sort((a, b) => stateDescription(a).localeCompare(stateDescription(b)));
+      state.children.sort((a, b) => stateDescription(b).localeCompare(stateDescription(a)));
     }
   }
 
