@@ -182,7 +182,7 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
   const hideDebug = hide(setAppState.setView.setVisibility.setDebug);
 
   // @ts-ignore
-  const closeModal = useCallback(() => setAppState.setView.setModal._setShallow(({kind: "none" as const})), []);
+  const closeModal = useCallback(() => setAppState.setView.setModal._setShallow(({kind: "none" as const})), [setAppState.setView.setModal._setShallow]);
 
   let modal = null;
   if (appState.view.modal.kind === "about") {
