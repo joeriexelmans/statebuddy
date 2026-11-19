@@ -168,7 +168,7 @@ export function SpyingApp() {
         }}>
           <PersistentApp appState={appState} setAppState={setAppStateButKeepHistory} />
           {cur && paused &&
-            <div style={{position: 'absolute', left: cur.c.x-4, top: cur.c.y-2, fontSize: 24, pointerEvents: 'none', zIndex: 100}}>
+            <div style={{position: 'absolute', left: cur.c.x-4, top: cur.c.y-2, fontSize: 24, pointerEvents: 'none', zIndex: 1000000}}>
               <img src={cursorSVG} width={cur.c.buttons ? 28 : 24}/>
               {cur.c.buttons && <MouseIcon
                 left={Boolean(cur.c.buttons & 1)}
@@ -179,7 +179,7 @@ export function SpyingApp() {
           }
         </div>
       </div>
-      {paused && cur && <div style={{display: 'flex', width: '100vw', alignItems: 'center', position: 'absolute', bottom: 0, backgroundColor: 'var(--background-color)'}}>
+      {paused && cur && <div style={{display: 'flex', width: '100vw', alignItems: 'center', position: 'absolute', bottom: 0, backgroundColor: 'var(--background-color)', zIndex: 10000}}>
         <div style={{width: 'fit-content'}}>app paused</div>
         &emsp;
         <div style={{width: 'fit-content'}}>{chunkedLength(appHistory.h)} snapshots</div>
