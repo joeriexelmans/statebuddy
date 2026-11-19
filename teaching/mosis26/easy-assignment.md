@@ -62,7 +62,7 @@ The system is a parking lot with an entrance and exit. The entrance and exit eac
 
 At the entrance, there is additionally:
   - a ticket printer (which we won't use in this assignment)
-  - an electronic sign indicating how many free parking spots there currently are.
+  - an electronic sign indicating how many free parking spots there are left.
 
 At the exit, there is additionally:
   - a ticket scanner (which we won't use)
@@ -272,3 +272,7 @@ There is no need to explain your solution in written word. You will do this oral
 
  - [StateBuddy manual](https://deemz.org/git/research/statebuddy/src/branch/master/docs/readme.md)
  - [Example models](https://deemz.org/git/research/statebuddy/src/branch/master#try-it-now)
+
+## Acknowledgements
+
+Rakshit Mittal for the parking lot idea.
