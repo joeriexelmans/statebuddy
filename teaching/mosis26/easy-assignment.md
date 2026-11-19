@@ -14,25 +14,25 @@ The goal of this assignment is to get hands-on experience with Statechart modeli
 
 Before we start with the main assignment, you will start with a number of exercises.
 
-### Exercise 1: Nested Timed Transitions
+#### Exercise 1: Nested Timed Transitions
 
 Observe the following model and simulate it for a few seconds: [LINK](https://deemz.org/public/statebuddy/v2/#eJyVVc1vG0UU95bSQluglC8PXPYAt0pJWj6aHlBIg1CkBiIlReJA5dmdt7tj785sZ2ZjuxccOx9tQIgDnIm48gfAf4GQuPgUXxEXDkY55BDezNiJxY2VvPvmfc785veeh0enT8motp9rQw18DkpzKRLdFYZ2WMIF49CBuDKoZcUjY9gWh3YLGDdSbdiQi8Oj010yCgaCQZxTBWxVlJXRcrr8rDJ2PRvT6/mgC4M04xq13TSulAJhkqQylQJrx209s8815BDb6i0lK9yUSHPQGeO0wA3paXhClZJtDQY6RicC36srh31MskdGF3fiirPUyPI+JIZp/hhYCw9G59G+Q0bP9mmHdutr9fYQZRIsk6CIpBpiIL1lVfVtElxzwo/1r2IqWK+34/d/aWBTA0KnTAyYcsG5qfqH7vtTvRyiD73tVt/Wf3Hf30lw2anfdctjEhz4wu+Q4L4zvO/XGQn+9NL3JPh515e87Eoye9Dpkeh7j2hiQIULOpwLH3IhQPm4t0lghhhCP5h43HIesjJTj0MS/OY87nQac3Phx50yp1yEJoNQRgZFYOEZAUKjaAw3r7QzHmchzTGLwNvUYQSmDeDDXPkQUQpdGRsjNLfhvuIlcuGOq7gosKD3dtxzaPyB+FtrtDBvzT7Fufmv+g9Xe/7anutnlp6bCERLAW47Bis3GmjeJ6Pnd/GOMZgiebZA+M+6kiUo022WXuCgE4wUyE5Nt4Bt2vNpD/SVAbjjMsMLiDnrHPu6V/uOPanmhbUkJa00sFqtNuH0tcE0paXhuhVXVyCWQuhe4Ij/DRm9cBBJwSMlW6AeqFzQCqEThsfUNRpmVFlJtW5LxVoaYH0ioxONcrj3URRTHlENm7LkcWLsW491W9+dm8tlTPNManN3cX5+YdxojPFn635NRi8+TXSsZJ43t7jmEc+56fIcObROBeRNxdPMi6zMpQEGUZV6GDKs4SxQSEZzj8VL/cR3tffxyut97mvg3ppesiyt1YZowvfR6RMyenmPtaCr3YSZqZUA9rHCPranHLvHo3pjMNk4tDlDrLiBQvuEJPhuz1d+pc9Mt4QMOiXyD1jTEQcZCDAeojXndjKFgHww+h+rkY4jguazykK6iTWrSu394RxyaSb3i4Ybg7Mt9K1lhlfOs/xP62DM0emAjF7dTh3+uYWsT0av9fyoen0n05lsLy/LjhM+UZxxK9yDPNeplVZX9AQVJPkbu01kjtxwyCSICl5fs+C43DBQ6qbbqBNb522oxyS4eQZsfcDxQiH/lBaQ4ck1rNGSPZay6NQFTjbsf0tzNtPHkwYhg8IyZ83FYApZ4FzK4WwtHJvOlomf5KmQJuMidROszjweb267nmJCCovIARm99eR/z/vzvwpZUEyXbkzX226Wz9sJcrK0cb1mn5Olh4dO8NrGrxPtF387wY/5bTuOo9uLbvY8OFlaH82EfDlNNBGwu4//BfUqJyY=)
 
 Why do the `inner` and `outer` output events alternate?
 
-### Exercise 2: Hierarchical Priority
+#### Exercise 2: Hierarchical Priority
 
 Simulate the following model and raise event `e`: [LINK](https://deemz.org/public/statebuddy/v2/#eJyVVb1vHEUUv80HgRAgBAg7REKLKNIg2+cASlIgxwlClkiw5AREAfLcztvdududWWZmfXdpON85cRIIoqGiIKJDAomPAjoE/wESFFd5exoKRylcmDczZ+coOel237zf+9r3NeOt3dukbmzm2lAD74LSXIpE94WhPZZwwTj0IK4MclnxkTFsjUO3A4wbqVasyqHx1u4NUgcjwSDOqQK2JMrKaLl3fKcy9jytMxh4pQOjNOMauf00rpQCYZKkMpUCi2NYBze5hhxi672jZIVBiTQHnTFOCwxI76knVCnZ1WCgZ3Qi8Ll06d4GGrlJ6kMbccVZamT5NiSGaX4dWAc/jM4hvkHqw0Pao/3wctgdI02CRRIULanGqEjPOdaB70nQtlT4Y1jFVDCHzTvOOgmOOeKr8ON96KxX+ym846AfwsxCg8GG/+xHRjYiwIwrEwNG0nRiKnzDvb8OyzHK0DPu9Fn4s3v/QYIjlt1qzvk4IxLE3s83JPjSQ00P3Q3/8sh34W+3vc8jziezCdpLRas5T8HLvRj+PkaRVvPMhBPcJ0HXs17tXZydjd7LQETcVjaCNSxUdBpORzLGsumZmZmjBgsRGUWF5rZYEZ5o3qV9HcWZ1CDOez+nwrve6GsGbWJOIiFN5JSlgInQERJc8VKvd1DqzV6ZUy5e8nHV5MDLHjwrEORCgIpc77os/Yn18/A5C8vK/Af+O/zCofNzDNELzuTBY+Gvntm0zEXPPEyCb08OfIc8OszsJFzF3HUUYDQxWHp1FeFNUj92A9sJ/VDsU0yNfy0rWYIy/XbpCQ46QU2Bg6DpGrCrKA7a1+boCIw9MsMLiDnrPfB+Hx+6Rk01LyySlLTSwBqNxmR8jo32TNqOX7bk0iWIpRB6ELgZ+5TUT9xpScFbSnZAXVO5oJXBUhoeUzfTaFFlJdW6KxXraIDlCY1CtJXDxQutmPIW1XBVljxOjH3qbd3V52dncxnTHOtrzp+bm2tur65u49/6/YTUT95OdKxknrfXuOYtnnPT5zm23TIVkLcVTzNPsjKXBhi0qtSnIUMfDoFCMpr7XDw1TPwC8TKeeXzIvQ+Mre0p29iNxhghfG7t3iL10zdZB/raLbMpXwngylC4MuxXbrufz+qJ0SRw6HKGueIGCu0NkuDzm97zM0Nm+iVk0Cuxi4G1XY/hBABsjxHNp0ZF37cc6XpE0HyaWUi3HKdZqa0frjxnZlJfBE6M9kMYWmSqr5xkub+mI5cg1NnaHZH62fXU5T+3KRuS+rmB34onNzKdye7iouw54i3FGbfERchznVpq6ZKeZAWb/PkbbewcueIyk2BWsHztguNxxUCp2y5QR3YergG9TYJX9hMbjjgWFPIrtIAMv1zDZVqy61IWVcZxfFScYVfmUam4VNgtXouMCts1l508qssC11gO+2fhOmn/mPgLI8W9knGRuoUXMp+LF9bdPDGBuwY5d0h96tb/vlYe3kiyoGguXdk7r7vd77bzzsLK8Yb97Sx8eM8Rnrv6y4T7/j+O8NfCulveZ9xlE17bWViup1Q+2DM0IXCyH/wLH+FN+A==)
 
 Why is the transition to state `A` always chosen?
 
-### Exercise 3: Non-determinism
+#### Exercise 3: Non-determinism
 
 What happens if you raise event `e` in this model: [LINK](https://deemz.org/public/statebuddy/v2/#eJylVc1vG0UU9+aTjwIFStiBVsofAErcXmgPKE0joUgEIiVF4gDKeOft7ti7O8vMbGz35Hjz1QASJy5cKjghgcTHhROIPwIJn7J/AgdXPeQQ3szYqUG9ICx5/OZ9zvzm954Hp+f3SVU7SpSmGj4AqbjIQtXNNO2wkGeMQweCQqOWpZ9ozXY5tFvAuBZyy4TMDE7PD0jllRmDIKES2HqWF1qJ8fb9Qpv9ZEyv54KmyijmCrXdKCikhEyHYaELCXtoPyHV9DFXkEBgqrekKPBQWZSAihmnKR5IjcNDKqVoK9DQ0SrMcF1fEylt8SzaGid4UGLSQ1LN7AcFZ5EW+bsQaqb4PWDoyOgy2vdJNdunHdr1N/z2AGXirRIvDWjG/rw6wFh602qnfiBe00j+T34xYX3LWX/2T6zxRz82xl6vdBeeK01tQKylDgBr1q2b9N+2v1/7uckzVzbqy674l8RjLuW3xPtqbKw74+f+H872vf/7PtpsiXlbghkkxnds1K9TcJ6+/6tJMo9Jbox1C8STI+X1Zba0tHjb6qcv+b+N1XWjXnXqWeJ9t+Cgeqr/Dxhduodk6hsj1WoDy62nj/7HI+KjGVgtGk94kmukVjOLZxBGaJ6AJ1qnzDK9b9YZs8yaZc4s8ws9d5Nn+rEh+zYWbUnIExqAkXd20HxEqmcPkCEaJMVb7ELmfjalyEHqbjN3AgcVYmSGXFd0F9g2uoNyr3KpBG22TPMUAs46j1zd5/qWe5HiqbGEOS0UsFqtNuqQ58txSoPHphHX1yAQWaZ6nm2jz0j1wklDZLwhRQvkXZlktNAx9hIPqG1bzCjjnCrVFpK1FMDmSEYn2kjgzu1GQHmDKtgWOQ9CbVY1VG11a2kpEQFNYqH0rZvLy/Xhzs4Qv6bup6S6fD9UgRRJ0tzlijd4wnWXJ8iGTZpB0pQ8ip3I8kRoYNAoIgdDjDWsBVLBaOKweLEfuhnhfJzypT53NfBsTScZviG50GQpdkyqlw9ZC7rKzquJWiEgoSQSytxyaD8O1Svl6ODQ5gyx4hpS5RIS74tDV/mVPtPdHGLo5Eg1YE07IRe1BBgO0JpwM+cWAfmg1UOjEZYjGU0mlamw829SFZn3w4awaUbvi4Yr5cUR+sYywSvrmV9M4kULEMacnpekWtiLLP6JgaxPqld7btD5+7GKRXt1VXSs8I7kjBvhDiSJioy0vqZGqCDJyUETmSO2LDIhooLP10w5brc05KppD2rFFtbPFDdHUUPivXEB7GslxweF5D2aQow3V7BBc3ZPCGx0kb3JsLdlyjOuUuf/epkavmxYTwwUKY6uBC72meXQxTZ0gyTKhI5xtJsR4DMHwtU920gMy4D787h2/J+nzeNB9e8/j73HY+hsZetyzXzOVj5+YAWn3fllpP3wLyu4wb9nJ/YN+6/h3z1b2awmQj4aJxoJ2NKP/gb9wUS9)
 
     BEWARE: Non-determinism is a run-time error in StateBuddy. This prevents execution from continuing. When a Statechart model is deployed into production, you want to make absolutely sure that it is free from non-determinism!
 
-### Exercise 4: One transition, per region, per event
+#### Exercise 4: One transition, per region, per event
 
 Explain the observed behavior when repeatedly raising event `e` in the following model:
 [LINK](https://deemz.org/public/statebuddy/v2/#eJyVVc2PVEUQnxkQv0ARBV/jRzbRownMwq7Awayw0WwisDoLiSbi9ntdb6Zn3nv97O7ZnUENs29gF9AQEw9qJIbEi/+ACTEe9OjBP2BPzMl49LCExE3E6q6ZYRJOTjIz1b9fVVd1dVX15p3719igtJEYyy2cB22kymLTzSzviFhmQkIHorZFVKQfWytWJKy2QEirdM2Z7Ny8c/8KG5T7mYAo4RrEQpa3rVGj5dm2detJm16PjCr9ekMaRLv1qK01ZDaO27atwfEY1o4NaSCByHlvadXGoLJ6AqYhJE8xIDMyj7nWatWAhY41cYa/C/O3ruEm62yw83LUlqJuVf4OxFYYeRFECw8WVquocJkNHil4h3eD+SDZRJntOMAqNyOeiU00DavTDgw+CC55sqxY5dNQaeKOEPZX8BkJF1jlkxE5c9wb3mYV64UbwfJ409mjXr+yyCorD5HV14mssfKvniyC82NymsL5jZV/foirzpLhGVYuefJS8N4DQx9r8EvwzyTV623QTezquyQBFoG2EWSCV73aWwH5Wwlwl139cPoYudDBHyTcCLaJoNP+GfxOmSgFdz1+1McU/MvK7xJRZuWfPDMzPOZXrHyOpG/8oZCaPUy6O1glIGknuiRqhnS/Y5WDJN3EBK/TIR71hxCuCEbXHc5Mc6A99rHy2ibqhDPHhlDlB1Ze99BsdaS1l1XeIGg6ekVXh2DwLWFHEJsm2++DrwmbHe32I6vMBad6VFSPFQ3XPUsYS0tDnvAInLy8jPQGGzx+BUvQguZY2yuQ0d+iVjlo223mJEgwMVpm2DyGr4BYQnUwdNYn+mDdUliZQiRFh9w+WRDcSrixNZkuIVsQtbtohbx+Nqb2rBuZOtM1IvcUIuMpQM41/r1qoo/gHhbR7gJTtqcYASVSfqrwDTTaIs5524AoTZWGbf10fxS268RFJy7MQ6SyzPTKvve/YIO910OVyVCrFuhzOsl42zZwAMiI+1mDO+pGzo1ZVVq0DMDiUEYlHiZw6s0w4jLkBpZULqPYul+zZVbNiUOHEhXxpKGMPXH88OHq1vLyFn6d38/Z4JlrsYm0SpLmijQylIm0XZlgqSzyDJKmlvUGiSJPlAUBYbtOOW2gD89AqgRPKBf7ipgGG+kQ+GwhyQfG1iTJFSPmDymfxats8Ny6aEHX+CE74SsGHGUaR5k75Zb/UFb394eBw6oUmCtpITW0ISt/uU6eDxTCdnNoQCfH9gbR9GN9ymqArU1kE+lufwqw5qy56xDl6zDjySSYKj+0J6G6uz8cxX6b4f0isb8/DqFwzETtes18/HxM+QShzZ37fTZ4fq3u85+4lBVsEPRoWrPLDdNQqydPqo4X3tZSSCecgiTBqkVpYd4Ms4KNdPBKEytH1XxmYswKXl8zlbisWchN0wfqxRb6z4x0oZgtVn5tnNgX+hIvFJIzWPkNPLmB0zwXF5VKM5W53I3MSP3FfurK5bRXRDuV4sxJYLzOfAmNlzG9YPVM2YbM6n464TT1SXhpzTeScH4Quc4GL1/93+/cgydSpRy3q9dG6zU3+bkfpttztb0l99meu3DLC4Qu3x6i7//tBXoU1vysPUIz/dz23OJgwuTD0UZDAVv63n8J14/k)
@@ -40,13 +40,13 @@ Explain the observed behavior when repeatedly raising event `e` in the following
 And also explain the behavior of this model, where an internal event is raised:
 [LINK](https://deemz.org/public/statebuddy/v2/#eJyVVd1rXEUU37uptfWzVlvv+MWChSoIyaZtbPuUNqkSsG00aUHBNnPvnLs7u3dnrndmk92qNNlt0zZKEUSqItJ/Qijigz4K+gfkqfskgiA+pBQMWM/M2U1C7YsLu3vm9ztfc2bOmdXb966xXuFKaiy3cBZyI7VKTFtZ3hKJVEJCC+KmRVQ0PrBWzEtYqIOQVuczzmTb6u17l1kv6CoBccpzEFMqa1qjB8vTTevWW20WF8mo2K1UpUG0XYmbeQ7KJknTNnNwPKY1dEUaSCF20eu5bmJSqpKCqQrJG5iQGZgnPM/1ggELLWsShb9TkzevopNl1tt2KW5KUbE6ewsSK4y8AKKOG4vKZVS4xHoPdXiLt8PJMF1FmQ3tZcVvYq7EKppG5VEHhu+FFz0ZaFb8KNI5cQcI+z38mIRzrPjhgDx0xBveYkXrhevh3KbT171+cYYFP3qyE57dIEcp4k8s+P4/XHmMDE+xoODJi+E7m4Y+nfCH8O+t1OLiMhV7e9fVAfCccxuDErzs1d4IKd58iF62d6PRwxQiD38l4Xq4TgRt6LfwZ9psIbzj8YM+p/AfFrxNRMCC7zxzqL/Nz1lwhqQv/aaQGhsh3SFWDEnahiFXKNOHfabCHebg2KKDh8XwcOkY6RZZ8OoqqkUHjzj0OKE7WPCnRw+NOHSCQn7BglcILTt0ktCvWfAHoaMGSsOlc+elspArnp6Yx2tIDnezYImUxloTaHuilaVcqpKtQklHFkUQpY32KNmcx1BaqIIq5VwaqSol6VqhBOiytB/2k9df2NA+8npYPSBq8QYLVjw/Vn4QH+xkxXHiR+OX8zKBu8KvCDuA2Cg5+ja8EY4v0h3f0am6Zp7FktZzwG3E4OS5OaSvsN7Oy3UfiWOrYST6m851Brlt1zISJJgELRX2suHzIGbdfg0d2SNd8NsXVjYglqJFYR/tEFxPubEzsjGL7BJRj3XqEa+cTmhaVIxs2E3y8Y5QvAGQ8Rz/9pn4PNwtFIh7ouPbd2CRZLxpQBRKhf5QebI7yNLNgWknTk1CrJUyi4GfPJ+y3q6VSCsZ5boO+Zk8VbyJh6qsjLmfdOgxr2bcmAWdi7oBmO7LqMSjFCaORTGXETcwqzMZJ9b9mjWzYI4OD6c65mlVG3v0yMhIeW1ubg2/Lu4nrPfUtcTEuU7T2jzekEim0rZlihd8mitIa7msVEkUWaotCIiaFSphFWN4Bhpa8JRqsbuT0FglHQKf7kiKgbnVSHIthPVDylfxKus9syzq0DZ+xG+JlQAO0hwHqdvlmv9QVfd0+4nDghRYK2mhYcghCz5bpsh7O8K2M6hCK8PJA6LmHxVsDIC1VWTTzX6w5o5D9OCCbwUb2j8ZW6GKOz98CLyb/vkisae7kULHMVuuqtfM7utOtLl9r8t6zy5VfP1TV7IO64WL9FawS1VT1QvHj+uWF97MpZBOmIA0xUuK0tSk6VcF++a5yzW8OXrGVybBquDx1RoSlzMWMlPziXqxjvGVkS4Vs8aC1zYK+3xX4oFCegovehV3buAkz8QFrRv314b0X+g23H056TXRUDdwVKawsVb+Dm0sE3pAK0rbKk4kP1Rx0vsqvLjkO0korVwdVljvpav/+5ndfKF1g6O7ysxgveReJe4H/fr4zK6C+6yPn7vpBULnbvXRd//yAj1YS/6JOEDvzZn18eneFpP3B476Avb03X8BYCm6gQ==)
 
-### Exercise 5: Order Of Orthogonal Regions
+#### Exercise 5: Order Of Orthogonal Regions
 
 The order in which orthogonal regions can respond to an input event is explicitly controlled in StateBuddy. Regions can be assigned a "tag" (starts with a #). Regions are allowed to fire in the alphabetical order of their tags.
 
 You can now explain the behavior of this model: [LINK](https://deemz.org/public/statebuddy/v2/#eJyVVc2PGzUUj7flaymlLV/j7oFIhRtiN9m20EpFpa2oVqKwYtsihFqtM34z42RmPNjOJtlTNmm7bQGJKwKhqoL/gVMFFyTEAQ5cIiQ2BxCcEEKLeuhhsf2SNIdeiJTk5/d7H37Pz8+DrZ0bdFjaTLVhBi6C0kLmke7khrV5JHIuoA1h01gpzz4whq8JaDWACyPVijPZPdjauUqHpJ9zCFOmgC/lRdNoOV6+3TRuPW3T7aLRTD9OhLbSThw2lYLcRFHTNBU43m5r16bQkELoojeUbNpN5XEKOuGCZXZDemweMaVkS4OBttFRbn+XztzatE6u0eHuK2FT8NjI4k2IDNdiHXjDJlarVKzCFTp8qMfarBPUg/bAYrprkc68HLKcD6xprVJ1wuDj4EtPEknJnzWpkFv0spm54DaSlyn5Y0K+gmRMye/exS/BuxOvVfT6MyVbHvwYXLwf8SgaGkpe9OR3wTv3DX3I4CdKnp/mut1NrOjDfZcs2MNUJoScs4pXU8Fr/v92UAysTq3yKqZ6gJL2BP2K1DEM/wUlvyH6nJJ1T1UPY5otSjJE65QMkDqCgj3ejUOzlBikMNbMV8E/CL6lpIwMhiI0+AvBIiUHb2Aij/hEuDvQ8dHVqgvtOSNj2wHl941sQH7ixMKl8vws4gomQin5dGDNa9VKMVIeayxg/FuU/IAaRx/gb3a+PO2PbFLymddeXJC2QVWnPFZAdyQIGPKV9JCqnJWg3xBKm1GuwR0kq9khVXXkCoTSHabPN/gG2UU5P18W5YStATpH6+/pzH5UOPxABXKEzuxFhSMPTpaUKLkTvNDFTn+0l7grfd4WtaGgSFkIDq+uWnqTDh+7au+FAcXshVuDHP+WlSxAmU69QCBAR9Yytzda293w81YdNB7abB+MW3IjMggFb9/FuI/3/I2LtcgcExWsqYGXSqXRHNjTH7t0V3fZwaUzrk657hI/LD6iwydu1mQuaspmpy6oNGdNk9gDESHzw8l6VEnBtG5JxRsaYHmErRKrpXD69VrIRI1pOC8LEUbG/ept3dLH5+dTGbI0kdocP7awUNleXd22Xxf3QzrceyPSoZJpWl8TWtREKkxHpLYfl1kOaV2JOEHIi1Qa4FBrxliGxMbwDGSSsxRr8WQvwkmIOijc1xMYw+6tjsh1fKk0sJT93dq5Tof7r/EGdLSfylOxIrCzT9nZ57Lc9h+s6oH+aOPQEtzWShjINDqk5JNrGPmpHjedAhJoF3aOAK/7d6BsFMD2wLKpcNO8DLYfjP7XSaTvkZyl08JM+ik/LYrd+dnZ7d2MztcSB/qTLfQcI9aYEm7raFVMnpuyr4+Vbu306fDpjdiXP3UV69HhM12c7s9eSXQiW6dOybYHZ5XgwoHTkKY6dmjpjB4Vxfb4c1frtnHkii9MZItiT6+eCbtcMVDout+nhw0bP9fCbUVvU/LSpK5BX9jzhPQtlkFiE9dwjhV8XcqsPWf7DVRZRmWpTCJj6cqkIHY+0Jj2M9c757yZ9SIzO+VSmKxz30+TZYTvX5xLk4g89vMw4FiSgxv+VvFc5q4oN+lw7vr/fiXvP7AyY9ZdvDJeb7gHh/kxcu/kyr6S+9w7efmWByhd/Xokfe9vD/Ap2vDDfdEP9+DCvZPLwymTS2NHI2Dv993/AA85mCg=)
 
-### Exercise 6: `inState`-function
+#### Exercise 6: `inState`-function
 
 A special function exsists that can check if a certain state is active.
 
@@ -224,17 +224,21 @@ Your solution should implement the requirements correctly, also in edge cases, o
 
 There is not a single correct solution and there can be many good solutions. Generally speaking, a smaller/elegant solution (fewer model elements) is preferred over a "big" solution. As an indication of expected size/complexity, my own solution contains 17 AND-states, 10 OR-states and 19 transitions.
 
-### Collecting Usage Data
+### Usage Data Collection
 
 StateBuddy records all user interactions (mouse cursor movements, button clicks, ...)
 This information remains local on your machine, but you can VOLUNTARILY hand it in, as it provides us with useful data to improve StateBuddy (what do students struggle with, etc.).
-To do so, hit the shortcut Ctrl+. (dot). This freezes the app and brings up a bar at the bottom with a slider and some buttons:
+It is also a small experiment to see if recording user interactions works well enough (for instance, does it have a significant performance impact?).
+
+To see the current recording, hit the shortcut Ctrl+. (dot). This freezes the app and brings up a bar at the bottom with a slider and some buttons:
 
 ![](./figures/export-recording.png)
 
-Click the bottom-rightmost button ("export recording") to download the recording as a file. A recording can also be imported into StateBuddy to replay it (with the "import recording" button next to it). DO NOT refresh the page as you will lose your current recording. If you must close the page, export the recording, and import it later and click the "resume app" button to continue working.
+The slider allows you to see all the recorded application snapshots. In the bottom-right corner, you find two buttons: "import recording" and "export recording". The latter will export/download the sequence of snapshots as a file. The former will import such a file. This is the main mechanism for you to save/open your model.
 
-It is also a small experiment to see if recording user interactions works well enough (e.g., doesn't slow down the app too much).
+To unfreeze the app, and continue working (and recording), click the "resume app" button.
+
+    CAUTION: if you refresh the page, you will keep your model, but you will lose your recording! If you intend to hand in a recording, always export the recording before leaving the page, and import it before you continue working on the assignment.
 
 ### Submitting Your Solution
 
@@ -245,7 +249,7 @@ It is also a small experiment to see if recording user interactions works well e
 
   - Either:
       - If you wish to submit the full recording, simply upload the exported recording file (it contains your solution as well...)
-      - If you do *not* wish to submit the full recording (e.g., privacy reasons), and only your solution, simply upload a file containing the URL (including the long hash-string).
+      - If you do *not* wish to submit the full recording (e.g., privacy reasons), and only your solution, simply upload a file containing the URL (including the long hash-string) to your finished model.
 
 **Both team members** submit:
 
