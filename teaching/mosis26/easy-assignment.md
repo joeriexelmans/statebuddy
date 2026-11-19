@@ -227,7 +227,7 @@ There is not a single correct solution and there can be many good solutions. Gen
 ### Usage Data Collection
 
 StateBuddy records all user interactions (mouse cursor movements, button clicks, ...)
-This information remains local on your machine, but you can VOLUNTARILY hand it in, as it provides us with useful data to improve StateBuddy (what do students struggle with, etc.).
+This information remains local on your machine, but you can *voluntarily* hand it in, as it provides us with useful data to improve StateBuddy (what do students struggle with, etc.).
 It is also a small experiment to see if recording user interactions works well enough (for instance, does it have a significant performance impact?).
 
 To see the current recording, hit the shortcut Ctrl+. (dot). This freezes the app and brings up a bar at the bottom with a slider and some buttons:
