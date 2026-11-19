@@ -41,9 +41,11 @@ export function SpyingApp() {
 
   const [paused, setPaused] = useState(false);
 
+  const togglePaused = useCallback(() => {setAppHistory(h => ({...h, i: h.h.length-1, j: h.h.at(-1)!.length-1})); setPaused(p => !p)}, [setAppHistory, setPaused]);
+
   useShortcuts([
-    {keys: ["Ctrl", "."], action: () => setPaused(p => !p)},
-  ])
+    {keys: ["Ctrl", "."], action: togglePaused},
+  ]);
 
   const setAppStateButKeepHistory = useCallback((value: SetStateAction<AppState|undefined>) => {
     setAppHistory(({h, i, j}) => {
@@ -147,12 +149,10 @@ export function SpyingApp() {
     <div
       style={{display: 'flex', flexDirection: 'column', overflow: 'hidden', flexGrow: 1}}
     >
-      <div style={{display: 'flex',
-        overflow: 'hidden',
+      <div style={{display: 'grid',
+        overflow: paused ? 'scroll': 'hidden',
         flexGrow: 1,
-        alignContent: 'center',
-        alignItems: paused ? 'center' : undefined,
-        justifyContent: 'center',
+        placeItems: paused ? 'center' : undefined,
         backgroundColor: 'light-dark(#1b45ff52, rgba(28, 71, 100, 0.377))',
       }}
         onMouseMove={mouseEventHandler}
@@ -179,7 +179,7 @@ export function SpyingApp() {
           }
         </div>
       </div>
-      {paused && cur && <div style={{display: 'flex', width: '100vw', alignItems: 'center', position: 'absolute', bottom: 0, backgroundColor: 'var(--background-color)', zIndex: 10000}}>
+      {paused && cur && <div style={{display: 'flex', width: '100vw', alignItems: 'center', backgroundColor: 'var(--background-color)'}}>
         <div style={{width: 'fit-content'}}>app paused</div>
         &emsp;
         <div style={{width: 'fit-content'}}>{chunkedLength(appHistory.h)} snapshots</div>
@@ -214,7 +214,7 @@ export function SpyingApp() {
           //     ...found,
           //   }))}}
         />
-        <button disabled={!paused} onClick={() => {setAppHistory(h => ({...h, i: h.h.length-1, j: h.h.at(-1)!.length-1})); setPaused(false)}} title="jump to most recent snapshot and resume app">
+        <button disabled={!paused} onClick={togglePaused} title="jump to most recent snapshot and resume app">
           {/* <SkipNextIcon fontSize="small"/> */}
           <PlayArrowIcon fontSize="small"/>
           <FiberManualRecordIcon fontSize="small"/>
