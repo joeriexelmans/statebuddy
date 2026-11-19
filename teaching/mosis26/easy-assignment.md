@@ -96,12 +96,55 @@ Likewise, the sequence for a car exiting the parking lot is:
 
     R3. When a car is IN FRONT OF the exit barrier, AND its driver pays for her stay, the exit barrier MUST OPEN and its traffic light MUST become GREEN. Then, as long as no car PASSES THROUGH the exit barrier, after 3 seconds, the exit traffic light MUST become RED, and another 1 second later (= 4 seconds since the driver's payment), the exit barrier MUST CLOSE.
 
+      Note: If the driver misses the 4-second window to pass through the opened barrier, the only way to open it again is to pay again.
+
+      Note: This behavior is not very realistic, but it results in a sufficiently hard, but not too hard, assignment.
+
     R4. Whenever a car is PASSING THROUGH the exit barrier, its traffic light MUST become RED.
+
+      Motivation: This RED signal is meant for a potential follow-up car.
 
     R5. Whenever a car has PASSED the exit barrier, the barrier must CLOSE.
 
+      Motivation: only drivers that payed the fee are allowed to exit the parking lot.
+
+#### Special Exit Procedure: Manual Overrride
+
+    R6. When the parking lot operator clicks the "FORCE-OPEN EXIT"-button, the exit barrier MUST OPEN as if a driver has just payed for her stay (see R3), meaning, the car has 4 seconds to pass through the exit barrier, etc.
+
+#### Safety
+
+    R7. Whenever a car is PASSING THROUGH a barrier, that barrier MUST NEVER CLOSE.
+
+      Motivation: safety: a barrier closing while a car passes through results in an accident (try it :)
 
 ### Plant <-> Statechart Interface
+
+The Statechart model that you will create can respond to the following input events:
+
+  - `s0(True|False)` indicates a change in the s0 sensor reading (`True`: car detected, `False`: no car detected)
+  - `s1(True|False)` indicates a change in the s1 sensor reading (True: car detected, False: no car detected)
+  - `s2(True|False)` indicates a change in the s2 sensor reading (True: car detected, False: no car detected)
+  - `s3(True|False)` indicates a change in the s3 sensor reading (True: car detected, False: no car detected)
+
+  - `forceExit` indicates the parking lot operator has clicked the "FORCE-OPEN EXIT" button
+
+  - `full` indicates the parking lot has no more free spots
+  - `notFull` indicates the parking lot has at least one free spot again
+  - `payed` indicates a driver has payed the fee at the payment machine located at the exit
+
+
+The Statechart model that you will create can raise the following output events:
+
+  - `carsInc` increments the number of counted cars (potentially resulting in a `full` event being received)
+  - `carsDec` decrements the number of counted cars (resulting in a `notFull` event being received if the parking lot was full)
+  - `setEntryBarrier(True|False)` opens or closes the entrance barrier (`True`: open, `False`: close)
+  - `setExitBarrier(True|False)` opens or closes the exit barrier (`True`: open, `False`: close)
+  - `setEntryGreen` sets entrance traffic light to green
+  - `setEntryRed` sets entrance traffic light to red
+  - `setExitGreen` sets exit traffic light to green
+  - `setExitRed` sets exit traffic light to red
+  - `requestPay(Integer)` makes the payment machine request the given amount of money (in EUR) from the driver. This even must be raised before the driver can make her payment.
 
 
 
@@ -110,3 +153,8 @@ Likewise, the sequence for a car exiting the parking lot is:
 As an indication of expected complexity, my own solution contains 17 AND-states, 10 OR-states and 19 transitions.
 
 Generally speaking, a less complex solution (consisting of fewer model elements) is preferred, because it will be easier to understand / explain / maintain.
+
+## Getting Started
+
+StateBuddy with a starting point model can be found here:
+
