@@ -203,8 +203,11 @@ The assignment is designed to encourage and/or require use of (almost) all the S
   - hierarchy
   - orthogonality
   - input/internal/output events
-  - entry/exit actions
   - timed transitions
+  - guard conditions
+  - exit/transition/entry actions
+  - (variables)
+  - (history: shallow/deep)
 
 Use these features where appropriate, demonstrating that you understand them.
 
