@@ -172,14 +172,16 @@ export function ParkingLot({state, speed, raiseUIEvent}: PlantRenderProps<Parkin
   </div>
   <div style={{width: '100%', }}>
     <button style={{width: '50%'}}
-      disabled={state.exitCar !== "waiting" || state.leavingCarTicketID !== -1}
+      disabled={state.exitCar !== "waiting" || state.leavingCarTicketID === -1 && state.payment === null}
       onClick={() => raiseUIEvent((state.payment === null)
         ? {name:  "scanTicket"}
         : {name: "pay", param: state.payment})}
       >
         {state.exitCar === "waiting"
           ? ((state.payment === null)
-            ? "SCAN TICKET"
+            ? (state.leavingCarTicketID !== -1)
+              ? "SCAN TICKET"
+              : "_"
             : `PAY €${Math.ceil(state.payment*100)/100}`)
           : "_"}
     </button>
