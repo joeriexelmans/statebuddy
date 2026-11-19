@@ -123,13 +123,13 @@ Refresh the page to get the latest version.` : `about ${trial.appName}`} align="
           className={styles.description}
           />
       </Tooltip>
-      <KeyInfo keyInfo={ShortcutExport}>
+      {/* <KeyInfo keyInfo={ShortcutExport}>
         <Tooltip tooltip='export as JSON'>
           <button onClick={() => onSave(modelName)}>
             <SaveAltIcon fontSize='small'/>
           </button>
         </Tooltip>
-      </KeyInfo>
+      </KeyInfo> */}
     </Toolbar>
 
     <EditorToolbar
