@@ -112,14 +112,6 @@ export function useCopyPaste(state: VisualEditorState, commit: Dispatch<(v:Visua
     }
   }, [state]);
 
-  const onCut = useCallback((e: ClipboardEvent) => {
-    if (state.selection.size > 0) {
-      copyInternal(state, e);
-      deleteSelection();
-      e.preventDefault();
-    }
-  }, [state]);
-
   const deleteSelection = useCallback(() => {
     commit(state => {
       const es = entirelySelectedShapes(state, state.selection);
@@ -135,6 +127,14 @@ export function useCopyPaste(state: VisualEditorState, commit: Dispatch<(v:Visua
       };
     });
   }, [commit]);
+
+  const onCut = useCallback((e: ClipboardEvent) => {
+    if (state.selection.size > 0) {
+      copyInternal(state, e);
+      deleteSelection();
+      e.preventDefault();
+    }
+  }, [state, deleteSelection]);
 
   useShortcuts([
     {keys: ["Delete"], action: deleteSelection},

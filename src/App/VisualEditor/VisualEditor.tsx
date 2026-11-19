@@ -1,6 +1,6 @@
 import "./VisualEditor.css";
 
-import { Dispatch, memo, ReactElement, SetStateAction, useCallback, useContext, useEffect, useMemo } from "react";
+import { Dispatch, memo, SetStateAction, useContext, useEffect } from "react";
 
 import { arraysEqual, mapsEqual, objectsEqual, setsEqual } from "@/util/util";
 import { Arrow, ArrowPart, Diamond, RectSide, Rountangle, Text } from "../../languages/statecharts/concrete_syntax";

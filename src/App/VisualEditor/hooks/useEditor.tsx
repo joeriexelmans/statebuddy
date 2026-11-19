@@ -134,7 +134,7 @@ export function useEditor(
       // mouse is not on any shape
       startMakingSelection();
     }
-  }, [getCurrentPointer, commitSelection, state.selection]);
+  }, [getCurrentPointer, commitSelection, state.selection, setDragging, setMakingSelection]);
   
   const startInsert = useCallback((e: React.MouseEvent<SVGSVGElement, MouseEvent>, mode: ToolMode) => {
     const currentPointer = getCurrentPointer(e);
@@ -208,7 +208,7 @@ export function useEditor(
     // The user can still resize/move the inserted shape as long as the insert mouse button is kept pressed:
     setDragging(currentPointer);
     return;
-  }, [getCurrentPointer, commit]);
+  }, [getCurrentPointer, commit, setDragging]);
   
   const modeToAction = useCallback((mode: ToolMode, e: React.MouseEvent<SVGSVGElement, MouseEvent>) => {
     if (mode === "nothing") {
@@ -301,7 +301,7 @@ export function useEditor(
       };
     });
     setDragging(null); // <-- no longer dragging
-  }, [replace, replaceSelection, setDragging, setMakingSelection, refSVG.current, newSelection]);
+  }, [setState._setShallow, setDragging, newSelection]);
 
   const onSelectAll = useCallback(() => {
     setDragging(null);
