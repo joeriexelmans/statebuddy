@@ -187,8 +187,8 @@ Your Statechart model can respond to the following input events:
 
 Your Statechart model can raise the following output events:
 
-  - `carsInc` increments the number of counted cars (potentially resulting in a `full` event being received)
-  - `carsDec` decrements the number of counted cars (resulting in a `notFull` event being received if the parking lot was full)
+  - `carsInc` increments the number of counted cars (potentially resulting in a `full(True)` event being received)
+  - `carsDec` decrements the number of counted cars (resulting in a `full(False)` event being received if the parking lot *was* full)
   - `setEntryBarrier(True|False)` opens or closes the entrance barrier (`True`: open, `False`: close)
   - `setExitBarrier(True|False)` opens or closes the exit barrier (`True`: open, `False`: close)
   - `setEntryGreen` sets entrance traffic light to green
