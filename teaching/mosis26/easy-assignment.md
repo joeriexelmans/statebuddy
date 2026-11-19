@@ -219,6 +219,8 @@ There is not a single correct solution and there can be many good solutions. Gen
 
 We'll use StateBuddy, a web-based integrated environment for statechart modeling and simulation.
 
+![statebuddy-logo](../../artwork/new-logo/new-logo-playful-minified.svg)
+
 A starting point model is provided, where all input/output events have already been declared for you, and connections between these events and the 'plant' have already been set up.
 It also contains a (wrong) example solution that you can play around with to become comfortable with StateBuddy.
 
