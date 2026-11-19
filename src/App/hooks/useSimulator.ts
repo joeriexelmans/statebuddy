@@ -59,41 +59,41 @@ export type SimulatorStuff = WithSetters<{
 
 type OutputListener = (bagOfOutputs: RaisedEvent[]) => void;
 
-function traceItemTimestamp(item: DEVSTraceItem<any, any> | undefined) {
-  return item ? item.simtime : Infinity;
-}
+// function traceItemTimestamp(item: DEVSTraceItem<any, any> | undefined) {
+//   return item ? item.simtime : Infinity;
+// }
 
-function currentTraceIdx(time: TimeMode, trace: DEVSTrace<CoupledState, RaisedEvent>) {
-  // trace is a simtime-sorted list, so we perform a binary search :)
-  let leftMostIdx = 0;
-  let rightMostIdx = trace.length-1;
-  let bias = 'R';
-  const toFind = getSimTime(time, Date.now());
-  while (true) {
-    let middleIdx;
-    if (bias === 'R') {
-      // make the common case fast:
-      // often, when calling this function, the current element will be the last one in the list
-      middleIdx = rightMostIdx;
-    }
-    else {
-      // normal binary search: divide list in the middle
-      middleIdx = Math.floor((leftMostIdx + rightMostIdx) / 2);
-    }
-    const middleIdxTs = traceItemTimestamp(trace[middleIdx]);
-    if (toFind >= middleIdxTs) {
-      if (toFind < traceItemTimestamp(trace[middleIdx+1])) {
-        return middleIdx; // found it :)
-      }
-      leftMostIdx = middleIdx+1;
-    }
-    else {
-      rightMostIdx = middleIdx-1;
-    }
-    // continue with normal binary search
-    bias = 'M';
-  }
-}
+// function currentTraceIdx(time: TimeMode, trace: DEVSTrace<CoupledState, RaisedEvent>) {
+//   // trace is a simtime-sorted list, so we perform a binary search :)
+//   let leftMostIdx = 0;
+//   let rightMostIdx = trace.length-1;
+//   let bias = 'R';
+//   const toFind = getSimTime(time, Date.now());
+//   while (true) {
+//     let middleIdx;
+//     if (bias === 'R') {
+//       // make the common case fast:
+//       // often, when calling this function, the current element will be the last one in the list
+//       middleIdx = rightMostIdx;
+//     }
+//     else {
+//       // normal binary search: divide list in the middle
+//       middleIdx = Math.floor((leftMostIdx + rightMostIdx) / 2);
+//     }
+//     const middleIdxTs = traceItemTimestamp(trace[middleIdx]);
+//     if (toFind >= middleIdxTs) {
+//       if (toFind < traceItemTimestamp(trace[middleIdx+1])) {
+//         return middleIdx; // found it :)
+//       }
+//       leftMostIdx = middleIdx+1;
+//     }
+//     else {
+//       rightMostIdx = middleIdx-1;
+//     }
+//     // continue with normal binary search
+//     bias = 'M';
+//   }
+// }
 
 export function useInteractiveSimulator(
   cE: DEVSComponent<DEVSTrace<CoupledState, RaisedEvent>, RaisedEvent> | undefined,
@@ -209,7 +209,7 @@ export function useInteractiveSimulator(
         : {kind: "realtime", since: {simtime: 0, wallclktime: Date.now()}, scale: interactive.time.scale},
       idx: -1,
     }));
-  }, [setInteractive]);
+  }, [setInteractive._setShallow]);
 
   const onClear = useCallback(() => {
     setInteractive._setShallow({
@@ -217,7 +217,7 @@ export function useInteractiveSimulator(
       time: {kind: "paused", simtime: 0},
       idx: 0,
     });
-  }, [setInteractive]);
+  }, [setInteractive._setShallow]);
 
   // raise input event at current point in simulated time (depends on 'time'), producing a new runtime configuration (or a runtime error)
   const onRaise = useCallback((bagOfInputs: RaisedEvent[]) => {
@@ -243,7 +243,7 @@ export function useInteractiveSimulator(
         idx: -1,
       };
     });
-  }, [setInteractive, fullTrace]);
+  }, [setInteractive._setShallow, fullTrace]);
 
   // Sets the simulated time to exactly match the next timed transition.
   // Note: this function does not make the next timed transition happen. You need to call `makeNextTimedTransition` for that.
@@ -263,7 +263,7 @@ export function useInteractiveSimulator(
         idx: (interactive.idx >= 0) ? interactive.idx+1 : -1, // -1 is special value (meaning: last element in trace)
       }
     });
-  }, [setInteractive, nextWakeup]);
+  }, [setInteractive._setShallow, nextWakeup]);
 
   // when user presses <Tab>
   const onSkip = useCallback(() => {
@@ -272,7 +272,7 @@ export function useInteractiveSimulator(
       const setTime = setInteractive.setTime._setShallow as Dispatch<SetStateAction<TimeMode>>;
       setTime(time => timeTravel(time, nextWakeup, Date.now()));
     }
-  }, [jumpTimeToNextTimedTransition, nextWakeup]);
+  }, [jumpTimeToNextTimedTransition, nextWakeup, setInteractive.setTime._setShallow]);
 
   // The following effect is what makes timed transitions happen in Statebuddy:
   // timer elapse events are triggered by a change of the simulated time (possibly as a scheduled JS event loop timeout)
@@ -303,7 +303,7 @@ export function useInteractiveSimulator(
         idx: fullTrace.idx-1 >= 0 ? fullTrace.idx-1 : 0,
       }))
     }
-  }, [fullTrace]);
+  }, [fullTrace, setInteractive._setShallow]);
   const onNext = useCallback(() => {
     if (fullTrace) {
       const nextItem = fullTrace.trace[fullTrace.idx+1] || fullTrace.trace[fullTrace.idx];
@@ -316,7 +316,7 @@ export function useInteractiveSimulator(
         idx: fullTrace.idx+1 < fullTrace.trace.length ? fullTrace.idx+1 : fullTrace.idx,
       }));
     }
-  }, [fullTrace]);
+  }, [fullTrace, setInteractive._setShallow]);
 
   const selectItem = useCallback((idx: number) => {
     setInteractive._setShallow(interactive => ({
@@ -327,7 +327,7 @@ export function useInteractiveSimulator(
       },
       idx: idx,
     }))
-  }, [fullTrace]);
+  }, [fullTrace, setInteractive._setShallow]);
 
   useShortcuts([
     {keys: ["ArrowUp"], action: onBack},
@@ -345,7 +345,7 @@ export function useInteractiveSimulator(
         idx: -1,
       }
     })
-  }, [setInteractive]);
+  }, [setInteractive._setShallow]);
 
   const simulatorCallbacks = useMemo(() => ({
     onInit, onClear, onBack, onRaise, onSkip, onReplayTrace, addOutputListener, rmOutputListener,
@@ -364,7 +364,7 @@ export function useInteractiveSimulator(
 
       // 'reducers'
       simulatorCallbacks,
-  }), [cE, fullTrace, outputListeners]);
+  }), [cE, fullTrace, outputListeners, setInteractive._setShallow]);
 
   return simulator;
 }
