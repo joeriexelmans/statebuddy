@@ -14,11 +14,12 @@ import { objectsEqual } from '@/util/util';
 import { ExecutionState } from '../migrations/v2_types';
 import { PropertyCheckResult } from '../SideBar/PropertyCheckResult';
 import { CheckPropFn } from '@/mtl-checker/useMtlWorkerPool';
+import { RaisedEvent } from '@/languages/statecharts/interpreter/runtime_types';
 
 type PropertyTableProps = {
   abstractSyntax: AbstractSyntax,
   execution: ExecutionState,
-  cE: DEVSComponent<DEVSTrace<CoupledState>>,
+  cE: DEVSComponent<DEVSTrace<CoupledState, RaisedEvent>, RaisedEvent>,
   onClose: () => void,
   checkProperty: CheckPropFn,
 }
