@@ -6,9 +6,9 @@
   "main": "src/index.tsx",
   "module": "src/index.tsx",
   "scripts": {
-    "dev": "git rev-parse HEAD > src/git-rev.txt && bun --hot src/index.tsx --asset-naming='assets/[name]-[hash13].[ext]' --chunk-naming='assets/[name]-[hash13].[ext]'",
+    "dev": "git rev-parse HEAD > src/git-rev.txt && bun --hot src/index.tsx --asset-naming='assets/[name]-[hash].[ext]' --chunk-naming='assets/[name]-[hash].[ext]'",
     "build": "sh ./build.sh",
-    "deploy": "bun run build && aws s3 cp --recursive --storage-class ONEZONE_IA dist s3://statebuddy/"
+    "deploy": "sh ./deploy.sh"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
