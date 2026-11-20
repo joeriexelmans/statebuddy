@@ -25,7 +25,6 @@ aws s3 cp \
 
 # landing page is also mutable
 aws s3 cp \
-  --recursive \
   --storage-class ONEZONE_IA \
   --cache-control "public, max-age=30" \
   dist/index.html s3://statebuddy/index.html
