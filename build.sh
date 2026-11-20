@@ -28,6 +28,10 @@ NODE_ENV=production bun build ./src/mtl-checker/mtl_web_worker.ts \
 
 # Luckily the web worker's entry point is only ~19KiB.
 
+
+# We split our main entry point (index.html) into a bunch of entry points so large, infrequently updated chunks end up in separate files (that can be seperately stored and cached).
+# The entry points to split off were discovered by analysis the meta-file with
+#   https://esbuild.github.io/analyze/
 NODE_ENV=production bun build \
   ./src/index.html \
   ./node_modules/mqtt/dist/mqtt.esm.js \
@@ -48,16 +52,14 @@ mkdir -p dist/tags
 # copy pyodide
 cp -r ./src/mtl-checker/assets/pyodide-* dist/assets/
 
+# a symlink would be better, but S3 has no notion of symlinks.
 mv dist/assets/*.html dist/tags/latest.html
 
-# add immutable entry point
-mkdir -p dist/commits
+# add immutable entry point (again no symlink)
 cp dist/tags/latest.html       dist/commits/$COMMIT.html
-# cp dist/tags/latest-meta.json  dist/commits/$COMMIT-meta.json
 
-# add mosis26 entry point
+# add mosis26 entry point (again no symlink)
 cp dist/tags/latest.html       dist/tags/mosis26.html
-# cp dist/tags/latest-meta.json  dist/tags/mosis26-meta.json
 
 # add our landing page
 cp src/landing_page.html dist/index.html
