@@ -9,6 +9,9 @@ git rev-parse HEAD > src/git-rev.txt
 
 # what follows now, is a very hacked mess, because Bun *still* doesn't properly support bundling web workers.
 
+# make git ignore changes to mtl-meta.json (it will be overwritten but we don't want to check the changes into git)
+git update-index --skip-worktree ./mtl-meta.json
+
 # first we must build our web worker script
 NODE_ENV=production bun build ./src/mtl-checker/mtl_web_worker.ts \
   --entry-naming='assets/[name]-[hash13].[ext]' \
