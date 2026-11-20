@@ -19,11 +19,13 @@
         default = pkgs.mkShell {
           buildInputs = [
             pkgs.bun
+            pkgs.awscli2
           ];
 
           shellHook = ''
             echo "Bun dev environment ready"
             bun --version
+            aws --version
           '';
         };
       });
