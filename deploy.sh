@@ -6,14 +6,14 @@ bun run build
 aws s3 sync \
   --storage-class ONEZONE_IA \
   --cache-control "public, max-age=31536000, immutable" \
-  --no-overwrite \
+  --exclude '*.js.map' \
   dist/assets s3://statebuddy/assets
 
 # commits are also immutable
 aws s3 sync \
   --storage-class ONEZONE_IA \
   --cache-control "public, max-age=31536000, immutable" \
-  --no-overwrite \
+  --exclude '*-meta.json' \
   dist/commits s3://statebuddy/commits
 
 # tags are mutable
@@ -28,4 +28,3 @@ aws s3 cp \
   --storage-class ONEZONE_IA \
   --cache-control "public, max-age=30" \
   dist/index.html s3://statebuddy/index.html
-

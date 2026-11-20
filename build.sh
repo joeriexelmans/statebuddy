@@ -32,14 +32,12 @@ NODE_ENV=production bun build \
   ./src/index.html \
   ./node_modules/mqtt/dist/mqtt.esm.js \
   ./node_modules/react-dom/cjs/react-dom-client.production.js \
-  ./node_modules/@fontsource/roboto/index.css \
-  ./node_modules/@fontsource/roboto-condensed/index.css \
-  ./node_modules/@fontsource/roboto-mono/index.css \
   ./src/App/Logo/Logo.tsx \
   --entry-naming='assets/[name]-[hash13].[ext]' \
   --asset-naming='assets/[name]-[hash13].[ext]' \
   --chunk-naming='assets/[name]-[hash13].[ext]' \
-  --outdir=dist --target=browser --minify --sourcemap --splitting \
+  --outdir=dist --target=browser --minify --splitting \
+  --sourcemap  \
   --define process.env.NODE_ENV='\"production\"' --env='BUN_PUBLIC_*' \
   --metafile=./dist/commits/$COMMIT-meta.json \
   --public-path='../' # <-- we have to tell bun that all imports are relative to the parent directory
