@@ -7,9 +7,11 @@ aws s3 sync \
   --storage-class ONEZONE_IA \
   --cache-control "public, max-age=31536000, immutable" \
   --exclude '*.js.map' \
+  --no-overwrite \
   dist/assets s3://statebuddy/assets
 
-# commits are also immutable
+# commits *should* be immutable, but only if our git tree is clean (no uncommitted changes) ...
+# since this involves not a lot of data, let's always overwrite it.
 aws s3 sync \
   --storage-class ONEZONE_IA \
   --cache-control "public, max-age=31536000, immutable" \
