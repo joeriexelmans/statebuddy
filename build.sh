@@ -30,7 +30,8 @@ NODE_ENV=production bun build ./src/index.html \
   --chunk-naming='assets/[name]-[hash13].[ext]' \
   --outdir=dist --target=browser --minify --sourcemap \
   --define process.env.NODE_ENV='\"production\"' --env='BUN_PUBLIC_*' \
-  --metafile=./dist/commits/$COMMIT-meta.json
+  --metafile=./dist/commits/$COMMIT-meta.json \
+  --public-path='../' # <-- we have to tell bun that all imports are relative to the parent directory
 
 # copy pyodide
 cp -r ./src/mtl-checker/assets/pyodide-* dist/assets/
