@@ -36,5 +36,8 @@ cp -r ./src/mtl-checker/assets/pyodide-* dist/assets/
 # add immutable entry point
 cp dist/versions/latest.html dist/versions/$(git rev-parse HEAD).html
 
+# add mosis26 entry point
+cp dist/versions/latest.html dist/versions/mosis26.html
+
 # add our landing page
 cp src/landing_page.html dist/index.html
