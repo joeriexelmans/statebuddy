@@ -43,7 +43,7 @@ See also the [comparison with Itemis CREATE](./docs/comparison_itemis.md), the t
 <span style="color:orange">*Note: Safari is known not to work 100%. I don't have a Mac so I cannot fix this. Use Firefox or Chrome.*</span>
 
 **Live version:**
-[https://deemz.org/public/statebuddy/v2/](https://deemz.org/public/statebuddy/v2)
+[https://statebuddy.s3-website.fr-par.scw.cloud/](https://statebuddy.s3-website.fr-par.scw.cloud/)
 
 Or just play with one of the **example models**:
 
