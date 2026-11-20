@@ -2,7 +2,7 @@ import { PreparedTrace, PropertyCheckStatus } from "@/App/SideBar/prepare_trace_
 
 import { loadPyodide, PyodideAPI, version as pyodideVersion } from "pyodide"
 
-// import pylibs from "./assets/python-libs.zip";
+import pylibs from "./assets/mtl-libs.zip";
 
 async function fetchBuffer(url: string) {
   const res = await fetch(url);
@@ -21,8 +21,7 @@ export async function initPyodide() {
     // indexURL: location.protocol + location.port + 
     checkAPIVersion: false,
     fullStdLib: false,
-    // indexURL: `https://cdn.jsdelivr.net/pyodide/v${pyodideVersion}/full/`,
-    indexURL: './assets/pyodide',
+    indexURL: './pyodide-0.29.3', // <-- Pyodide is a world of pain: we have to give it a path that our bundler can't modify. Pyodide will attempt this path (relative to window.location.pathname) and look for the files pyodide.asm.js, pyodide.asm.wam and python_stdlib.zip
     lockFileContents: {
       info: {
         "abi_version": "2025_0",
@@ -38,7 +37,7 @@ export async function initPyodide() {
   });
 
   // console.log('pyodide: fetching libs ...');
-  const buf = await fetchBuffer("assets/pyodide/mtl-libs.zip");
+  const buf = await fetchBuffer(pylibs);
 
   // console.log('pyodide: unpacking libs ...');
   pyodide.unpackArchive(buf, "zip", {

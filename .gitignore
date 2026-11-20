@@ -35,3 +35,7 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # When building the app, we include the git rev in the status bar. We do this by calling git and writing the rev to a file, which is then included by the app.
 src/git-rev.txt
+
+
+meta.json
+# do NOT ignore mtl-meta.json! (needed to build index.html entry point)

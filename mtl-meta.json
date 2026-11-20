@@ -1,0 +1,7 @@
+{
+  "outputs": {
+    "./assets/mtl_web_worker-0000000000000.js": {
+      "entryPoint": "src/mtl-checker/mtl_web_worker.ts"
+    }
+  }
+}

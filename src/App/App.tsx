@@ -47,6 +47,12 @@ import { MyDetails } from "./Components/MyDetails";
 import { Scrollable } from "./Components/Scrollable";
 import { ModalState } from "./migrations/v2_types";
 
+
+// The following is a workaround to force 'mtl-libs.zip' being properly served by bun's dev server. Otherwise they are only imported from the mtl_web_worker.ts script, which is declared a separate entry point in the dev server and doesn't seem to cause any imported static files to be properly served.
+import pylibs from "../mtl-checker/assets/mtl-libs.zip";
+const FORCE_BUNDLE_PYLIBS = pylibs; // yes, unused variable, do NOT delete (see comment above)
+
+
 export function App({appState, setAppState: setAppStateShallow, modelSize}: WithSetters<{appState: AppState}> & {modelSize: ModelSize}) {
   const setAppState = useMemo(() => makeDeepSetter(defaultAppState, setAppStateShallow), [setAppStateShallow]);
 

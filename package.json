@@ -6,8 +6,8 @@
   "main": "src/index.tsx",
   "module": "src/index.tsx",
   "scripts": {
-    "dev": "git rev-parse HEAD > src/git-rev.txt && bun --hot src/index.tsx",
-    "build": "rm -rf dist/* && NODE_ENV=production bun build ./src/index.html ./src/mtl-checker/mtl_web_worker.ts --entry-naming='[name].[ext]' --outdir=dist --sourcemap --target=browser --minify --define process.env.NODE_ENV='\"production\"' --env='BUN_PUBLIC_*' --metafile=./dist/meta.json && cp -r ./src/assets dist/",
+    "dev": "git rev-parse HEAD > src/git-rev.txt && bun --hot src/index.tsx --asset-naming='assets/[name]-[hash13].[ext]' --chunk-naming='assets/[name]-[hash13].[ext]'",
+    "build": "sh ./build.sh",
     "start": "NODE_ENV=production bun src/index.tsx --define process.env.NODE_ENV='\"production\"'"
   },
   "dependencies": {

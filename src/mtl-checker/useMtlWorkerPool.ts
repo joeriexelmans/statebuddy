@@ -6,6 +6,15 @@ export type CheckPropFn = (req: MtlReq) => readonly [Promise<PropertyCheckStatus
 
 export type MtlWorkerPoolState = WorkerPoolState<MtlReq, PropertyCheckStatus>;
 
+import {outputs} from "../../mtl-meta.json";
+
+const workerScriptFileName = "../" + Object.entries(outputs).find(([_outputFilename, {entryPoint}]) => {
+  return entryPoint === "src/mtl-checker/mtl_web_worker.ts";
+})![0];
+
 export function useMtlWorkerPool(nWorkers: number) {
-  return useWorkerPool<MtlReq, PropertyCheckStatus>(nWorkers, "mtl_web_worker.js");
+  // the following only works because
+  //   - the dev server has a special route for the web worker
+  //   - the build command has our worker as an entry point and then renames it.
+  return useWorkerPool<MtlReq, PropertyCheckStatus>(nWorkers, workerScriptFileName);
 }
