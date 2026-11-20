@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "git rev-parse HEAD > src/git-rev.txt && bun --hot src/index.tsx --asset-naming='assets/[name]-[hash13].[ext]' --chunk-naming='assets/[name]-[hash13].[ext]'",
     "build": "sh ./build.sh",
-    "start": "NODE_ENV=production bun src/index.tsx --define process.env.NODE_ENV='\"production\"'"
+    "deploy": "bun run build && aws s3 cp --recursive --storage-class ONEZONE_IA dist s3://statebuddy/"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
