@@ -34,6 +34,8 @@ NODE_ENV=production bun build ./src/mtl-checker/mtl_web_worker.ts \
 #   https://esbuild.github.io/analyze/
 NODE_ENV=production bun build \
   ./src/index.html \
+  ./src/landing_page.html \
+  ./src/404.html \
   ./node_modules/mqtt/dist/mqtt.esm.js \
   ./node_modules/react-dom/cjs/react-dom-client.production.js \
   ./src/App/Logo/Logo.tsx \
@@ -52,14 +54,14 @@ mkdir -p dist/tags
 # copy pyodide
 cp -r ./src/mtl-checker/assets/pyodide-* dist/assets/
 
+mv dist/assets/landing_page-*.html  dist/index.html
+mv dist/assets/404-*.html           dist/404.html
+
 # a symlink would be better, but S3 has no notion of symlinks.
-mv dist/assets/*.html dist/tags/latest.html
+mv dist/assets/index-*.html         dist/tags/latest.html
 
 # add immutable entry point (again no symlink)
 cp dist/tags/latest.html       dist/commits/$COMMIT.html
 
 # add mosis26 entry point (again no symlink)
 cp dist/tags/latest.html       dist/tags/mosis26.html
-
-# add our landing page
-cp src/landing_page.html dist/index.html

@@ -30,3 +30,19 @@ aws s3 cp \
   --storage-class ONEZONE_IA \
   --cache-control "public, max-age=30" \
   dist/index.html s3://statebuddy/index.html
+
+aws s3 cp \
+  --storage-class ONEZONE_IA \
+  --cache-control "public, max-age=30" \
+  dist/404.html s3://statebuddy/404.html
+
+
+# set CORS policy to allow all origins (everything is public so ...)
+# outcommented because only needs to be done once
+  # aws s3api put-bucket-cors \
+  #   --bucket statebuddy \
+  #   --cors-configuration file://cors.json
+
+# verify
+  # aws s3api get-bucket-cors --bucket statebuddy
+
