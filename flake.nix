@@ -18,14 +18,15 @@
       devShells = forEachSystem ({ pkgs }: {
         default = pkgs.mkShell {
           buildInputs = [
-            pkgs.bun
-            pkgs.awscli2
+            pkgs.bun # for dev server and building the web app
+            pkgs.awscli2 # for deploying web app onto S3
+            pkgs.tree-sitter # for generating the action language parser
           ];
 
           shellHook = ''
-            echo "Bun dev environment ready"
-            bun --version
+            echo "bun $(bun --version)"
             aws --version
+            tree-sitter --version
           '';
         };
       });
