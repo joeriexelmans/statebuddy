@@ -65,7 +65,7 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
   // Show model name and last edit timestamp in document title (useful for bookmarking).
   useDelayedEffect(() => {
     const timeFormatted = formatDateTime(new Date());
-    document.title = `${location.hostname === "localhost" ? "[dev] " : ""}${appState.view.topPanel.modelName} [StateBuddy] ${timeFormatted}`;
+    document.title = `${location.hostname === "localhost" ? "[dev] " : ""}${appState.view.topPanel.modelName} [${trial.appName}] ${timeFormatted}`;
   }, 100, [appState, editorState]);
 
   const coupledExecution = useCoupledExecution(abstractSyntax, appState.syntax.declaredInputs, appState.execution.plants);
