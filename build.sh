@@ -65,3 +65,6 @@ cp dist/tags/latest.html       dist/commits/$COMMIT.html
 
 # add mosis26 entry point (again no symlink)
 cp dist/tags/latest.html       dist/tags/mosis26.html
+
+# add nova experiment 1 entry point (again no symlink)
+cp dist/tags/latest.html       dist/tags/nova01.html
