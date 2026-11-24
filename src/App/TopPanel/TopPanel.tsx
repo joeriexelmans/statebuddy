@@ -1,4 +1,4 @@
-import gitRev from "@/git-rev.txt";
+import { gitRev } from "virtual:git-rev";
 import { useShortcuts } from "@/hooks/useShortcuts";
 import { Vec2D } from '@/util/geometry';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';

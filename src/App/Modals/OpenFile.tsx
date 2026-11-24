@@ -9,7 +9,7 @@ import { Tooltip } from "../Components/Tooltip";
 import { count } from "@/util/util";
 import { prettyNumber } from "@/util/pretty";
 import styles from "../App.module.css";
-import { buf2base64, deflateBuffer, str2buf } from "@/compression/deflate";
+import { buf2base64, deflateBuffer, str2buf } from "@/util/deflate";
 import { useShortcuts } from "@/hooks/useShortcuts";
 import { ToolSelectState } from "../TopPanel/Toolbars/ToolSelect";
 import { SavedTraces } from '../migrations/v1_types';

@@ -1,4 +1,4 @@
-import { buf2base64 } from "@/compression/deflate";
+import { buf2base64 } from "@/util/deflate";
 
 // https://stackoverflow.com/a/30800715
 export function downloadObjectAsJson(contents: any, filename: string){

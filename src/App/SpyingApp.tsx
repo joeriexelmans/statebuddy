@@ -17,7 +17,7 @@ import SkipNextIcon from '@mui/icons-material/SkipNext';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 
 import { Encoder } from "cbor-x";
-import { deflateBuffer, inflateBuf } from "@/compression/deflate";
+import { deflateBuffer, inflateBuf } from "@/util/deflate";
 import { downloadArrayBuffer } from "@/util/download_file";
 
 const CBOR = new Encoder({

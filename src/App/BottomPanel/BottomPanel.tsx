@@ -1,7 +1,8 @@
 import { Dispatch, SetStateAction } from "react";
 import { TraceableError } from "../../languages/statecharts/parser/parser";
 
-import gitRev from "@/git-rev.txt";
+import { gitRev } from "virtual:git-rev";
+
 import { Tooltip } from "../Components/Tooltip";
 import { Stats } from "./Stats";
 import { AbstractSyntax } from "@/languages/statecharts/abstract_syntax";

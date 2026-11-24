@@ -1,6 +1,4 @@
-# NOW=$(date +%s)
-
-bun run build
+sh build.sh
 
 # copy assets (browsers should cache these pretty much indefinitely)
 aws s3 sync \
@@ -15,7 +13,6 @@ aws s3 sync \
 aws s3 sync \
   --storage-class ONEZONE_IA \
   --cache-control "public, max-age=31536000, immutable" \
-  --exclude '*-meta.json' \
   dist/commits s3://statebuddy/commits
 
 # tags are mutable

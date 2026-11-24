@@ -4,6 +4,8 @@ import { loadPyodide, PyodideAPI, version as pyodideVersion } from "pyodide"
 
 import pylibs from "./assets/mtl-libs.zip";
 
+import pyodideIndexURL from 'immutable_dir:./assets/pyodide-0.29.3'; // <-- Pyodide can be a world of pain: we have to give it a path where it looks for the files pyodide.asm.js, pyodide.asm.wam and python_stdlib.zip. Our bundler MUST NOT rename those files. So I wrote a custom plugin for Vite to copy and rename (add hash) the directory.
+
 async function fetchBuffer(url: string) {
   const res = await fetch(url);
   if (res.ok) {
@@ -21,7 +23,7 @@ export async function initPyodide() {
     // indexURL: location.protocol + location.port + 
     checkAPIVersion: false,
     fullStdLib: false,
-    indexURL: './pyodide-0.29.3', // <-- Pyodide is a world of pain: we have to give it a path that our bundler can't modify. Pyodide will attempt this path (relative to window.location.pathname) and look for the files pyodide.asm.js, pyodide.asm.wam and python_stdlib.zip
+    indexURL: pyodideIndexURL,
     lockFileContents: {
       info: {
         "abi_version": "2025_0",

@@ -1,6 +1,6 @@
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { useDelayedEffect } from "./useDelayedEffect";
-import { base642buf, buf2base64 } from "../compression/deflate";
+import { base642buf, buf2base64 } from "../util/deflate";
 
 export type ModelSize = {
   original: number,

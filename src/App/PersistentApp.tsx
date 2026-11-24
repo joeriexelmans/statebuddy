@@ -1,5 +1,5 @@
 import styles from "./App.module.css";
-import { buf2string, deflateBuffer, inflateBuf } from "@/compression/deflate";
+import { buf2string, deflateBuffer, inflateBuf } from "@/util/deflate";
 import { Encoder } from "cbor-x";
 import { Dispatch, ReactNode, SetStateAction, useCallback, useEffect, useState } from "react";
 import { ModelSize, useUrlHashState } from "../hooks/useUrlHashState";

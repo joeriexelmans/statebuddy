@@ -13,7 +13,7 @@ export type WorkerPoolState<I,O> = {
   queue: JobQueueEntry<I,O>[],
 }
 
-export function useWorkerPool<I,O>(nWorkers: number, workerUrl: string) {
+export function useWorkerPool<I,O>(nWorkers: number, createWorker:  () => Worker) {
   const [state, setState] = useState<WorkerPoolState<I,O>>({workers: [], queue: []});
 
   // console.log({poolstate: state});
@@ -80,7 +80,7 @@ export function useWorkerPool<I,O>(nWorkers: number, workerUrl: string) {
       workers: arrResizeDefault(workers, nWorkers,
         // function to create new workers:
         () => {
-          const w = new Worker(workerUrl);
+          const w = createWorker();
           w.onmessage = onRecv(w);
           return {
             w,
