@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "git rev-parse HEAD > src/git-rev.txt && bun --hot src/index.tsx --asset-naming='assets/[name]-[hash].[ext]' --chunk-naming='assets/[name]-[hash].[ext]'",
+    "dev": "bun --run vite",
     "build": "sh build.sh",
     "preview": "sh build.sh && bun --run vite preview",
     "deploy": "sh deploy.sh"
