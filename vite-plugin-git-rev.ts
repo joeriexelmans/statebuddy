@@ -19,7 +19,7 @@ export default function pluginGitRev() {
     load: {
       filter: { id: exactRegex(resolvedVirtualModuleId) },
       handler() {
-        return `export const gitRev = "${gitRev}"`
+        return `export const gitRev = ${JSON.stringify(gitRev.text())}`
       },
     },
   }
