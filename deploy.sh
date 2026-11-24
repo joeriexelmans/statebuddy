@@ -22,18 +22,18 @@ aws s3 sync \
 aws s3 cp \
   --recursive \
   --storage-class ONEZONE_IA \
-  --cache-control "public, max-age=30" \
+  --cache-control "public, no-cache" \
   dist/tags s3://statebuddy/tags
 
 # landing page is also mutable
 aws s3 cp \
   --storage-class ONEZONE_IA \
-  --cache-control "public, max-age=30" \
+  --cache-control "public, no-cache" \
   dist/index.html s3://statebuddy/index.html
 
 aws s3 cp \
   --storage-class ONEZONE_IA \
-  --cache-control "public, max-age=30" \
+  --cache-control "public, no-cache" \
   dist/404.html s3://statebuddy/404.html
 
 
@@ -45,4 +45,3 @@ aws s3 cp \
 
 # verify
   # aws s3api get-bucket-cors --bucket statebuddy
-
