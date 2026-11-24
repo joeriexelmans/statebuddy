@@ -4,6 +4,7 @@
 
 
     Fri 20 Nov 2026 13:45 -- Initial version of assignment.
+    Tue 24 Nov 2026 13:20 -- Add clarification that Exercises 1-6 do not have to be handed in.
 
 ## Goals
 
@@ -277,6 +278,8 @@ To unfreeze the app, and continue working (and recording), click the "resume app
     Elaborate where necessary.
 
 There is no need to explain your solution in written word. You will do this orally and individually, after the submission deadline.
+
+Also no need to hand in any solutions to exercises 1-6, since we already did them in class.
 
 ## Problem?
 
