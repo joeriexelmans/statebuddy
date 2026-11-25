@@ -58,9 +58,9 @@ export function useEditor(
     commit(oldState => ({...oldState, selection: cb(oldState.selection)}));
   },[commit]);
   
-  // This callback overwrites the last entry in edit history with the updated selection.
-  const replaceSelection = useCallback((cb: (oldSelection: Selection) => Selection) =>
-    replace(oldState => ({...oldState, selection: cb(oldState.selection)})),[replace]);
+  // // This callback overwrites the last entry in edit history with the updated selection.
+  // const replaceSelection = useCallback((cb: (oldSelection: Selection) => Selection) =>
+  //   replace(oldState => ({...oldState, selection: cb(oldState.selection)})),[replace]);
   
   // The shapes being currently selected.
   // The shapes in this selection are also rendered as selected. But we keep them seperate in case the user decides to cancel the making of the new selection.
@@ -83,7 +83,7 @@ export function useEditor(
   }, [refSVG.current, zoom]);
   
   
-  const startSelect = useCallback((e: React.MouseEvent<SVGSVGElement, MouseEvent>) => {
+  const startSelectOrMove = useCallback((e: React.MouseEvent<SVGSVGElement, MouseEvent>) => {
     const currentPointer = getCurrentPointer(e);
     let toGrow: Selection;
     // Shift or Ctrl key down: grow existing selection.
@@ -218,16 +218,30 @@ export function useEditor(
     else if (mode === "select") {
       // e.preventDefault();
       e.stopPropagation();
-      startSelect(e);
+      startSelectOrMove(e);
     }
     else {
       e.preventDefault();
       e.stopPropagation();
       startInsert(e, mode);
     }
-  }, [startSelect, startInsert]);
+  }, [startSelectOrMove, startInsert]);
+
+  const attemptCancelCurrentTool = useCallback(() => {
+    if (dragging || state.makingSelection) {
+      historyCallbacks.undo();
+      setDragging(null);
+      setMakingSelection(undefined);
+      return true;
+    }
+    return false;
+  }, [dragging, state.makingSelection, historyCallbacks.undo, setDragging, setMakingSelection]);
   
   const onMouseDown = useCallback((e: React.MouseEvent<SVGSVGElement, MouseEvent>) => {
+    if (attemptCancelCurrentTool()) {
+      e.preventDefault();
+      return;
+    }
     if (e.button === 0) {
       modeToAction(mouseMap.leftMouseMode, e);
     }
@@ -237,7 +251,7 @@ export function useEditor(
     else if (e.button === 2) {
       modeToAction(mouseMap.rightMouseMode, e);
     }
-  }, [modeToAction, mouseMap]);
+  }, [modeToAction, mouseMap,  attemptCancelCurrentTool]);
   
   const onMouseMove = useCallback((e: {pageX: number, pageY: number}) => {
     const currentPointer = getCurrentPointer(e);
@@ -353,6 +367,7 @@ export function useEditor(
     {keys: ["a"], action: useCallback(() => convertSelection("and"), [convertSelection])},
     {keys: ["Ctrl", "a"], action: onSelectAll},
     {keys: ["Enter"], action: onEditText},
+    {keys: ["Escape"], action: attemptCancelCurrentTool},
   ]);
     
   useEffect(() => {
