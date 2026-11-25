@@ -195,7 +195,7 @@ export function parseStatechart(topology: Topology): [AbstractSyntax, TraceableE
       else if (state.initial.length === 0) {
         errors.push({
           shapes: [state.uid], 
-          message: "needs initial state",
+          message: "need initial state",
         });
       }
     }

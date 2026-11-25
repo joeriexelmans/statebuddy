@@ -60,6 +60,11 @@ export type SimulatorStuff = WithSetters<{
 
 type OutputListener = (bagOfOutputs: RaisedEvent[]) => void;
 
+export function sliceIfNecessary<T>(arr: T[], newLength: number) {
+  if (arr.length === newLength) return arr;
+  return arr.slice(0, newLength);
+}
+
 export function useInteractiveSimulator(
   cE: DEVSComponent<DEVSTrace<CoupledState, RaisedEvent>, RaisedEvent> | undefined,
   interactive: InteractiveExecutionState,
@@ -81,13 +86,18 @@ export function useInteractiveSimulator(
   const computeIncremental = (oldPersistentState: InteractiveExecutionState, newPersistentState: InteractiveExecutionState, oldUIState: StateBuddyTraceState | undefined) => {
     if (oldPersistentState === newPersistentState) return oldUIState; // no change, use memoized value
     if (oldPersistentState.trace && newPersistentState.trace) {
-      // If old input trace is prefix of new input trace, we can just continue executing our existing fully computed trace
-      // Doing this check requires comparing every element in old trace with its corresponding element in new trace, with time complexity = O(N).
-      // However, since every execution state contains its own complete history, it is enough to compare the last items:
-      if (oldPersistentState.trace.trace[oldPersistentState.trace.trace.length-1] === newPersistentState.trace.trace[oldPersistentState.trace.trace.length-1]) {
-        // console.log('restore incremental');
-        const trace = restoreTraceIncremental(oldUIState!.trace,
-          newPersistentState.trace.trace.slice(oldPersistentState.trace.trace.length), 
+      const maxLen = Math.max(oldPersistentState.trace.trace.length, newPersistentState.trace.trace.length);
+      const commonOld = sliceIfNecessary(oldPersistentState.trace.trace, maxLen);
+      const commonNew = sliceIfNecessary(newPersistentState.trace.trace, maxLen);
+      // Now we check if old is a prefix of new, or vice versa:
+      // Note that we only need to compare the last trace item. This is because each trace item is of type DEVSTrace, hence containing its own complete history.
+      if (commonOld.at(-1) === commonNew.at(-1)) {
+        // console.log('incremental restore');
+        const keepUntilIdx = oldUIState!.trace.findLastIndex(el => {
+          return el.simtime <= newPersistentState.trace!.lastSimTime;
+        });
+        const trace = restoreTraceIncremental(sliceIfNecessary(oldUIState!.trace, keepUntilIdx+1),
+          commonOld, // <-- It doesn't matter if we use commonOld or commonNew. They are the same.
           newPersistentState.trace.lastSimTime, cE!);
         return {
           trace,
