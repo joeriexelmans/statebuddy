@@ -133,7 +133,7 @@ function TraceItemHeader({status, simtime, isOutputStep}: {status: StatusType, s
     <div style={{minWidth: 38, textAlign: 'center'}}>
       <Tooltip align="left" tooltip={isOutputStep ? "In the previous step, a DEVS component wanted to output events while making an external transition (not possible in DEVS). Therefore, in this step, the same component makes an internal transition to output those events." : "timestamp"}>
         <div style={{textAlign: 'right'}}>
-          {isOutputStep ? '＝' : formatTime(simtime)}
+          {isOutputStep ? '└─>' : formatTime(simtime)}
         </div>
       </Tooltip>
     </div>
