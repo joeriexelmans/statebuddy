@@ -17,7 +17,9 @@ Bugs
 - editor undo: mouseUp event: pop state if selection didn't change?
     motivation: clicking in empty space creates new undo-entry, even if nothing changed
 
-- SpyingApp: should not use Date.now() when paused
+- useEditor: React strict mode causes mouse-move handler to move everything twice as fast!
+
+- [DONE] SpyingApp: should not use Date.now() when paused
 
 - [DONE] F5 + empty editor => one initial state
 
