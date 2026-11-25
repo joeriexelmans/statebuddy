@@ -146,9 +146,10 @@ export function SpyingApp() {
     }
   }, [paused]);
 
+  // The time-function we pass to the app.
   const getNow = useMemo(() => {
-    if (paused) return () => cur.t;
-    else return () => Date.now();
+    if (paused) return () => cur.t; // time of current snapshot
+    else return () => Date.now(); // system time
   }, [paused ? cur.t : Date.now]);
 
   return <div style={{display: 'flex', flexDirection: 'column', overflow: 'hidden', width: '100vw'}}>
