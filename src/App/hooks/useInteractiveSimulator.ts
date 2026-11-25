@@ -60,9 +60,9 @@ export type SimulatorStuff = WithSetters<{
 
 type OutputListener = (bagOfOutputs: RaisedEvent[]) => void;
 
-export function sliceIfNecessary<T>(arr: T[], newLength: number) {
-  if (arr.length === newLength) return arr;
-  return arr.slice(0, newLength);
+export function sliceIfNecessary<T>(arr: T[], start: number, end?: number) {
+  if (start === 0 && arr.length === end) return arr;
+  return arr.slice(start, end);
 }
 
 export function useInteractiveSimulator(
@@ -87,8 +87,8 @@ export function useInteractiveSimulator(
     if (oldPersistentState === newPersistentState) return oldUIState; // no change, use memoized value
     if (oldPersistentState.trace && newPersistentState.trace) {
       const maxLen = Math.max(oldPersistentState.trace.trace.length, newPersistentState.trace.trace.length);
-      const commonOld = sliceIfNecessary(oldPersistentState.trace.trace, maxLen);
-      const commonNew = sliceIfNecessary(newPersistentState.trace.trace, maxLen);
+      const commonOld = sliceIfNecessary(oldPersistentState.trace.trace, 0, maxLen);
+      const commonNew = sliceIfNecessary(newPersistentState.trace.trace, 0, maxLen);
       // Now we check if old is a prefix of new, or vice versa:
       // Note that we only need to compare the last trace item. This is because each trace item is of type DEVSTrace, hence containing its own complete history.
       if (commonOld.at(-1) === commonNew.at(-1)) {
@@ -96,8 +96,9 @@ export function useInteractiveSimulator(
         const keepUntilIdx = oldUIState!.trace.findLastIndex(el => {
           return el.simtime <= newPersistentState.trace!.lastSimTime;
         });
-        const trace = restoreTraceIncremental(sliceIfNecessary(oldUIState!.trace, keepUntilIdx+1),
-          commonOld, // <-- It doesn't matter if we use commonOld or commonNew. They are the same.
+        const keep = sliceIfNecessary(oldUIState!.trace, 0, keepUntilIdx+1);
+        const trace = restoreTraceIncremental(keep,
+          sliceIfNecessary(oldPersistentState.trace.trace, maxLen), // <-- It doesn't matter if we use commonOld or commonNew. They are the same.
           newPersistentState.trace.lastSimTime, cE!);
         return {
           trace,
