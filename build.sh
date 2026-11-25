@@ -8,8 +8,11 @@ rm -rf dist/*
 bun --run vite build --mode production
 
 # add immutable entry point
-mkdir -p dist/commits
-cp dist/tags/latest.html       dist/commits/$(git rev-parse HEAD).html
+# we don't use the git commit hash because there may be uncommitted changes.
+# instead we hash the build output's entry point.
+mkdir -p dist/permalink
+HASH=$(sha1sum dist/tags/latest.html)
+cp dist/tags/latest.html       dist/permalink/${HASH:0:40}.html
 
 # add/update mutable entry points
 cp dist/tags/latest.html       dist/tags/mosis26.html

@@ -60,7 +60,6 @@ See the [manual](./docs/readme.md).
 
 ## Building
 
-
 1. Get [bun](https://bun.com).
     
     Alternatively, nix users can instead just enter development shell:
@@ -71,16 +70,24 @@ See the [manual](./docs/readme.md).
 2. Run:
 
     ```
-    bun build
+    bun i          # install dependencies
+    bun run build
     ```
-3. Build artifacts can be found in `dist/` (`index.html` and a bunch of supporting files). Any static file server can host these files(*). Nothing else is needed.
+3. Build output will be created in `dist/` (`index.html` and a bunch of supporting files). Any static file server or "cloud object storage" can host these files(*). Nothing else is needed.
 
-(*) The only requirement is that the static file server sets the `Content-Type` HTTP header correctly for JS and WASM files. Most servers (e.g., Nginx) do this automatically without any configuration.
-
+(*) The only requirement is that the static file server sets the `Content-Type` HTTP header correctly for JS and WASM files. Most servers (e.g., Nginx, S3, ...) do this automatically without any configuration.
 
 ## Development
 
 StateBuddy was written in TypeScript, using React to render HTML (client-side only). No frontend framework (e.g., MUI) was used, just plain CSS (sometimes a pain, I must admit).
+
+Bun is used as:
+    - package manager
+    - TypeScript runtime (only to run Vite)
+
+Vite is used as:
+    - dev server
+    - build system, "bundler"
 
 ### Application State
 

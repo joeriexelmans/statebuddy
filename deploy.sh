@@ -13,7 +13,7 @@ aws s3 sync \
 aws s3 sync \
   --storage-class ONEZONE_IA \
   --cache-control "public, max-age=31536000, immutable" \
-  dist/commits s3://statebuddy/commits
+  dist/permalink s3://statebuddy/permalink
 
 # tags are mutable
 aws s3 cp \
