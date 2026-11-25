@@ -25,7 +25,7 @@ import { useDelayedEffect } from "../hooks/useDelayedEffect";
 import { useUndo } from "../hooks/useUndo";
 import { useParser } from "./hooks/useParser";
 import { useCheckProperties } from "./hooks/useCheckProperties";
-import { useInteractiveSimulator } from "./hooks/useSimulator";
+import { useInteractiveSimulator } from "./hooks/useInteractiveSimulator";
 import { useTrial } from "./hooks/useTrial";
 import { DeepSetter, makeDeepSetter, WithSetters } from "../util/partial_setter";
 import { PanelState } from "./migrations/v1_types";

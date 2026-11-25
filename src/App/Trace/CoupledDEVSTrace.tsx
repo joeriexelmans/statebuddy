@@ -14,7 +14,7 @@ import { Column } from "../Components/Column";
 import { Row } from "../Components/Row";
 import { StatusType } from "../Components/StatusIndicator";
 import { Tooltip } from "../Components/Tooltip";
-import { CoupledState, StateBuddyTraceState } from "../hooks/useSimulator";
+import { CoupledState, StateBuddyTraceState } from "../hooks/useInteractiveSimulator";
 import { PlantsState } from "../migrations/v1_types";
 import { TraceView } from "../migrations/v2_types";
 import { statebuddyPlants } from "../plants";

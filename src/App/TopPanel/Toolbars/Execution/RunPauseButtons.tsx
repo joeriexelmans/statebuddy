@@ -5,7 +5,7 @@ import { TimeMode } from "@/App/time";
 import PauseIcon from '@mui/icons-material/Pause';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import { DEVSTraceItem } from "@/languages/devs/trace";
-import { CoupledState } from "@/App/hooks/useSimulator";
+import { CoupledState } from "@/App/hooks/useInteractiveSimulator";
 import { objectsEqual } from "@/util/util";
 import { memo } from "react";
 import { KeyInfoVisible, KeyInfoHidden } from "../../KeyInfo";

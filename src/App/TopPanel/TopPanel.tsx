@@ -15,7 +15,7 @@ import { AppState } from "../App.state";
 import { Tooltip } from "../Components/Tooltip";
 import { TwoStateButton } from "../Components/TwoStateButton";
 import { VisualEditorState } from "../VisualEditor/VisualEditor.state";
-import { SimulatorStuff } from '../hooks/useSimulator';
+import { SimulatorStuff } from '../hooks/useInteractiveSimulator';
 import { Trial } from '../hooks/useTrial';
 import { useUpdater } from '../hooks/useUpdater';
 import { DeepSetter } from "../../util/partial_setter";

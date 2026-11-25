@@ -1,7 +1,7 @@
 import { Dispatch, memo, SetStateAction, useCallback, useContext, useMemo } from 'react';
 
 import { Tooltip } from '@/App/Components/Tooltip';
-import { infinityIfUndefined, SimulatorStuff } from '@/App/hooks/useSimulator';
+import { infinityIfUndefined, SimulatorStuff } from '@/App/hooks/useInteractiveSimulator';
 import { RunPauseButtons } from './RunPauseButtons';
 import { SpeedControl } from './SpeedControl';
 

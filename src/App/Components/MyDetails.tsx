@@ -13,30 +13,32 @@ export function MyDetails({open, setOpen, children}: PropsWithChildren<{open: bo
       e.preventDefault();
     }}
     onClick={e => {
-      let clickOnSummary = false;
-      let element = e.target;
-      while (element !== ref.current) {
-        // @ts-ignore
-        if (element.tagName === "BUTTON" || element.tagName === "INPUT") {
-          break; // the user meant to click a specific element, no toggle the details
-        }
-        // @ts-ignore
-        if (element.parentElement === ref.current) {
+      if (e.button === 0) {
+        let clickOnSummary = false;
+        let element = e.target;
+        while (element !== ref.current) {
           // @ts-ignore
-          if (element.tagName === "SUMMARY") {
-            clickOnSummary = true;
-            break;
+          if (element.tagName === "BUTTON" || element.tagName === "INPUT") {
+            break; // the user meant to click a specific element, no toggle the details
           }
+          // @ts-ignore
+          if (element.parentElement === ref.current) {
+            // @ts-ignore
+            if (element.tagName === "SUMMARY") {
+              clickOnSummary = true;
+              break;
+            }
+          }
+          // @ts-ignore
+          element = element.parentElement;
         }
-        // @ts-ignore
-        element = element.parentElement;
-      }
-      
-      if (clickOnSummary) {
-        console.log('toggle details');
-        setOpen(o => !o);
-        e.stopPropagation();
-        e.preventDefault();
+        
+        if (clickOnSummary) {
+          console.log('toggle details');
+          setOpen(o => !o);
+          e.stopPropagation();
+          e.preventDefault();
+        }
       }
     }}
   >

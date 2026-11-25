@@ -1,6 +1,6 @@
 import { Tooltip } from "../../Components/Tooltip"
 import { PlantsState } from "../../migrations/v1_types"
-import { SimulatorStuff } from "../../hooks/useSimulator"
+import { SimulatorStuff } from "../../hooks/useInteractiveSimulator"
 import { DeepSetter } from "../../../util/partial_setter"
 import { statebuddyPlants } from "../../plants"
 import { Toolbar } from "../../TopPanel/Toolbar"

@@ -1,7 +1,7 @@
 import { AbstractSyntax } from "@/languages/statecharts/abstract_syntax";
 import { ReactNode, useMemo } from "react";
 import { AppState } from "../App.state";
-import { SimulatorStuff } from "../hooks/useSimulator";
+import { SimulatorStuff } from "../hooks/useInteractiveSimulator";
 import { DeepSetter } from "../../util/partial_setter";
 import { PanelType } from "../migrations/v1_types";
 import { PropertyCheckStatus } from "../SideBar/prepare_trace_types";

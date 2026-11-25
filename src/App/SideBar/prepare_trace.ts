@@ -1,4 +1,4 @@
-import { CoupledState } from "../hooks/useSimulator";
+import { CoupledState } from "../hooks/useInteractiveSimulator";
 import { PlantsState } from "../migrations/v1_types";
 import { DEVSTrace } from "@/languages/devs/trace";
 import { AbstractSyntax } from "@/languages/statecharts/abstract_syntax";

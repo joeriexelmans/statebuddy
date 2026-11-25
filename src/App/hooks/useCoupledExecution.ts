@@ -7,7 +7,7 @@ import { sc2DEVS } from "@/languages/devs/sc2devs";
 import { PlantsState } from "../migrations/v1_types";
 import { useConnect } from "../Panel/Kinds/ConnectPanel";
 import { RaisedEvent } from "@/languages/statecharts/interpreter/runtime_types";
-import { CoupledState } from "./useSimulator";
+import { CoupledState } from "./useInteractiveSimulator";
 import { DeclaredInput } from "../migrations/v4_types";
 
 // Every plant's UI input events are exposed as global (Coupled DEVS) input events.

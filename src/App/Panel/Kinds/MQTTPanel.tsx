@@ -19,7 +19,7 @@ import { DoubleClickButton } from "../../Components/DoubleClickButton";
 import { StatusType, StatusIndicator, FlickeringStatusIndicator } from "../../Components/StatusIndicator";
 import { Tooltip } from "../../Components/Tooltip";
 import { TwoStateButton } from "../../Components/TwoStateButton";
-import { SimulatorStuff } from "../../hooks/useSimulator";
+import { SimulatorStuff } from "../../hooks/useInteractiveSimulator";
 import { DeepSetter, makePartialArraySetter, WithSetters, makeAllSetters, makePartialSetter } from "../../../util/partial_setter";
 import { MQTTTopicConfig, Event2MQTTMapping, MQTTState } from "../../migrations/v1_types";
 import { Toolbar } from "../../TopPanel/Toolbar";

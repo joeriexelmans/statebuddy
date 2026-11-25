@@ -5,7 +5,7 @@ import { DEVSTrace } from "@/languages/devs/trace";
 import { memo, useCallback, useMemo } from "react";
 import { DoubleClickButton } from "../../Components/DoubleClickButton";
 import { Tooltip } from "../../Components/Tooltip";
-import { CoupledState } from "../../hooks/useSimulator";
+import { CoupledState } from "../../hooks/useInteractiveSimulator";
 import { DeepSetter } from "../../../util/partial_setter";
 import { PlantsState } from "../../migrations/v1_types";
 import { Plant } from "../../Plant/Plant";

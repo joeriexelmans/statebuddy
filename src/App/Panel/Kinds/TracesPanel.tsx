@@ -12,7 +12,7 @@ import { MoveUpDown } from '../../Components/MoveUpDown';
 import { DoubleClickButton } from '../../Components/DoubleClickButton';
 import { Dispatch, memo, SetStateAction, useCallback, useContext } from 'react';
 import { getSimTime, TimeMode, } from '@/App/time';
-import { SimulatorStuff, } from '../../hooks/useSimulator';
+import { SimulatorStuff, } from '../../hooks/useInteractiveSimulator';
 import { CoupledDEVSTrace } from '../../Trace/CoupledDEVSTrace';
 import { AbstractSyntax } from '@/languages/statecharts/abstract_syntax';
 import { PropertyTrace } from "../../SideBar/prepare_trace_types";

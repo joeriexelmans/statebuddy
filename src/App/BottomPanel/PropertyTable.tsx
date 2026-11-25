@@ -7,7 +7,7 @@ import { prepareTraces } from '../SideBar/prepare_trace';
 import styles from "@/App/App.module.css";
 import { restoreTrace } from '@/languages/devs/serialize_trace';
 import { DEVSComponent } from '@/languages/devs/devs';
-import { CoupledState } from '../hooks/useSimulator';
+import { CoupledState } from '../hooks/useInteractiveSimulator';
 import { AbstractSyntax } from '@/languages/statecharts/abstract_syntax';
 import { DEVSTrace } from '@/languages/devs/trace';
 import { objectsEqual } from '@/util/util';

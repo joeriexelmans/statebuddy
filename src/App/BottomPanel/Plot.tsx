@@ -3,7 +3,7 @@ import { Dispatch, memo, SetStateAction, SVGAttributes, useLayoutEffect, useMemo
 import { WithSetters } from "../../util/partial_setter";
 import { PreparedTrace } from "../SideBar/prepare_trace_types";
 import { objectsEqual } from "@/util/util";
-import { StateBuddyTraceState } from "../hooks/useSimulator";
+import { StateBuddyTraceState } from "../hooks/useInteractiveSimulator";
 
 type PlotProperties = SVGAttributes<SVGElement> & WithSetters<{
 }> & {
