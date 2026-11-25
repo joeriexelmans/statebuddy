@@ -95,11 +95,11 @@ export function useEditor(
     }
     const startMakingSelection = () => {
       setDragging(null);
+      commitSelection(_ => toGrow);
       setMakingSelection({
         topLeft: currentPointer,
         size: {x: 0, y: 0},
       });
-      commitSelection(_ => toGrow);
     }
     // left mouse button
     const [uid, parts, isHelper] = eventTargetToParts(e.target);
