@@ -1,6 +1,6 @@
 import { CSSProperties } from "react";
 import { Expression, Lhs, TextRange, visitExpression, visitLhs } from "../../actionlang/abstract_syntax";
-import { SyntaxError } from "./parser";
+import { SyntaxError } from "./legacy_parser";
 import { cachedParseLabel } from "../parser/parser";
 import { ParsedText } from "./abstract_syntax";
 

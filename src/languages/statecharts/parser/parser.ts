@@ -1,5 +1,5 @@
 import {  ConcreteState, HistoryState, OrState, UnstableState, AbstractSyntax, stateDescription, Transition, computeArena, TransitionSrcTgt } from "../abstract_syntax";
-import { parse as parseLabel, SyntaxError } from "../transitionlabel/parser";
+import { parse as parseLabel, SyntaxError } from "../transitionlabel/legacy_parser";
 import { Topology } from "./detect_topology";
 import { memoize } from "@/util/util";
 import { Expression, getLhsRefs, Lhs } from "../../actionlang/abstract_syntax";
