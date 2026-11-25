@@ -12,11 +12,12 @@ Bugs
 
 - in an existing trace, if next element is input event, then <Tab> jumps to that event instead of slicing the trace and making the next timed event happen.
 
-
 - support 'default history' (syntax already allows it, semantics ignore it)
 
-
 - editor undo: mouseUp event: pop state if selection didn't change?
+    motivation: clicking in empty space creates new undo-entry, even if nothing changed
+
+- SpyingApp: should not use Date.now() when paused
 
 - [DONE] F5 + empty editor => one initial state
 
