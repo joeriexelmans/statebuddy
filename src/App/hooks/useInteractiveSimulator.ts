@@ -196,18 +196,22 @@ export function useInteractiveSimulator(
     });
   }, [setInteractive._setShallow]);
 
+  const forgetFuture = useCallback(() => {
+    let numExtTransitions = 0;
+    if (fullTrace) {
+      numExtTransitions = fullTrace.trace[fullTrace.idx].numExtTransitions;
+    }
+    return sliceIfNecessary(interactive.trace!.trace, 0, numExtTransitions);
+  }, [fullTrace, interactive.trace]);
+
   // raise input event at current point in simulated time (depends on 'time'), producing a new runtime configuration (or a runtime error)
   const onRaise = useCallback((bagOfInputs: RaisedEvent[]) => {
     setInteractive._setShallow(interactive => {
       const simtime = getSimTime(interactive.time, Math.round(now()));
-      let numExtTransitions = 0;
-      if (fullTrace) {
-        numExtTransitions = fullTrace.trace[fullTrace.idx].numExtTransitions;
-      }      
       return {
         trace: interactive.trace && {
           trace: [
-              ...interactive.trace.trace.slice(0, numExtTransitions),
+              ...forgetFuture(),
               {bagOfInputs, simtime},
             ],
           lastSimTime: simtime,
@@ -222,13 +226,12 @@ export function useInteractiveSimulator(
     });
   }, [setInteractive._setShallow, fullTrace, now]);
 
-  // Sets the simulated time to exactly match the next timed transition.
-  // Note: this function does not make the next timed transition happen. You need to call `makeNextTimedTransition` for that.
+  // Updates the current execution trace such that the next timed transition is appended.
   const jumpTimeToNextTimedTransition = useCallback(() => {
     setInteractive._setShallow(interactive => {
       return {
         trace: interactive.trace && {
-          trace: interactive.trace.trace,
+          trace: forgetFuture(),
           lastSimTime: nextWakeup,
         },
         time: interactive.time.kind === "paused"
@@ -237,7 +240,7 @@ export function useInteractiveSimulator(
               simtime: nextWakeup,
             }
           : interactive.time, // <-- for realtime, time mode remains unchanged (clock already naturally advancing)
-        idx: (interactive.idx >= 0) ? interactive.idx+1 : -1, // -1 is special value (meaning: last element in trace)
+        idx: -1,
       }
     });
   }, [setInteractive._setShallow, nextWakeup]);
