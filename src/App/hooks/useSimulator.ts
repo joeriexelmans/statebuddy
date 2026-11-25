@@ -4,7 +4,7 @@ import { ExtTransitionTrace } from "../migrations/v1_types";
 import { DEVSTrace, DEVSTraceItem } from "@/languages/devs/trace";
 import { useShortcuts } from "@/hooks/useShortcuts";
 import { getSimTime, getWallClkDelay, TimeMode, timeTravel } from "@/App/time";
-import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useState } from "react";
+import { Dispatch, SetStateAction, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { RuntimeError } from "@/languages/statecharts/interpreter/interpreter";
 import { DEVSComponent } from "@/languages/devs/devs";
 import { DeepSetter, WithSetters } from "../../util/partial_setter";
@@ -14,6 +14,7 @@ import { getEnterDefaultArrows, getFairStepArrows } from "@/languages/statechart
 import { isSCOutputStep } from "../Trace/SC2DEVSTrace";
 import { useIncrementalMemo } from "@/hooks/useIncrementalMemo";
 import { InteractiveExecutionState } from "../migrations/v2_types";
+import { NowContext } from "../NowContext";
 
 // In StateBuddy, currently, the state of our simulation is always a CoupledDEVS state of our statechart model (with a DEVS adapter around it) and a bunch of 'plants'.
 // Perhaps in the future, we could let the user arbitrarily configure this setup (anything on the spectrum from a single Statechart Atomic DEVS to many nested Coupled DEVS ...), but for now, it is what it is.
@@ -59,47 +60,12 @@ export type SimulatorStuff = WithSetters<{
 
 type OutputListener = (bagOfOutputs: RaisedEvent[]) => void;
 
-// function traceItemTimestamp(item: DEVSTraceItem<any, any> | undefined) {
-//   return item ? item.simtime : Infinity;
-// }
-
-// function currentTraceIdx(time: TimeMode, trace: DEVSTrace<CoupledState, RaisedEvent>) {
-//   // trace is a simtime-sorted list, so we perform a binary search :)
-//   let leftMostIdx = 0;
-//   let rightMostIdx = trace.length-1;
-//   let bias = 'R';
-//   const toFind = getSimTime(time, Date.now());
-//   while (true) {
-//     let middleIdx;
-//     if (bias === 'R') {
-//       // make the common case fast:
-//       // often, when calling this function, the current element will be the last one in the list
-//       middleIdx = rightMostIdx;
-//     }
-//     else {
-//       // normal binary search: divide list in the middle
-//       middleIdx = Math.floor((leftMostIdx + rightMostIdx) / 2);
-//     }
-//     const middleIdxTs = traceItemTimestamp(trace[middleIdx]);
-//     if (toFind >= middleIdxTs) {
-//       if (toFind < traceItemTimestamp(trace[middleIdx+1])) {
-//         return middleIdx; // found it :)
-//       }
-//       leftMostIdx = middleIdx+1;
-//     }
-//     else {
-//       rightMostIdx = middleIdx-1;
-//     }
-//     // continue with normal binary search
-//     bias = 'M';
-//   }
-// }
-
 export function useInteractiveSimulator(
   cE: DEVSComponent<DEVSTrace<CoupledState, RaisedEvent>, RaisedEvent> | undefined,
   interactive: InteractiveExecutionState,
   setInteractive: DeepSetter<InteractiveExecutionState>,
 ): SimulatorStuff {
+  const now = useContext(NowContext);
 
   const computeFresh = (interactive: InteractiveExecutionState) => {
     if (interactive.trace && cE) {
@@ -206,10 +172,10 @@ export function useInteractiveSimulator(
       },
       time: interactive.time.kind === "paused"
         ? {kind: "paused", simtime: 0}
-        : {kind: "realtime", since: {simtime: 0, wallclktime: Date.now()}, scale: interactive.time.scale},
+        : {kind: "realtime", since: {simtime: 0, wallclktime: now()}, scale: interactive.time.scale},
       idx: -1,
     }));
-  }, [setInteractive._setShallow]);
+  }, [setInteractive._setShallow, now]);
 
   const onClear = useCallback(() => {
     setInteractive._setShallow({
@@ -222,7 +188,7 @@ export function useInteractiveSimulator(
   // raise input event at current point in simulated time (depends on 'time'), producing a new runtime configuration (or a runtime error)
   const onRaise = useCallback((bagOfInputs: RaisedEvent[]) => {
     setInteractive._setShallow(interactive => {
-      const simtime = getSimTime(interactive.time, Math.round(Date.now()));
+      const simtime = getSimTime(interactive.time, Math.round(now()));
       let numExtTransitions = 0;
       if (fullTrace) {
         numExtTransitions = fullTrace.trace[fullTrace.idx].numExtTransitions;
@@ -243,7 +209,7 @@ export function useInteractiveSimulator(
         idx: -1,
       };
     });
-  }, [setInteractive._setShallow, fullTrace]);
+  }, [setInteractive._setShallow, fullTrace, now]);
 
   // Sets the simulated time to exactly match the next timed transition.
   // Note: this function does not make the next timed transition happen. You need to call `makeNextTimedTransition` for that.
@@ -270,16 +236,16 @@ export function useInteractiveSimulator(
     if (nextWakeup !== Infinity) {
       jumpTimeToNextTimedTransition();
       const setTime = setInteractive.setTime._setShallow as Dispatch<SetStateAction<TimeMode>>;
-      setTime(time => timeTravel(time, nextWakeup, Date.now()));
+      setTime(time => timeTravel(time, nextWakeup, now()));
     }
-  }, [jumpTimeToNextTimedTransition, nextWakeup, setInteractive.setTime._setShallow]);
+  }, [jumpTimeToNextTimedTransition, nextWakeup, setInteractive.setTime._setShallow, now]);
 
   // The following effect is what makes timed transitions happen in Statebuddy:
   // timer elapse events are triggered by a change of the simulated time (possibly as a scheduled JS event loop timeout)
   useEffect(() => {
     let timeout: NodeJS.Timeout | undefined;
     if (interactive.time.kind === "realtime") {
-      const wallclkDelay = getWallClkDelay(interactive.time, nextWakeup, Math.round(Date.now()));
+      const wallclkDelay = getWallClkDelay(interactive.time, nextWakeup, Math.round(now()));
       if (wallclkDelay !== Infinity) {
         timeout = setTimeout(jumpTimeToNextTimedTransition, wallclkDelay);
       }
@@ -287,7 +253,7 @@ export function useInteractiveSimulator(
     return () => {
       if (timeout) clearTimeout(timeout);
     }
-  }, [interactive, nextWakeup, jumpTimeToNextTimedTransition]);
+  }, [interactive, nextWakeup, jumpTimeToNextTimedTransition, now]);
 
   // Back/Next: controlled by arrow keys on the keyboard
   const onBack = useCallback(() => {

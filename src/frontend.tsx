@@ -7,9 +7,6 @@
 
 import { createRoot } from "react-dom/client";
 import { ErrorBoundary } from "react-error-boundary";
-import { ModalOverlay } from "./App/Overlays/ModalOverlay";
-import deadStatebuddy from "../artwork/new-logo/dead-statebuddy-optimized.svg";
-import { PersistentApp } from "./App/PersistentApp";
 import { CrashScreen } from "./App/CrashScreen";
 import { SpyingApp } from "./App/SpyingApp";
 import { NonSpyingApp } from "./App/NonSpyingApp";
@@ -19,8 +16,6 @@ const searchParams = new URLSearchParams(window.location.search);
 const elem = document.getElementById("root")!;
 const app = (
   // I disabled strict mode because the double rendering is annoying to debug.
-
-
   // <StrictMode>
   <ErrorBoundary fallback={
     // I'm (ab)using ModalOverlay here to render something centered on the page.

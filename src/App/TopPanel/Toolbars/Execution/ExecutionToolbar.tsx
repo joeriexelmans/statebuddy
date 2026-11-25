@@ -1,4 +1,4 @@
-import { Dispatch, memo, SetStateAction, useCallback, useMemo } from 'react';
+import { Dispatch, memo, SetStateAction, useCallback, useContext, useMemo } from 'react';
 
 import { Tooltip } from '@/App/Components/Tooltip';
 import { infinityIfUndefined, SimulatorStuff } from '@/App/hooks/useSimulator';
@@ -20,6 +20,7 @@ import { KeyInfoVisible, KeyInfoHidden } from '../../KeyInfo';
 import { Toolbar } from '../../Toolbar';
 import { InteractiveExecutionState } from '@/App/migrations/v2_types';
 import { DeepSetter, WithSetters } from '@/util/partial_setter';
+import { NowContext } from '@/App/NowContext';
 
 type ExecutionProps = {
   interactive: InteractiveExecutionState,
@@ -47,11 +48,13 @@ export const ExecutionToolbar = memo(function ExecutionToolbar({interactive, set
 
   const KeyInfo = showKeys ? KeyInfoVisible : KeyInfoHidden;
 
+  const now = useContext(NowContext);
+
   // User clicked play / pause:
   const onTogglePaused = useCallback(() => {
     if (simulator.trace) {
       setTime(time => {
-          const wallclktime = Math.round(Date.now());
+          const wallclktime = Math.round(now());
           if (time.kind === "realtime") {
             return setPaused(time, wallclktime);
           }
@@ -61,7 +64,7 @@ export const ExecutionToolbar = memo(function ExecutionToolbar({interactive, set
       });
     }
     refreshDisplayTime();
-  }, [setTime, timescale, refreshDisplayTime, Boolean(simulator.trace)]);
+  }, [setTime, timescale, refreshDisplayTime, Boolean(simulator.trace), now]);
 
   // Spacebar pauses/resumes
   useShortcuts([

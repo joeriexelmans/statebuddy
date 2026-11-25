@@ -409,7 +409,7 @@ export function ensureSelectionWithinEditorBounds(s: VisualEditorState): VisualE
     x: Math.min(0, rectToAbsolute(ARROW_BOUNDS).bottomRight.x - rectToAbsolute(bbox).bottomRight.x),
     y: Math.min(0, rectToAbsolute(ARROW_BOUNDS).bottomRight.y - rectToAbsolute(bbox).bottomRight.y),
   };
-  // unless you are dealing with HUUUUGE shapes, either of these 'moveAwayFrom...' vectors will be zero. Nevertheless if they want us to move in opposite directions, we just add them together to get something "stable"... it's the least worst thing we could do...
+  // unless you are dealing with HUUUUGE shapes, at least one of these 'moveAwayFrom...' vectors will be zero. Nevertheless if they want us to move in opposite directions, we just add them together to get something "stable"... it's the best thing we can do...
   const delta = addV2D(moveAwayFromTopLeft, moveAwayFromBottomRight);
 
   return rawMoveSelection(s, delta);

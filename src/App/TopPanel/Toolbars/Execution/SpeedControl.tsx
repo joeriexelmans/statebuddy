@@ -1,5 +1,5 @@
 import { setRealtime, TimeMode } from "@/App/time";
-import { Dispatch, memo, SetStateAction, useCallback } from "react";
+import { Dispatch, memo, SetStateAction, useCallback, useContext } from "react";
 
 import { useShortcuts } from "@/hooks/useShortcuts";
 import { stepDown, stepUp } from "@/util/steps";
@@ -10,6 +10,7 @@ import { EnterText } from "../../../Components/EnterText";
 import { Tooltip } from "../../../Components/Tooltip";
 import { TIMESCALE_MAX, TIMESCALE_MIN, TIMESCALE_STEPS } from "../../../parameters";
 import { KeyInfoVisible, KeyInfoHidden } from "../../KeyInfo";
+import { NowContext } from "@/App/NowContext";
 
 export const SpeedControl = memo(function SpeedControl({showKeys, timescale, setTimescale, setTime}: {showKeys: boolean, timescale: number, setTimescale: Dispatch<SetStateAction<number>>, setTime: Dispatch<SetStateAction<TimeMode>>}) {
 
@@ -31,12 +32,14 @@ export const SpeedControl = memo(function SpeedControl({showKeys, timescale, set
     });
   }, [setTime, setTimescale]);
 
+  const now = useContext(NowContext);
+
   const onSlower = useCallback(() => {
-    onTimeScaleChange(stepDown(TIMESCALE_STEPS, timescale, 0.001).toString(), Math.round(Date.now()));
-  }, [onTimeScaleChange, timescale]);
+    onTimeScaleChange(stepDown(TIMESCALE_STEPS, timescale, 0.001).toString(), Math.round(now()));
+  }, [onTimeScaleChange, timescale, now]);
   const onFaster = useCallback(() => {
-    onTimeScaleChange(stepUp(TIMESCALE_STEPS, timescale, 0.001).toString(), Math.round(Date.now()));
-  }, [onTimeScaleChange, timescale]);
+    onTimeScaleChange(stepUp(TIMESCALE_STEPS, timescale, 0.001).toString(), Math.round(now()));
+  }, [onTimeScaleChange, timescale, now]);
 
   useShortcuts([
     {keys: ["s"], action: onSlower},
@@ -62,7 +65,7 @@ twice as fast as wall clock time)`}>
         <EnterText id="number-timescale"
           value={timescale.toFixed(3)}
           style={{width:40}}
-          onEnter={str => onTimeScaleChange(str, Math.round(Date.now()))}
+          onEnter={str => onTimeScaleChange(str, Math.round(now()))}
         />
       </Tooltip>
       <KeyInfo keyInfo={<kbd>F</kbd>}>

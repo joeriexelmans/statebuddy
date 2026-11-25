@@ -51,19 +51,19 @@ export const VisualEditor = memo(function VisualEditor({state, topology, errors,
   // uid's of selected rountangles
   const selection = state.selection;
 
-  useEffect(() => {
-    // bit of a hacky way to force the animation on fired transitions to replay, if the new 'rt' contains the same fired transitions as the previous one
-    requestAnimationFrame(() => {
-      document.querySelectorAll(`.${styles.arrow}.${styles.fired}`).forEach(el => {
-        // @ts-ignore
-        el.style.animation = 'none';
-        requestAnimationFrame(() => {
-          // @ts-ignore
-          el.style.animation = ''; 
-        })
-      });
-    })
-  }, [highlightTransitions]);
+  // useEffect(() => {
+  //   // bit of a hacky way to force the animation on fired transitions to replay, if the new 'rt' contains the same fired transitions as the previous one
+  //   requestAnimationFrame(() => {
+  //     document.querySelectorAll(`.${styles.arrow}.${styles.fired}`).forEach(el => {
+  //       // @ts-ignore
+  //       el.style.animation = 'none';
+  //       requestAnimationFrame(() => {
+  //         // @ts-ignore
+  //         el.style.animation = ''; 
+  //       })
+  //     });
+  //   })
+  // }, [highlightTransitions]);
 
   // for visual feedback, when selecting/moving one thing, we also highlight (in green) all the things that belong to the thing we selected.
   const sidesToHighlight: {[key: string]: RectSide[]} = {};

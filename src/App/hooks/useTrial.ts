@@ -1,5 +1,6 @@
 import { useLocalStorage } from "@/hooks/usePersistentState";
-import { useCallback, useMemo } from "react";
+import { useCallback, useContext, useMemo } from "react";
+import { NowContext } from "../NowContext";
 
 export type Trial = {
   trialStarted: boolean,
@@ -9,6 +10,7 @@ export type Trial = {
 }
 
 export function useTrial() {
+  const now = useContext(NowContext);
   const [whenStarted, setWhenStarted] = useLocalStorage<string|null>("stateboss-trial-started", null);
 
   const startTrial = useCallback(() => {
@@ -22,12 +24,12 @@ export function useTrial() {
     if (whenStarted) {
       return Math.max(
         30 + Math.floor(
-          (Date.parse(whenStarted) - Date.now()) /
+          (Date.parse(whenStarted) - now()) /
             (1000 * 60 * 60 * 24)),
         0);
     }
     else return 0;
-  }, [whenStarted]);
+  }, [whenStarted, now]);
 
   const trialStarted = Boolean(whenStarted);
 

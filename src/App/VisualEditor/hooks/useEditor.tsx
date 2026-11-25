@@ -266,7 +266,7 @@ export function useEditor(
         return currentPointer;
       }
       return null;
-    })
+    });
     setMakingSelection(ss => {
       if (ss) {
         const selectionSize = subtractV2D(currentPointer, ss!.topLeft);

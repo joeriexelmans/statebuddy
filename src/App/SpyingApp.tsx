@@ -1,6 +1,6 @@
 import { chunkedBinarySearch, chunkedFirst, chunkedIdxToFlat, chunkedLast, chunkedLength, chunkedPush, flatIdxToChunked } from "@/util/chunked_array";
 import { diffJSON, explainDiff } from "@/util/diff";
-import { ChangeEvent, ChangeEventHandler, MouseEvent, SetStateAction, useCallback, useEffect, useState } from "react";
+import { ChangeEvent, ChangeEventHandler, MouseEvent, SetStateAction, useCallback, useEffect, useMemo, useState } from "react";
 import { AppState } from "./App.state";
 import { PersistentApp } from "./PersistentApp";
 
@@ -19,6 +19,7 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import { Encoder } from "cbor-x";
 import { deflateBuffer, inflateBuf } from "@/util/deflate";
 import { downloadArrayBuffer } from "@/util/download_file";
+import { NowContext } from "./NowContext";
 
 const CBOR = new Encoder({
   structuredClone: true,
@@ -145,6 +146,11 @@ export function SpyingApp() {
     }
   }, [paused]);
 
+  const getNow = useMemo(() => {
+    if (paused) return () => cur.t;
+    else return () => Date.now();
+  }, [paused ? cur.t : Date.now]);
+
   return <div style={{display: 'flex', flexDirection: 'column', overflow: 'hidden', width: '100vw'}}>
     <div
       style={{display: 'flex', flexDirection: 'column', overflow: 'hidden', flexGrow: 1}}
@@ -166,7 +172,10 @@ export function SpyingApp() {
           height: paused ? cur.w.height : undefined,
           overflow: 'hidden',
         }}>
-          <PersistentApp appState={appState} setAppState={setAppStateButKeepHistory} />
+          {/* If we are paused, must make the app think the system time is the recorded time: */}
+          <NowContext value={getNow}>
+            <PersistentApp appState={appState} setAppState={setAppStateButKeepHistory} />
+          </NowContext>
           {cur && paused &&
             <div style={{position: 'absolute', left: cur.c.x-4, top: cur.c.y-2, fontSize: 24, pointerEvents: 'none', zIndex: 1000000}}>
               <img src={cursorSVG} width={cur.c.buttons ? 28 : 24}/>

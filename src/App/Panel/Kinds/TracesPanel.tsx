@@ -10,7 +10,7 @@ import { DeepSetter } from "../../../util/partial_setter";
 import { saveExtTransitions } from '@/languages/devs/serialize_trace';
 import { MoveUpDown } from '../../Components/MoveUpDown';
 import { DoubleClickButton } from '../../Components/DoubleClickButton';
-import { Dispatch, memo, SetStateAction, useCallback } from 'react';
+import { Dispatch, memo, SetStateAction, useCallback, useContext } from 'react';
 import { getSimTime, TimeMode, } from '@/App/time';
 import { SimulatorStuff, } from '../../hooks/useSimulator';
 import { CoupledDEVSTrace } from '../../Trace/CoupledDEVSTrace';
@@ -22,6 +22,7 @@ import { AppState } from '../../App.state';
 import { ExtTransitionTrace, SavedTraces } from '../../migrations/v1_types';
 import { TraceView } from '../../migrations/v2_types';
 import { Scrollable } from "@/App/Components/Scrollable";
+import { NowContext } from "@/App/NowContext";
 
 type TracesProps = {
   state: AppState,
@@ -44,15 +45,17 @@ export function TracesPanel({
   const {setHeight} = setState.setView.setTrace;
   const {trace} = simulator;
 
+  const now = useContext(NowContext);
+
   const onSaveTrace = useCallback(() => {
     if (trace) {
-      const extTrace = saveExtTransitions(trace.trace, getSimTime(time, Date.now()));
+      const extTrace = saveExtTransitions(trace.trace, getSimTime(time, now()));
       setSavedTraces(savedTraces => [
         ...savedTraces, 
         ["", extTrace] as const,
       ])
     }
-  }, [trace, setSavedTraces]);
+  }, [trace, setSavedTraces, now]);
   
   return <div style={{display: 'flex', flexGrow: 1, flexDirection: 'column'}}>
     <SavedTracesView
