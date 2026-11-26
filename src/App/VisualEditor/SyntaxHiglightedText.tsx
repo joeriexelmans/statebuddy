@@ -38,7 +38,7 @@ export const SyntaxHighlightedText = memo(function SyntaxHighlightedText({text, 
           </Span>}
         {/* the current text range, to be rendered with special CSS style */}
         {disableTooltips ? styledPiece
-          : <Tooltip tooltip={tooltip} showWhen="always" error>
+          : <Tooltip tooltip={tooltip} showWhen="always" error align="left">
               {styledPiece}
             </Tooltip>}
       </Span>;
