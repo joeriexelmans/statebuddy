@@ -224,7 +224,7 @@ export function useInteractiveSimulator(
         idx: -1,
       };
     });
-  }, [setInteractive._setShallow, fullTrace, now]);
+  }, [setInteractive._setShallow, fullTrace, now, forgetFuture]);
 
   // Updates the current execution trace such that the next timed transition is appended.
   const jumpTimeToNextTimedTransition = useCallback(() => {
@@ -243,7 +243,7 @@ export function useInteractiveSimulator(
         idx: -1,
       }
     });
-  }, [setInteractive._setShallow, nextWakeup]);
+  }, [setInteractive._setShallow, nextWakeup, forgetFuture]);
 
   // when user presses <Tab>
   const onSkip = useCallback(() => {
