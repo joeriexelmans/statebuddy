@@ -91,6 +91,7 @@
 /* Looks */
 .tooltipInner {
   background-color: var(--tooltip-bg-color);
+  font-family: 'Roboto', sans-serif;
   color: var(--tooltip-fg-color) !important;
   border-radius: 3px;
   width: max-content;
