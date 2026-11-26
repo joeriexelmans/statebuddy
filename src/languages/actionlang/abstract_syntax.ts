@@ -12,7 +12,8 @@ export type Unexpected = {
   range: TextRange,
 }
 
-export type Lhs = LhsRef | LhsDict | LhsArray | LhsLiteral | Unexpected;
+export type Lhs = LhsRef | LhsDict | LhsArray | LhsLiteral
+  | Unexpected; // <-- i observed that the LHS "[A]" (= an array of "A" -- "A" cannot be parsed because identifiers must start lowercase) still produces a LhsArray with an 'unexpected input' of "A" ... so we make the best of it.
 
 export type LhsRef = {
   kind: "lhsRef",
