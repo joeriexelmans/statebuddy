@@ -3,8 +3,8 @@ import { AppStateV1, DebugState, MQTTState, SideBarStateV1, ToolSelectState, Tra
 
 export const defaultToolSelectState: ToolSelectState = {
   leftMouseMode: 'select',
-  middleMouseMode: 'nothing',
-  rightMouseMode: 'and',
+  middleMouseMode: 'pan',
+  rightMouseMode: 'nothing',
 };
 
 export const defaultFindReplaceState = {

@@ -164,6 +164,7 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
 
   const editorStuff = useEditor(
     appState.view.topPanel.mouseMap,
+    setAppState.setView.setTopPanel.setMouseMap,
     appState.view.topPanel.zoom,
     editorState,
     setAppState.setSyntax.setEditorState.setCurrent,
@@ -240,7 +241,7 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
         <TopPanel
           appState={appState}
           setAppState={setAppState}
-          startDragging={editorStuff.setDragging}
+          paste={editorStuff.paste}
           historyCallbacks={historyCallbacks}
           simulator={simulator}
           displayTime={displayTime}
@@ -275,7 +276,7 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
         }}>
 
           {/* Editor */}
-          <Scrollable state={appState.view.scroll.editor} setState={setAppState.setView.setScroll.setEditor._setShallow} style={{overflow: 'auto'}}>
+          <Scrollable ref={editorStuff.refScroll} state={appState.view.scroll.editor} setState={setAppState.setView.setScroll.setEditor._setShallow} style={{overflow: 'auto'}}>
           {/* <div style={{overflow: 'auto'}}> <-- this element will overflow in the Y-direction (because its parent is a COLUMN) */}
             {editorState && topology && syntaxErrors &&
               <DebugContext value={appState.view.debug}>

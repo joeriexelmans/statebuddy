@@ -10,14 +10,18 @@ import { RountangleIcon, PseudoStateIcon, HistoryIcon } from "../../Icons";
 import { KeyInfoVisible, KeyInfoHidden } from "../../KeyInfo";
 import { MouseIcon } from "../../MouseIcon";
 
+import PanToolIcon from '@mui/icons-material/PanTool';
+import ControlCameraIcon from '@mui/icons-material/ControlCamera';
+
 const insertModes: [ToolMode, string, ReactElement, ReactElement][] = [
   ["select", "select, move, resize", <HighlightAltSharpIcon fontSize="small"/>, <></>],
-  ["and", "draw AND-states", <RountangleIcon kind="and" dashed={false}/>, <kbd>A</kbd>],
-  ["or", "draw OR-states", <RountangleIcon kind="or" dashed={true}/>, <kbd>O</kbd>],
-  ["pseudo", "draw pseudo-states", <PseudoStateIcon/>, <kbd>P</kbd>],
+  ["pan", "pan view", <ControlCameraIcon fontSize="small"/>, <kbd>Q</kbd>],
+  ["and", "draw AND-state", <RountangleIcon kind="and" dashed={false}/>, <kbd>A</kbd>],
+  ["or", "draw OR-state", <RountangleIcon kind="or" dashed={true}/>, <kbd>R</kbd>],
+  ["pseudo", "draw choice-state", <PseudoStateIcon/>, <kbd>C</kbd>],
   ["shallow", "draw shallow history", <HistoryIcon kind="shallow"/>, <kbd>H</kbd>],
   ["deep", "draw deep history", <HistoryIcon kind="deep"/>, <></>],
-  ["transition", "draw arrows", <TrendingFlatIcon fontSize="small"/>, <kbd>T</kbd>],
+  ["transition", "draw arrow", <TrendingFlatIcon fontSize="small"/>, <kbd>T</kbd>],
   ["text", "insert text", <>&nbsp;T&nbsp;</>, <kbd>X</kbd>],
 ];
 
@@ -35,15 +39,14 @@ export const ToolSelect = memo(function ToolSelect({mouseMap, setMouseMap, showK
   const {setLeftMouseMode, setMiddleMouseMode, setRightMouseMode} = setMouseMap;
 
   useShortcuts([
-    {keys: ["a"], action: () => setRightMouseMode("and")},
-    {keys: ["o"], action: () => setRightMouseMode("or")},
-    {keys: ["p"], action: () => setRightMouseMode("pseudo")},
-    {keys: ["t"], action: () => setRightMouseMode("transition")},
-    {keys: ["x"], action: () => setRightMouseMode("text")},
-    {keys: ["h"], action: () => setRightMouseMode(mode => mode === "shallow" ? "deep" : "shallow")},
+    {keys: ["a"], action: () => setLeftMouseMode("and")},
+    {keys: ["r"], action: () => setLeftMouseMode("or")},
+    {keys: ["c"], action: () => setLeftMouseMode("pseudo")},
+    {keys: ["t"], action: () => setLeftMouseMode("transition")},
+    {keys: ["x"], action: () => setLeftMouseMode("text")},
+    {keys: ["h"], action: () => setLeftMouseMode(mode => mode === "shallow" ? "deep" : "shallow")},
   ]);
 
-  // for power users ... disabled!
   const mapAnythingToAnything = (e: MouseEvent, m: ToolMode) => {
     if (e.button === 0)
       setLeftMouseMode(oldMode => oldMode === m ? "nothing" : m);
@@ -51,21 +54,23 @@ export const ToolSelect = memo(function ToolSelect({mouseMap, setMouseMap, showK
       setMiddleMouseMode(oldMode => oldMode === m ? "nothing" : m);
     else if (e.button === 2)
       setRightMouseMode(oldMode => oldMode === m ? "nothing" : m);
+    e.stopPropagation();
+    e.preventDefault();
   };
 
-  // for normal people...
-  const mapConservatively = (e: MouseEvent, m: ToolMode) => {
-    if (e.button === 0 || e.button === 2) {
-      if (m !== "select") {
-        setRightMouseMode(oldMode => oldMode === m ? "nothing" : m);
-      }
-    }
-    else if (e.button === 1) {
-      if (m !== "select") {
-        setMiddleMouseMode(oldMode => oldMode === m ? "nothing" : m);
-      }
-    }
-  }
+  // i thought a more 'fixed' mode where left mouse always selects/moves and right mouse always inserts would be preferred, but it turns out most people find it confusion. also mandatory use of right mouse is not nice for touchpad users.
+  // const mapConservatively = (e: MouseEvent, m: ToolMode) => {
+  //   if (e.button === 0 || e.button === 2) {
+  //     if (m !== "select") {
+  //       setRightMouseMode(oldMode => oldMode === m ? "nothing" : m);
+  //     }
+  //   }
+  //   else if (e.button === 1) {
+  //     if (m !== "select") {
+  //       setMiddleMouseMode(oldMode => oldMode === m ? "nothing" : m);
+  //     }
+  //   }
+  // }
 
   const KeyInfo = showKeys ? KeyInfoVisible : KeyInfoHidden;
   return <>
@@ -86,7 +91,7 @@ export const ToolSelect = memo(function ToolSelect({mouseMap, setMouseMap, showK
           <TwoStateButton
             active={rightMouseMode===m || leftMouseMode===m || middleMouseMode === m}
             // @ts-ignore
-            onMouseUp={e => mapConservatively(e, m)}
+            onMouseUp={e => mapAnythingToAnything(e, m)}
             onContextMenu={e => {e.preventDefault()}}
           >
             {buttonTxt}

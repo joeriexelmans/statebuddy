@@ -44,9 +44,9 @@ type VisualEditorProps = {
 
 const viewBox = `0 0 ${EDITOR_WIDTH} ${EDITOR_HEIGHT}`;
 
-export const VisualEditor = memo(function VisualEditor({state, topology, errors, highlightActive, highlightTransitions, extraHighlight, beginEdit, zoom, findText, editorStuff}: VisualEditorProps) {  
+export const VisualEditor = memo(function VisualEditor({state, topology, errors, highlightActive, highlightTransitions, extraHighlight, beginEdit, zoom, findText, editorStuff, mouseMap}: VisualEditorProps) {  
 
-  const {copyPasteCallbacks, dragging, onMouseDown, refSVG, renderSelection} = editorStuff;
+  const {copyPasteCallbacks, action, onMouseDown, refSVG, renderSelection} = editorStuff;
 
   // uid's of selected rountangles
   const selection = state.selection;
@@ -119,10 +119,14 @@ export const VisualEditor = memo(function VisualEditor({state, topology, errors,
 
   const debugContext = useContext(DebugContext);
 
+  const modeClass = 'mode_'+mouseMap.leftMouseMode;
+
   return <svg width={size} height={size}
       className={styles.svgCanvas
         + ' ' + (highlightActive.has("root") ? styles.active : "")
-        + ' ' + (dragging ? styles.dragging : "")
+        + ' ' + (action.what === "dragging" ? styles.dragging : "")
+        + ' ' + (action.what === "panning" ? styles.panning : "")
+        + ' ' + (styles[modeClass])
       }
 
       // Prevent onMouseDown from firing twice upon right click:

@@ -24,6 +24,7 @@ import { Toolbar } from './Toolbar';
 import { EditorToolbar } from "./Toolbars/Editor/EditorToolbar";
 import { ExecutionToolbar } from "./Toolbars/Execution/ExecutionToolbar";
 import { ModeToolbar } from "./Toolbars/Mode/ModeToolbar";
+import { PasteCallback } from "./Toolbars/Editor/CopyPasteButtons";
 
 export type TopPanelProps = {
   appState: AppState,
@@ -32,7 +33,7 @@ export type TopPanelProps = {
   historyCallbacks: UndoCallbacks<VisualEditorState>,
 
   // editing
-  startDragging: (where: Vec2D) => void,
+  paste: PasteCallback,
 
   // execution
   simulator: SimulatorStuff,
@@ -54,7 +55,7 @@ const ShortcutExport = <><kbd>Ctrl</kbd>+<kbd>S</kbd></>;
 const toolbarGap = {columnGap: '1em'};
 
 export const TopPanel = memo(function TopPanel(props: TopPanelProps) {
-  const {trial, displayTime, refreshDisplayTime, startDragging, simulator, appState, setAppState, onAboutStateBuddy, onSave, historyCallbacks,
+  const {trial, displayTime, refreshDisplayTime, paste, simulator, appState, setAppState, onAboutStateBuddy, onSave, historyCallbacks,
   } = props;
   const {setKeys, setFind} = setAppState.setView.setVisibility;
   const showKeys = appState.view.visibility.keys;
@@ -73,8 +74,8 @@ export const TopPanel = memo(function TopPanel(props: TopPanelProps) {
     {keys: ["Ctrl", "s"], action: () => onSave(modelName)},
     {keys: ["Ctrl", "Shift", "F"], action: useToggle(setFind)},
     {keys: ["i"], action: simulatorCallbacks.onInit},
-    {keys: ["c"], action: simulatorCallbacks.onClear},
-    {keys: ["Backspace"], action: simulatorCallbacks.onBack},
+    // {keys: ["c"], action: simulatorCallbacks.onClear},
+    // {keys: ["Backspace"], action: simulatorCallbacks.onBack},
     {keys: ["Tab"], action: currentTraceItem && simulatorCallbacks.onSkip || simulatorCallbacks.onInit},
     {keys: ["Shift", "Tab"], action: simulatorCallbacks.onBack},
   ]);
@@ -136,7 +137,7 @@ Refresh the page to get the latest version.` : `about ${trial.appName}`} align="
       KeyInfo={KeyInfo}
       syntax={appState.syntax}
       historyCallbacks={historyCallbacks}
-      startDragging={startDragging}
+      paste={paste}
     />
 
     <ModeToolbar

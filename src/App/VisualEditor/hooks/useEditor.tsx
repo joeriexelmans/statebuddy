@@ -11,37 +11,41 @@ import { mergeSelections, SelectingState } from "../Selection";
 import { translateSelection } from "../transformations/translate";
 import styles from "../VisualEditor.module.css";
 import { Parts, Selection, VisualEditorState } from "../VisualEditor.state";
-import { CopyPasteCallbacks, useCopyPaste } from "./useCopyPaste";
+import { CopyPasteCallbacks, pasteData, useCopyPaste } from "./useCopyPaste";
+import { PasteCallback } from "@/App/TopPanel/Toolbars/Editor/CopyPasteButtons";
 
 export type EditorStuff = {
   onMouseDown: (e: React.MouseEvent<SVGSVGElement, MouseEvent>) => void;
-  dragging: Vec2D | null;
-  setDragging: Dispatch<SetStateAction<Vec2D | null>>;
+  action: EditorAction;
+  paste: PasteCallback;
   refSVG: RefObject<SVGSVGElement | null>;
+  refScroll: RefObject<HTMLDivElement | null>;
   copyPasteCallbacks: CopyPasteCallbacks;
-
   newSelection: Selection;
   renderSelection: Selection,
 };
 
+export type EditorAction = 
+  {what: "nothing"} |
+  {what: "dragging", ptr: Vec2D} |
+  {what: "panning", ptr: Vec2D};
+
 // the stateful part of the VisualEditor
 export function useEditor(
   mouseMap: ToolSelectState,
+  setMouseMap: DeepSetter<ToolSelectState>,
   zoomPercentage: number,
   state: VisualEditorState,
   setState: DeepSetter<VisualEditorState>,
   historyCallbacks: UndoCallbacks<VisualEditorState>,
-  beginEdit: (uid: string) => void,
+  beginEditText: (uid: string) => void,
 ) {
   const zoom = zoomPercentage / 100;
   
   // Not null while the user is making a selection (rendered as a transparent dashed-border blue box).
   const setMakingSelection = setState.setMakingSelection as Dispatch<SetStateAction<Rect2D|undefined>>;
   
-  // Whether a bunch of selected shapes are being dragged with the mouse cursor.
-  // if not dragging: null
-  // if dragging: position of cursor at last mouse event
-  const [dragging, setDragging] = useState<Vec2D|null>(null);
+  const [action, setAction] = useState<EditorAction>({what: "nothing"});
   
   // The last known cursor position (via the most recent mouse event).
   // Needed for pasting from clipboard (insert shapes under cursor).
@@ -49,6 +53,7 @@ export function useEditor(
   
   // We keep a ref to the SVG element in order to transform mouse event coordinates to SVG coordinates.
   const refSVG = useRef<SVGSVGElement>(null);
+  const refScroll = useRef<HTMLDivElement>(null);
   
   const {commit, replace} = historyCallbacks;
   
@@ -94,7 +99,7 @@ export function useEditor(
       toGrow = new Map();
     }
     const startMakingSelection = () => {
-      setDragging(null);
+      setAction({what: "nothing"});
       commitSelection(_ => toGrow);
       setMakingSelection({
         topLeft: currentPointer,
@@ -115,7 +120,7 @@ export function useEditor(
             ...toGrow,
             [uid, (toGrow.get(uid) || new Set()).union(parts)],
           ]));
-          setDragging(currentPointer);
+          setAction({what: "dragging", ptr: currentPointer});
         }
         else {
           // it's an actual shape
@@ -127,16 +132,18 @@ export function useEditor(
         // the part is in existing selection
         // -> just start dragging
         commitSelection(s => s); // <-- but also create an undo-checkpoint!
-        setDragging(currentPointer);
+        setAction({what: "dragging", ptr: currentPointer});
       }
     }
     else {
       // mouse is not on any shape
       startMakingSelection();
     }
-  }, [getCurrentPointer, commitSelection, state.selection, setDragging, setMakingSelection]);
+  }, [getCurrentPointer, commitSelection, state.selection, setAction, setMakingSelection]);
   
   const startInsert = useCallback((e: React.MouseEvent<SVGSVGElement, MouseEvent>, mode: ToolMode) => {
+    console.log('startInsert', mode);
+    
     const currentPointer = getCurrentPointer(e);
     // ignore selection, right mouse button always inserts
     commit(state => {
@@ -206,66 +213,83 @@ export function useEditor(
       throw new Error("unreachable, mode=" + mode); // shut up typescript
     });
     // The user can still resize/move the inserted shape as long as the insert mouse button is kept pressed:
-    setDragging(currentPointer);
-    return;
-  }, [getCurrentPointer, commit, setDragging]);
-  
-  const modeToAction = useCallback((mode: ToolMode, e: React.MouseEvent<SVGSVGElement, MouseEvent>) => {
-    if (mode === "nothing") {
-      // In this case, we very consciously don't preventDefault so the browser's context menu can still be accessed with right mouse button if no tool is mapped to that button -> useful for debugging!
-      return;
-    }
-    else if (mode === "select") {
-      // e.preventDefault();
-      e.stopPropagation();
-      startSelectOrMove(e);
-    }
-    else {
-      e.preventDefault();
-      e.stopPropagation();
-      startInsert(e, mode);
-    }
-  }, [startSelectOrMove, startInsert]);
+    setAction({what: "dragging", ptr: currentPointer});
+  }, [getCurrentPointer, commit, setAction]);
+
+  const beginAction = useCallback((mode: ToolMode, setMode: Dispatch<SetStateAction<string>>, e: React.MouseEvent<SVGSVGElement, MouseEvent>) => {
+    // setMode(mode => {
+      if (mode === "nothing") {
+        // In this case, we very consciously don't preventDefault so the browser's context menu can still be accessed with right mouse button if no tool is mapped to that button -> useful for debugging!
+      }
+      else if (mode === "select") {
+        e.preventDefault();
+        e.stopPropagation();
+        startSelectOrMove(e);
+      }
+      else if (mode === "pan") {
+        e.preventDefault();
+        e.stopPropagation();
+        setAction({what: "panning", ptr: getCurrentPointer(e)});
+      }
+      else {
+        e.preventDefault();
+        e.stopPropagation();
+        startInsert(e, mode as ToolMode);
+        setMode("select");
+        // return "select";
+      }
+      // return mode;
+    // })
+  }, [startSelectOrMove, startInsert, setAction]);
 
   const attemptCancelCurrentTool = useCallback(() => {
-    if (dragging || state.makingSelection) {
+    if (action.what === "dragging" || state.makingSelection) {
       historyCallbacks.undo();
-      setDragging(null);
+      setAction({what: "nothing"});
       setMakingSelection(undefined);
       return true;
     }
     return false;
-  }, [dragging, state.makingSelection, historyCallbacks.undo, setDragging, setMakingSelection]);
+  }, [action, setAction, state.makingSelection, historyCallbacks.undo, setMakingSelection]);
   
   const onMouseDown = useCallback((e: React.MouseEvent<SVGSVGElement, MouseEvent>) => {
-    // if (attemptCancelCurrentTool()) {
-    //   e.preventDefault();
-    //   return;
-    // }
     if (e.button === 0) {
-      modeToAction(mouseMap.leftMouseMode, e);
+      beginAction(mouseMap.leftMouseMode, setMouseMap.setLeftMouseMode, e);
     }
     else if (e.button === 1) {
-      modeToAction(mouseMap.middleMouseMode, e);
+      beginAction(mouseMap.middleMouseMode, setMouseMap.setMiddleMouseMode, e);
     }
     else if (e.button === 2) {
-      modeToAction(mouseMap.rightMouseMode, e);
+      beginAction(mouseMap.rightMouseMode, setMouseMap.setRightMouseMode, e);
     }
-  }, [modeToAction, mouseMap,  attemptCancelCurrentTool]);
-  
+  }, [beginAction, mouseMap, setMouseMap]);
+
   const onMouseMove = useCallback((e: {pageX: number, pageY: number}) => {
     const currentPointer = getCurrentPointer(e);
-    setDragging(prevPointer => {
-      if (prevPointer) {
+    setAction(action => {
+      if (action.what !== "nothing") {
         // user was dragging / resizing
-        const pointerDelta = subtractV2D(currentPointer, prevPointer);
+        const pointerDelta = subtractV2D(currentPointer, action.ptr);
         // update state in next event cycle ()
-        setTimeout(() => { // <-- bit hacky, but React complains if we call replace directly.
-          replace(state => translateSelection(state, pointerDelta));
-        });
-        return currentPointer;
+        if (action.what === "dragging") {
+          setTimeout(() => { // <-- bit hacky, but React complains if we call replace directly.
+            replace(state => translateSelection(state, pointerDelta));
+          });
+          return {...action, ptr: currentPointer};
+        }
+        else if (action.what === "panning") {
+          if (refScroll.current) {
+            const left = refScroll.current.scrollLeft - pointerDelta.x;
+            const top = refScroll.current.scrollTop - pointerDelta.y;
+            refScroll.current?.scroll({
+              behavior: "instant",
+              left,
+              top,
+            });
+          }
+        }
       }
-      return null;
+      return action;
     });
     setMakingSelection(ss => {
       if (ss) {
@@ -277,7 +301,7 @@ export function useEditor(
       }
       return ss;
     });
-  }, [replace, getCurrentPointer, setMakingSelection, setDragging]);
+  }, [replace, getCurrentPointer, setMakingSelection, setAction, refSVG.current]);
   
   const onMouseUp = useCallback((e: {target: any, pageX: number, pageY: number}) => {
     setState._setShallow(state => {
@@ -314,11 +338,11 @@ export function useEditor(
         ...rest,
       };
     });
-    setDragging(null); // <-- no longer dragging
-  }, [setState._setShallow, setDragging, newSelection]);
+    setAction({what: "nothing"}); // <-- no longer dragging
+  }, [setState._setShallow, setAction, newSelection, mouseMap, setMouseMap]);
 
   const onSelectAll = useCallback(() => {
-    setDragging(null);
+    setAction({what: "nothing"});
     commit(state => ({
       ...state,
       selection: new Map([
@@ -329,7 +353,7 @@ export function useEditor(
         ...state.history.map(h => [h.uid, allHistoryParts] as const),
       ]),
     }));
-  }, [commit, setDragging]);
+  }, [commit, setAction]);
   
   const convertSelection = useCallback((kind: "or"|"and") => {
     commit(state => ({
@@ -345,8 +369,12 @@ export function useEditor(
   const copyPasteCallbacks = useCopyPaste(
     state,
     commit,
-    setDragging, // <-- upon pasting, the pasted shapes follow the mouse cursor until the user clicks at the desired position.
+    (where: Vec2D) => setAction({what: "dragging", ptr: where}), // <-- upon pasting, the pasted shapes follow the mouse cursor until the user clicks at the desired position.
   );
+
+  const paste: PasteCallback = useCallback((data: string, where: Vec2D) => {
+    pasteData(data, where, setState._setShallow, () => {})
+  }, []);
 
   const onEditText = useCallback(() => {
     if (state.selection.size === 1) {
@@ -354,13 +382,13 @@ export function useEditor(
         if (parts.size === 1) {
           for (const part of parts) {
             if (part === "text") {
-              beginEdit(uid);
+              beginEditText(uid);
             }
           }
         }
       }
     }
-  }, [state.selection, beginEdit]);
+  }, [state.selection, beginEditText]);
     
   useShortcuts([
     {keys: ["o"], action: useCallback(() => convertSelection("or"), [convertSelection])},
@@ -380,32 +408,22 @@ export function useEditor(
       window.removeEventListener("mouseup", onMouseUp);
     };
   }, [onMouseUp, onMouseMove]);
-
-  // useDetectChange2({
-  //   onMouseDown,
-  //   dragging,
-  //   setDragging,
-  //   refSVG,
-  //   copyPasteCallbacks,
-  //   newSelection: ,
-  //   selectingState,
-  //   renderSelection,
-  // });
-
   
   return useMemo(() => ({
     onMouseDown,
-    dragging,
-    setDragging,
+    action,
+    paste,
     refSVG,
+    refScroll,
     copyPasteCallbacks,
     newSelection: aboutToSelect,
     renderSelection,
   }), [
     onMouseDown,
-    dragging,
-    setDragging,
+    action,
+    paste,
     refSVG,
+    refScroll,
     copyPasteCallbacks,
     aboutToSelect,
     renderSelection,

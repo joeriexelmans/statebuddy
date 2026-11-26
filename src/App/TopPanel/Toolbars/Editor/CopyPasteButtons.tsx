@@ -9,16 +9,18 @@ import { Vec2D } from "@/util/geometry";
 const ShortcutCopy = <><kbd>Ctrl</kbd>+<kbd>C</kbd></>;
 const ShortcutPaste = <><kbd>Ctrl</kbd>+<kbd>V</kbd></>;
 
+export type PasteCallback = (data: string, where: Vec2D) => void;
+
 export const CopyPasteButtons = memo(function CopyPasteButtons({
   current,
   KeyInfo,
   commit,
-  startDragging,
+  paste,
 }: {
   current: VisualEditorState,
   KeyInfo: JSXElementConstructor<PropsWithChildren<{keyInfo: ReactNode}>>,
   commit: (callback: (s: VisualEditorState) => VisualEditorState) => void,
-  startDragging: (where: Vec2D) => void,
+  paste: PasteCallback,
 }) {
   const disabled = current.selection.size === 0;
 
@@ -29,14 +31,15 @@ export const CopyPasteButtons = memo(function CopyPasteButtons({
 
   const onPaste = useCallback(() => {
     navigator.clipboard.readText().then((text) => {
-      const where = {x: 500, y: 100};
-      pasteData(text, // <-- data to decode
-        where, // <-- where on the canvas
-        commit, // <-- create new entry in edit history
-        () => {})
-      startDragging(where); // <-- pasted shapes follow mouse
+      paste(text, {x: 500, y: 100});
+      // const where = ;
+      // pasteData(text, // <-- data to decode
+      //   where, // <-- where on the canvas
+      //   commit, // <-- create new entry in edit history
+      //   () => {})
+      // startDragging(where); // <-- pasted shapes follow mouse
     });
-  }, [commit, startDragging]);
+  }, [commit, paste]);
 
   return <>
     <KeyInfo keyInfo={ShortcutCopy}>

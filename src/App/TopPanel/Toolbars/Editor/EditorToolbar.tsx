@@ -1,10 +1,9 @@
 import { memo, useCallback } from "react";
 import { UndoCallbacks } from "../../../../hooks/useUndo";
-import { Vec2D } from "../../../../util/geometry";
 import { rotateSelection } from "../../../VisualEditor/transformations/rotate";
 import { VisualEditorState } from "../../../VisualEditor/VisualEditor.state";
 import { Toolbar } from "../../Toolbar";
-import { CopyPasteButtons } from "./CopyPasteButtons";
+import { CopyPasteButtons, PasteCallback } from "./CopyPasteButtons";
 import { RotateButtons } from "./RotateButtons";
 import { UndoRedoButtons } from "./UndoRedoButtons";
 import { SyntaxStateV4 } from "@/App/migrations/v4_types";
@@ -13,12 +12,12 @@ type EditorToolbarProps = {
   KeyInfo: any,
   syntax: SyntaxStateV4,
   historyCallbacks: UndoCallbacks<VisualEditorState>,
-  startDragging: (where: Vec2D) => void,
+  paste: PasteCallback,
 }
 
 const toolbarGap = {columnGap: '1em'};
 
-export const EditorToolbar = memo(function EditorToolbar({syntax, KeyInfo, historyCallbacks, startDragging}: EditorToolbarProps) {
+export const EditorToolbar = memo(function EditorToolbar({syntax, KeyInfo, historyCallbacks, paste}: EditorToolbarProps) {
   return <Toolbar style={toolbarGap}>
     {/* undo / redo */}
     <Toolbar>
@@ -37,7 +36,7 @@ export const EditorToolbar = memo(function EditorToolbar({syntax, KeyInfo, histo
         KeyInfo={KeyInfo}
         current={syntax.editorState.current}
         commit={historyCallbacks.commit}
-        startDragging={startDragging}
+        paste={paste}
       />
     </Toolbar>
 

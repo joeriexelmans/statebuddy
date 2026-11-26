@@ -48,7 +48,7 @@ export type FindReplaceStateV1 = {
   replaceText: string;
 };
 
-export type ToolMode = "select" | "and" | "or" | "pseudo" | "shallow" | "deep" | "transition" | "text" | "nothing";
+export type ToolMode = "select" | "pan" | "and" | "or" | "pseudo" | "shallow" | "deep" | "transition" | "text" | "nothing";
 
 export type ToolSelectState = {
   leftMouseMode: ToolMode; // <-- the tool that is activated by left mouse button

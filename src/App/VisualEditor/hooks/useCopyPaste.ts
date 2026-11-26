@@ -138,6 +138,7 @@ export function useCopyPaste(state: VisualEditorState, commit: Dispatch<(v:Visua
 
   useShortcuts([
     {keys: ["Delete"], action: deleteSelection},
+    {keys: ["Backspace"], action: deleteSelection},
   ])
 
   return useMemo(() => ({

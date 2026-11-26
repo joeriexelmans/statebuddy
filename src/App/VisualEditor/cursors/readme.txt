@@ -1,0 +1,1 @@
+Big thanks to my man Claude for generating these SVGs :)
