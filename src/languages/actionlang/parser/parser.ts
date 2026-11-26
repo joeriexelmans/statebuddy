@@ -11,7 +11,7 @@ export function treeToAssignment<E>(a: Node, nestedTreeToExpr: (n: Node) => E): 
 
 export function treeToLhs(n: Node): Lhs {
   if (n.isError) {
-    return { kind: "error", text: n.text, range: range(n) };
+    return { kind: "unexpected", text: n.text, range: range(n) };
   }
   switch (n.type) {
     case "identifier":

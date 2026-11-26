@@ -6,6 +6,7 @@ import { Mode, RT_Event, RT_History, RuntimeConfiguration, TimerElapseEvent, Tim
 import { getRaisedEvents, TraceEnterAndStateChildren, TraceEnterChildren, TraceEnterNoChildren, TraceEnterOrStateChildren, visitEnterActions } from "./trace_types";
 import { TraceFairStep, TraceEnter, TraceAction, TraceAssign, TraceExit, TraceInit, TraceSmallStep, TraceBigStep } from "./trace_types";
 import { Action, TransitionLabel, Trigger } from "../text/abstract_syntax";
+import { evalSCExpr } from "../text/interpreter";
 
 export class RuntimeError extends Error {
   highlight: string[];
@@ -86,7 +87,7 @@ function logEventParam(param: any) {
 
 function execAction(env: Environment, action: Action, scope: Scope, uids: string[]): [Environment, TraceAction[]] {
   if (action.kind === "assignment") {
-    const rhsValue = evalExpr(action.rhs, env, scope, uids);
+    const rhsValue = evalSCExpr(action.rhs, env, scope, uids);
     let actions;
     [env, actions] = execAssignment(action.lhs, rhsValue, env, scope, uids);
     return [env, actions.map(a => ({kind: "assigned", ...a}))];
@@ -94,7 +95,7 @@ function execAction(env: Environment, action: Action, scope: Scope, uids: string
   else if (action.kind === "raise") {
     const raisedEvent = {
       name: action.event,
-      param: action.param && evalExpr(action.param, env, scope, uids),
+      param: action.param && evalSCExpr(action.param, env, scope, uids),
     };
     if (action.event.startsWith('_')) {
       // append to internal events
@@ -115,7 +116,7 @@ function enterState(simtime: number, {environment, mode, timers, ...rest}: Runti
   // entry actions
   let enterActions: TraceAction[] = [];
   for (const action of state.entryActions) {
-    if (evalExpr(action.guard, environment, {kind: "state", thing: state}, [action.labelUid])) {
+    if (evalSCExpr(action.guard, environment, {kind: "state", thing: state}, [action.labelUid])) {
       for (const a of action.actions) {
         let as;
         [environment, as] = execAction(environment, a, {kind: "state", thing: state}, [state.uid]);
@@ -176,7 +177,7 @@ function exitState(rt: RuntimeConfiguration, state: TransitionSrcTgt): [RuntimeC
   let env = rt.environment;
   let exitActions = [] as TraceAction[];
   for (const action of state.exitActions) {
-    if (evalExpr(action.guard, env, {kind: "state", thing: state}, [action.labelUid])) {
+    if (evalSCExpr(action.guard, env, {kind: "state", thing: state}, [action.labelUid])) {
       for (const a of action.actions) {
         let as;
         [env, as] = execAction(env, a, {kind: "state", thing: state}, [state.uid]);
@@ -405,7 +406,7 @@ function getEnabledTransitions(mode: Mode, environment: Environment, sourceState
     const guardEnvironment = newEnvironment.set(
       "inState", inState,
       {kind: "state", thing: statechart.root});    
-    const isEnabled = matched && evalExpr(label.guard, guardEnvironment, {kind: "transition", thing: transition}, [transition.uid]) as boolean;
+    const isEnabled = matched && evalSCExpr(label.guard, guardEnvironment, {kind: "transition", thing: transition}, [transition.uid]) as boolean;
     return [isEnabled, newEnvironment, transition, label] as const;
   });
   return enabled

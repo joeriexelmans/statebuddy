@@ -15,7 +15,7 @@ export type TreeSitterError = {
 
 export function parseText(text: string): [ParsedText, TreeSitterError[]] {
   const tree = parser.parse(text)!;
-  console.log(text, tree.rootNode.toString());
+  // console.log(text, tree.rootNode.toString());
   const errors = getSyntaxErrors(tree.rootNode);
   const parsedText = treeToText(tree.rootNode);
   // console.log(text, tree.rootNode.toString(), 'tree-sitter parsedText:', parsedText, 'errors:', errors);

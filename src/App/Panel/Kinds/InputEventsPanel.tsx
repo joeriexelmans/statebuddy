@@ -24,6 +24,7 @@ import { codeStyle } from "../../Modals/TextDialog";
 import { SyntaxHighlightedText } from "../../VisualEditor/SyntaxHiglightedText";
 import { useDetectChange2 } from "@/hooks/useDetectChange";
 import { parseText } from "@/languages/statecharts/text/parser/parser";
+import { evalSCExpr } from "@/languages/statecharts/text/interpreter";
 
 type ShowInputEventsProps = {
   inputEvents: Set<string>, // <-- input events from the abstract syntax
@@ -304,8 +305,9 @@ function evalActionLangExpr(exprTxt: string): any {
   // funny trick to invoke our action language parser: our parser has only one entry point, so to make it parse an expression we must put that expression in a transition label...
   const [{guard: exprParsed}] = parseText(`[${exprTxt}]`) as [TransitionLabel, any];
 
-  // @ts-ignore
-  return evalExpr(exprParsed, new FlatEnvironment(), undefined); // may throw
+  return evalSCExpr(exprParsed, new FlatEnvironment(),
+    // @ts-ignore
+    undefined); // may throw
 }
 
 function TinyDeleteIconHover({children, tooltip, onClick}: PropsWithChildren<{onClick: ()=>void, tooltip?: string | ReactNode}>) {

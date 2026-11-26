@@ -3,7 +3,7 @@
 import { jsonDeepEqual } from "@/util/util";
 import { Environment, Scope } from "../statecharts/interpreter/environment";
 import { RuntimeError } from "../statecharts/interpreter/interpreter";
-import { Expression, Lhs } from "./abstract_syntax";
+import { BaseExpression, Lhs } from "./abstract_syntax";
 import { TraceAssign } from "../statecharts/interpreter/trace_types";
 
 function numericUnary(op: string, fn: (x: number) => any): (x: any) => any {
@@ -75,7 +75,7 @@ const BINARY_OPERATOR_MAP: Map<string, (a: any, b: any) => any> = new Map([
 
 
 // parameter uids: list of UIDs to append to any raised errors
-export function evalExpr(expr: Expression, env: Environment, scope: Scope, uids: string[] = []): any {
+export function evalExpr<E>(expr: BaseExpression<E>, env: Environment, scope: Scope, uids: string[] = [], rec: (expr: E, env: Environment, scope: Scope, uids: string[]) => any, ): any {
   if (expr.kind === "literal") {
     return expr.value;
   }
@@ -90,27 +90,24 @@ export function evalExpr(expr: Expression, env: Environment, scope: Scope, uids:
     return found;
   }
   else if (expr.kind === "unaryExpr") {
-    const arg = evalExpr(expr.expr, env, scope, uids);
+    const arg = rec(expr.expr, env, scope, uids);
     return UNARY_OPERATOR_MAP.get(expr.operator)!(arg);
   }
   else if (expr.kind === "binaryExpr") {
-    const lhs = evalExpr(expr.lhs, env, scope, uids);
-    const rhs = evalExpr(expr.rhs, env, scope, uids);
+    const lhs = rec(expr.lhs, env, scope, uids);
+    const rhs = rec(expr.rhs, env, scope, uids);
     return BINARY_OPERATOR_MAP.get(expr.operator)!(lhs, rhs);
   }
   else if (expr.kind === "call") {
-    const fn = evalExpr(expr.fn, env, scope, uids);
-    const param = evalExpr(expr.param, env, scope, uids);
+    const fn = rec(expr.fn, env, scope, uids);
+    const param = rec(expr.param, env, scope, uids);
     return fn(param);
   }
   else if (expr.kind === "array") {
-    return expr.elements.map(el => evalExpr(el, env, scope, uids));
+    return expr.elements.map(el => rec(el, env, scope, uids));
   }
   else if (expr.kind === "dict") {
-    return new Map([...expr.fields].map(([key,val]) => [key, evalExpr(val, env, scope, uids)]));
-  }
-  else if (expr.kind === "tag") {
-    return expr.text;
+    return new Map([...expr.fields].map(([key,val]) => [key, rec(val, env, scope, uids)]));
   }
   console.error('expr was', expr);
   throw new Error("should never reach here");
@@ -125,6 +122,8 @@ export function execAssignment(
   uids: string[] = [],
   // tracer: Tracer,
 ): [Environment, TraceAssign[]] {
+  console.log('execAssignment', lhs, rhsValue);
+  
   if (lhs.kind === "lhsRef") {
     // console.log(`assign ${lhs.variable} = ${JSON.stringify(rhsValue)}`, lhs, rhsValue);
     if (rhsValue === undefined) {
@@ -173,6 +172,9 @@ export function execAssignment(
       actions = [...actions, ...a];
     }
     return [env, actions];
+  }
+  else if (lhs.kind === "unexpected") {
+    throw new RuntimeError(`cannot assign: parse error in label`, uids);
   }
   console.error("lhs was", lhs);
   throw new Error("should never reach here");
