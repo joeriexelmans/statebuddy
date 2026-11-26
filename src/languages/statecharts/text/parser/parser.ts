@@ -15,10 +15,10 @@ export type TreeSitterError = {
 
 export function parseText(text: string): [ParsedText, TreeSitterError[]] {
   const tree = parser.parse(text)!;
-  // console.log(text, tree.rootNode.toString());
+  // console.log(text, '\n', tree.rootNode.toString());
   const errors = getSyntaxErrors(tree.rootNode);
   const parsedText = treeToText(tree.rootNode);
-  // console.log(text, tree.rootNode.toString(), 'tree-sitter parsedText:', parsedText, 'errors:', errors);
+  // console.log(parsedText);
   return [parsedText, errors];
 }
 
@@ -46,8 +46,8 @@ export function treeToText(root: Node): ParsedText {
         uid: "UKNNOWN", // filled in later
       };
     case "label":
-      return treeToLabel(ch);
     case "triggerlesslabel":
+    case "actiononlylabel":
       return treeToLabel(ch);
     default:
       console.warn(root.toString());

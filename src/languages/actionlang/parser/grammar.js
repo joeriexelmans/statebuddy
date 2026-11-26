@@ -35,10 +35,10 @@ export default grammar({
     _lhs: ($) =>
       choice($.lhs_dict, $.lhs_array, $.identifier, $._literal),
 
-    lhs_dict: ($) => seq('{', commaSep($.dict_field), '}'),
+    lhs_dict: ($) => seq('{', commaSep($.lhs_dict_field), '}'),
 
     // `{x}` is shorthand for `{x: x}`
-    dict_field: ($) =>
+    lhs_dict_field: ($) =>
       seq(
         field('key', $.identifier),
         optional(seq(':', field('value', $._lhs))),
@@ -50,8 +50,8 @@ export default grammar({
 
     _expression: ($) => choice(
       $.binary_expression,
-      $.unary_expression,
       $.call_expression,
+      $.unary_expression,
       $._atom,
     ),
 
@@ -77,11 +77,11 @@ export default grammar({
     },
 
     // one prefix operator applied to an atom
-    unary_expression: ($) =>
-      prec(
-        PREC.unary,
-        seq(field('operator', choice('!', '-')), field('operand', $._atom)),
-      ),
+    unary_expression: ($) => prec(
+      PREC.unary,
+      seq(
+        field('operator', choice('!', '-')),
+        field('operand', $._expression))),
 
     _atom: ($) =>
       choice(
@@ -93,11 +93,13 @@ export default grammar({
       ),
 
     call_expression: ($) =>
-      seq(
-        field('function', $._expression),
-        field('argument', $.parenthesized_expression),
-      ),
-
+      prec.left(
+        PREC.call,
+        seq(
+          field('function', $._expression),
+          field('argument', $.parenthesized_expression),
+        )),
+      
     parenthesized_expression: ($) => seq('(', $._expression, ')'),
 
     // `{x}` is shorthand for `{x: x}`

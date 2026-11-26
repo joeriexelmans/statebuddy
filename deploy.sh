@@ -1,5 +1,8 @@
 sh build.sh
 
+echo "Deploying in 3 seconds ..."
+sleep 3
+
 # copy assets (browsers should cache these pretty much indefinitely)
 aws s3 sync \
   --storage-class ONEZONE_IA \

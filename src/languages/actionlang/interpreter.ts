@@ -120,10 +120,7 @@ export function execAssignment(
   env: Environment,
   scope: Scope,
   uids: string[] = [],
-  // tracer: Tracer,
 ): [Environment, TraceAssign[]] {
-  console.log('execAssignment', lhs, rhsValue);
-  
   if (lhs.kind === "lhsRef") {
     // console.log(`assign ${lhs.variable} = ${JSON.stringify(rhsValue)}`, lhs, rhsValue);
     if (rhsValue === undefined) {

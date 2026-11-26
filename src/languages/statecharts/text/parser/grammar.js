@@ -9,11 +9,13 @@ export default grammar(actionLangGrammar, {
   rules: {
     start: $ => field('text',
       choice(
-        prec(1, $.tag),
-        prec(2, $.comment),
-        prec(3, $.label),
+        $.tag,
+        $.comment,
+        $.label,
         // Workaround: 'trigger' in 'label' is also optional, but then label can match the empty string, and tree-sitter doesn't allow this. So we add a separate rule where the trigger is absent and the guard must be present.
-        prec(4, $.triggerlesslabel),
+        $.triggerlesslabel,
+        // Same workaround as above, for the case where there is neither a trigger nor a guard.
+        $.actiononlylabel,
       )),
     label: $ => seq(
       field('trigger', $._trigger),
@@ -22,6 +24,8 @@ export default grammar(actionLangGrammar, {
     triggerlesslabel: $ => seq(
       seq('[', field('guard', $._expression), ']'),
       optional(seq('/', field('actions', $.actions)))),
+    actiononlylabel: $ => seq(
+      seq('/', field('actions', $.actions))),
     _trigger: $ => choice(
       prec(1, $.afterTrigger),
       prec(2, $.entryTrigger),
