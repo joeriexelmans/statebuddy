@@ -2,7 +2,7 @@
 
 import { Model2ModelConn } from "@/languages/devs/coupled_devs";
 import { VisualEditorStateV0 } from "./v0_types";
-import { EventTrigger } from "@/languages/statecharts/transitionlabel/abstract_syntax";
+import { EventTrigger } from "@/languages/statecharts/text/abstract_syntax";
 import { RaisedEvent } from "@/languages/statecharts/interpreter/runtime_types";
 
 // JSON-serializable app state, version 1

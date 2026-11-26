@@ -1,8 +1,7 @@
 import { CSSProperties } from "react";
-import { Expression, Lhs, TextRange, visitExpression, visitLhs } from "../../actionlang/abstract_syntax";
-import { SyntaxError } from "./legacy_parser";
-import { cachedParseLabel } from "../parser/parser";
-import { ParsedText } from "./abstract_syntax";
+import { Lhs, TextRange, visitExpression, visitLhs } from "../../actionlang/abstract_syntax";
+import { parseText } from "./parser/parser";
+import { SCExpression, visitSCExpression } from "./abstract_syntax";
 
 export type RangeWithAnnotation = TextRange & {
   style: CSSProperties;
@@ -54,20 +53,19 @@ function addAndCheck(ranges: TextRange[], range: TextRange | RangeWithAnnotation
 
 
 export function syntaxHighlight(text: string) {
-  let parsed: ParsedText | undefined;
+  // let parsedText: ParsedText | undefined;
   let parseError: SyntaxError | undefined;
   let errorRanges: RangeWithAnnotation[] = [];
-  try {
-    parsed = cachedParseLabel(text);
-  } catch (e) {
-    // @ts-ignore
-    if (e instanceof SyntaxError) {
-      parseError = e;
-      addAndCheck(errorRanges, {start: e.location.start.offset, end: e.location.end.offset, tooltip: 'parse error', style: errorStyle});
-    }
-    else throw e;
+  const [parsedText, treesitterErrors] = parseText(text);
+  // we only display the first error because we don't have a good way displaying more than one.
+  // also we cannot deal with overlapping error ranges currently.
+  for (const err of treesitterErrors.slice(0,1)) {
+    addAndCheck(errorRanges, {
+      ...err.range,
+      tooltip: err.message,
+      style: errorStyle,
+    })
   }
-
   // find all keyword positions so we can give them a nice color :)
   let keywordRanges: TextRange[] = [];
   let literalRanges: TextRange[] = [];
@@ -75,7 +73,7 @@ export function syntaxHighlight(text: string) {
   let commentRanges: TextRange[] = [];
   let tagRanges: TextRange[] = [];
 
-  const visitLiterals = (thing: Expression | Lhs) => {
+  const findAtoms = (thing: SCExpression | Lhs) => {
     if (thing.kind === "literal" || thing.kind === "lhsLiteral") {
       if (thing.range) {
         addAndCheck(literalRanges, thing.range);
@@ -91,39 +89,49 @@ export function syntaxHighlight(text: string) {
         addAndCheck(tagRanges, thing.range);
       }
     }
+    else if (thing.kind === "lhsDict") {
+      // todo
+    }
+    else if (thing.kind === "lhsArray") {
+      // todo
+    }
+    else {
+      visitSCExpression(thing, findAtoms);
+    }
   };
 
-  if (parsed) {
-    if (parsed.kind === "transitionLabel") {
-      if (parsed.trigger.kind === "after") {
-        addAndCheck(keywordRanges, parsed.trigger.rangeAfter)
+  if (parsedText) {
+    if (parsedText.kind === "transitionLabel") {
+      if (parsedText.trigger.kind === "after") {
+        addAndCheck(keywordRanges, parsedText.trigger.rangeAfter)
       }
-      else if (parsed.trigger.kind === "event") {
-        if (parsed.trigger.param) {
-          visitLhs(parsed.trigger.param, visitLiterals);
+      else if (parsedText.trigger.kind === "event") {
+        if (parsedText.trigger.param) {
+          visitLhs(parsedText.trigger.param, findAtoms);
         }
       }
-      else if (parsed.trigger.kind === "entry" || parsed.trigger.kind === "exit") {
-        addAndCheck(keywordRanges, parsed.trigger.range)
+      else if (parsedText.trigger.kind === "entry" || parsedText.trigger.kind === "exit") {
+        addAndCheck(keywordRanges, parsedText.trigger.range)
       }
-      visitExpression(parsed.guard, visitLiterals);
-      for (const a of parsed.actions) {
+      findAtoms(parsedText.guard);
+
+      for (const a of parsedText.actions) {
         if (a.kind === "assignment") {
-          visitExpression(a.rhs, visitLiterals);
-          visitLhs(a.lhs, visitLiterals);
+          findAtoms(a.rhs);
+          visitLhs(a.lhs, findAtoms);
         }
         else if (a.kind === "raise") {
           if (a.param) {
-            visitExpression(a.param, visitLiterals)
+            findAtoms(a.param);
           }
         }
       }
     }
-    else if (parsed.kind === "comment") {
-      addAndCheck(commentRanges, parsed.range);
+    else if (parsedText.kind === "comment") {
+      addAndCheck(commentRanges, parsedText.range);
     }
-    else if (parsed.kind === "tag") {
-      addAndCheck(tagRanges, parsed.range)
+    else if (parsedText.kind === "tag") {
+      addAndCheck(tagRanges, parsedText.range)
     }
   }
 
@@ -137,6 +145,6 @@ export function syntaxHighlight(text: string) {
       ...errorRanges,
     ].sort((a,b) => (a.start - b.start)) as RangeWithAnnotation[],
     parseError,
-    parsed,
+    parsed: parsedText,
   }
 }

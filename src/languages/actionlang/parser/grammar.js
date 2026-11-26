@@ -20,13 +20,11 @@ const commaSep = (rule) =>
   optional(seq(rule, repeat(seq(',', rule)), optional(',')));
 
 export default grammar({
-  name: 'action_language',
-
-  extras: (_) => [/\s/],
-
+  name: 'actionlang',
+  // extras: (_) => [/\s/],
   rules: {
     // zero or more assignments separated by ';' (trailing ';' allowed)
-    program: ($) =>
+    start: ($) =>
       optional(seq($.assignment, repeat(seq(';', $.assignment)), optional(';'))),
 
     assignment: ($) =>
@@ -35,18 +33,18 @@ export default grammar({
     // ───────────── left-hand side of an assignment ─────────────
 
     _lhs: ($) =>
-      choice($.dict_pattern, $.array_pattern, $.identifier, $._literal),
+      choice($.lhs_dict, $.lhs_array, $.identifier, $._literal),
 
-    dict_pattern: ($) => seq('{', commaSep($.pattern_field), '}'),
+    lhs_dict: ($) => seq('{', commaSep($.dict_field), '}'),
 
     // `{x}` is shorthand for `{x: x}`
-    pattern_field: ($) =>
+    dict_field: ($) =>
       seq(
         field('key', $.identifier),
         optional(seq(':', field('value', $._lhs))),
       ),
 
-    array_pattern: ($) => seq('[', commaSep($._lhs), ']'),
+    lhs_array: ($) => seq('[', commaSep($._lhs), ']'),
 
     // ───────────── expressions ─────────────
 

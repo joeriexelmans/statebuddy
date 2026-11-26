@@ -4,6 +4,8 @@
 # clean up
 rm -rf dist/*
 
+sh genparser.sh
+
 # build
 bun --run vite build --mode production
 

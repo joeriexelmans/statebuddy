@@ -1,5 +1,5 @@
 import { Expression } from "../actionlang/abstract_syntax";
-import { Action, EventTrigger, ParsedText } from "./transitionlabel/abstract_syntax";
+import { Action, EventTrigger, ParsedText } from "./text/abstract_syntax";
 
 export type AbstractState = {
   kind: string;

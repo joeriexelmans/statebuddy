@@ -5,7 +5,7 @@ import { TraceBigStep, TraceFairStep } from "@/languages/statecharts/interpreter
 import { DEVSComponent } from "@/languages/devs/devs";
 import { sc2DEVS, SC2DEVSNonError, SC2DEVSState } from "@/languages/devs/sc2devs";
 import { RuntimeError } from "@/languages/statecharts/interpreter/interpreter";
-import { EventTrigger } from "@/languages/statecharts/transitionlabel/abstract_syntax";
+import { EventTrigger } from "@/languages/statecharts/text/abstract_syntax";
 
 export type PlantRenderProps<CleanStateType> = {
   state: CleanStateType,

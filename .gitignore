@@ -1,2 +1,5 @@
 /node_modules/
 /dist/
+
+# Generated parser C code
+/src/languages/**/parser/src/

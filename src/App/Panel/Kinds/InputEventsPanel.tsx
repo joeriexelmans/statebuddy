@@ -11,11 +11,11 @@ import { prefixCoupledInputEvent } from "@/App/hooks/useCoupledExecution";
 import { DeclaredInput } from "@/App/migrations/v4_types";
 import { evalExpr } from "@/languages/actionlang/interpreter";
 import { RaisedEvent } from "@/languages/statecharts/interpreter/runtime_types";
-import { TransitionLabel } from "@/languages/statecharts/transitionlabel/abstract_syntax";
+import { ParsedText, TransitionLabel } from "@/languages/statecharts/text/abstract_syntax";
 import { memo, PropsWithChildren, ReactNode, useCallback, useState } from "react";
 import { FlatEnvironment } from "../../../languages/statecharts/interpreter/environment";
-import { cachedParseLabel } from "../../../languages/statecharts/parser/parser";
-import { syntaxHighlight } from "../../../languages/statecharts/transitionlabel/syntax_higlight";
+// import { cachedParseLabel } from "../../../languages/statecharts/parser/parser";
+import { syntaxHighlight } from "../../../languages/statecharts/text/syntax_higlight";
 import { WithSetters } from "../../../util/partial_setter";
 import { objectsEqual, setsEqual } from "../../../util/util";
 import { Overlay } from "../../Components/Overlay";
@@ -23,6 +23,7 @@ import { Tooltip } from "../../Components/Tooltip";
 import { codeStyle } from "../../Modals/TextDialog";
 import { SyntaxHighlightedText } from "../../VisualEditor/SyntaxHiglightedText";
 import { useDetectChange2 } from "@/hooks/useDetectChange";
+import { parseText } from "@/languages/statecharts/text/parser/parser";
 
 type ShowInputEventsProps = {
   inputEvents: Set<string>, // <-- input events from the abstract syntax
@@ -300,12 +301,11 @@ function PreSyntaxHiglighted({txt}: {txt: string}) {
 }
 
 function evalActionLangExpr(exprTxt: string): any {
-  try {
-    // funny trick to invoke our action language parser: our parser has only one entry point, so to make it parse an expression we must put that expression in a transition label...
-    const {guard: exprParsed} = cachedParseLabel(`[${exprTxt}]`) as TransitionLabel; // may throw
-    return evalExpr(exprParsed, new FlatEnvironment(), undefined); // may throw
-  } catch (e) {
-  }
+  // funny trick to invoke our action language parser: our parser has only one entry point, so to make it parse an expression we must put that expression in a transition label...
+  const [{guard: exprParsed}] = parseText(`[${exprTxt}]`) as [TransitionLabel, any];
+
+  // @ts-ignore
+  return evalExpr(exprParsed, new FlatEnvironment(), undefined); // may throw
 }
 
 function TinyDeleteIconHover({children, tooltip, onClick}: PropsWithChildren<{onClick: ()=>void, tooltip?: string | ReactNode}>) {

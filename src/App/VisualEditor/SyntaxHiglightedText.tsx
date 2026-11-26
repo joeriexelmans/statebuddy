@@ -1,4 +1,4 @@
-import { RangeWithAnnotation } from "@/languages/statecharts/transitionlabel/syntax_higlight";
+import { RangeWithAnnotation } from "@/languages/statecharts/text/syntax_higlight";
 import { memo, PropsWithChildren } from "react";
 import { Tooltip } from "../Components/Tooltip";
 

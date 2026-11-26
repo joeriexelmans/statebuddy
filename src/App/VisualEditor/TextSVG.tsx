@@ -4,7 +4,7 @@ import { jsonDeepEqual } from "@/util/util";
 import { BoundingBox } from "./BoundingBox";
 
 import styles from "./VisualEditor.module.css";
-import { RangeWithAnnotation, syntaxHighlight } from "@/languages/statecharts/transitionlabel/syntax_higlight";
+import { RangeWithAnnotation, syntaxHighlight } from "@/languages/statecharts/text/syntax_higlight";
 import { SyntaxHighlightedText, TSpanWithLineBreaks } from "./SyntaxHiglightedText";
 import { TextRange } from "@/languages/actionlang/abstract_syntax";
 import { TraceableError } from "@/languages/statecharts/parser/parser";

@@ -1,7 +1,7 @@
 import { Dispatch, ReactElement, SetStateAction, useState, useCallback, CSSProperties, useMemo } from "react";
 
 import { useShortcuts } from "@/hooks/useShortcuts";
-import { syntaxHighlight } from "@/languages/statecharts/transitionlabel/syntax_higlight";
+import { syntaxHighlight } from "@/languages/statecharts/text/syntax_higlight";
 import { SyntaxHighlightedText } from "../VisualEditor/SyntaxHiglightedText";
 import { Tooltip } from "../Components/Tooltip";
 import { Overlay } from "../Components/Overlay";
@@ -45,7 +45,7 @@ export function TextDialog(props: WithSetters<{text: string}> & {closeModal: () 
     }
   }, [props.text]);
   
-  return <div style={{padding: 2, display: 'flex', gap: 8, flexDirection: 'column', alignItems: 'center'}}>
+  return <div style={{padding: 2, display: 'flex', gap: 4, flexDirection: 'column', alignItems: 'center'}}>
 
     <p>Tip: <kbd>Shift</kbd>+<kbd>Enter</kbd> to insert new line.</p>
 
@@ -77,10 +77,6 @@ export function TextDialog(props: WithSetters<{text: string}> & {closeModal: () 
         spellCheck={false}
         />
     </Overlay>
-
-    <div style={{ minHeight: '3em', color: 'var(--error-color)'}}>
-      {parseError && <ShowSyntaxError e={parseError}/>}
-    </div>
 
     <p><kbd>Enter</kbd> to confirm. <kbd>Esc</kbd> to cancel.</p>
   </div>;

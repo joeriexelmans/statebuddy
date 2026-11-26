@@ -1,6 +1,6 @@
 import { DebugState, ExtTransitionTrace, FindReplaceStateV1, MQTTState, PanelState, PlantsState, SavedTraces, ToolSelectState } from "./v1_types";
 import { VisualEditorStateV0 } from "./v0_types";
-import { EventTrigger } from "@/languages/statecharts/transitionlabel/abstract_syntax";
+import { EventTrigger } from "@/languages/statecharts/text/abstract_syntax";
 import { TimeMode } from "../time";
 import { ScrollableState } from "../Components/Scrollable";
 

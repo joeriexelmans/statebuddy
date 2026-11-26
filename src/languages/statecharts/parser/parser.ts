@@ -1,17 +1,14 @@
-import {  ConcreteState, HistoryState, OrState, UnstableState, AbstractSyntax, stateDescription, Transition, computeArena, TransitionSrcTgt } from "../abstract_syntax";
-import { parse as parseLabel, SyntaxError } from "../transitionlabel/legacy_parser";
+import { getLhsRefs, Lhs } from "../../actionlang/abstract_syntax";
+import { AbstractSyntax, computeArena, ConcreteState, HistoryState, OrState, stateDescription, Transition, TransitionSrcTgt, UnstableState } from "../abstract_syntax";
+import { Action, SCExpression } from "../text/abstract_syntax";
+import { parseText } from "../text/parser/parser";
 import { Topology } from "./detect_topology";
-import { memoize } from "@/util/util";
-import { Expression, getLhsRefs, Lhs } from "../../actionlang/abstract_syntax";
-import { ParsedText, Action } from "../transitionlabel/abstract_syntax";
 
 export type TraceableError = {
   shapes: string[]; // the shape(s) in concrete syntax to which the error is related.
   message: string;
   data?: any; // optional auxilliary data the error can carry.
 }
-
-export const cachedParseLabel = memoize(parseLabel);
 
 export function parseStatechart(topology: Topology): [AbstractSyntax, TraceableError[]] {
   const errors: TraceableError[] = [];
@@ -210,26 +207,15 @@ export function parseStatechart(topology: Topology): [AbstractSyntax, TraceableE
 
   // ASSUMPTION: text is sorted by y-coordinate
   for (const [uid, text] of topology.texts) {
-    let parsed: ParsedText;
-    try {
-      parsed = cachedParseLabel(text); // may throw
-      parsed.uid = uid;
-    } catch (e) {
-      if (e instanceof SyntaxError) {
-        errors.push({
-          shapes: [uid],
-          message: 'parser: ' + e.message,
-          data: e,
-        });
-        parsed = {
-          kind: "parserError",
-          uid: uid,
-        }
-      }
-      else {
-        throw e;
-      }
-    }
+    const [parsedText, treesitterErrors] = parseText(text);
+    treesitterErrors.slice(0, 1).forEach(e => {
+      errors.push({
+        shapes: [uid],
+        message: 'parser: ' + e.message,
+        data: e,
+      })
+    })
+    parsedText.uid = uid;
     const belongsToArrowUID = topology.text2ArrowMap.get(uid);
 
     const belongsToTransition = uid2Transition.get(belongsToArrowUID!);
@@ -238,16 +224,16 @@ export function parseStatechart(topology: Topology): [AbstractSyntax, TraceableE
     }
     if (belongsToTransition) {
       const {src} = belongsToTransition;
-      belongsToTransition.label.push(parsed);
-      if (parsed.kind === "transitionLabel") {
+      belongsToTransition.label.push(parsedText);
+      if (parsedText.kind === "transitionLabel") {
         // collect events
         // triggers
-        if (parsed.trigger.kind === "event") {
+        if (parsedText.trigger.kind === "event") {
           if (src.kind === "pseudo") {
             errors.push({shapes: [uid], message: "cannot have trigger"});
           }
           else {
-            const {event} = parsed.trigger;
+            const {event} = parsedText.trigger;
             if (event.startsWith("_")) {
               internalEvents.add(event);
             }
@@ -256,19 +242,19 @@ export function parseStatechart(topology: Topology): [AbstractSyntax, TraceableE
             }
           }
         }
-        else if (parsed.trigger.kind === "after") {
+        else if (parsedText.trigger.kind === "after") {
           if (src.kind === "pseudo") {
             errors.push({shapes: [uid], message: "cannot have trigger"});
           }
           else {
-            src.timers.push(parsed.trigger.durationMs);
+            src.timers.push(parsedText.trigger.durationMs);
             src.timers.sort();
           }
         }
-        else if (["entry", "exit"].includes(parsed.trigger.kind)) {
+        else if (["entry", "exit"].includes(parsedText.trigger.kind)) {
           errors.push({shapes: [uid], message: "entry/exit trigger not allowed on transitions"});
         }
-        else if (parsed.trigger.kind === "triggerless") {
+        else if (parsedText.trigger.kind === "triggerless") {
           if (src.kind !== "pseudo") {
             errors.push({shapes: [uid], message: "needs trigger"});
           }
@@ -280,14 +266,14 @@ export function parseStatechart(topology: Topology): [AbstractSyntax, TraceableE
       // so it belongs to a rountangle (a state)
       const rountangleUID = topology.text2RountangleMap.get(uid);
       const belongsToState = uid2State.get(rountangleUID!) as ConcreteState || root;
-      if (parsed.kind === "transitionLabel") {
+      if (parsedText.kind === "transitionLabel") {
         // labels belonging to a rountangle (= a state) must by entry/exit actions
         // if we cannot find a containing state, then it belong to the root
-        if (parsed.trigger.kind === "entry") {
-          belongsToState.entryActions.push({guard: parsed.guard, actions: parsed.actions, labelUid: parsed.uid});
+        if (parsedText.trigger.kind === "entry") {
+          belongsToState.entryActions.push({guard: parsedText.guard, actions: parsedText.actions, labelUid: parsedText.uid});
         }
-        else if(parsed.trigger.kind === "exit") {
-          belongsToState.exitActions.push({guard: parsed.guard, actions: parsed.actions, labelUid: parsed.uid});
+        else if(parsedText.trigger.kind === "exit") {
+          belongsToState.exitActions.push({guard: parsedText.guard, actions: parsedText.actions, labelUid: parsedText.uid});
         }
         else {
           errors.push({
@@ -297,20 +283,20 @@ export function parseStatechart(topology: Topology): [AbstractSyntax, TraceableE
           });
         }
       }
-      else if (parsed.kind === "comment") {
+      else if (parsedText.kind === "comment") {
         // just append comments to their respective states
-        belongsToState.comments.push([uid, parsed.text]);
+        belongsToState.comments.push([uid, parsedText.text]);
       }
-      else if (parsed.kind === "tag") {
-        const states = tag2States.get(parsed.text) || [];
-        states.push([parsed.uid, belongsToState]);
-        tag2States.set(parsed.text, states);
+      else if (parsedText.kind === "tag") {
+        const states = tag2States.get(parsedText.text) || [];
+        states.push([parsedText.uid, belongsToState]);
+        tag2States.set(parsedText.text, states);
       }
     }
 
-    if (parsed.kind === "transitionLabel") {
+    if (parsedText.kind === "transitionLabel") {
       // collect output events
-      for (const action of parsed.actions) {
+      for (const action of parsedText.actions) {
         if (action.kind === "raise") {
           const {event} = action;
           if (event.startsWith("_")) {
@@ -322,8 +308,8 @@ export function parseStatechart(topology: Topology): [AbstractSyntax, TraceableE
         }
       }
       // collect variables
-      variables = variables.union(findVariables(parsed.guard));
-      for (const action of parsed.actions) {
+      variables = variables.union(findVariables(parsedText.guard));
+      for (const action of parsedText.actions) {
         variables = variables.union(findVariablesAction(action));
       }
     }
@@ -400,7 +386,7 @@ export function parseStatechart(topology: Topology): [AbstractSyntax, TraceableE
   }, errors];
 }
 
-function findVariables(expr: Expression): Set<string> {
+function findVariables(expr: SCExpression): Set<string> {
   if (expr.kind === "ref") {
     return new Set([expr.variable]);
   }

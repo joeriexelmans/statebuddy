@@ -6,7 +6,13 @@ export type TextRange = {
   end: number,
 }
 
-export type Lhs = LhsRef | LhsDict | LhsArray | LhsLiteral;
+export type Unexpected = {
+  kind: "unexpected",
+  text: string,
+  range: TextRange,
+}
+
+export type Lhs = LhsRef | LhsDict | LhsArray | LhsLiteral | Unexpected;
 
 export type LhsRef = {
   kind: "lhsRef",
@@ -16,9 +22,7 @@ export type LhsRef = {
 
 export type LhsDict = {
   kind: "lhsDict",
-  fields: {
-    [fieldname: string]: Lhs,
-  },
+  fields: Map<string, Lhs>,
 }
 
 export type LhsArray = {
@@ -32,74 +36,77 @@ export type LhsLiteral = {
   range?: TextRange,
 }
 
-export type Expression = BinaryExpression | UnaryExpression | VarRef | StateRef | Literal | FunctionCall | DictExpression | ArrayExpression;
+export type BaseExpression<E> = BinaryExpression<E> | UnaryExpression<E> | VarRef | Literal | FunctionCall<E> | DictExpression<E> | ArrayExpression<E>;
 
-export type BinaryExpression = {
+export interface BinaryExpression<E> {
   kind: "binaryExpr";
   operator: "+" | "-" | "*" | "/" | "&&" | "||";
-  lhs: Expression;
-  rhs: Expression;
+  lhs: E;
+  rhs: E;
 }
 
-export type UnaryExpression = {
+export interface UnaryExpression<E> {
   kind: "unaryExpr";
   operator: "!" | "-";
-  expr: Expression;
+  expr: E;
 }
 
-export type VarRef = {
+export interface VarRef {
   kind: "ref";
   variable: string;
   range?: TextRange,
 }
 
-export type StateRef = {
-  kind: "tag";
-  text: string;
-  range?: TextRange,
-}
-
-export type Literal = {
+export interface Literal {
   kind: "literal";
   value: boolean | number | string;
   range?: TextRange;
 }
 
-export type FunctionCall = {
+export interface FunctionCall<E> {
   kind: "call",
-  fn: VarRef,
-  param: Expression,
+  fn: E,
+  param: E,
 }
 
-export type DictExpression = {
+export interface DictExpression<E> {
   kind: "dict",
-  fields: Map<string, Expression>,
+  fields: Map<string, E>,
 }
 
-export type ArrayExpression = {
+export interface ArrayExpression<E> {
   kind: "array",
-  elements: Expression[],
+  elements: E[],
 }
 
-export function visitExpression(expr: Expression, callback: (expr: Expression) => void) {
-  callback(expr);
+export interface Assignment<E> {
+  kind: "assignment";
+  lhs: Lhs;
+  rhs: E;
+};
+
+export function visitExpression<E>(
+  expr: BaseExpression<E>,
+  rec: (sub: E) => void,
+) {
   if (expr.kind === "literal" || expr.kind === "ref" || expr.kind === "unaryExpr") {
   }
   else if (expr.kind === "binaryExpr") {
-    visitExpression(expr.lhs, callback);
-    visitExpression(expr.rhs, callback);
+    rec(expr.lhs);
+    rec(expr.rhs);
   }
   else if (expr.kind === "array") {
     for (const el of expr.elements) {
-      visitExpression(el, callback);
+      rec(el);
     }
   }
   else if (expr.kind === "call") {
-    visitExpression(expr.param, callback);
+    rec(expr.fn);
+    rec(expr.param);
   }
   else if (expr.kind === "dict") {
     for (const val of Object.values(expr.fields)) {
-      visitExpression(val, callback);
+      rec(val);
     }
   }
 }

@@ -24,7 +24,7 @@ import { DeepSetter, makePartialArraySetter, WithSetters, makeAllSetters, makePa
 import { MQTTTopicConfig, Event2MQTTMapping, MQTTState } from "../../migrations/v1_types";
 import { Toolbar } from "../../TopPanel/Toolbar";
 import { RaisedEvent } from "@/languages/statecharts/interpreter/runtime_types";
-import { EventTrigger } from "@/languages/statecharts/transitionlabel/abstract_syntax";
+import { EventTrigger } from "@/languages/statecharts/text/abstract_syntax";
 
 const defaultTopic: MQTTTopicConfig = {
   prefix: "",

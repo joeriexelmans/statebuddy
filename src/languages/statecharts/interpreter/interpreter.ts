@@ -5,7 +5,7 @@ import { Environment, Scope, ScopedEnvironment } from "./environment";
 import { Mode, RT_Event, RT_History, RuntimeConfiguration, TimerElapseEvent, Timers, RaisedEvent } from "./runtime_types";
 import { getRaisedEvents, TraceEnterAndStateChildren, TraceEnterChildren, TraceEnterNoChildren, TraceEnterOrStateChildren, visitEnterActions } from "./trace_types";
 import { TraceFairStep, TraceEnter, TraceAction, TraceAssign, TraceExit, TraceInit, TraceSmallStep, TraceBigStep } from "./trace_types";
-import { Action, TransitionLabel, Trigger } from "../transitionlabel/abstract_syntax";
+import { Action, TransitionLabel, Trigger } from "../text/abstract_syntax";
 
 export class RuntimeError extends Error {
   highlight: string[];
