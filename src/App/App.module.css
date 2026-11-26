@@ -32,7 +32,8 @@
   --and-state-bg-color: light-dark(white, rgb(49, 49, 49));
   --rountangle-stroke-color: light-dark(black, #ffffff);
   --uid-color: light-dark(rgb(255, 0, 255), rgb(255, 0, 255));
-  --active-state-bg-color: light-dark(rgb(255, 223, 214), rgb(85, 72, 112));
+  --active-state-bg-color: light-dark(rgb(255, 221, 205), rgb(85, 72, 112));
+  --active-or-state-bg-color: light-dark(#e1d9d7, rgb(14, 0, 41));
   --active-state-border-color: var(--fired-transition-color);
   --fired-transition-color: light-dark(rgb(150, 81, 150), rgb(255, 128, 196));
   --firing-transition-color: light-dark(rgb(217, 167, 236), rgb(255, 202, 244));

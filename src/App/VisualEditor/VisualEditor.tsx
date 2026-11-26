@@ -122,7 +122,8 @@ export const VisualEditor = memo(function VisualEditor({state, topology, errors,
   return <svg width={size} height={size}
       className={styles.svgCanvas
         + ' ' + (highlightActive.has("root") ? styles.active : "")
-        + ' ' + (dragging ? styles.dragging : "")}
+        + ' ' + (dragging ? styles.dragging : "")
+      }
 
       // Prevent onMouseDown from firing twice upon right click:
       onMouseDown={e => e.button !== 2 && onMouseDown(e)}

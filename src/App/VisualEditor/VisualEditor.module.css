@@ -4,6 +4,10 @@
   --drag-opacity: 0.5;
 }
 
+.svgCanvas.active {
+  background-color: var(--active-or-state-bg-color);
+}
+
 .svgCanvas.dragging  {
   cursor: grabbing !important;
 }
@@ -43,9 +47,15 @@ svg.dragging .rountangle.selected {
 .rountangle.error, .diamond.error {
   stroke: var(--error-color);
 }
-.rountangle.active {
-  stroke: var(--active-state-border-color);
+.rountangle.and.active {
   fill: var(--active-state-bg-color);
+}
+.rountangle.or.active {
+  fill: var(--active-or-state-bg-color);
+}
+.rountangle:not(.dashed).active {
+  stroke: var(--active-state-border-color);
+  stroke-width: 5px;
 }
 
 .selected:hover:not(:active) {
