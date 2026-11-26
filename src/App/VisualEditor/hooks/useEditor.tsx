@@ -238,10 +238,10 @@ export function useEditor(
   }, [dragging, state.makingSelection, historyCallbacks.undo, setDragging, setMakingSelection]);
   
   const onMouseDown = useCallback((e: React.MouseEvent<SVGSVGElement, MouseEvent>) => {
-    if (attemptCancelCurrentTool()) {
-      e.preventDefault();
-      return;
-    }
+    // if (attemptCancelCurrentTool()) {
+    //   e.preventDefault();
+    //   return;
+    // }
     if (e.button === 0) {
       modeToAction(mouseMap.leftMouseMode, e);
     }
