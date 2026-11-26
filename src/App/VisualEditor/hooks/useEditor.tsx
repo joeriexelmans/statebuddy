@@ -142,8 +142,6 @@ export function useEditor(
   }, [getCurrentPointer, commitSelection, state.selection, setAction, setMakingSelection]);
   
   const startInsert = useCallback((e: React.MouseEvent<SVGSVGElement, MouseEvent>, mode: ToolMode) => {
-    console.log('startInsert', mode);
-    
     const currentPointer = getCurrentPointer(e);
     // ignore selection, right mouse button always inserts
     commit(state => {

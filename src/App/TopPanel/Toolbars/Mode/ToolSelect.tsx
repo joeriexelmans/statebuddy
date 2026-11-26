@@ -14,7 +14,7 @@ import PanToolIcon from '@mui/icons-material/PanTool';
 import ControlCameraIcon from '@mui/icons-material/ControlCamera';
 
 const insertModes: [ToolMode, string, ReactElement, ReactElement][] = [
-  ["select", "select, move, resize", <HighlightAltSharpIcon fontSize="small"/>, <></>],
+  ["select", "select, move, resize", <HighlightAltSharpIcon fontSize="small"/>, <kbd>S</kbd>],
   ["pan", "pan view", <ControlCameraIcon fontSize="small"/>, <kbd>Q</kbd>],
   ["and", "draw AND-state", <RountangleIcon kind="and" dashed={false}/>, <kbd>A</kbd>],
   ["or", "draw OR-state", <RountangleIcon kind="or" dashed={true}/>, <kbd>R</kbd>],
@@ -39,6 +39,8 @@ export const ToolSelect = memo(function ToolSelect({mouseMap, setMouseMap, showK
   const {setLeftMouseMode, setMiddleMouseMode, setRightMouseMode} = setMouseMap;
 
   useShortcuts([
+    {keys: ["s"], action: () => setLeftMouseMode("select")},
+    {keys: ["q"], action: () => setLeftMouseMode("pan")},
     {keys: ["a"], action: () => setLeftMouseMode("and")},
     {keys: ["r"], action: () => setLeftMouseMode("or")},
     {keys: ["c"], action: () => setLeftMouseMode("pseudo")},

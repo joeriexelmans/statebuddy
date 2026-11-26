@@ -114,8 +114,7 @@ export function translateRect(rect: Rect2D, delta: Vec2D, parts: Parts) {
   const flipV = translated.size.y < 0;
   let newParts = parts;
   if (flipH) {
-    console.log('flip H');
-    
+    // console.log('flip H');
     newParts = new Set([...parts].map(p => {
       if (p === "left") {
         return "right";
@@ -127,8 +126,7 @@ export function translateRect(rect: Rect2D, delta: Vec2D, parts: Parts) {
     }));
   }
   if (flipV) {
-    console.log('flip V');
-
+    // console.log('flip V');
     newParts = new Set([...parts].map(p => {
       if (p === "top") {
         return "bottom";
