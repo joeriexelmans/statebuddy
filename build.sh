@@ -17,5 +17,5 @@ HASH=$(sha1sum dist/tags/latest.html)
 cp dist/tags/latest.html       dist/permalink/${HASH:0:40}.html
 
 # add/update mutable entry points
-cp dist/tags/latest.html       dist/tags/mosis26.html
-cp dist/tags/latest.html       dist/tags/nova01.html
+# cp dist/tags/latest.html       dist/tags/mosis26.html
+# cp dist/tags/latest.html       dist/tags/nova01.html
