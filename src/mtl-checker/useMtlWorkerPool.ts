@@ -6,12 +6,6 @@ export type CheckPropFn = (req: MtlReq) => readonly [Promise<PropertyCheckStatus
 
 export type MtlWorkerPoolState = WorkerPoolState<MtlReq, PropertyCheckStatus>;
 
-import {outputs} from "../../mtl-meta.json";
-
-// const workerScriptFileName = "../" + Object.entries(outputs).find(([_outputFilename, {entryPoint}]) => {
-//   return entryPoint === "src/mtl-checker/mtl_web_worker.ts";
-// })![0];
-
 const createWorker = () => new Worker(new URL("./mtl_web_worker.ts", import.meta.url), {type: 'module'});
 
 export function useMtlWorkerPool(nWorkers: number) {
