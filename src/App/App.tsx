@@ -54,7 +54,7 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
   const [extraHighlight, setExtraHighlight] = useState(new Set<string>());
 
   // Persist the size of the worker pool in the user's localStorage (not in AppState) - the optimal value here is machine-bound.
-  const [nWorkers, setNWorkers] = useLocalStorage("nWorkers", 4);
+  const [nWorkers, setNWorkers] = useLocalStorage("nWorkers", 2);
 
   // What the ???
   const trial = useTrial();
