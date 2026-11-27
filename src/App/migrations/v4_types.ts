@@ -26,5 +26,5 @@ export type AppStateV4 = {
 
   mqtt: MQTTState,
 
-view: ViewState,
+  view: ViewState,
 };

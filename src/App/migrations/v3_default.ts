@@ -35,6 +35,9 @@ export const defaultViewStateV3: ViewState = {
       {type: "execution traces", expanded: true},
     ],
   },
+  mobile: {
+    panelKind: "trace",
+  },
   plot: {
     visible: {},
   },

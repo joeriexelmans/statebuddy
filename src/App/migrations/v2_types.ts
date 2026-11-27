@@ -1,4 +1,4 @@
-import { DebugState, ExtTransitionTrace, FindReplaceStateV1, MQTTState, PanelState, PlantsState, SavedTraces, ToolSelectState } from "./v1_types";
+import { DebugState, ExtTransitionTrace, FindReplaceStateV1, MQTTState, PanelState, PanelType, PlantsState, SavedTraces, ToolSelectState } from "./v1_types";
 import { VisualEditorStateV0 } from "./v0_types";
 import { EventTrigger } from "@/languages/statecharts/text/abstract_syntax";
 import { TimeMode } from "../time";
@@ -77,6 +77,9 @@ export type ViewState = {
     scroll: ScrollableState,
     width: number,
   },
+  mobile: {
+    panelKind: "trace" | "plant",
+  }
   debug: DebugState,
   modal: ModalState,
 }

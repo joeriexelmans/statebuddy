@@ -45,6 +45,9 @@ export const defaultView: ViewState = {
     ],
     scroll: defaultScrollableState,
   },
+  mobile: {
+    panelKind: "trace",
+  },
   plot: {
     visible: {},
   },

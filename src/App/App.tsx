@@ -54,6 +54,8 @@ import { TimeMode } from "./time";
 import { DESKTOP_MIN_WIDTH, MOBILE_TRACE_MIN_HEIGHT } from "./parameters";
 import { CoupledDEVSTrace } from "./Trace/CoupledDEVSTrace";
 import { TimeToolbar } from "./TopPanel/Toolbars/Execution/TimeToolbar";
+import { ShowPlants } from "./Panel/Kinds/ShowPlants";
+import { TwoStateButton } from "./Components/TwoStateButton";
 
 
 export function App({appState, setAppState: setAppStateShallow, modelSize}: WithSetters<{appState: AppState}> & {modelSize: ModelSize}) {
@@ -238,7 +240,7 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
   }
 
   const mobileOnlyClass = useId();
-  const mobileTraceId = useId();
+  const mobileBottomPanelId = useId();
   const leftPanelId = useId();
   const rightPanelId = useId();
   const topPanelId = useId();
@@ -266,7 +268,7 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
           }
         }
         @media screen and (height < ${MOBILE_TRACE_MIN_HEIGHT}px) {
-          #${mobileTraceId} {
+          #${mobileBottomPanelId} {
             display: none;
           }
         }
@@ -415,7 +417,7 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
       {/* Bottom bars */}
 
       {/* Mobile bottom panel */}
-      {simulator.trace && <div className={mobileOnlyClass} style={{flexDirection: 'column',
+      {simulator.trace && <div id={mobileBottomPanelId} className={mobileOnlyClass} style={{flexDirection: 'column',
           ...(simulator.trace ? {maxHeight: '50%', minHeight: '50%'} : {})}}>
           <div style={{display: 'flex', gap: '1em', flexDirection: 'row', flex: '0 0 content'}}>
             <Toolbar style={{columnGap: '1em'}}>
@@ -428,17 +430,32 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
                 simulator={simulator}
               />
             </Toolbar>
+            <Toolbar>
+              <TwoStateButton active={appState.view.mobile.panelKind === "trace"} onClick={() => setAppState.setView.setMobile.setPanelKind("trace")}>Trace</TwoStateButton>
+              <TwoStateButton active={appState.view.mobile.panelKind === "plant"} onClick={() => setAppState.setView.setMobile.setPanelKind("plant")}>Plant</TwoStateButton>
+            </Toolbar>
           </div>
-          {simulator.trace && <div id={mobileTraceId} style={{overflow: 'auto'}}>
-            <CoupledDEVSTrace
-              setTime={setAppState.setExecution.setInteractive.setTime._setShallow as Dispatch<SetStateAction<TimeMode>>} // <-- typescript bug?
-              currentTrace={simulator.trace}
-              selectItem={simulator.selectItem}
-              traceView={appState.view.trace}
-              plantsState={appState.execution.plants}
-              propertyTrace={undefined}
-            />
-          </div>}
+          {simulator.trace && <>
+            {appState.view.mobile.panelKind === "trace" && <div style={{overflow: 'auto'}}>
+              <CoupledDEVSTrace
+                setTime={setAppState.setExecution.setInteractive.setTime._setShallow as Dispatch<SetStateAction<TimeMode>>} // <-- typescript bug?
+                currentTrace={simulator.trace}
+                selectItem={simulator.selectItem}
+                traceView={appState.view.trace}
+                plantsState={appState.execution.plants}
+                propertyTrace={undefined}
+              />
+            </div>}
+            {appState.view.mobile.panelKind === "plant" && <div style={{overflow: 'auto'}}>
+              <ShowPlants
+                onRaise={simulator.simulatorCallbacks.onRaise}
+                plantsState={appState.execution.plants}
+                setPlantsState={setAppState.setExecution.setPlants}
+                speed={appState.execution.interactive.time.kind === "paused" ? 0 : appState.execution.interactive.time.scale}
+                coupledState={simulator.currentTraceItem?.newState}
+              />
+            </div>}
+          </>}
       </div>}
 
       {/* Desktop bottom panel */}
