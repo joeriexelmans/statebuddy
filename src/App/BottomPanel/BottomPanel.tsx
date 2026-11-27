@@ -33,6 +33,7 @@ try {
   versions = await (await fetch("../versions.json")).json();
 }
 catch (e) {
+  // fallback (versions.json is not bundled, so it is realistic that fetching it fails)
   versions = [];
 }
 
