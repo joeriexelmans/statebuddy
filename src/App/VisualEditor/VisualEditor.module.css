@@ -1,5 +1,5 @@
 .svgCanvas {
-  cursor: crosshair;
+  cursor: url(./cursors/crosshair.svg) 12 12, crosshair;
   background-color: var(--or-state-bg-color);
   --drag-opacity: 0.5;
 }
@@ -17,28 +17,28 @@
 }
 
 .svgCanvas.mode_pan {
-  cursor: url(./cursors/pan.svg) 10 10, crosshair;
+  cursor: url(./cursors/pan.svg) 12 12, crosshair;
 }
 .svgCanvas.mode_and {
-  cursor: url(./cursors/and-state.svg) 10 10, crosshair;
+  cursor: url(./cursors/and-state.svg) 12 12, crosshair;
 }
 .svgCanvas.mode_or {
-  cursor: url(./cursors/or-state.svg) 10 10, crosshair;
+  cursor: url(./cursors/or-state.svg) 12 12, crosshair;
 }
 .svgCanvas.mode_pseudo {
-  cursor: url(./cursors/choice-state.svg) 10 10, crosshair;
+  cursor: url(./cursors/choice-state.svg) 12 12, crosshair;
 }
 .svgCanvas.mode_shallow {
-  cursor: url(./cursors/shallow-history.svg) 10 10, crosshair;
+  cursor: url(./cursors/shallow-history.svg) 12 12, crosshair;
 }
 .svgCanvas.mode_deep {
-  cursor: url(./cursors/deep-history.svg) 10 10, crosshair;
+  cursor: url(./cursors/deep-history.svg) 12 12, crosshair;
 }
 .svgCanvas.mode_transition {
-  cursor: url(./cursors/arrow.svg) 10 10, crosshair;
+  cursor: url(./cursors/arrow.svg) 12 12, crosshair;
 }
 .svgCanvas.mode_text {
-  cursor: url(./cursors/text.svg) 10 10, crosshair;
+  cursor: url(./cursors/text.svg) 12 12, crosshair;
 }
 
 /* do not render helpers while dragging something */
@@ -86,7 +86,7 @@ svg.dragging .rountangle.selected {
   stroke-width: 5px;
 }
 
-.svgCanvas.mode_select .selected:hover:not(:active) {
+.svgCanvas.mode_select:not(.panning) .selected:hover:not(:active) {
   cursor: grab;
 }
 
@@ -94,7 +94,7 @@ line.helper {
   stroke: rgba(0, 0, 0, 0);
   stroke-width: 16px;
 }
-.svgCanvas.mode_select line.helper:hover:not(:active) {
+.svgCanvas.mode_select:not(.panning) line.helper:hover:not(:active) {
   stroke: var(--light-accent-color);
   cursor: grab;
 }
@@ -104,7 +104,7 @@ path.helper {
   stroke: rgba(0, 0, 0, 0);
   stroke-width: 16px;
 }
-.svgCanvas.mode_select path.helper:hover:not(:active) {
+.svgCanvas.mode_select:not(.panning) path.helper:hover:not(:active) {
   stroke: var(--light-accent-color);
   cursor: grab;
 }
@@ -112,7 +112,7 @@ path.helper {
 circle.helper {
   fill: rgba(0, 0, 0, 0);
 }
-.svgCanvas.mode_select circle.helper:hover:not(:active) {
+.svgCanvas.mode_select:not(.panning) circle.helper:hover:not(:active) {
   fill: var(--light-accent-color);
   cursor: grab;
 }
@@ -139,7 +139,7 @@ svg.dragging .arrow.selected {
   stroke-opacity: var(--drag-opacity);
 }
 
-.svgCanvas.mode_select .arrow:hover {
+.svgCanvas.mode_select:not(.panning) .arrow:hover {
   cursor: grab;
 }
 
@@ -158,7 +158,7 @@ text.helper {
   stroke: rgba(0,0,0,0);
   stroke-width: 6px;
 }
-text.helper:hover {
+.svgCanvas.mode_select:not(.panning) text.helper:hover {
   stroke: var(--light-accent-color);
   cursor: grab;
 }

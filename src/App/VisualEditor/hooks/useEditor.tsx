@@ -389,11 +389,12 @@ export function useEditor(
   }, [state.selection, beginEditText]);
     
   useShortcuts([
-    {keys: ["o"], action: useCallback(() => convertSelection("or"), [convertSelection])},
+    {keys: ["r"], action: useCallback(() => convertSelection("or"), [convertSelection])},
     {keys: ["a"], action: useCallback(() => convertSelection("and"), [convertSelection])},
     {keys: ["Ctrl", "a"], action: onSelectAll},
     {keys: ["Enter"], action: onEditText},
     {keys: ["Escape"], action: attemptCancelCurrentTool},
+    // {keys: ["Escape"], action: useCallback(() => set)}
   ]);
     
   useEffect(() => {
