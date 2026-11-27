@@ -1,0 +1,7 @@
+[
+  ["https://statebuddy.s3-website.fr-par.scw.cloud/tags/latest.html", "production: latest"],
+  ["https://statebuddy.s3-website.fr-par.scw.cloud/tags/mosis26.html", "production: mosis26"],
+  ["https://statebuddy.s3-website.fr-par.scw.cloud/tags/nova01.html", "production: nova01"],
+  ["http://localhost:5173/tags/latest.html", "development: dev server"],
+  ["http://localhost:4173/tags/latest.html", "development: preview"]
+]

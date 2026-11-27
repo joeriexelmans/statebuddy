@@ -31,11 +31,17 @@ aws s3 cp \
   --cache-control "public, no-cache" \
   dist/index.html s3://statebuddy/index.html
 
+# error page (served by S3 when address not found)
 aws s3 cp \
   --storage-class ONEZONE_IA \
   --cache-control "public, no-cache" \
   dist/404.html s3://statebuddy/404.html
 
+# a curated list of StateBuddy versions
+aws s3 cp \
+  --storage-class ONEZONE_IA \
+  --cache-control "public, no-cache" \
+  dist/versions.json s3://statebuddy/versions.json
 
 # set CORS policy to allow all origins (everything is public so ...)
 # outcommented because only needs to be done once

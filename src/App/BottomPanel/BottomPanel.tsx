@@ -28,6 +28,14 @@ type BottomPanelProps = WithSetters<{
   setSelection: Dispatch<SetStateAction<Selection>>;
 }
 
+let versions: [string, string][];
+try {
+  versions = await (await fetch("../versions.json")).json();
+}
+catch (e) {
+  versions = [];
+}
+
 export function BottomPanel({
   modelSize,
   errorsExpanded,
@@ -93,14 +101,13 @@ export function BottomPanel({
           &nbsp;
           {workerPoolState.queue.length} jobs queued
         
-        {searchParams.get("dev") === "1" && <>
+        {versions.length && <>
           &emsp;|&emsp;
-          switch to&nbsp;
-            {location.host === "localhost:3000" ?
-              <a href={`https://deemz.org/public/statebuddy/v2/${location.search}${location.hash}`}>production</a>
-              : <a href={`http://localhost:3000/${location.search}${location.hash}`}>development</a>
+          <select value={location.protocol+'//'+location.host+location.pathname} onChange={e => location.href = e.target.value+location.search+location.hash}>
+            {versions.map(([url, description]) =>
+              <option key={url} value={url}>{description}</option>)
             }
-          &nbsp;mode
+          </select>
         </>}
         &emsp;|&emsp;
         Rev:&nbsp;
