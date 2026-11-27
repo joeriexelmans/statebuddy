@@ -1,4 +1,4 @@
-import { Dispatch, PropsWithChildren, SetStateAction, useEffect, useRef, useState } from "react";
+import { Dispatch, PropsWithChildren, RefObject, SetStateAction, useEffect, useRef, useState } from "react";
 
 export type ScrollableState = {
   scrollTop: number,
@@ -38,7 +38,7 @@ function useTempLock(timeoutMs: number) {
       return {
         who,
         release: setTimeout(() => {
-          console.log('released');
+          console.log('released:', who);
           setLock(null);
         }, timeoutMs),
       };
@@ -58,8 +58,8 @@ function useTempLock(timeoutMs: number) {
 //   a) a scroll event (-> event handler which sets React state)
 //   b) a React state-change (-> useEffect which scrolls DOM)
 // and to then disable the other mechanism for a brief amount of time. The reason for the timeout is that because of smooth scrolling, scroll events keep coming for a period of time "after the fact".
-export function Scrollable({state, setState, children, ...rest}: PropsWithChildren<ScrollableProps> & React.HTMLAttributes<HTMLDivElement>) {
-  const ref = useRef<HTMLDivElement>(null);
+export function Scrollable({state, setState, children, ref, ...rest}: PropsWithChildren<ScrollableProps> & React.HTMLAttributes<HTMLDivElement> & {ref: RefObject<HTMLDivElement | null>}) {
+  // const ref = useRef<HTMLDivElement>(null);
   const attempt = useTempLock(1200);
   useEffect(() => {
     if (ref.current) {

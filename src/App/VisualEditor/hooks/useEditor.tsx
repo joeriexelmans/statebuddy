@@ -279,11 +279,13 @@ export function useEditor(
           if (refScroll.current) {
             const left = refScroll.current.scrollLeft - pointerDelta.x;
             const top = refScroll.current.scrollTop - pointerDelta.y;
-            refScroll.current?.scroll({
+            refScroll.current.scroll({
               behavior: "instant",
               left,
               top,
             });
+            // have to dispatch an event to notify the <Scrollable> component that it must record the new scroll position in its state:
+            refScroll.current.dispatchEvent(new Event("scroll"));
           }
         }
       }

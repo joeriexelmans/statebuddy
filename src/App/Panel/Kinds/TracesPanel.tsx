@@ -10,7 +10,7 @@ import { DeepSetter } from "../../../util/partial_setter";
 import { saveExtTransitions } from '@/languages/devs/serialize_trace';
 import { MoveUpDown } from '../../Components/MoveUpDown';
 import { DoubleClickButton } from '../../Components/DoubleClickButton';
-import { Dispatch, memo, SetStateAction, useCallback, useContext } from 'react';
+import { Dispatch, memo, SetStateAction, useCallback, useContext, useRef } from 'react';
 import { getSimTime, TimeMode, } from '@/App/time';
 import { SimulatorStuff, } from '../../hooks/useInteractiveSimulator';
 import { CoupledDEVSTrace } from '../../Trace/CoupledDEVSTrace';
@@ -56,6 +56,8 @@ export function TracesPanel({
       ])
     }
   }, [trace, setSavedTraces, now]);
+
+  const scrollRef = useRef(null);
   
   return <div style={{display: 'flex', flexGrow: 1, flexDirection: 'column'}}>
     <SavedTracesView
@@ -70,6 +72,7 @@ export function TracesPanel({
       onSaveTrace={onSaveTrace}
     />
     <Scrollable
+      ref={scrollRef}
       state={state.view.scroll.trace}
       setState={setState.setView.setScroll.setTrace._setShallow}
       style={{

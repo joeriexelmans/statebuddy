@@ -1,11 +1,13 @@
-import { Dispatch, PropsWithChildren, SetStateAction } from "react";
+import { Dispatch, PropsWithChildren, SetStateAction, useRef } from "react";
 
 import styles from "../App.module.css";
 import { Scrollable, ScrollableState } from "../Components/Scrollable";
 
 export function SizedPanel({scroll, setScroll, width, children, ...rest}: PropsWithChildren<{scroll: ScrollableState, setScroll: Dispatch<SetStateAction<ScrollableState>>, width: number}> & React.HTMLAttributes<HTMLDivElement>) {
+  const scrollRef = useRef(null);
   return <>{
     (width > 20) && <Scrollable 
+      ref={scrollRef}
       state={scroll}
       setState={setScroll}
       className={styles.stackVertical}
