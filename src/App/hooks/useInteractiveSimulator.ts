@@ -176,24 +176,24 @@ export function useInteractiveSimulator(
   // Simulator callbacks...
 
   const onInit = useCallback(() => {
-    setInteractive._setShallow(interactive => ({
+    setInteractive._setShallow(prev => ({
       trace: {
         trace: [],
         lastSimTime: 0,
       },
-      time: interactive.time.kind === "paused"
-        ? {kind: "paused", simtime: 0}
-        : {kind: "realtime", since: {simtime: 0, wallclktime: now()}, scale: interactive.time.scale},
+      time: prev.time.kind === "paused"
+        ? {kind: "paused", simtime: 0, scale: prev.time.scale}
+        : {kind: "realtime", since: {simtime: 0, wallclktime: now()}, scale: prev.time.scale},
       idx: -1,
     }));
   }, [setInteractive._setShallow, now]);
 
   const onClear = useCallback(() => {
-    setInteractive._setShallow({
+    setInteractive._setShallow((prev) => ({
       trace: undefined,
-      time: {kind: "paused", simtime: 0},
+      time: {kind: "paused", simtime: 0, scale: prev.time.scale},
       idx: 0,
-    });
+    }));
   }, [setInteractive._setShallow]);
 
   const forgetFuture = useCallback(() => {
@@ -206,10 +206,10 @@ export function useInteractiveSimulator(
 
   // raise input event at current point in simulated time (depends on 'time'), producing a new runtime configuration (or a runtime error)
   const onRaise = useCallback((bagOfInputs: RaisedEvent[]) => {
-    setInteractive._setShallow(interactive => {
-      const simtime = getSimTime(interactive.time, Math.round(now()));
+    setInteractive._setShallow(prev => {
+      const simtime = getSimTime(prev.time, Math.round(now()));
       return {
-        trace: interactive.trace && {
+        trace: prev.trace && {
           trace: [
               ...forgetFuture(),
               {bagOfInputs, simtime},
@@ -217,10 +217,11 @@ export function useInteractiveSimulator(
           lastSimTime: simtime,
         },
         // advance time if paused:
-        time: interactive.time.kind === "paused" ? {
+        time: prev.time.kind === "paused" ? {
           kind: "paused" as const,
           simtime: simtime,
-        } : interactive.time, // <-- don't advance time if realtime (time is already advancing)
+          scale: prev.time.scale,
+        } : prev.time, // <-- don't advance time if realtime (time is already advancing)
         idx: -1,
       };
     });
@@ -228,18 +229,19 @@ export function useInteractiveSimulator(
 
   // Updates the current execution trace such that the next timed transition is appended.
   const jumpTimeToNextTimedTransition = useCallback(() => {
-    setInteractive._setShallow(interactive => {
+    setInteractive._setShallow(prev => {
       return {
-        trace: interactive.trace && {
+        trace: prev.trace && {
           trace: forgetFuture(),
           lastSimTime: nextWakeup,
         },
-        time: interactive.time.kind === "paused"
+        time: prev.time.kind === "paused"
           ? {
               kind: "paused",
               simtime: nextWakeup,
+              scale: prev.time.scale,
             }
-          : interactive.time, // <-- for realtime, time mode remains unchanged (clock already naturally advancing)
+          : prev.time, // <-- for realtime, time mode remains unchanged (clock already naturally advancing)
         idx: -1,
       }
     });
@@ -274,11 +276,12 @@ export function useInteractiveSimulator(
     if (fullTrace) {
       const prevItem = fullTrace.trace[fullTrace.idx-1];
       const prevSimtime = prevItem ? prevItem.simtime : 0;
-      setInteractive._setShallow(interactive => ({
-        trace: interactive.trace,
+      setInteractive._setShallow(prev => ({
+        trace: prev.trace,
         time: {
           kind: "paused",
           simtime: prevSimtime,
+          scale: prev.time.scale,
         },
         idx: fullTrace.idx-1 >= 0 ? fullTrace.idx-1 : 0,
       }))
@@ -287,11 +290,12 @@ export function useInteractiveSimulator(
   const onNext = useCallback(() => {
     if (fullTrace) {
       const nextItem = fullTrace.trace[fullTrace.idx+1] || fullTrace.trace[fullTrace.idx];
-      setInteractive._setShallow(interactive => ({
-        trace: interactive.trace,
+      setInteractive._setShallow(prev => ({
+        trace: prev.trace,
         time: {
           kind: "paused",
           simtime: nextItem.simtime,
+          scale: prev.time.scale,
         },
         idx: fullTrace.idx+1 < fullTrace.trace.length ? fullTrace.idx+1 : fullTrace.idx,
       }));
@@ -299,11 +303,12 @@ export function useInteractiveSimulator(
   }, [fullTrace, setInteractive._setShallow]);
 
   const selectItem = useCallback((idx: number) => {
-    setInteractive._setShallow(interactive => ({
-      trace: interactive.trace,
+    setInteractive._setShallow(prev => ({
+      trace: prev.trace,
       time: {
         kind: "paused",
         simtime: fullTrace?.trace[idx].simtime || 0,
+        scale: prev.time.scale,
       },
       idx: idx,
     }))
@@ -315,12 +320,13 @@ export function useInteractiveSimulator(
   ])
 
   const onReplayTrace = useCallback((extTrace: ExtTransitionTrace) => {
-    setInteractive._setShallow(_ => {
+    setInteractive._setShallow(prev => {
       return {
         trace: extTrace,
         time: {
           kind: "paused",
           simtime: extTrace.lastSimTime,
+          scale: prev.time.scale,
         },
         idx: -1,
       }

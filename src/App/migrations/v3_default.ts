@@ -2,7 +2,7 @@ import { initialEditorState } from "../../languages/statecharts/concrete_syntax"
 import { defaultScrollableState } from "../Components/Scrollable";
 import { defaultDebugState, defaultFindReplaceState, defaultMQTTState, defaultToolSelectState } from "./v1_default";
 import { defaultInteractiveExecutionState } from "./v2_default";
-import { ViewState } from "./v2_types";
+import { ExecutionState, ViewState } from "./v2_types";
 import { AppStateV3 } from "./v3_types";
 
 export const defaultViewStateV3: ViewState = {
@@ -53,7 +53,7 @@ export const defaultViewStateV3: ViewState = {
   },
 };
 
-export const defaultExecutionStateV3 = {
+export const defaultExecutionStateV3: ExecutionState = {
   interactive: defaultInteractiveExecutionState,
   activeProperty: 0,
   properties: [],

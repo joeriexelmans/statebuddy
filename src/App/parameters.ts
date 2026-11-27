@@ -28,3 +28,7 @@ export const EDITOR_WIDTH = 8000;
 export const EDITOR_HEIGHT = 8000;
 
 export const EXTRA_HIGHLIGHT_PADDING = 10;
+
+// min window width in CSS pixels to show desktop (not mobile) app.
+export const DESKTOP_MIN_WIDTH = 700;
+export const MOBILE_TRACE_MIN_HEIGHT = 500;

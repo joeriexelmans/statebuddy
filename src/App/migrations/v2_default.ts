@@ -10,6 +10,7 @@ export const defaultInteractiveExecutionState: InteractiveExecutionState = {
   time: {
     kind: "paused" as const,
     simtime: 0,
+    scale: 1,
   },
   idx: 0,
 };

@@ -1,33 +1,53 @@
 import { Tooltip } from "@/App/Components/Tooltip";
 import { TwoStateButton } from "@/App/Components/TwoStateButton";
-import { TimeMode } from "@/App/time";
+import { setPaused, setRealtime, TimeMode } from "@/App/time";
 
 import PauseIcon from '@mui/icons-material/Pause';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import { DEVSTraceItem } from "@/languages/devs/trace";
-import { CoupledState } from "@/App/hooks/useInteractiveSimulator";
-import { objectsEqual } from "@/util/util";
-import { memo } from "react";
+import { Dispatch, memo, SetStateAction, useCallback, useContext } from "react";
 import { KeyInfoVisible, KeyInfoHidden } from "../../KeyInfo";
-import { RaisedEvent } from "@/languages/statecharts/interpreter/runtime_types";
+import { NowContext } from "@/App/NowContext";
+import { useShortcuts } from "@/hooks/useShortcuts";
 
 export type RunPauseButtonsProps = {
   showKeys: boolean;
-  time: TimeMode;
   disabled: boolean;
-  currentTraceItem?: DEVSTraceItem<CoupledState, RaisedEvent>;
-  onTogglePaused: () => void;
+  time: TimeMode;
+  setTime: Dispatch<SetStateAction<TimeMode>>;
+  refreshDisplayTime: () => void;
 };
 
-export const RunPauseButtons = memo(function RunPauseButtons({showKeys, time, disabled, onTogglePaused: togglePaused}: RunPauseButtonsProps) {
+export const RunPauseButtons = memo(function RunPauseButtons({showKeys, time, setTime, disabled, refreshDisplayTime}: RunPauseButtonsProps) {
   const KeyInfo = showKeys ? KeyInfoVisible : KeyInfoHidden;
+  const now = useContext(NowContext);
+
+  const onTogglePaused = useCallback(() => {
+    if (!disabled) {
+      setTime(time => {
+          const wallclktime = Math.round(now());
+          if (time.kind === "realtime") {
+            return setPaused(time, wallclktime) as TimeMode;
+          }
+          else {
+            return setRealtime(time, wallclktime) as TimeMode;
+          }
+      });
+    }
+    refreshDisplayTime();
+  }, [setTime, refreshDisplayTime, disabled, now]);
+
+  // Spacebar pauses/resumes
+  useShortcuts([
+    {keys: [" "], action: onTogglePaused},
+  ]);
+
   return <>
     <KeyInfo keyInfo={<><kbd>Space</kbd> toggles</>}>
       <Tooltip tooltip="pause simulation">
         <TwoStateButton
           active={!disabled && time.kind === "paused"}
           disabled={disabled}
-          onClick={togglePaused}
+          onClick={onTogglePaused}
         >
           <PauseIcon fontSize="small"/>
         </TwoStateButton>
@@ -36,7 +56,7 @@ export const RunPauseButtons = memo(function RunPauseButtons({showKeys, time, di
         <TwoStateButton
           active={!disabled && time.kind === "realtime"}
           disabled={disabled}
-          onClick={togglePaused}
+          onClick={onTogglePaused}
         >
           <PlayArrowIcon fontSize="small"/>
         </TwoStateButton>

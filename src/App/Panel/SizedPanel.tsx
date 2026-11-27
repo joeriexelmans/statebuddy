@@ -3,7 +3,7 @@ import { Dispatch, PropsWithChildren, SetStateAction } from "react";
 import styles from "../App.module.css";
 import { Scrollable, ScrollableState } from "../Components/Scrollable";
 
-export function SizedPanel({scroll, setScroll, width, children}: PropsWithChildren<{scroll: ScrollableState, setScroll: Dispatch<SetStateAction<ScrollableState>>, width: number}>) {
+export function SizedPanel({scroll, setScroll, width, children, ...rest}: PropsWithChildren<{scroll: ScrollableState, setScroll: Dispatch<SetStateAction<ScrollableState>>, width: number}> & React.HTMLAttributes<HTMLDivElement>) {
   return <>{
     (width > 20) && <Scrollable 
       state={scroll}
@@ -16,7 +16,9 @@ export function SizedPanel({scroll, setScroll, width, children}: PropsWithChildr
         flexBasis: width,
         maxWidth: '75vw',
         height: '100%',
-      }}>
+      }}
+      {...rest}
+      >
     {children}
   </Scrollable>}</>;
 }

@@ -5,6 +5,7 @@ export type TimeMode = TimePaused | TimeRealTime;
 export type TimePaused = {
   kind: "paused",
   simtime: number, // the current simulated time
+  scale: number, // <-- has no effect in 'paused' mode, but we still display this number and allow modifying it in the UI
 }
 
 // When the simulation is running in real time, we need to know the time when the simulation was set to real time (both in simulated and wall-clock time), and the time scale. This allows us to compute the simulated time of every future event.
@@ -40,10 +41,10 @@ export function getWallClkDelay(realtime: TimeRealTime, simtime: number, wallclk
 }
 
 // given a current simulated clock (paused or real time), switch to real time with given time scale
-export function setRealtime(currentMode: TimeMode, scale: number, wallclktime: number): TimeRealTime {
+export function setRealtime(currentMode: TimeMode, wallclktime: number): TimeRealTime {
   return {
     kind: "realtime",
-    scale,
+    scale: currentMode.scale,
     since: {
       simtime: getSimTime(currentMode, wallclktime),
       wallclktime,
@@ -56,12 +57,13 @@ export function setPaused(currentMode: TimeMode, wallclktime: number): TimePause
   return {
     kind: "paused",
     simtime: getSimTime(currentMode, wallclktime),
+    scale: currentMode.scale,
   };
 }
 
 export function timeTravel(currentMode: TimeMode, simtime: number, wallclktime: number): TimeMode {
   if (currentMode.kind === "paused") {
-    return {kind: "paused", simtime};
+    return {kind: "paused", simtime, scale: currentMode.scale};
   }
   else {
     return {kind: "realtime", scale: currentMode.scale, since: {simtime, wallclktime}};

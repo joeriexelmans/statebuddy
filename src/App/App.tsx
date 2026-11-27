@@ -4,7 +4,7 @@ import '@fontsource/roboto-condensed';
 import '@fontsource/roboto';
 import '@fontsource/roboto-mono';
 
-import { Dispatch, PropsWithChildren, SetStateAction, useCallback, useMemo, useState } from "react";
+import { Dispatch, PropsWithChildren, SetStateAction, useCallback, useContext, useId, useMemo, useState } from "react";
 
 import { useDisplayTime } from "@/hooks/useDisplayTime";
 import { useLocalStorage } from "@/hooks/usePersistentState";
@@ -46,6 +46,16 @@ import { useDetectChange, useDetectChange2 } from "../hooks/useDetectChange";
 import { MyDetails } from "./Components/MyDetails";
 import { Scrollable } from "./Components/Scrollable";
 import { ModalState } from "./migrations/v2_types";
+import { ZoomButtons } from "./TopPanel/Toolbars/Mode/ZoomButtons";
+import { Toolbar } from "./TopPanel/Toolbar";
+import { ExecutionToolbar, InitClear } from "./TopPanel/Toolbars/Execution/ExecutionToolbar";
+import { KeyInfoHidden } from "./TopPanel/KeyInfo";
+import { RunPauseButtons } from "./TopPanel/Toolbars/Execution/RunPauseButtons";
+import { NowContext } from "./NowContext";
+import { setPaused, setRealtime, TimeMode } from "./time";
+import { TracesPanel } from "./Panel/Kinds/TracesPanel";
+import { DESKTOP_MIN_WIDTH, MOBILE_TRACE_MIN_HEIGHT } from "./parameters";
+import { CoupledDEVSTrace } from "./Trace/CoupledDEVSTrace";
 
 
 export function App({appState, setAppState: setAppStateShallow, modelSize}: WithSetters<{appState: AppState}> & {modelSize: ModelSize}) {
@@ -229,6 +239,13 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
     }} />
   }
 
+  const mobileOnlyClass = useId();
+  const mobileTraceId = useId();
+  const leftPanelId = useId();
+  const rightPanelId = useId();
+  const topPanelId = useId();
+  const bottomPanelId = useId();
+
   return <div style={{
       display: 'flex', flexDirection: 'column',
       overflow: 'hidden',
@@ -236,8 +253,54 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
     }}>
     <ModalOverlay modal={modal} closeModal={closeModal}>
 
+      <style>{`
+        @media screen and (width < ${DESKTOP_MIN_WIDTH}px) {
+          #${topPanelId}, #${leftPanelId}, #${rightPanelId}, #${bottomPanelId} {
+            display: none;
+          }
+          .${mobileOnlyClass} {
+            display: flex;
+          }
+        }
+        @media screen and (width >= ${DESKTOP_MIN_WIDTH}px) {
+          .${mobileOnlyClass} {
+            display: none;
+          }
+        }
+        @media screen and (height < ${MOBILE_TRACE_MIN_HEIGHT}px) {
+          #${mobileTraceId} {
+            display: none;
+          }
+        }
+      `}</style>
+
       {/* Top bar */}
-      <WithShadow>
+      <div className={mobileOnlyClass} style={{
+        backgroundColor: 'var(--tooltip-bg-color)',
+        color: 'var(--tooltip-fg-color)',
+        fontWeight: 'bold',
+        fontStyle: 'italic',
+        // fontSize: 16,
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        zIndex: 2, // <-- we don't want TopPanel to cast its shadow over this bar
+        flexDirection: 'row',
+      }}>
+        <div style={{flex: '0 0 content'}}>
+          <Toolbar>
+            <ZoomButtons setZoom={setAppState.setView.setTopPanel.setZoom} showKeys={false} zoom={appState.view.topPanel.zoom} />
+          </Toolbar>
+        </div>
+        mobile device mode
+        {/* — widen the screen to see full app */}
+        <div style={{flex: '0 0 content'}}>
+          <Toolbar>
+            <InitClear KeyInfo={KeyInfoHidden} onInit={simulator.simulatorCallbacks.onInit} onClear={simulator.simulatorCallbacks.onClear} disabled={!simulator.trace}/>
+          </Toolbar>
+        </div>
+      </div>
+
+      <WithShadow id={topPanelId}>
         <TopPanel
           appState={appState}
           setAppState={setAppState}
@@ -257,6 +320,7 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
 
         {/* Left panel */}
         <SizedPanel
+          id={leftPanelId}
           scroll={appState.view.leftPanel.scroll}
           setScroll={setAppState.setView.setLeftPanel.setScroll._setShallow}
           width={appState.view.leftPanel.width}>
@@ -338,6 +402,7 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
           setSize={setAppState.setView.setRightPanel.setWidth}
         />
         <SizedPanel
+          id={rightPanelId}
           scroll={appState.view.rightPanel.scroll}
           setScroll={setAppState.setView.setRightPanel.setScroll._setShallow}
           width={appState.view.rightPanel.width}>
@@ -350,7 +415,35 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
       </div>
 
       {/* Bottom bars */}
-      <div style={{flex: '0 0 content', borderTop: '1px solid var(--separator-color'}}>
+
+      {/* Mobile bottom panel */}
+      <div className={mobileOnlyClass} style={{flexDirection: 'column', height: '50%'}}>
+          <div style={{display: 'flex', gap: '1em', flexDirection: 'row', flex: '0 0 content'}}>
+            <Toolbar>
+              <ExecutionToolbar
+                displayTime={displayTime}
+                interactive={appState.execution.interactive}
+                refreshDisplayTime={refreshDisplayTime}
+                setInteractive={setAppState.setExecution.setInteractive}
+                showKeys={false}
+                simulator={simulator}
+              />
+            </Toolbar>
+          </div>
+          {simulator.trace && <div id={mobileTraceId} style={{overflow: 'auto'}}>
+            <CoupledDEVSTrace
+              setTime={setAppState.setExecution.setInteractive.setTime._setShallow as Dispatch<SetStateAction<TimeMode>>} // <-- typescript bug?
+              currentTrace={simulator.trace}
+              selectItem={simulator.selectItem}
+              traceView={appState.view.trace}
+              plantsState={appState.execution.plants}
+              propertyTrace={undefined}
+            />
+          </div>}
+      </div>
+
+      {/* Desktop bottom panel */}
+      <div id={bottomPanelId} style={{flex: '0 0 content', borderTop: '1px solid var(--separator-color'}}>
         <div className={styles.statusBar}>
           <MyDetails open={appState.view.visibility.plot} setOpen={setAppState.setView.setVisibility.setPlot}>
             <summary>

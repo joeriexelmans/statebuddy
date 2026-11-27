@@ -33,9 +33,7 @@ type ExecutionProps = {
 
 const toolbarStyle = {columnGap: '1em'};
 
-export const ExecutionToolbar = memo(function ExecutionToolbar({interactive, setInteractive, simulator, showKeys, refreshDisplayTime, displayTime}: ExecutionProps) {
-  const [timescale, setTimescale] = useLocalStorage("timescale", 1);
-
+export const ExecutionToolbar = memo(function ExecutionToolbar({interactive, setInteractive, simulator, showKeys, displayTime, refreshDisplayTime}: ExecutionProps) {
   const nextWakeup = infinityIfUndefined(simulator.nextWakeup);
   const {currentTraceItem, simulatorCallbacks} = simulator;
   const {time} = interactive;
@@ -44,32 +42,9 @@ export const ExecutionToolbar = memo(function ExecutionToolbar({interactive, set
   const progress = (displayTime-lastSimTime)/(nextWakeup-lastSimTime);
   const catchingUp = progress > 1;
   const formattedDisplayTime = useMemo(() => formatTime(displayTime), [displayTime]);
-  // const formattedDisplayTime = useMemo(() => formatTime(lastSimTime), [lastSimTime]);
-
   const KeyInfo = showKeys ? KeyInfoVisible : KeyInfoHidden;
 
-  const now = useContext(NowContext);
-
   // User clicked play / pause:
-  const onTogglePaused = useCallback(() => {
-    if (simulator.trace) {
-      setTime(time => {
-          const wallclktime = Math.round(now());
-          if (time.kind === "realtime") {
-            return setPaused(time, wallclktime);
-          }
-          else {
-            return setRealtime(time, timescale, wallclktime);
-          }
-      });
-    }
-    refreshDisplayTime();
-  }, [setTime, timescale, refreshDisplayTime, Boolean(simulator.trace), now]);
-
-  // Spacebar pauses/resumes
-  useShortcuts([
-    {keys: [" "], action: onTogglePaused},
-  ]);
 
   return <Toolbar style={toolbarStyle}>
     {/* init / clear */}
@@ -88,13 +63,14 @@ export const ExecutionToolbar = memo(function ExecutionToolbar({interactive, set
         disabled={currentTraceItem === undefined}
         showKeys={showKeys}
         time={time}
-        onTogglePaused={onTogglePaused}
+        setTime={setTime}
+        refreshDisplayTime={refreshDisplayTime}
       />
     </Toolbar>
 
     {/* speed */}
     <Toolbar>
-      <SpeedControl setTime={setTime} timescale={timescale} setTimescale={setTimescale} showKeys={showKeys} />
+      <SpeedControl time={time} setTime={setTime} showKeys={showKeys} />
     </Toolbar>
 
     {/* time, next */}
@@ -155,7 +131,7 @@ export const ExecutionToolbar = memo(function ExecutionToolbar({interactive, set
 });
 
 
-const InitClear = memo(function InitClear({KeyInfo, onInit, onClear, disabled}: {
+export const InitClear = memo(function InitClear({KeyInfo, onInit, onClear, disabled}: {
   KeyInfo: any,
   onInit: () => void,
   onClear: () => void,
