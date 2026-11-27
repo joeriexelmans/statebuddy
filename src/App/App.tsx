@@ -4,7 +4,7 @@ import '@fontsource/roboto-condensed';
 import '@fontsource/roboto';
 import '@fontsource/roboto-mono';
 
-import { Dispatch, PropsWithChildren, SetStateAction, useCallback, useContext, useId, useMemo, useState } from "react";
+import { Dispatch, PropsWithChildren, SetStateAction, useCallback, useId, useMemo, useState } from "react";
 
 import { useDisplayTime } from "@/hooks/useDisplayTime";
 import { useLocalStorage } from "@/hooks/usePersistentState";
@@ -48,14 +48,12 @@ import { Scrollable } from "./Components/Scrollable";
 import { ModalState } from "./migrations/v2_types";
 import { ZoomButtons } from "./TopPanel/Toolbars/Mode/ZoomButtons";
 import { Toolbar } from "./TopPanel/Toolbar";
-import { ExecutionToolbar, InitClear } from "./TopPanel/Toolbars/Execution/ExecutionToolbar";
+import { InitClear } from "./TopPanel/Toolbars/Execution/ExecutionToolbar";
 import { KeyInfoHidden } from "./TopPanel/KeyInfo";
-import { RunPauseButtons } from "./TopPanel/Toolbars/Execution/RunPauseButtons";
-import { NowContext } from "./NowContext";
-import { setPaused, setRealtime, TimeMode } from "./time";
-import { TracesPanel } from "./Panel/Kinds/TracesPanel";
+import { TimeMode } from "./time";
 import { DESKTOP_MIN_WIDTH, MOBILE_TRACE_MIN_HEIGHT } from "./parameters";
 import { CoupledDEVSTrace } from "./Trace/CoupledDEVSTrace";
+import { TimeToolbar } from "./TopPanel/Toolbars/Execution/TimeToolbar";
 
 
 export function App({appState, setAppState: setAppStateShallow, modelSize}: WithSetters<{appState: AppState}> & {modelSize: ModelSize}) {
@@ -417,10 +415,11 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
       {/* Bottom bars */}
 
       {/* Mobile bottom panel */}
-      <div className={mobileOnlyClass} style={{flexDirection: 'column', height: '50%'}}>
+      {simulator.trace && <div className={mobileOnlyClass} style={{flexDirection: 'column',
+          ...(simulator.trace ? {maxHeight: '50%', minHeight: '50%'} : {})}}>
           <div style={{display: 'flex', gap: '1em', flexDirection: 'row', flex: '0 0 content'}}>
-            <Toolbar>
-              <ExecutionToolbar
+            <Toolbar style={{columnGap: '1em'}}>
+              <TimeToolbar
                 displayTime={displayTime}
                 interactive={appState.execution.interactive}
                 refreshDisplayTime={refreshDisplayTime}
@@ -440,7 +439,7 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
               propertyTrace={undefined}
             />
           </div>}
-      </div>
+      </div>}
 
       {/* Desktop bottom panel */}
       <div id={bottomPanelId} style={{flex: '0 0 content', borderTop: '1px solid var(--separator-color'}}>
