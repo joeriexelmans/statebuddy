@@ -2,7 +2,7 @@ import { initialEditorState } from "../../languages/statecharts/concrete_syntax"
 import { defaultScrollableState } from "../Components/Scrollable";
 import { Selection } from "../VisualEditor/VisualEditor.state";
 import { SerializableSelection } from "./v0_types";
-import { defaultDebugState, defaultFindReplaceState, defaultMQTTState } from "./v1_default";
+import { defaultDebugState, defaultFindReplaceState, defaultMQTTState, defaultToolSelectState } from "./v1_default";
 import { AppStateV2, InteractiveExecutionState, ViewState } from "./v2_types";
 
 export const defaultInteractiveExecutionState: InteractiveExecutionState = {
@@ -54,11 +54,7 @@ export const defaultView: ViewState = {
   },
   topPanel: {
     modelName: "",
-    mouseMap: {
-      leftMouseMode: "select",
-      middleMouseMode: "nothing",
-      rightMouseMode: "nothing",
-    },
+    mouseMap: defaultToolSelectState,
     zoom: 100,
   },
   modal: {
