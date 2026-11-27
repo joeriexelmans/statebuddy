@@ -6,9 +6,7 @@ Bugs
       [!inState(#overridden)]
       bla // comment
 
-- transition labels
-     `entryDrive` and `exitDrive`
-   give parser error.
+- SpyingApp doesn't seem to record scroll events when panning
 
 - support 'default history' (syntax already allows it, semantics ignore it)
 
@@ -16,6 +14,10 @@ Bugs
     motivation: clicking in empty space creates new undo-entry, even if nothing changed
 
 - useEditor: React strict mode causes mouse-move handler to move everything twice as fast!
+
+- [DONE] transition labels
+     `entryDrive` and `exitDrive`
+   give parser error.
 
 - [DONE] in an existing trace, if next element is input event, then <Tab> jumps to that event instead of slicing the trace and making the next timed event happen.
 
