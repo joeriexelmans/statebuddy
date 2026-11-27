@@ -505,3 +505,17 @@ function BelowEditor({children}: PropsWithChildren<{}>) {
 }
 
 export default App;
+
+// Uncomment to show frames per second
+// let lastFrame = performance.now();
+// let fps = 0;
+// const handleAnim = () => {
+//   const now = performance.now();
+//   const frameTime = now - lastFrame;
+//   lastFrame = now;
+//   if (frameTime !== 0)
+//     fps = fps*0.95 + 0.05*1/frameTime*1000;
+//   console.log(fps);
+//   requestAnimationFrame(handleAnim);
+// };
+// requestAnimationFrame(handleAnim);

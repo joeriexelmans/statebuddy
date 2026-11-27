@@ -80,10 +80,23 @@ export function PersistentApp({appState, setAppState}: WithSetters<{appState: Ap
 
   const [modelSize, setModelSize] = useState<ModelSize>({original: 0, compressed: 0});
 
-  const encodeToURL = useCallback(async (appState: AppState) => {
+  const encodeToURL = useCallback(async ({syntax: {editorState: {current}, ...restSyntax}, ...restAppState}: AppState) => {
+    console.time('make URL');
+    const appStateWithoutUndo: AppState = {
+      syntax: {
+        editorState: {
+          current,
+          future: [],
+          history: [],
+        },
+        ...restSyntax,
+      },
+      ...restAppState
+    };
     // @ts-ignore: this works...
-    const cborBuf = CBOR.encode(appState) as ArrayBuffer;
+    const cborBuf = CBOR.encode(appStateWithoutUndo) as ArrayBuffer;
     const cborZipBuf = await deflateBuffer(new Uint8Array(cborBuf));
+    console.timeEnd('make URL');
 
     // console.log('CBOR', cborBuf.byteLength, 'bytes');
     // console.log('CBOR zipped', cborZipBuf.byteLength, 'bytes');

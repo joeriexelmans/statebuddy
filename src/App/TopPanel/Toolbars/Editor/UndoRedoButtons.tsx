@@ -39,8 +39,8 @@ export const UndoRedoButtons = memo(function UndoRedoButtons({
         </button>
       </Tooltip>
     </KeyInfo>
-    <DoubleClickButton tooltip="forget undo/redo history (saves you some memory)" onDoubleClick={forget} disabled={historyLength === 0 && futureLength === 0}>
+    {/* <DoubleClickButton tooltip="forget undo/redo history (saves you some memory)" onDoubleClick={forget} disabled={historyLength === 0 && futureLength === 0}>
       <DeleteOutlineIcon fontSize="small"/>
-    </DoubleClickButton>
+    </DoubleClickButton> */}
   </>;
 });

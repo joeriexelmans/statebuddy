@@ -106,9 +106,11 @@ export function SpyingApp() {
   const now = new Date(appHistory.h[appHistory.i][appHistory.j].t);
 
   const onExport = useCallback(async () => {
+    console.time('export')
     // @ts-ignore: this works...
     const cborBuf = CBOR.encode(appHistory.h) as ArrayBuffer;
     const cborZipBuf = await deflateBuffer(new Uint8Array(cborBuf));
+    console.timeEnd('export');
     downloadArrayBuffer(cborZipBuf, "application/cbor", (appState?.view.topPanel.modelName||"untitled") + ".sblog");
   }, [appHistory.h]);
 
@@ -123,7 +125,7 @@ export function SpyingApp() {
       const cborBuf = await inflateBuf(new Uint8Array(cborZipBuf));
       const h = CBOR.decode(new Uint8Array(cborBuf));
       setAppHistory({h, i: h.length-1, j: h.at(-1).length-1});
-      setPaused(true);
+      // setPaused(true);
     } catch (e) {
       // @ts-ignore
       alert('import failed!! ' + e.message);
@@ -151,6 +153,11 @@ export function SpyingApp() {
     if (paused) return () => cur.t; // time of current snapshot
     else return () => Date.now(); // system time
   }, [paused ? cur.t : Date.now]);
+
+  useShortcuts([
+    {keys: ["Ctrl", "s"], action: onExport},
+    {keys: ["Ctrl", "o"], action: () => {document.getElementById("fileInput")?.click()}},
+  ]);
 
   return <div style={{display: 'flex', flexDirection: 'column', overflow: 'hidden', width: '100vw'}}>
     <div
@@ -234,10 +241,10 @@ export function SpyingApp() {
         &emsp;
         <div style={{width: 'fit-content'}} title="window size (in CSS pixels) of current snapshot">{cur.w.width}x{cur.w.height}</div>
         &nbsp;
-        <input type="file" id="fileInput" hidden onChange={onImport}/>
         <button title="import recording" onClick={() => {document.getElementById("fileInput")?.click()}}><FileUploadIcon fontSize="small"/></button>
         <button title="export recording" onClick={onExport}><FileDownloadIcon fontSize="small"/></button>
       </div>}
     </div>
+  <input type="file" id="fileInput" hidden onChange={onImport}/>
   </div>;
 }
