@@ -74,7 +74,7 @@ export const TopPanel = memo(function TopPanel(props: TopPanelProps) {
     {keys: ["Ctrl", "s"], action: () => onSave(modelName)},
     {keys: ["Ctrl", "Shift", "F"], action: useToggle(setFind)},
     {keys: ["i"], action: simulatorCallbacks.onInit},
-    // {keys: ["c"], action: simulatorCallbacks.onClear},
+    {keys: ["Shift", "C"], action: simulatorCallbacks.onClear},
     // {keys: ["Backspace"], action: simulatorCallbacks.onBack},
     {keys: ["Tab"], action: currentTraceItem && simulatorCallbacks.onSkip || simulatorCallbacks.onInit},
     {keys: ["Shift", "Tab"], action: simulatorCallbacks.onBack},

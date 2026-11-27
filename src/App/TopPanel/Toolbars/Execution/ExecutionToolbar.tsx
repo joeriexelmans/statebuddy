@@ -169,7 +169,7 @@ const InitClear = memo(function InitClear({KeyInfo, onInit, onClear, disabled}: 
         </button>
       </Tooltip>
     </KeyInfo>
-    <KeyInfo keyInfo={<kbd>C</kbd>}>
+    <KeyInfo keyInfo={<><kbd>Shift</kbd>+<kbd>C</kbd></>}>
       <Tooltip tooltip="clear the simulation" align='left'>
         <button onClick={onClear} disabled={disabled}>
           <ClearIcon fontSize="small"/>
