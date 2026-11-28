@@ -1,5 +1,5 @@
-import { NowContext } from "@/App/NowContext";
-import { getSimTime, TimeMode } from "@/App/time";
+import { NowContext } from "@/frontend/App/NowContext";
+import { getSimTime, TimeMode } from "@/frontend/App/time";
 import { useCallback, useContext, useEffect, useState } from "react";
 
 export function useDisplayTime(time: TimeMode) {

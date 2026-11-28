@@ -32,7 +32,7 @@ const output = {
 }
 
 export default defineConfig({
-  root: "src",
+  root: "src/frontend",
   plugins: [
     hashedDir(),
     react(),

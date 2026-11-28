@@ -1,24 +1,24 @@
-export async function inflateJSON<T>(compressedState: string): Promise<T> {
-  const inflated = await inflateString(compressedState);
+// export async function inflateJSON<T>(compressedState: string): Promise<T> {
+//   const inflated = await inflateString(compressedState);
 
-  let recoveredState;
-  try {
-    recoveredState = JSON.parse(inflated);
-  }
-  catch (e) {
-    // @ts-ignore
-    throw new Error("failed to recover state (invalid JSON):" + e.toString());
-  }
+//   let recoveredState;
+//   try {
+//     recoveredState = JSON.parse(inflated);
+//   }
+//   catch (e) {
+//     // @ts-ignore
+//     throw new Error("failed to recover state (invalid JSON):" + e.toString());
+//   }
 
-  return recoveredState as T;
-}
+//   return recoveredState as T;
+// }
 
-export async function inflateString(str: string): Promise<string> {
-  const compressedBuffer = base642buf(str);
-  const decompressedBuffer = await inflateBuf(compressedBuffer);
-  const decoded = buf2string(decompressedBuffer);
-  return decoded;
-}
+// export async function inflateString(str: string): Promise<string> {
+//   const compressedBuffer = base642buf(str);
+//   const decompressedBuffer = await inflateBuf(compressedBuffer);
+//   const decoded = buf2string(decompressedBuffer);
+//   return decoded;
+// }
 
 export async function inflateBuf(buf: Uint8Array<ArrayBuffer>): Promise<ArrayBuffer> {
   const ds = new DecompressionStream("deflate");

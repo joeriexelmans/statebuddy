@@ -1,4 +1,4 @@
-import { DEVSComponent } from "./devs";
+import { DEVSComponent } from "./devs_types";
 
 type Common<T> = {
   simtime: number,

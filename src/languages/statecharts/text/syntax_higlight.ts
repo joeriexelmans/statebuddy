@@ -95,7 +95,7 @@ export function syntaxHighlight(text: string) {
     else if (thing.kind === "lhsArray") {
       // todo
     }
-    else {
+    else if (thing.kind !== "unexpected") {
       visitSCExpression(thing, findAtoms);
     }
   };

@@ -1,6 +1,6 @@
 // Just a simple recursive interpreter for the action language
 
-import { jsonDeepEqual } from "@/util/util";
+import { jsonDeepEqual } from "@/util/is_equal";
 import { Environment, Scope } from "../statecharts/interpreter/environment";
 import { RuntimeError } from "../statecharts/interpreter/interpreter";
 import { BaseExpression, Lhs } from "./abstract_syntax";

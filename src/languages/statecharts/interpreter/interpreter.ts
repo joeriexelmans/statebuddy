@@ -2,7 +2,8 @@ import { AbstractState, computePath, ConcreteState, getDescendants, HistoryState
 import { evalExpr, execAssignment } from "../../actionlang/interpreter";
 import { actionLangValToText } from "../../actionlang/prettyprinter";
 import { Environment, Scope, ScopedEnvironment } from "./environment";
-import { Mode, RT_Event, RT_History, RuntimeConfiguration, TimerElapseEvent, Timers, RaisedEvent } from "./runtime_types";
+import { Mode, RT_Event, RT_History, RuntimeConfiguration, TimerElapseEvent, Timers } from "./runtime_types";
+import { RaisedEvent } from "@/languages/devs/devs_types";
 import { getRaisedEvents, TraceEnterAndStateChildren, TraceEnterChildren, TraceEnterNoChildren, TraceEnterOrStateChildren, visitEnterActions } from "./trace_types";
 import { TraceFairStep, TraceEnter, TraceAction, TraceAssign, TraceExit, TraceInit, TraceSmallStep, TraceBigStep } from "./trace_types";
 import { Action, TransitionLabel, Trigger } from "../text/abstract_syntax";

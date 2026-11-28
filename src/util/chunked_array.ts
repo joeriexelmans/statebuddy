@@ -1,7 +1,10 @@
+// ChunkedArray provides the same operations as regular array, but the underlying data type is an array of arrays. The benefit is that 'pure' push/pop (as in: "persistent data structure") on very long lists can be implemented more efficiently because large parts of the previous version (before push/pop) can be reused.
+
 export const CHUNK_SIZE = 500;
 
-// Because React uses copy-on-write for state updates, it is more efficient to represent very long lists as arrays of arrays.
-export function chunkedPush<T>(oldArray: T[][], elem: T): T[][] {
+export type ChunkedArray<T> = T[][];
+
+export function chunkedPush<T>(oldArray: ChunkedArray<T>, elem: T): ChunkedArray<T> {
   if (oldArray.length === 0) {
     return [[elem]];
   }
@@ -29,19 +32,19 @@ export function chunkedIdxToFlat({i, j}: {i: number, j: number}) {
   return i*CHUNK_SIZE + j;
 }
 
-export function chunkedFirst<T>(arr: T[][]) {
+export function chunkedFirst<T>(arr: ChunkedArray<T>) {
   return arr[0][0];
 }
 
-export function chunkedLast<T>(arr: T[][]) {
+export function chunkedLast<T>(arr: ChunkedArray<T>) {
   return arr.at(-1)?.at(-1);
 }
 
-export function chunkedLength<T>(arr: T[][]) {
+export function chunkedLength<T>(arr: ChunkedArray<T>) {
   return (arr.length-1)*CHUNK_SIZE + arr.at(-1)!.length;
 }
 
-export function chunkedBinarySearch<T>(arr: T[][], end: T, fn: (elem: T, next: T) => Cmp): {i: number, j: number} {
+export function chunkedBinarySearch<T>(arr: ChunkedArray<T>, end: T, fn: (elem: T, next: T) => Cmp): {i: number, j: number} {
   // 1. find the chunk
   // console.log('find chunk, numchunks=', arr.length);
   

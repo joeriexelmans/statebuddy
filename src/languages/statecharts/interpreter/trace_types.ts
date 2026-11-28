@@ -1,5 +1,6 @@
 import { AbstractState, OrState, Transition } from "../abstract_syntax";
-import { RuntimeConfiguration, RT_Event, RaisedEvent } from "./runtime_types";
+import { RuntimeConfiguration, RT_Event } from "./runtime_types";
+import { RaisedEvent } from "@/languages/devs/devs_types";
 
 
 export type TraceInit = {

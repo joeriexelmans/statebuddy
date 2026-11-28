@@ -143,3 +143,33 @@ export function getLhsRefs(lhs: Lhs): Set<string> {
   }
   throw new Error("should never reach here");
 }
+
+
+//    x = x+1
+//    [x,y] = [1,2]
+
+//    [x,2] = [1,2]   // OK
+//    [x,3] = [1,2]   // run-time assertion error
+
+//    # assert that my_var is true
+//    True = my_var
+
+//    # assign True to my_var
+//    my_var = True
+
+
+//   in_event(param) [guard] / actions
+
+        // in_event: identifier
+        // param: LHS
+        // guard: expr
+        // actions: stmt*
+        // stmt = assignment
+        // assignment = LHS "=" expr
+
+// doorOpen(x) [x==True] / x=x+1
+
+// doorOpen(True) / x = x+1
+
+// recv doorOpen(False) -> cannot match with doorOpen(True)
+

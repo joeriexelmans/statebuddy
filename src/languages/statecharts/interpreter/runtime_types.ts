@@ -1,11 +1,5 @@
+import { RaisedEvent } from "@/languages/devs/devs_types";
 import { Environment } from "./environment";
-
-// export type Timestamp = number; // milliseconds since begin of simulation
-
-export type RaisedEvent = {
-  name: string,
-  param?: any,
-};
 
 export type RT_Event = NormalEvent | TimerElapseEvent;
 

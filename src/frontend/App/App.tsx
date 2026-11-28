@@ -1,0 +1,524 @@
+import styles from "./App.module.css";
+
+import '@fontsource/roboto';
+import '@fontsource/roboto-condensed';
+import '@fontsource/roboto-mono';
+
+import { Dispatch, PropsWithChildren, SetStateAction, useCallback, useId, useMemo, useState } from "react";
+
+import { downloadObjectAsJson } from "@/frontend/util/download_file";
+import { useDisplayTime } from "@/hooks/useDisplayTime";
+import { useLocalStorage } from "@/hooks/usePersistentState";
+import { useMtlWorkerPool } from "@/frontend/hooks/useMtlWorkerPool";
+import { formatDateTime } from "@/util/format_time";
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import { useDelayedEffect } from "../../hooks/useDelayedEffect";
+import { useUndo } from "../../hooks/useUndo";
+import { ModelSize } from "../../hooks/useUrlHashState";
+import { useCheckProperties } from "../hooks/useCheckProperties";
+import { useCoupledExecution } from "../hooks/useCoupledExecution";
+import { useInteractiveSimulator } from "../hooks/useInteractiveSimulator";
+import { useParser } from "../hooks/useParser";
+import { useTrial } from "../hooks/useTrial";
+import { makeDeepSetter, WithSetters } from "../util/partial_setter";
+import { AppState, defaultAppState } from "./App.state";
+import { BottomPanel } from "./BottomPanel/BottomPanel";
+import { DebugPanel } from "./BottomPanel/Debug";
+import { FindReplace } from "./BottomPanel/FindReplace";
+import { Plot } from "./BottomPanel/Plot";
+import { PropertyTable } from "./BottomPanel/PropertyTable";
+import { MyDetails } from "./Components/MyDetails";
+import { Scrollable } from "./Components/Scrollable";
+import { Tooltip } from "./Components/Tooltip";
+import { TwoStateButton } from "./Components/TwoStateButton";
+import { WithShadow } from "./Components/WithShadow";
+import { PanelState } from "./migrations/v1_types";
+import { ModalState } from "./migrations/v2_types";
+import { About } from "./Modals/About";
+import { TextDialog } from "./Modals/TextDialog";
+import { ModalOverlay } from "./Overlays/ModalOverlay";
+import { ShowPlants } from "./Panel/Kinds/ShowPlants";
+import { Panel } from "./Panel/Panel";
+import { GlobalProps } from "./Panel/PanelItem";
+import { ResizeHandle } from "./Panel/ResizeHandle";
+import { SizedPanel } from "./Panel/SizedPanel";
+import { DESKTOP_MIN_WIDTH, MOBILE_TRACE_MIN_HEIGHT } from "./parameters";
+import { prepareTraces } from "./SideBar/prepare_trace";
+import { TimeMode } from "./time";
+import { KeyInfoHidden } from "./TopPanel/KeyInfo";
+import { Toolbar } from "./TopPanel/Toolbar";
+import { InitClear } from "./TopPanel/Toolbars/Execution/ExecutionToolbar";
+import { TimeToolbar } from "./TopPanel/Toolbars/Execution/TimeToolbar";
+import { ZoomButtons } from "./TopPanel/Toolbars/Mode/ZoomButtons";
+import { TopPanel } from "./TopPanel/TopPanel";
+import { CoupledDEVSTrace } from "./Trace/CoupledDEVSTrace";
+import { DebugContext } from "./VisualEditor/context/DebugContext";
+import { useEditor } from "./VisualEditor/hooks/useEditor";
+import { VisualEditor } from "./VisualEditor/VisualEditor";
+
+
+export function App({appState, setAppState: setAppStateShallow, modelSize}: WithSetters<{appState: AppState}> & {modelSize: ModelSize}) {
+  const setAppState = useMemo(() => makeDeepSetter(defaultAppState, setAppStateShallow), [setAppStateShallow]);
+
+  const [extraHighlight, setExtraHighlight] = useState(new Set<string>());
+
+  // Persist the size of the worker pool in the user's localStorage (not in AppState) - the optimal value here is machine-bound.
+  const [nWorkers, setNWorkers] = useLocalStorage("nWorkers", 2);
+
+  // What the ???
+  const trial = useTrial();
+
+  const editorState = appState.syntax.editorState.current;
+  const {topology, abstractSyntax, syntaxErrors} = useParser(editorState, appState.syntax.declaredInputs, appState.syntax.declaredOutputs);
+
+  // Show model name and last edit timestamp in document title (useful for bookmarking).
+  useDelayedEffect(() => {
+    const timeFormatted = formatDateTime(new Date());
+    document.title = `${location.hostname === "localhost" ? "[dev] " : ""}${appState.view.topPanel.modelName} [${trial.appName}] ${timeFormatted}`;
+  }, 100, [appState, editorState]);
+
+  const coupledExecution = useCoupledExecution(abstractSyntax, appState.syntax.declaredInputs, appState.execution.plants);
+  const simulator = useInteractiveSimulator(coupledExecution, appState.execution.interactive, setAppState.setExecution.setInteractive);
+  const {displayTime, refreshDisplayTime} = useDisplayTime(appState.execution.interactive.time);
+  
+  const allErrors = useMemo(
+    () => [...syntaxErrors, ...simulator.runtimeErrors],
+    [syntaxErrors, simulator.runtimeErrors]);
+
+  // Performance optimization: only compute what we truly need:
+  const panelHasVisibleProperties = (panel: PanelState) => panel.items.find(item => item.type === "properties")?.expanded
+  const propertiesVisible = panelHasVisibleProperties(appState.view.leftPanel)
+                         || panelHasVisibleProperties(appState.view.rightPanel);
+  const shouldPrepareTraces = appState.view.visibility.plot || propertiesVisible;
+
+  // Convert from internal trace format to a format that py-mtl understands.
+  // Also, we use this format for plotting our plot.
+  const preparedTraceForPlot = useMemo(() => {
+    if (simulator.trace && abstractSyntax && shouldPrepareTraces) {
+      return prepareTraces(
+        abstractSyntax,
+        appState.execution.plants,
+        simulator.trace.trace,
+        true, /* merge traces of signals that are connected in Coupled DEVS (two signals become one) */
+      );
+    }
+  }, [simulator.trace && simulator.trace.trace, appState.execution.plants, abstractSyntax, shouldPrepareTraces]);
+
+  const preparedTraceForMTL = useMemo(() => {
+    if (simulator.trace && abstractSyntax && shouldPrepareTraces) {
+      return prepareTraces(
+        abstractSyntax,
+        appState.execution.plants,
+        simulator.trace.trace,
+        false,
+      );
+    }
+  }, [simulator.trace && simulator.trace.trace, appState.execution.plants, abstractSyntax, shouldPrepareTraces]);
+
+  const [checkProperty, workerPoolState] = useMtlWorkerPool(nWorkers);
+
+  // Check ALL properties on the current execution trace.
+  // We display the results in 3 places:
+  //  - the plot
+  //  - the property editor
+  //  - the execution trace
+  const propertyResults = useCheckProperties(
+    preparedTraceForMTL,
+    appState.execution.properties,
+    checkProperty);
+
+  // useDetectChange2({abstractSyntax, prepareTraces, propertyResults});
+
+  const tracesAndResults = useMemo(() => ({
+    ...(preparedTraceForPlot || {}),
+    ...Object.fromEntries((propertyResults||[]).flatMap((result, i) => {
+      // non-error property check results are included in the traces that can be plotted:
+      if (result.kind === "ok") {
+        return [["P"+i, result.result]];
+      }
+      if (result.kind === "pending") {
+        return [["P"+i, [[0, false] as [number, boolean]]]];
+      }
+      return [];
+    })),
+  }), [propertyResults, preparedTraceForPlot]);
+
+  const onSave = useCallback((modelName: string) => {
+    downloadObjectAsJson(
+      appState,
+      modelName.replaceAll(' ','-')+'_'+formatDateTime(new Date()).replaceAll('/','-').replaceAll(':','-').replaceAll(' ','_')+".statebuddy.json");
+  }, [editorState, appState]);
+
+  // The state of the visual editor (and all previous and future states)
+  const historyCallbacks = useUndo(setAppState.setSyntax.setEditorState._setShallow);  
+
+  // @ts-ignore
+  const onAboutStateBuddy = useCallback(() => setAppState.setView.setModal._setShallow({kind: "about"}), [setAppState.setView.setModal._setShallow]);
+
+  // callback to start editing text label (in modal dialog)
+  const beginEdit = useCallback((uid: string) => {
+    // @ts-ignore
+    setAppState.setView.setModal._setShallow((modal: ModalState) => {
+      const text = editorState.texts.find(t => t.uid === uid)?.text;
+      if (text !== undefined) {
+        return {
+          kind: "txtEdit" as const,
+          text,
+          uid,
+        };
+      }
+      return modal;
+    });
+  }, [editorState.texts, setAppState.setView.setModal._setShallow]);
+
+  const editorStuff = useEditor(
+    appState.view.topPanel.mouseMap,
+    setAppState.setView.setTopPanel.setMouseMap,
+    appState.view.topPanel.zoom,
+    editorState,
+    setAppState.setSyntax.setEditorState.setCurrent,
+    historyCallbacks,
+    beginEdit);
+
+  const globalProps: GlobalProps = useMemo(() => ({
+    appState,
+    setAppState,
+    simulator,
+    abstractSyntax,
+    propertyResults,
+  }), [appState, simulator, abstractSyntax, propertyResults]);
+
+  const hidePropertyTable = hide(setAppState.setView.setVisibility.setTable);
+  const hideFindReplace = hide(setAppState.setView.setVisibility.setFind);
+  const hideDebug = hide(setAppState.setView.setVisibility.setDebug);
+
+  // @ts-ignore
+  const closeModal = useCallback(() => setAppState.setView.setModal._setShallow(({kind: "none" as const})), [setAppState.setView.setModal._setShallow]);
+
+  let modal = null;
+  if (appState.view.modal.kind === "about") {
+    modal = <About {...trial} closeModal={closeModal}/>;
+  }
+  else if (appState.view.modal.kind === "txtEdit") {
+    const {text, uid} = appState.view.modal;
+    modal = <TextDialog
+      closeModal={closeModal}
+      text={text}
+      setText={text => setAppState.setView.setModal._setShallow((modal: any) => ({
+        ...modal,
+        text,
+      }))}
+      done={newText => {
+        if (newText === undefined) {
+          // user canceled -> do nothing
+          return;
+        }
+        else if (newText === "") {
+          // delete text
+          historyCallbacks.commit(({texts, ...rest}) => ({
+            texts: texts.filter(t => t.uid !== uid),
+            ...rest,
+          }));
+        }
+        else {
+          // update text
+          historyCallbacks.commit(oldState => ({
+            ...oldState,
+            texts: oldState.texts.map(t => {
+              if (t.uid === uid) {
+                return {
+                  ...t,
+                  text: newText,
+                }
+              }
+              else return t;
+            }),
+          }));
+        }
+    }} />
+  }
+
+  const mobileOnlyClass = useId();
+  const mobileBottomPanelId = useId();
+  const leftPanelId = useId();
+  const rightPanelId = useId();
+  const topPanelId = useId();
+  const bottomPanelId = useId();
+
+  return <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      overflow: 'hidden',
+      position: 'relative', // <-- this is necessary for the overlay to work
+      containerType: 'size',
+      height: '100%',
+      width: '100%',
+    }}>
+    <ModalOverlay modal={modal} closeModal={closeModal}>
+
+      <style>{`
+        @container (width < ${DESKTOP_MIN_WIDTH}px) {
+          #${topPanelId}, #${leftPanelId}, #${rightPanelId}, #${bottomPanelId} {
+            display: none;
+          }
+          .${mobileOnlyClass} {
+            display: flex;
+          }
+        }
+        @container (width >= ${DESKTOP_MIN_WIDTH}px) {
+          .${mobileOnlyClass} {
+            display: none;
+          }
+        }
+        @container (height < ${MOBILE_TRACE_MIN_HEIGHT}px) {
+          #${mobileBottomPanelId} {
+            display: none;
+          }
+        }
+      `}</style>
+
+      {/* Top bar */}
+      <div className={mobileOnlyClass} style={{
+        backgroundColor: 'var(--tooltip-bg-color)',
+        color: 'var(--tooltip-fg-color)',
+        fontWeight: 'bold',
+        fontStyle: 'italic',
+        // fontSize: 16,
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        zIndex: 2, // <-- we don't want TopPanel to cast its shadow over this bar
+        flexDirection: 'row',
+      }}>
+        <div style={{flex: '0 0 content'}}>
+          <Toolbar>
+            <ZoomButtons setZoom={setAppState.setView.setTopPanel.setZoom} showKeys={false} zoom={appState.view.topPanel.zoom} />
+          </Toolbar>
+        </div>
+        mobile device mode
+        {/* — widen the screen to see full app */}
+        <div style={{flex: '0 0 content'}}>
+          <Toolbar>
+            <InitClear KeyInfo={KeyInfoHidden} onInit={simulator.simulatorCallbacks.onInit} onClear={simulator.simulatorCallbacks.onClear} disabled={!simulator.trace}/>
+          </Toolbar>
+        </div>
+      </div>
+
+      <WithShadow id={topPanelId}>
+        <TopPanel
+          appState={appState}
+          setAppState={setAppState}
+          paste={editorStuff.paste}
+          historyCallbacks={historyCallbacks}
+          simulator={simulator}
+          displayTime={displayTime}
+          refreshDisplayTime={refreshDisplayTime}
+          trial={trial}
+          onAboutStateBuddy={onAboutStateBuddy}
+          onSave={onSave}
+        />
+      </WithShadow>
+
+      {/* Between top bar and bottom bar(s), we have, from left to right: panel, editor, panel */}
+      <div className={styles.stackHorizontal} style={{flexGrow: 1, overflow: 'clip auto'}}>
+
+        {/* Left panel */}
+        <SizedPanel
+          id={leftPanelId}
+          scroll={appState.view.leftPanel.scroll}
+          setScroll={setAppState.setView.setLeftPanel.setScroll._setShallow}
+          width={appState.view.leftPanel.width}>
+          <Panel
+            items={appState.view.leftPanel.items}
+            setItems={setAppState.setView.setLeftPanel.setItems}
+            globalProps={globalProps}
+          />
+        </SizedPanel>
+        <ResizeHandle
+          getDelta={e => e.movementX}
+          setSize={setAppState.setView.setLeftPanel.setWidth}/>
+
+        {/* top-to-bottom: editor, find & replace, ... */}
+        <div style={{display: 'flex', flexDirection: 'column', flexGrow: 1,
+          overflow: 'auto', // <-- this element will overflow in the X-direction (because its parent is a ROW)
+        }}>
+
+          {/* Editor */}
+          <Scrollable ref={editorStuff.refScroll} state={appState.view.scroll.editor} setState={setAppState.setView.setScroll.setEditor._setShallow} style={{overflow: 'auto'}}>
+          {/* <div style={{overflow: 'auto'}}> <-- this element will overflow in the Y-direction (because its parent is a COLUMN) */}
+            {editorState && topology && syntaxErrors &&
+              <DebugContext value={appState.view.debug}>
+                <VisualEditor
+                  state={editorState}
+                  // @ts-ignore
+                  setState={historyCallbacks.commit}
+                  topology={topology}
+                  editorStuff={editorStuff}
+                  findText={appState.view.visibility.find && appState.find.findText || ""}
+                  zoom={appState.view.topPanel.zoom}
+                  mouseMap={appState.view.topPanel.mouseMap}
+                  highlightActive={simulator.highlightActive}
+                  highlightTransitions={simulator.highlightTransitions}
+                  extraHighlight={extraHighlight}
+                  errors={allErrors}
+                  beginEdit={beginEdit}
+                />
+              </DebugContext>}
+          {/* </div> */}
+          </Scrollable>
+
+          {/* <Greeter trial={trial}/> */}
+
+          {appState.view.visibility.table && appState.execution.properties.length > 0 && appState.execution.savedTraces.length > 0 && coupledExecution && abstractSyntax &&
+            <BelowEditor>
+              <PropertyTable
+                abstractSyntax={abstractSyntax}
+                execution={appState.execution}
+                cE={coupledExecution}
+                onClose={hidePropertyTable}
+                checkProperty={checkProperty}
+              />
+            </BelowEditor>}
+          {appState.view.visibility.find &&
+            <BelowEditor>
+              <FindReplace
+                showKeys={appState.view.visibility.keys}
+                state={appState.find}
+                setState={setAppState.setFind._setShallow}
+                cs={editorState}
+                setCS={historyCallbacks.commit}
+                hide={hideFindReplace}/>
+            </BelowEditor>
+          }
+          {appState.view.visibility.debug &&
+            <BelowEditor>
+              <DebugPanel
+                state={appState.view.debug}
+                setState={setAppState.setView.setDebug}
+                onHide={hideDebug}
+              />
+            </BelowEditor>}
+        </div>
+
+        {/* Right panel */}
+        <ResizeHandle
+          getDelta={e => -e.movementX}
+          setSize={setAppState.setView.setRightPanel.setWidth}
+        />
+        <SizedPanel
+          id={rightPanelId}
+          scroll={appState.view.rightPanel.scroll}
+          setScroll={setAppState.setView.setRightPanel.setScroll._setShallow}
+          width={appState.view.rightPanel.width}>
+          <Panel
+            items={appState.view.rightPanel.items}
+            setItems={setAppState.setView.setRightPanel.setItems}
+            globalProps={globalProps}
+          />
+        </SizedPanel>
+      </div>
+
+      {/* Bottom bars */}
+
+      {/* Mobile bottom panel */}
+      {simulator.trace && <div id={mobileBottomPanelId} className={mobileOnlyClass} style={{flexDirection: 'column',
+          ...(simulator.trace ? {maxHeight: '50%', minHeight: '50%'} : {})}}>
+          <div style={{display: 'flex', gap: '1em', flexDirection: 'row', flex: '0 0 content'}}>
+            <Toolbar style={{columnGap: '1em'}}>
+              <TimeToolbar
+                displayTime={displayTime}
+                interactive={appState.execution.interactive}
+                refreshDisplayTime={refreshDisplayTime}
+                setInteractive={setAppState.setExecution.setInteractive}
+                showKeys={false}
+                simulator={simulator}
+              />
+            </Toolbar>
+            <Toolbar>
+              <TwoStateButton active={appState.view.mobile.panelKind === "trace"} onClick={() => setAppState.setView.setMobile.setPanelKind("trace")}>Trace</TwoStateButton>
+              <TwoStateButton active={appState.view.mobile.panelKind === "plant"} onClick={() => setAppState.setView.setMobile.setPanelKind("plant")}>Plant</TwoStateButton>
+            </Toolbar>
+          </div>
+          {simulator.trace && <>
+            {appState.view.mobile.panelKind === "trace" && <div style={{overflow: 'auto'}}>
+              <CoupledDEVSTrace
+                setTime={setAppState.setExecution.setInteractive.setTime._setShallow as Dispatch<SetStateAction<TimeMode>>} // <-- typescript bug?
+                currentTrace={simulator.trace}
+                selectItem={simulator.selectItem}
+                traceView={appState.view.trace}
+                plantsState={appState.execution.plants}
+                propertyTrace={undefined}
+              />
+            </div>}
+            {appState.view.mobile.panelKind === "plant" && <div style={{overflow: 'auto'}}>
+              <ShowPlants
+                onRaise={simulator.simulatorCallbacks.onRaise}
+                plantsState={appState.execution.plants}
+                setPlantsState={setAppState.setExecution.setPlants}
+                speed={appState.execution.interactive.time.kind === "paused" ? 0 : appState.execution.interactive.time.scale}
+                coupledState={simulator.currentTraceItem?.newState}
+              />
+            </div>}
+          </>}
+      </div>}
+
+      {/* Desktop bottom panel */}
+      <div id={bottomPanelId} style={{flex: '0 0 content', borderTop: '1px solid var(--separator-color'}}>
+        <div className={styles.statusBar}>
+          <MyDetails open={appState.view.visibility.plot} setOpen={setAppState.setView.setVisibility.setPlot}>
+            <summary>
+              plot
+              <Tooltip tooltip="All signals are boolean. Input/ouput event parameters start with `in_`/`out_` resp. Plant state starts with `<plantname>_`" above align="left">
+                <HelpOutlineIcon fontSize='small'/>
+              </Tooltip>
+            </summary>
+            {preparedTraceForPlot && simulator.trace && appState.view.visibility.plot &&
+              <Plot width="100%"
+                prepped={tracesAndResults}
+                trace={simulator.trace}
+                visible={appState.view.plot.visible}
+                setVisible={setAppState.setView.setPlot.setVisible._setShallow}
+                displayTime={displayTime}
+              />}
+          </MyDetails>
+        </div>
+        {syntaxErrors && abstractSyntax &&
+          <BottomPanel
+            modelSize={modelSize}
+            abstractSyntax={abstractSyntax}
+            errorsExpanded={appState.view.visibility.errors}
+            setErrorsExpanded={setAppState.setView.setVisibility.setErrors}
+            errors={syntaxErrors}
+            workerPoolState={workerPoolState}
+            setNWorkers={setNWorkers}
+            setExtraHighlight={setExtraHighlight}
+            setSelection={setAppState.setSyntax.setEditorState.setCurrent.setSelection._setShallow}
+          />
+        }
+      </div>
+    </ModalOverlay>
+  </div>;
+}
+
+const hide = (setter: Dispatch<SetStateAction<boolean>>) => {
+  return useCallback(() => setter(false), [setter]);
+}
+
+function BelowEditor({children}: PropsWithChildren<{}>) {
+  return <div style={{borderTop: '1px var(--separator-color) solid'}}>{children}</div>;
+}
+
+export default App;
+
+// Uncomment to show frames per second
+// let lastFrame = performance.now();
+// let fps = 0;
+// const handleAnim = () => {
+//   const now = performance.now();
+//   const frameTime = now - lastFrame;
+//   lastFrame = now;
+//   if (frameTime !== 0)
+//     fps = fps*0.95 + 0.05*1/frameTime*1000;
+//   console.log(fps);
+//   requestAnimationFrame(handleAnim);
+// };
+// requestAnimationFrame(handleAnim);

@@ -1,5 +1,4 @@
-import { Expression } from "../actionlang/abstract_syntax";
-import { Action, EventTrigger, ParsedText } from "./text/abstract_syntax";
+import { Action, EventTrigger, ParsedText, SCExpression } from "./text/abstract_syntax";
 
 export type AbstractState = {
   kind: string;
@@ -12,7 +11,7 @@ export type AbstractState = {
 
 export type EntryExitActions = {
   labelUid: string; // uid of text label
-  guard: Expression;
+  guard: SCExpression;
   actions: Action[];
 }
 

@@ -1,5 +1,5 @@
-import { RaisedEvent } from "@/languages/statecharts/interpreter/runtime_types";
-import { DEVSComponent } from "./devs";
+import { RaisedEvent } from "./devs_types";
+import { DEVSComponent } from "./devs_types";
 
 export type Model2ModelConn = {
   outputModelName: string, // name of sending model
@@ -28,12 +28,12 @@ export type CoupledDEVSState<ComponentStateType> = {
 
 // Given a bunch of sub-components and routing connections, creates a Coupled DEVS.
 // One deviation from 'real DEVS' is that there is no tie breaking function.
-export function makeCoupledDEVS<T extends CoupledDEVSState<any>>(
-  models: {[modelId in keyof T]: DEVSComponent<T[modelId]>},
+export function makeCoupledDEVS<CoupledStateType extends CoupledDEVSState<any>>(
+  models: {[modelId in keyof CoupledStateType]: DEVSComponent<CoupledStateType[modelId], RaisedEvent>},
   conns: CoupledDEVSConns,
   inputs: string[],
   outputs: string[],
-): DEVSComponent<T> {
+): DEVSComponent<CoupledStateType, RaisedEvent> {
 
   // Route all coupled inputs or component outputs to their input component(s)
   // The result is a mapping from component to bag of inputs for that component.
@@ -90,17 +90,17 @@ export function makeCoupledDEVS<T extends CoupledDEVSState<any>>(
       return Object.fromEntries(
         Object.entries(models)
           .map(([modelId, model]) => 
-              [modelId, model.initial()])) as T;
+              [modelId, model.initial()])) as CoupledStateType;
     },
 
-    timeAdvance: (c) => {
+    timeAdvance: (c: CoupledStateType) => {
       // timeAdvance is equal to lowest of all timeAdvances
       return Object.entries(models)
         .reduce((acc, [name, {timeAdvance}]) =>
           Math.min(timeAdvance(c[name]), acc), Infinity);
     },
 
-    intTransition: (c) => {
+    intTransition: (c: CoupledStateType) => {
       // find earliest internal transition among all models:
       const [earliest, modelId] = Object.entries(models)
         .reduce(([earliestSoFar, earliestModel], [modelId, {timeAdvance}]) => {
@@ -116,7 +116,7 @@ export function makeCoupledDEVS<T extends CoupledDEVSState<any>>(
         c = {
           ...c,
           [modelId]: newConfig,
-        } as T;
+        } as CoupledStateType;
         // 2. other components can make at most one extTransition ...
         const routedEvents = routeModel2ModelEvents(modelId, outputEvents);
         for (const [inputModelName, bagOfInputs] of routedEvents) {
@@ -145,7 +145,7 @@ export function makeCoupledDEVS<T extends CoupledDEVSState<any>>(
       throw new Error("cannot make intTransition - timeAdvance is infinity");
     },
 
-    extTransition: (simtime, c, bagOfInputs) => {
+    extTransition: (simtime: number, c: CoupledStateType, bagOfInputs: RaisedEvent[]) => {
       const routedEvents = routeInputEvents(bagOfInputs);
       for (const [inputModelName, bagOfInputs] of routedEvents) {
         c = {

@@ -1,4 +1,4 @@
-import { memoize } from "@/util/util";
+import { memoize } from "@/util/memoize";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 

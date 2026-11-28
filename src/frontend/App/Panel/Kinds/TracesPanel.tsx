@@ -1,0 +1,178 @@
+import appStyles from "../../App.module.css";
+
+import CachedOutlinedIcon from '@mui/icons-material/CachedOutlined';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
+import FlareIcon from '@mui/icons-material/Flare';
+
+import { Tooltip } from "../../Components/Tooltip";
+import { DeepSetter } from "../../../util/partial_setter";
+import { saveExtTransitions } from '@/languages/devs/serialize_trace';
+import { MoveUpDown } from '../../Components/MoveUpDown';
+import { DoubleClickButton } from '../../Components/DoubleClickButton';
+import { Dispatch, memo, SetStateAction, useCallback, useContext, useRef } from 'react';
+import { getSimTime, TimeMode, } from '@/frontend/App/time';
+import { CoupledDEVSTrace } from '../../Trace/CoupledDEVSTrace';
+import { ResizeHandle } from '../ResizeHandle';
+import { NicelyCentered } from '../../Components/NicelyCentered';
+import { AppState } from '../../App.state';
+import { ExtTransitionTrace, SavedTraces } from '../../migrations/v1_types';
+import { TraceView } from '../../migrations/v2_types';
+import { Scrollable } from "@/frontend/App/Components/Scrollable";
+import { NowContext } from "@/frontend/App/NowContext";
+import { SimulatorStuff } from "@/frontend/hooks/useInteractiveSimulator";
+import { PropertyTrace } from "@/mtl-checker/mtl_types";
+
+type TracesProps = {
+  state: AppState,
+  setState: DeepSetter<AppState>,
+  simulator: SimulatorStuff,
+  activePropertyTrace?: PropertyTrace;
+  isExpanded: boolean,
+};
+
+export function TracesPanel({
+  state,
+  setState,
+  simulator,
+  activePropertyTrace,
+  isExpanded,
+}: TracesProps) {
+  const {savedTraces, plants, interactive: {time}} = state.execution;
+  const {setSavedTraces, setInteractive: {setTime}} = setState.setExecution;
+  const {height} = state.view.trace;
+  const {setHeight} = setState.setView.setTrace;
+  const {trace} = simulator;
+
+  const now = useContext(NowContext);
+
+  const onSaveTrace = useCallback(() => {
+    if (trace) {
+      const extTrace = saveExtTransitions(trace.trace, getSimTime(time, now()));
+      setSavedTraces(savedTraces => [
+        ...savedTraces, 
+        ["", extTrace] as const,
+      ])
+    }
+  }, [trace, setSavedTraces, now]);
+
+  const scrollRef = useRef(null);
+  
+  return <div style={{display: 'flex', flexGrow: 1, flexDirection: 'column'}}>
+    <SavedTracesView
+      savedTraces={savedTraces}
+      setSavedTraces={setSavedTraces}
+      onReplayTrace={simulator.simulatorCallbacks.onReplayTrace}
+    />
+    <Checkboxes
+      state={state.view.trace}
+      setState={setState.setView.setTrace}
+      disableSave={trace === undefined}
+      onSaveTrace={onSaveTrace}
+    />
+    <Scrollable
+      ref={scrollRef}
+      state={state.view.scroll.trace}
+      setState={setState.setView.setScroll.setTrace._setShallow}
+      style={{
+        flexGrow: 1,
+        overflow:'auto',
+        height,
+        boxShadow: 'inset 0 10px 10px -10px rgba(0,0,0,0.4)',
+        backgroundColor: 'var(--statusbar-bg-color)',
+      }}>
+        {trace && isExpanded &&
+          <div style={{fontFamily: 'Roboto Condensed'}}>
+            <CoupledDEVSTrace
+              setTime={setTime._setShallow as Dispatch<SetStateAction<TimeMode>>} // <-- typescript bug?
+              currentTrace={trace}
+              selectItem={simulator.selectItem}
+              traceView={state.view.trace}
+              plantsState={plants}
+              propertyTrace={activePropertyTrace}
+            />
+          </div>
+          || <NicelyCentered style={{}}>
+              <div style={{display: 'flex', justifyContent: 'center', flexDirection: 'column', rowGap: 12}}>
+                <div>Execution trace will appear here.</div>
+                <button onClick={simulator.simulatorCallbacks.onInit}>
+                  <FlareIcon fontSize='small'/>&nbsp;
+                  initialize execution
+                </button>
+              </div>
+            </NicelyCentered>
+        }
+    </Scrollable>
+    <ResizeHandle
+      getDelta={e => e.movementY}
+      setSize={setHeight}
+      horizontal
+      minSize={30}
+    />
+
+  </div>;
+}
+
+const SavedTracesView = memo(function SavedTracesView({savedTraces, setSavedTraces, onReplayTrace}: {
+  savedTraces: SavedTraces,
+  setSavedTraces: Dispatch<SetStateAction<SavedTraces>>,
+  onReplayTrace: (t: ExtTransitionTrace) => void,
+}) {
+  return <div>
+    {savedTraces.map((savedTrace, i) =>
+      <div key={i} className={appStyles.toolbar} style={{alignItems: 'center'}}>
+        <Tooltip tooltip="replay trace" align="left">
+          <button
+            onClick={() => onReplayTrace(savedTrace[1])}>
+            <CachedOutlinedIcon fontSize="small"/>
+          </button>
+        </Tooltip>
+        <Tooltip tooltip='duration' align='left'>
+          <div style={{display:'inline-block', width: 22, fontSize: 9, textAlign: 'center'}}>{(Math.floor(savedTrace[1].lastSimTime/1000))}s</div>
+        </Tooltip>
+        <Tooltip tooltip='number of input events' align='left'>
+          <div style={{display:'inline-block', width: 22, fontSize: 9, textAlign: 'center'}}>({savedTrace[1].trace.length})</div>
+        </Tooltip>
+        <Tooltip tooltip='does not have to be unique, can be empty...' align='left' fullWidth={true} showWhen='focus'>
+          <input
+            placeholder="description"
+            type="text"
+            value={savedTrace[0]}
+            style={{flexGrow: 1}}
+            size={1}
+            className={appStyles.description}
+            onChange={e => setSavedTraces(savedTraces => savedTraces.toSpliced(i, 1, [e.target.value, savedTraces[i][1]]))}/>
+        </Tooltip>
+        {/* @ts-ignore */}
+        <MoveUpDown i={i} ls={savedTraces} setter={setSavedTraces}/>
+        <DoubleClickButton
+          tooltip="forget this trace"
+          onDoubleClick={() => setSavedTraces(savedTraces => savedTraces.toSpliced(i, 1))}
+          align="right">
+            <DeleteOutlineIcon fontSize="small"/>
+        </DoubleClickButton>
+      </div>
+    )}
+  </div>
+});
+
+const Checkboxes = memo(function Checkboxes({state, setState, disableSave, onSaveTrace}: {
+  state: TraceView,
+  setState: DeepSetter<TraceView>,
+  disableSave: boolean,
+  onSaveTrace: () => void,
+}) {
+  return <div className={appStyles.toolbar} style={{justifyContent: 'space-around', columnGap: '1em'}}>
+    <Tooltip tooltip="scroll down upon new events" align="left">
+      <input id="checkbox-autoscroll" type="checkbox" checked={state.autoScroll} onChange={e => setState.setAutoScroll(e.target.checked)}/>
+      <label htmlFor="checkbox-autoscroll">auto-scroll</label>
+    </Tooltip>
+    <button
+      disabled={disableSave}
+      onClick={() => onSaveTrace()}
+      style={{marginLeft: 'auto', flexGrow: 1}}
+      >
+      <SaveOutlinedIcon fontSize="small"/> save trace
+    </button>
+  </div>
+});

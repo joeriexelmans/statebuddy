@@ -1,7 +1,7 @@
-import { RaisedEvent } from "../statecharts/interpreter/runtime_types";
-import { DEVSComponent } from "./devs";
+import { RaisedEvent } from "./devs_types";
+import { DEVSComponent } from "./devs_types";
 import { DEVSTrace } from "./trace";
-import { ExtTransitionTrace, ExtTransitionTraceItem } from "@/App/migrations/v1_types";
+import { ExtTransitionTrace, ExtTransitionTraceItem } from "@/frontend/App/migrations/v1_types";
 
 // returns a trace containing only the extTransitions.
 // this is the minimum of information we need to replay a trace.

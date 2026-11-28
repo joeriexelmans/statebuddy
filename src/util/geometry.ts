@@ -1,5 +1,4 @@
-import { CORNER_HELPER_RADIUS, EDITOR_HEIGHT, EDITOR_WIDTH } from "@/App/parameters";
-import { Parts } from "../App/VisualEditor/VisualEditor.state";
+import { Parts } from "../frontend/App/VisualEditor/VisualEditor.state";
 import { RectSide } from "../languages/statecharts/concrete_syntax";
 
 export type Vec2D = {

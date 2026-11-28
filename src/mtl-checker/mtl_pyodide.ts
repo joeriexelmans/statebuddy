@@ -1,6 +1,5 @@
-import { PreparedTrace, PropertyCheckStatus } from "@/App/SideBar/prepare_trace_types";
-
-import { loadPyodide, PyodideAPI, version as pyodideVersion } from "pyodide"
+import { loadPyodide, PyodideAPI } from "pyodide"
+import { PreparedTrace, PropertyCheckStatus } from "./mtl_types";
 
 import pylibs from "./assets/mtl-libs.zip";
 
