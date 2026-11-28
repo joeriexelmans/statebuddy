@@ -3,10 +3,10 @@ import { useAudioContext } from "@/hooks/useAudioContext";
 import { useShortcuts } from "@/hooks/useShortcuts";
 import { useEffect, useState } from "react";
 import { preload } from "react-dom";
-import cinematicBoom from "../../artwork/corporate-logo/cinematic-boom.opus";
-import explosion from "../../artwork/corporate-logo/explosion.opus";
-import corporateLogo from "../../artwork/corporate-logo/StateBOSS-logo-alt.webp";
-import jingle from "../../artwork/corporate-logo/stateboss.opus";
+import cinematicBoom from "../../assets/artwork/corporate-logo/cinematic-boom.opus";
+import explosion from "../../assets/artwork/corporate-logo/explosion.opus";
+import corporateLogo from "../../assets/artwork/corporate-logo/StateBOSS-logo-alt.webp";
+import jingle from "../../assets/artwork/corporate-logo/stateboss.opus";
 import { CorporateLogo } from "../Logo/CorporateLogo";
 import { Logo } from "../Logo/Logo";
 

@@ -1,6 +1,6 @@
 import { makeStatechartPlant, PlantRenderProps, StatechartPlantSpec } from "../Plant";
 import fontDigital from "../DigitalWatch/digital-font.ttf";
-import imgFire from "./artwork/fire.svg";
+import imgFire from "./assets/artwork/fire.svg";
 
 import parkingLotJSON from "./model.json";
 import { parseStatechart } from "@/languages/statecharts/parser/parser";

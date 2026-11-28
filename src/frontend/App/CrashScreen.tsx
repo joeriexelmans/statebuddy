@@ -1,6 +1,6 @@
 import { PropsWithChildren } from "react";
 import { Centered } from "./Overlays/ModalOverlay";
-import deadStatebuddy from "../artwork/new-logo/dead-statebuddy-optimized.svg";
+import deadStatebuddy from "../assets/artwork/new-logo/dead-statebuddy-optimized.svg";
 
 export function CrashScreen({children}: PropsWithChildren) {
   return <Centered>
