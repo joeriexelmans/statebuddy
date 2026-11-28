@@ -6,14 +6,12 @@ Bugs
       [!inState(#overridden)]
       bla // comment
 
-- SpyingApp doesn't seem to record scroll events when panning
-
-- support 'default history' (syntax already allows it, semantics ignore it)
-
 - editor undo: mouseUp event: pop state if selection didn't change?
     motivation: clicking in empty space creates new undo-entry, even if nothing changed
 
 - useEditor: React strict mode causes mouse-move handler to move everything twice as fast!
+
+- [DONE] SpyingApp doesn't seem to record scroll events when panning
 
 - [DONE] transition labels
      `entryDrive` and `exitDrive`
@@ -38,11 +36,20 @@ Bugs
 Desirable features
 ------------------
 
+- need some way of persisting recorded traces in localstorage
+    possible approach:
+      mapping app-state-hash -> recording
+      use 'reference counting' (count number of browser windows that have the app-state-hash open)
+      if refcount == 0, AND the app-state-hash hasn't been opened in 30 days, THEN delete the recording.
+    benefits:
+      - bookmarking remains the main save-mechanism.
+      - Ctrl+S for export if you wanna be sure not to lose your recording.
+
+- support 'default history' (syntax already allows it, semantics ignore it)
+
 - store user actions:
     motivation
       1. make history explainable
       2. history uses less memory
 
 - fork/join for synchronization of orthogonal regions
-      
-- use <meter> element in top panel to indicate when timed transition is due.

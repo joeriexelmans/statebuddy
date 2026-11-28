@@ -247,14 +247,18 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
   const bottomPanelId = useId();
 
   return <div style={{
-      display: 'flex', flexDirection: 'column',
+      display: 'flex',
+      flexDirection: 'column',
       overflow: 'hidden',
-      position: 'relative', // <-- this is necessary for the overlay to 
+      position: 'relative', // <-- this is necessary for the overlay to work
+      containerType: 'size',
+      height: '100%',
+      width: '100%',
     }}>
     <ModalOverlay modal={modal} closeModal={closeModal}>
 
       <style>{`
-        @media screen and (width < ${DESKTOP_MIN_WIDTH}px) {
+        @container (width < ${DESKTOP_MIN_WIDTH}px) {
           #${topPanelId}, #${leftPanelId}, #${rightPanelId}, #${bottomPanelId} {
             display: none;
           }
@@ -262,12 +266,12 @@ export function App({appState, setAppState: setAppStateShallow, modelSize}: With
             display: flex;
           }
         }
-        @media screen and (width >= ${DESKTOP_MIN_WIDTH}px) {
+        @container (width >= ${DESKTOP_MIN_WIDTH}px) {
           .${mobileOnlyClass} {
             display: none;
           }
         }
-        @media screen and (height < ${MOBILE_TRACE_MIN_HEIGHT}px) {
+        @container (height < ${MOBILE_TRACE_MIN_HEIGHT}px) {
           #${mobileBottomPanelId} {
             display: none;
           }
