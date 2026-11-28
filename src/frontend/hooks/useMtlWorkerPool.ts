@@ -5,7 +5,7 @@ export type CheckPropFn = (req: MtlReq) => readonly [Promise<PropertyCheckStatus
 
 export type MtlWorkerPoolState = WorkerPoolState<MtlReq, PropertyCheckStatus>;
 
-const createWorker = () => new Worker(new URL("./mtl_web_worker_script.ts", import.meta.url), {type: 'module'});
+const createWorker = () => new Worker(new URL("@/mtl-checker/mtl_web_worker_script.ts", import.meta.url), {type: 'module'});
 
 export function useMtlWorkerPool(nWorkers: number) {
   // the following only works because
